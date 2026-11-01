@@ -51,22 +51,12 @@ const COMMAND_LETTER = /^[MmLlHhVvCcSsQqTtAaZz]$/;
 
 /** Tags we never render. Subtrees are skipped: their content is not canvas. */
 const SKIP_SUBTREE_TAGS = new Set([
-  "defs",
-  "lineargradient",
-  "radialgradient",
-  "stop",
-  "use",
-  "text",
-  "tspan",
-  "textpath",
   "image",
   "script",
   "style",
   "title",
   "desc",
   "metadata",
-  "clippath",
-  "mask",
   "pattern",
   "filter",
   "symbol",
@@ -276,7 +266,23 @@ function parseMarkup(text) {
   let index = 0;
   while (index < text.length) {
     const lt = text.indexOf("<", index);
-    if (lt < 0) break;
+    if (lt < 0) {
+      if (index < text.length && stack.length > 0) {
+        const textChunk = text.slice(index).trim();
+        if (textChunk) {
+          const current = stack[stack.length - 1];
+          current.text = current.text ? `${current.text} ${textChunk}` : textChunk;
+        }
+      }
+      break;
+    }
+    if (lt > index && stack.length > 0) {
+      const textChunk = text.slice(index, lt).trim();
+      if (textChunk) {
+        const current = stack[stack.length - 1];
+        current.text = current.text ? `${current.text} ${textChunk}` : textChunk;
+      }
+    }
     if (text.startsWith("<!--", lt)) {
       const end = text.indexOf("-->", lt + 4);
       index = end < 0 ? text.length : end + 3;
@@ -284,6 +290,13 @@ function parseMarkup(text) {
     }
     if (text.startsWith("<![CDATA[", lt)) {
       const end = text.indexOf("]]>", lt + 9);
+      if (end >= 0 && stack.length > 0) {
+        const cdataText = text.slice(lt + 9, end).trim();
+        if (cdataText) {
+          const current = stack[stack.length - 1];
+          current.text = current.text ? `${current.text} ${cdataText}` : cdataText;
+        }
+      }
       index = end < 0 ? text.length : end + 3;
       continue;
     }
@@ -360,8 +373,131 @@ function parseStyle(value) {
   return style;
 }
 
+const NAMED_COLORS = {
+  black: "#000000",
+  white: "#ffffff",
+  red: "#ff0000",
+  green: "#008000",
+  blue: "#0000ff",
+  yellow: "#ffff00",
+  cyan: "#00ffff",
+  magenta: "#ff00ff",
+  gray: "#808080",
+  grey: "#808080",
+  silver: "#c0c0c0",
+  maroon: "#800000",
+  olive: "#808000",
+  navy: "#000080",
+  purple: "#800080",
+  teal: "#008080",
+  orange: "#ffa500",
+  pink: "#ffc0cb",
+  gold: "#ffd700",
+};
+
+function normalizeColor(raw) {
+  if (!raw || typeof raw !== "string") return "#000000";
+  const s = raw.trim().toLowerCase();
+  if (NAMED_COLORS[s]) return NAMED_COLORS[s];
+  return raw.trim();
+}
+
+function parseCoordPercent(val, defaultVal = 0) {
+  if (val === undefined || val === null) return defaultVal;
+  const s = String(val).trim();
+  if (s.endsWith("%")) {
+    const num = parseFloat(s);
+    return Number.isFinite(num) ? num / 100 : defaultVal;
+  }
+  const num = parseFloat(s);
+  return Number.isFinite(num) ? num : defaultVal;
+}
+
+function resolveGradient(def, defsMap) {
+  if (!def) return null;
+  const tag = def.tag;
+  if (tag !== "lineargradient" && tag !== "radialgradient") return null;
+
+  let stops = [];
+  let current = def;
+  const visited = new Set();
+  while (current && !visited.has(current)) {
+    visited.add(current);
+    const stopElements = (current.children || []).filter((c) => c.tag === "stop");
+    if (stopElements.length > 0 && stops.length === 0) stops = stopElements;
+    const href = current.attrs.href || current.attrs["xlink:href"];
+    if (href && href.startsWith("#")) current = defsMap?.get(href.slice(1));
+    else break;
+  }
+  if (stops.length === 0) return null;
+
+  const parsedStops = stops.map((stop, index) => {
+    const style = parseStyle(stop.attrs.style);
+    const rawColor = stop.attrs["stop-color"] || style["stop-color"] || "#000000";
+    const rawOpacity = stop.attrs["stop-opacity"] || style["stop-opacity"];
+    let color = normalizeColor(rawColor);
+    const opacity = rawOpacity !== undefined ? Math.max(0, Math.min(1, parseFloat(rawOpacity))) : 1;
+    if (opacity < 1 && color.startsWith("#") && (color.length === 7 || color.length === 4)) {
+      if (color.length === 4) {
+        color = `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
+      }
+      const alphaHex = Math.round(opacity * 255).toString(16).padStart(2, "0");
+      color = `${color}${alphaHex}`.toUpperCase();
+    }
+    let offset = stop.attrs.offset;
+    let pos = 0;
+    if (offset !== undefined) {
+      const offsetStr = String(offset).trim();
+      if (offsetStr.endsWith("%")) pos = parseFloat(offsetStr) || 0;
+      else {
+        const num = parseFloat(offsetStr);
+        pos = Number.isFinite(num) ? (num <= 1 && num >= 0 ? num * 100 : num) : 0;
+      }
+    } else {
+      pos = stops.length > 1 ? (index / (stops.length - 1)) * 100 : 0;
+    }
+    return { color, position: Math.max(0, Math.min(100, pos)) };
+  });
+
+  const stopStrings = parsedStops
+    .sort((a, b) => a.position - b.position)
+    .map((s) => `${s.color} ${Math.round(s.position)}%`);
+
+  if (tag === "radialgradient") {
+    return `radial-gradient(circle, ${stopStrings.join(", ")})`;
+  }
+
+  const x1 = parseCoordPercent(def.attrs.x1, 0);
+  const y1 = parseCoordPercent(def.attrs.y1, 0);
+  const x2 = parseCoordPercent(def.attrs.x2, 1);
+  const y2 = parseCoordPercent(def.attrs.y2, 0);
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  let angle = 90;
+  if (dx !== 0 || dy !== 0) {
+    angle = Math.round(((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360);
+  }
+  return `linear-gradient(${angle}deg, ${stopStrings.join(", ")})`;
+}
+
+function buildDefsMap(tree) {
+  const map = new Map();
+  function scan(node) {
+    if (node.attrs && node.attrs.id) {
+      map.set(String(node.attrs.id).trim(), node);
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        scan(child);
+      }
+    }
+  }
+  scan(tree);
+  return map;
+}
+
 /** Normalizes a paint value; degrades unsupported paint servers instead of throwing. */
-function resolvePaintColor(value, fallback, role, ctx) {
+function resolvePaintColor(value, fallback, role, ctx, defsMap = null) {
   if (value == null) return fallback;
   const raw = String(value).trim();
   if (!raw) return fallback;
@@ -373,6 +509,14 @@ function resolvePaintColor(value, fallback, role, ctx) {
     return DEFAULT_FILL;
   }
   if (lower.startsWith("url(")) {
+    const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(raw);
+    if (match && defsMap) {
+      const def = defsMap.get(match[1]);
+      if (def && (def.tag === "lineargradient" || def.tag === "radialgradient")) {
+        const gradient = resolveGradient(def, defsMap);
+        if (gradient) return gradient;
+      }
+    }
     ctx.warnOnce(
       `paint:${role}:url`,
       `${role}="${raw}" references a paint server (gradient/pattern), which is unsupported; using ${fallback ?? "none"}`,
@@ -387,6 +531,9 @@ function resolvePaintColor(value, fallback, role, ctx) {
 function withAlpha(color, alpha, role, ctx) {
   if (color == null || color === "none") return color;
   if (!(alpha < 1)) return color;
+  if (color.startsWith("linear-gradient") || color.startsWith("radial-gradient")) {
+    return color;
+  }
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
   if (hex) {
     const digits = hex[1];
@@ -414,12 +561,12 @@ function withAlpha(color, alpha, role, ctx) {
   return color;
 }
 
-function resolvePaint(attrs, inherited, ctx, parsedStyle = parseStyle(attrs.style)) {
+function resolvePaint(attrs, inherited, ctx, parsedStyle = parseStyle(attrs.style), defsMap = null) {
   const lookup = (key) => parsedStyle[key] ?? attrs[key];
   const rawFill = lookup("fill");
-  const fill = rawFill === undefined ? inherited.fill : resolvePaintColor(rawFill, inherited.fill, "fill", ctx);
+  const fill = rawFill === undefined ? inherited.fill : resolvePaintColor(rawFill, inherited.fill, "fill", ctx, defsMap);
   const rawStroke = lookup("stroke");
-  const stroke = rawStroke === undefined ? inherited.stroke : resolvePaintColor(rawStroke, null, "stroke", ctx);
+  const stroke = rawStroke === undefined ? inherited.stroke : resolvePaintColor(rawStroke, null, "stroke", ctx, defsMap);
   const rawWidth = lookup("stroke-width");
   const parsedWidth = rawWidth === undefined ? null : parseNumber(rawWidth);
   const strokeWidth = stroke === null ? null : (parsedWidth ?? inherited.strokeWidth ?? 1);
@@ -927,6 +1074,71 @@ function buildPointsElement(close) {
   };
 }
 
+function collectElementText(element) {
+  let result = element.text || "";
+  if (element.children && element.children.length > 0) {
+    for (const child of element.children) {
+      if (child.tag === "tspan" || child.tag === "text") {
+        const childText = collectElementText(child);
+        if (childText) {
+          result = result ? `${result} ${childText}` : childText;
+        }
+      }
+    }
+  }
+  return result.trim();
+}
+
+function buildTextElement(attrs, paint, matrix, ctx, element) {
+  const positionedTspans = (element?.children || []).filter(
+    (c) => c.tag === "tspan" && (c.attrs.x !== undefined || c.attrs.y !== undefined),
+  );
+  if (positionedTspans.length > 0) {
+    const nodes = [];
+    for (const tspan of element.children.filter((c) => c.tag === "tspan")) {
+      const tContent = (tspan.text || "").trim();
+      if (!tContent) continue;
+      const tAttrs = { ...attrs, ...tspan.attrs };
+      const tx = parseNumber(tAttrs.x) ?? (parseNumber(attrs.x) ?? 0);
+      const ty = parseNumber(tAttrs.y) ?? (parseNumber(attrs.y) ?? 0);
+      const tFontSize = parseNumber(tAttrs["font-size"] ?? tAttrs.fontSize) ?? 16;
+      const tpt = applyMatrix(matrix, tx, ty - tFontSize);
+      nodes.push({
+        kind: "text",
+        x: round(tpt.x),
+        y: round(tpt.y),
+        text: tContent,
+        fontSize: round(tFontSize),
+        fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+        stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+        strokeWidth:
+          paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+        opacity: round(paint.opacity),
+      });
+    }
+    return nodes.length > 0 ? nodes : null;
+  }
+
+  const content = (element ? collectElementText(element) : "") || attrs["aria-label"] || "";
+  if (!content.trim()) return null;
+  const x = parseNumber(attrs.x) ?? 0;
+  const y = parseNumber(attrs.y) ?? 0;
+  const fontSize = parseNumber(attrs["font-size"] ?? attrs.fontSize) ?? 16;
+  const pt = applyMatrix(matrix, x, y - fontSize);
+  return {
+    kind: "text",
+    x: round(pt.x),
+    y: round(pt.y),
+    text: content,
+    fontSize: round(fontSize),
+    fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+    stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+    strokeWidth:
+      paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+    opacity: round(paint.opacity),
+  };
+}
+
 const SHAPE_BUILDERS = {
   path: buildPathElement,
   rect: buildRectElement,
@@ -935,6 +1147,7 @@ const SHAPE_BUILDERS = {
   line: buildLineElement,
   polyline: buildPointsElement(false),
   polygon: buildPointsElement(true),
+  text: buildTextElement,
 };
 
 // ---------------------------------------------------------------------------
@@ -1014,6 +1227,7 @@ export function parseSvgToNodes(svgText, options = {}) {
     const outerMatrix = parseTransformMatrix(svg.attrs.transform, ctx);
     const rootMatrix = multiplyMatrix(outerMatrix, viewBoxMatrix);
 
+    const defsMap = buildDefsMap(svg);
     const limit = Number.isFinite(maxNodes)
       ? Math.max(0, Math.floor(maxNodes))
       : DEFAULT_MAX_NODES;
@@ -1034,8 +1248,43 @@ export function parseSvgToNodes(svgText, options = {}) {
       return true;
     };
 
-    const walk = (element, inheritedPaint, inheritedMatrix) => {
+    function resolveMaskOrClip(refAttr, elemMatrix, parentClipId = null) {
+      if (!refAttr || !defsMap) return null;
+      const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(String(refAttr).trim());
+      if (!match) return null;
+      const def = defsMap.get(match[1]);
+      if (!def || !def.children || def.children.length === 0) return null;
+
+      const currentTransform = parseTransformMatrix(def.attrs?.transform, ctx);
+      const defMatrix = elemMatrix && currentTransform ? multiplyMatrix(elemMatrix, currentTransform) : currentTransform || elemMatrix;
+
+      for (const child of def.children) {
+        const childTransform = parseTransformMatrix(child.attrs?.transform, ctx);
+        const childMatrix = defMatrix && childTransform ? multiplyMatrix(defMatrix, childTransform) : childTransform || defMatrix;
+        const childPaint = resolvePaint(child.attrs || {}, BASE_PAINT, ctx, parseStyle(child.attrs?.style), defsMap);
+        const b = SHAPE_BUILDERS[child.tag];
+        if (b) {
+          const shapeNode = b(child.attrs || {}, childPaint, childMatrix, ctx, child);
+          if (shapeNode) {
+            const base = Array.isArray(shapeNode) ? shapeNode[0] : shapeNode;
+            base.maskBase = true;
+            if (def.tag === "mask") {
+              base.maskType = def.attrs?.["mask-type"] || "luminance";
+            }
+            if (parentClipId) base.clipTo = parentClipId;
+            addNode(child.tag, child.attrs || {}, base);
+            return base.name;
+          }
+        }
+      }
+      return null;
+    }
+
+    const walk = (element, inheritedPaint, inheritedMatrix, currentClipId = null) => {
       const tag = element.tag;
+      if (["defs", "lineargradient", "radialgradient", "stop", "clippath", "mask"].includes(tag)) {
+        return true;
+      }
       if (SKIP_SUBTREE_TAGS.has(tag)) {
         ctx.warnOnce(`tag:${tag}`, `unsupported element <${tag}> ignored`);
         return true;
@@ -1051,14 +1300,37 @@ export function parseSvgToNodes(svgText, options = {}) {
         ctx.warnOnce(`hidden:${tag}`, `hidden element <${tag}> skipped (display:none / visibility:hidden)`);
         return true;
       }
-      const paint = resolvePaint(element.attrs, inheritedPaint, ctx, parsedStyle);
+      const paint = resolvePaint(element.attrs, inheritedPaint, ctx, parsedStyle, defsMap);
       const matrix = multiplyMatrix(
         inheritedMatrix,
         parseTransformMatrix(element.attrs.transform, ctx),
       );
+      const clipAttr = element.attrs["clip-path"] || parsedStyle["clip-path"];
+      const maskAttr = element.attrs.mask || parsedStyle.mask;
+      const elemClipId = resolveMaskOrClip(clipAttr, matrix, currentClipId);
+      const elemMaskId = resolveMaskOrClip(maskAttr, matrix, elemClipId || currentClipId);
+      const effectiveClipId = elemMaskId || elemClipId || currentClipId;
+
+      if (tag === "use") {
+        const href = element.attrs.href || element.attrs["xlink:href"];
+        if (href && href.startsWith("#") && defsMap) {
+          const target = defsMap.get(href.slice(1));
+          if (target) {
+            const useX = parseNumber(element.attrs.x) ?? 0;
+            const useY = parseNumber(element.attrs.y) ?? 0;
+            let useMatrix = matrix;
+            if (useX !== 0 || useY !== 0) {
+              useMatrix = multiplyMatrix(useMatrix, [1, 0, 0, 1, useX, useY]);
+            }
+            return walk(target, paint, useMatrix, effectiveClipId);
+          }
+        }
+        return true;
+      }
+
       if (CONTAINER_TAGS.has(tag)) {
         for (const child of element.children) {
-          if (!walk(child, paint, matrix)) return false;
+          if (!walk(child, paint, matrix, effectiveClipId)) return false;
         }
         return true;
       }
@@ -1066,18 +1338,26 @@ export function parseSvgToNodes(svgText, options = {}) {
       if (!builder) {
         ctx.warnOnce(`tag:${tag}`, `unsupported element <${tag}> ignored`);
         for (const child of element.children) {
-          if (!walk(child, paint, matrix)) return false;
+          if (!walk(child, paint, matrix, effectiveClipId)) return false;
         }
         return true;
       }
-      const node = builder(element.attrs, paint, matrix, ctx);
+      const node = builder(element.attrs, paint, matrix, ctx, element);
       if (!node) return true;
+      if (Array.isArray(node)) {
+        for (const n of node) {
+          if (effectiveClipId) n.clipTo = effectiveClipId;
+          if (!addNode(tag, element.attrs, n)) return false;
+        }
+        return true;
+      }
+      if (effectiveClipId) node.clipTo = effectiveClipId;
       return addNode(tag, element.attrs, node);
     };
 
-    const rootPaint = resolvePaint(svg.attrs, BASE_PAINT, ctx);
+    const rootPaint = resolvePaint(svg.attrs, BASE_PAINT, ctx, parseStyle(svg.attrs.style), defsMap);
     for (const child of svg.children) {
-      if (!walk(child, rootPaint, rootMatrix)) break;
+      if (!walk(child, rootPaint, rootMatrix, null)) break;
     }
 
     return {

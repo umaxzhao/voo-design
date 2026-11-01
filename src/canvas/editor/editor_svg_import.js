@@ -7,6 +7,7 @@
  */
 
 import {
+  createBooleanNode,
   createEllipseNode,
   createGroupNode,
   createPenNode,
@@ -222,8 +223,157 @@ function parseSvgTree(svgString) {
   return svgNode;
 }
 
+const NAMED_COLORS = {
+  black: "#000000",
+  white: "#ffffff",
+  red: "#ff0000",
+  green: "#008000",
+  blue: "#0000ff",
+  yellow: "#ffff00",
+  cyan: "#00ffff",
+  magenta: "#ff00ff",
+  gray: "#808080",
+  grey: "#808080",
+  orange: "#ffa500",
+  purple: "#800080",
+  transparent: "transparent",
+};
+
+function normalizeColor(raw) {
+  if (!raw) return "#000000";
+  const str = String(raw).trim();
+  if (NAMED_COLORS[str.toLowerCase()]) {
+    return NAMED_COLORS[str.toLowerCase()];
+  }
+  return str;
+}
+
+function parseCoordPercent(val, defaultVal = 0) {
+  if (val == null) return defaultVal;
+  const str = String(val).trim();
+  if (str.endsWith("%")) {
+    const num = parseFloat(str);
+    return Number.isFinite(num) ? num / 100 : defaultVal;
+  }
+  const num = parseFloat(str);
+  return Number.isFinite(num) ? num : defaultVal;
+}
+
+function resolveGradient(def, defsMap) {
+  if (!def) return null;
+  const tag = def.tag;
+  if (tag !== "lineargradient" && tag !== "radialgradient") return null;
+
+  let stops = [];
+  let current = def;
+  const visited = new Set();
+  while (current && !visited.has(current)) {
+    visited.add(current);
+    const stopElements = current.children.filter((c) => c.tag === "stop");
+    if (stopElements.length > 0 && stops.length === 0) {
+      stops = stopElements;
+    }
+    const href = current.attrs.href || current.attrs["xlink:href"];
+    if (href && href.startsWith("#")) {
+      current = defsMap?.get(href.slice(1));
+    } else {
+      break;
+    }
+  }
+
+  if (stops.length === 0) return null;
+
+  const parsedStops = stops.map((stop, index) => {
+    const style = parseInlineStyle(stop.attrs.style);
+    const rawColor = getStyleOrAttr(stop.attrs, style, "stop-color", "stop-color") || "#000000";
+    const rawOpacity = getStyleOrAttr(stop.attrs, style, "stop-opacity", "stop-opacity");
+    let color = normalizeColor(rawColor);
+    const opacity = rawOpacity !== undefined ? Math.max(0, Math.min(1, parseNum(rawOpacity, 1))) : 1;
+    if (opacity < 1 && color.startsWith("#") && (color.length === 7 || color.length === 4)) {
+      if (color.length === 4) {
+        color = `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
+      }
+      const alphaHex = Math.round(opacity * 255).toString(16).padStart(2, "0");
+      color = `${color}${alphaHex}`.toUpperCase();
+    }
+    let offset = stop.attrs.offset;
+    let pos = 0;
+    if (offset !== undefined) {
+      const offsetStr = String(offset).trim();
+      if (offsetStr.endsWith("%")) {
+        pos = parseNum(offsetStr, 0);
+      } else {
+        const num = parseNum(offsetStr, 0);
+        pos = num <= 1 && num >= 0 ? num * 100 : num;
+      }
+    } else {
+      pos = stops.length > 1 ? (index / (stops.length - 1)) * 100 : 0;
+    }
+    return { color, position: Math.max(0, Math.min(100, pos)) };
+  });
+
+  const stopStrings = parsedStops
+    .sort((a, b) => a.position - b.position)
+    .map((s) => `${s.color} ${Math.round(s.position)}%`);
+
+  if (tag === "radialgradient") {
+    return `radial-gradient(circle, ${stopStrings.join(", ")})`;
+  }
+
+  const x1 = parseCoordPercent(def.attrs.x1, 0);
+  const y1 = parseCoordPercent(def.attrs.y1, 0);
+  const x2 = parseCoordPercent(def.attrs.x2, 1);
+  const y2 = parseCoordPercent(def.attrs.y2, 0);
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  let angle = 90;
+  if (dx !== 0 || dy !== 0) {
+    angle = Math.round(((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360);
+  }
+  return `linear-gradient(${angle}deg, ${stopStrings.join(", ")})`;
+}
+
+function resolvePaintServer(value, defsMap) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed.toLowerCase().startsWith("url(")) return value;
+  const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(trimmed);
+  if (!match) return value;
+  const def = defsMap?.get(match[1]);
+  if (!def) return value;
+  const gradient = resolveGradient(def, defsMap);
+  return gradient || value;
+}
+
+function collectElementText(element) {
+  let result = element.text || "";
+  for (const child of element.children) {
+    if (child.tag === "tspan" || child.tag === "text") {
+      const childText = collectElementText(child);
+      if (childText) {
+        result = result ? `${result} ${childText}` : childText;
+      }
+    }
+  }
+  return result.trim();
+}
+
+function buildDefsMap(root) {
+  const map = new Map();
+  function visit(node) {
+    if (node.attrs && node.attrs.id) {
+      map.set(String(node.attrs.id).trim(), node);
+    }
+    for (const child of node.children) {
+      visit(child);
+    }
+  }
+  visit(root);
+  return map;
+}
+
 /** Parses stroke and fill visual styling attributes. */
-function parsePaintProps(attrs, inherited = {}) {
+function parsePaintProps(attrs, inherited = {}, defsMap = null) {
   const style = parseInlineStyle(attrs.style);
   const rawFill = getStyleOrAttr(attrs, style, "fill");
   const rawStroke = getStyleOrAttr(attrs, style, "stroke");
@@ -254,12 +404,14 @@ function parsePaintProps(attrs, inherited = {}) {
   );
 
   let fill = rawFill !== undefined ? rawFill : inherited.fill;
+  fill = resolvePaintServer(fill, defsMap);
   if (fill === "none") fill = "transparent";
   if (!fill && fill !== "transparent" && inherited.fill === undefined) {
     fill = "#000000";
   }
 
   let stroke = rawStroke !== undefined ? rawStroke : inherited.stroke;
+  stroke = resolvePaintServer(stroke, defsMap);
   if (stroke === "none") stroke = "transparent";
 
   const strokeWidth =
@@ -295,6 +447,7 @@ export function parseSvgStringToNodes(svgString) {
   }
 
   const svgTree = parseSvgTree(svgString);
+  const defsMap = buildDefsMap(svgTree);
   const nodes = [];
 
   const svgAttrs = svgTree.attrs || {};
@@ -316,65 +469,24 @@ export function parseSvgStringToNodes(svgString) {
     }
   }
 
-  function walk(
-    element,
-    inheritedStyle = {},
-    parentMatrix = null,
-    parentGroupId = null,
-  ) {
-    const { tag, attrs, children, text } = element;
-    if (["defs", "clippath", "mask", "symbol", "metadata"].includes(tag)) {
-      return;
-    }
-
-    const currentTransform = resolveTransformMatrix(
-      parseTransform(attrs.transform),
-    );
-    const matrix =
-      parentMatrix && currentTransform
-        ? multiplyMatrix(parentMatrix, currentTransform)
-        : currentTransform || parentMatrix;
-
-    const paint = parsePaintProps(attrs, inheritedStyle);
-
-    if (tag === "g") {
-      let groupId = parentGroupId;
-      if (attrs.id && !groupId) {
-        const group = createGroupNode({ x: 0, y: 0, width: 0, height: 0 });
-        group.name = attrs.id;
-        nodes.push(group);
-        groupId = group.id;
-      }
-      for (const child of children) {
-        walk(child, paint, matrix, groupId);
-      }
-      return;
-    }
-
+  function parseShapeNode(element, matrix, currentPaint, clipId = null, groupId = null) {
+    const { tag, attrs } = element;
     if (tag === "path") {
       const d = attrs.d;
-      if (!d) return;
+      if (!d) return null;
       const rawAnchors = parseSvgPath(d);
-      if (!rawAnchors || rawAnchors.length === 0) return;
+      if (!rawAnchors || rawAnchors.length === 0) return null;
 
       const anchors = rawAnchors.map((a) => {
         const pt = applyTransformToPoint(a.x, a.y, matrix);
         let inHandle = null;
         let outHandle = null;
         if (a.in) {
-          const inPt = applyTransformToPoint(
-            a.x + a.in[0],
-            a.y + a.in[1],
-            matrix,
-          );
+          const inPt = applyTransformToPoint(a.x + a.in[0], a.y + a.in[1], matrix);
           inHandle = [inPt.x - pt.x, inPt.y - pt.y];
         }
         if (a.out) {
-          const outPt = applyTransformToPoint(
-            a.x + a.out[0],
-            a.y + a.out[1],
-            matrix,
-          );
+          const outPt = applyTransformToPoint(a.x + a.out[0], a.y + a.out[1], matrix);
           outHandle = [outPt.x - pt.x, outPt.y - pt.y];
         }
         return {
@@ -386,15 +498,15 @@ export function parseSvgStringToNodes(svgString) {
         };
       });
 
-      const penNode = createPenNode(anchors, paint.stroke, paint.strokeWidth);
-      penNode.fill = paint.fill;
-      penNode.opacity = paint.opacity;
-      penNode.strokeCap = paint.strokeCap;
-      penNode.strokeJoin = paint.strokeJoin;
-      penNode.strokeDash = paint.strokeDash;
-      if (parentGroupId) penNode.parentId = parentGroupId;
-      nodes.push(penNode);
-      return;
+      const penNode = createPenNode(anchors, currentPaint.stroke, currentPaint.strokeWidth);
+      penNode.fill = currentPaint.fill;
+      penNode.opacity = currentPaint.opacity;
+      penNode.strokeCap = currentPaint.strokeCap;
+      penNode.strokeJoin = currentPaint.strokeJoin;
+      penNode.strokeDash = currentPaint.strokeDash;
+      if (groupId) penNode.parentId = groupId;
+      if (clipId) penNode.clipTo = clipId;
+      return penNode;
     }
 
     if (tag === "rect") {
@@ -403,7 +515,7 @@ export function parseSvgStringToNodes(svgString) {
       const w = parseNum(attrs.width, 0);
       const h = parseNum(attrs.height, 0);
       const rx = parseNum(attrs.rx, parseNum(attrs.ry, 0));
-      if (w <= 0 || h <= 0) return;
+      if (w <= 0 || h <= 0) return null;
 
       const p1 = applyTransformToPoint(x, y, matrix);
       const p2 = applyTransformToPoint(x + w, y + h, matrix);
@@ -413,15 +525,15 @@ export function parseSvgStringToNodes(svgString) {
         y: Math.min(p1.y, p2.y),
         width: Math.abs(p2.x - p1.x),
         height: Math.abs(p2.y - p1.y),
-        fill: paint.fill,
-        stroke: paint.stroke,
-        strokeWidth: paint.strokeWidth,
+        fill: currentPaint.fill,
+        stroke: currentPaint.stroke,
+        strokeWidth: currentPaint.strokeWidth,
       });
       rectNode.cornerRadius = rx;
-      rectNode.opacity = paint.opacity;
-      if (parentGroupId) rectNode.parentId = parentGroupId;
-      nodes.push(rectNode);
-      return;
+      rectNode.opacity = currentPaint.opacity;
+      if (groupId) rectNode.parentId = groupId;
+      if (clipId) rectNode.clipTo = clipId;
+      return rectNode;
     }
 
     if (tag === "circle" || tag === "ellipse") {
@@ -429,7 +541,7 @@ export function parseSvgStringToNodes(svgString) {
       let cy = parseNum(attrs.cy, 0);
       let rx = tag === "circle" ? parseNum(attrs.r, 0) : parseNum(attrs.rx, 0);
       let ry = tag === "circle" ? parseNum(attrs.r, 0) : parseNum(attrs.ry, 0);
-      if (rx <= 0 || ry <= 0) return;
+      if (rx <= 0 || ry <= 0) return null;
 
       const p1 = applyTransformToPoint(cx - rx, cy - ry, matrix);
       const p2 = applyTransformToPoint(cx + rx, cy + ry, matrix);
@@ -439,14 +551,14 @@ export function parseSvgStringToNodes(svgString) {
         y: Math.min(p1.y, p2.y),
         width: Math.abs(p2.x - p1.x),
         height: Math.abs(p2.y - p1.y),
-        stroke: paint.stroke,
-        strokeWidth: paint.strokeWidth,
+        stroke: currentPaint.stroke,
+        strokeWidth: currentPaint.strokeWidth,
       });
-      ellipseNode.fill = paint.fill;
-      ellipseNode.opacity = paint.opacity;
-      if (parentGroupId) ellipseNode.parentId = parentGroupId;
-      nodes.push(ellipseNode);
-      return;
+      ellipseNode.fill = currentPaint.fill;
+      ellipseNode.opacity = currentPaint.opacity;
+      if (groupId) ellipseNode.parentId = groupId;
+      if (clipId) ellipseNode.clipTo = clipId;
+      return ellipseNode;
     }
 
     if (tag === "line") {
@@ -462,13 +574,13 @@ export function parseSvgStringToNodes(svgString) {
           { x: pt1.x, y: pt1.y },
           { x: pt2.x, y: pt2.y },
         ],
-        paint.stroke !== "transparent" ? paint.stroke : paint.fill || "#000000",
-        paint.strokeWidth || 1,
+        currentPaint.stroke !== "transparent" ? currentPaint.stroke : currentPaint.fill || "#000000",
+        currentPaint.strokeWidth || 1,
       );
-      penNode.opacity = paint.opacity;
-      if (parentGroupId) penNode.parentId = parentGroupId;
-      nodes.push(penNode);
-      return;
+      penNode.opacity = currentPaint.opacity;
+      if (groupId) penNode.parentId = groupId;
+      if (clipId) penNode.clipTo = clipId;
+      return penNode;
     }
 
     if (tag === "polyline" || tag === "polygon") {
@@ -477,7 +589,7 @@ export function parseSvgStringToNodes(svgString) {
         .split(/[\s,]+/)
         .map(parseFloat)
         .filter(Number.isFinite);
-      if (coords.length < 4) return;
+      if (coords.length < 4) return null;
       const anchors = [];
       for (let i = 0; i < coords.length; i += 2) {
         const pt = applyTransformToPoint(coords[i], coords[i + 1], matrix);
@@ -486,16 +598,184 @@ export function parseSvgStringToNodes(svgString) {
       if (tag === "polygon" && anchors.length > 0) {
         anchors[anchors.length - 1].close = true;
       }
-      const penNode = createPenNode(anchors, paint.stroke, paint.strokeWidth);
-      penNode.fill = tag === "polygon" ? paint.fill : "transparent";
-      penNode.opacity = paint.opacity;
-      if (parentGroupId) penNode.parentId = parentGroupId;
-      nodes.push(penNode);
+      const penNode = createPenNode(anchors, currentPaint.stroke, currentPaint.strokeWidth);
+      penNode.fill = tag === "polygon" ? currentPaint.fill : "transparent";
+      penNode.opacity = currentPaint.opacity;
+      if (groupId) penNode.parentId = groupId;
+      if (clipId) penNode.clipTo = clipId;
+      return penNode;
+    }
+
+    return null;
+  }
+
+  function resolveMaskOrClip(refAttr, matrix, parentClipId = null) {
+    if (!refAttr) return null;
+    const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(String(refAttr).trim());
+    if (!match) return null;
+    const def = defsMap.get(match[1]);
+    if (!def || !def.children || def.children.length === 0) return null;
+
+    const currentTransform = resolveTransformMatrix(parseTransform(def.attrs?.transform));
+    const defMatrix = matrix && currentTransform ? multiplyMatrix(matrix, currentTransform) : currentTransform || matrix;
+
+    const shapes = [];
+    for (const child of def.children) {
+      const childPaint = parsePaintProps(child.attrs || {}, {}, defsMap);
+      const childTransform = resolveTransformMatrix(parseTransform(child.attrs?.transform));
+      const childMatrix = defMatrix && childTransform ? multiplyMatrix(defMatrix, childTransform) : childTransform || defMatrix;
+      const shapeNode = parseShapeNode(child, childMatrix, childPaint);
+      if (shapeNode) shapes.push(shapeNode);
+    }
+    if (shapes.length === 0) return null;
+
+    if (def.tag === "clippath") {
+      const clipBase = shapes[0];
+      clipBase.maskBase = true;
+      clipBase.fill = "transparent";
+      if (parentClipId) clipBase.clipTo = parentClipId;
+      nodes.push(clipBase);
+      return clipBase.id;
+    }
+
+    if (def.tag === "mask") {
+      if (shapes.length === 1) {
+        const maskBase = shapes[0];
+        maskBase.maskBase = true;
+        maskBase.maskType = def.attrs?.["mask-type"] || "luminance";
+        if (parentClipId) maskBase.clipTo = parentClipId;
+        nodes.push(maskBase);
+        return maskBase.id;
+      }
+      const booleanMask = createBooleanNode(shapes, "difference");
+      booleanMask.maskBase = true;
+      booleanMask.maskType = def.attrs?.["mask-type"] || "luminance";
+      if (parentClipId) booleanMask.clipTo = parentClipId;
+      nodes.push(booleanMask);
+      return booleanMask.id;
+    }
+    return null;
+  }
+
+  function walk(
+    element,
+    inheritedStyle = {},
+    parentMatrix = null,
+    parentGroupId = null,
+    currentClipId = null,
+  ) {
+    const { tag, attrs, children, text } = element;
+    if (["defs", "clippath", "mask", "symbol", "metadata"].includes(tag)) {
+      return;
+    }
+
+    const currentTransform = resolveTransformMatrix(
+      parseTransform(attrs.transform),
+    );
+    const matrix =
+      parentMatrix && currentTransform
+        ? multiplyMatrix(parentMatrix, currentTransform)
+        : currentTransform || parentMatrix;
+
+    const paint = parsePaintProps(attrs, inheritedStyle, defsMap);
+    const style = parseInlineStyle(attrs.style);
+    const clipAttr = attrs["clip-path"] || style["clip-path"];
+    const maskAttr = attrs["mask"] || style["mask"];
+    const elemClipId = resolveMaskOrClip(clipAttr, matrix, currentClipId);
+    const elemMaskId = resolveMaskOrClip(maskAttr, matrix, elemClipId || currentClipId);
+    const effectiveClipId = elemMaskId || elemClipId || currentClipId;
+
+    if (tag === "use") {
+      const href = attrs.href || attrs["xlink:href"];
+      if (href && href.startsWith("#")) {
+        const target = defsMap.get(href.slice(1));
+        if (target) {
+          const useX = parseNum(attrs.x, 0);
+          const useY = parseNum(attrs.y, 0);
+          let useMatrix = matrix;
+          if (useX !== 0 || useY !== 0) {
+            const tr = [1, 0, 0, 1, useX, useY];
+            useMatrix = useMatrix ? multiplyMatrix(useMatrix, tr) : tr;
+          }
+          walk(target, paint, useMatrix, parentGroupId, effectiveClipId);
+        }
+      }
+      return;
+    }
+
+    if (tag === "g") {
+      let groupId = parentGroupId;
+      if (attrs.id && !groupId) {
+        const group = createGroupNode({ x: 0, y: 0, width: 0, height: 0 });
+        group.name = attrs.id;
+        nodes.push(group);
+        groupId = group.id;
+      }
+      for (const child of children) {
+        walk(child, paint, matrix, groupId, effectiveClipId);
+      }
+      return;
+    }
+
+    if (tag === "path") {
+      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
+      if (node) nodes.push(node);
+      return;
+    }
+
+    if (tag === "rect") {
+      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
+      if (node) nodes.push(node);
+      return;
+    }
+
+    if (tag === "circle" || tag === "ellipse") {
+      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
+      if (node) nodes.push(node);
+      return;
+    }
+
+    if (tag === "line") {
+      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
+      if (node) nodes.push(node);
+      return;
+    }
+
+    if (tag === "polyline" || tag === "polygon") {
+      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
+      if (node) nodes.push(node);
       return;
     }
 
     if (tag === "text") {
-      const content = text || attrs["aria-label"] || "";
+      const positionedTspans = children.filter(
+        (c) => c.tag === "tspan" && (c.attrs.x !== undefined || c.attrs.y !== undefined),
+      );
+      if (positionedTspans.length > 0) {
+        for (const tspan of children.filter((c) => c.tag === "tspan")) {
+          const tContent = (tspan.text || "").trim();
+          if (!tContent) continue;
+          const tAttrs = { ...attrs, ...tspan.attrs };
+          const tPaint = parsePaintProps(tAttrs, paint, defsMap);
+          const tx = parseNum(tAttrs.x, attrs.x ? parseNum(attrs.x, 0) : 0);
+          const ty = parseNum(tAttrs.y, attrs.y ? parseNum(attrs.y, 0) : 0);
+          const tFontSize = parseNum(tAttrs["font-size"] || tAttrs.fontSize, 16);
+          const tpt = applyTransformToPoint(tx, ty - tFontSize, matrix);
+          const textNode = createTextNode({
+            x: tpt.x,
+            y: tpt.y,
+            text: tContent,
+            fontSize: tFontSize,
+            fill: tPaint.fill !== "transparent" ? tPaint.fill : "#000000",
+          });
+          textNode.opacity = tPaint.opacity;
+          if (parentGroupId) textNode.parentId = parentGroupId;
+          if (effectiveClipId) textNode.clipTo = effectiveClipId;
+          nodes.push(textNode);
+        }
+        return;
+      }
+      const content = collectElementText(element) || attrs["aria-label"] || "";
       if (!content.trim()) return;
       const x = parseNum(attrs.x, 0);
       const y = parseNum(attrs.y, 0);
@@ -511,14 +791,16 @@ export function parseSvgStringToNodes(svgString) {
       });
       textNode.opacity = paint.opacity;
       if (parentGroupId) textNode.parentId = parentGroupId;
+      if (effectiveClipId) textNode.clipTo = effectiveClipId;
       nodes.push(textNode);
+      return;
     }
   }
 
-  const rootPaint = parsePaintProps(svgAttrs);
+  const rootPaint = parsePaintProps(svgAttrs, {}, defsMap);
   const rootMatrix = resolveTransformMatrix(parseTransform(svgAttrs.transform));
   for (const child of svgTree.children) {
-    walk(child, rootPaint, rootMatrix);
+    walk(child, rootPaint, rootMatrix, null, null);
   }
 
   // Calculate overall bounding box of generated nodes
