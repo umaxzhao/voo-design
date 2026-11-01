@@ -2,7 +2,8 @@
 
 Scope: `documents.dirty-checkpoints`, shared engine/history UI, keyboard and
 Agent entry points; `inspector.field-commit` for the coalesced numeric display.
-Verified combined source `bf9672972d0046fdd94324c4679d63fcd717c112`,
+Verified final source `2782d88f809099b4b876e52af0aa8a54ae18c448`, with the earlier bf96729
+combination retained separately,
 against baseline main `0f096fa`. Historical 8c270d0/ba834cc runs below remain
 explicitly pre-integration evidence. `native_studio` remains excluded.
 No controls, dependencies or persisted-format changes.
@@ -46,7 +47,7 @@ snapshot path; this batch does not remove every possible serialization.
 | Saved equality | Undo by reference, manually restored values, count/order, metadata, transient blob/default adjustments and actual adjustments. | Targeted units passed |
 | Compatibility | Unknown/legacy/null/empty baseline, generic history fallback, pixel/transform flags. | Targeted units passed |
 | Actual editor | Zero full snapshots across isolated edits; real arrow/undo/redo, actual MCP styles, save marker, capture/restore session. | Targeted browser passed |
-| Full release | Clean bf96729: 105/105 steps, 101 core browsers, 4831 units passed / four skipped, design lint 1446 files. | Passed; eleven standalone checks not run |
+| Full release | Clean 2782d88: 105/105 steps, 101 core browsers, 4835 units passed / four skipped, design lint 1447 files. | Passed; eleven standalone checks not run |
 | Production | Independent canonical bytes and real interaction receipts in private dirty-checkpoints/. | Separate post-publication evidence; not inherited from the core gate |
 | Remaining | Direct mutation of immutable engine nodes, every legacy format, asynchronous native writes, signed Electron and physical devices. | Not certified |
 
@@ -132,7 +133,7 @@ assertions plus the original real-engine/MCP undo scenario. This is part of
 harness and corrected targeted inspector run are retained. That updated source
 required the complete clean gate and fresh measurements recorded below.
 
-## Final combined acceptance
+## Combined acceptance before production follow-up
 
 Fixed bf96729 reruns the complete unchanged core gate: 105/105 steps,
 101 core browser suites, 4831 units passed / four skipped, 1446 design files
@@ -164,3 +165,66 @@ real multiselection/MCP undo assertion remains unchanged.
 Publication receipts, deployed canonical bytes and actual production checks
 are recorded separately in private `dirty-checkpoints/`. Those receipts do not
 extend the above local coverage to signed Electron or physical devices.
+
+## Production follow-up: external image history
+
+The first bf96729 production run failed the full-history image redo assertion;
+an instrumented repeat reproduced it. Native pixels, zoom and selection had
+passed, but these runs remain incomplete. The saved source still contained an
+imported picture removed from the live engine. A later store tick treated it
+as a new external delivery, appended a new layer and truncated the redo branch.
+An actual cold portable-document reopen reproduced the same defect before the
+repair, without replacing the imported scene artificially.
+
+`documents.external-image-history` tracks image identities for one ready page
+activation. Initial and locally observed images, successful deliveries and
+concurrent already-present results cannot be re-ingested after deletion/undo.
+Pending deliveries retain their separate guard; failed/missing assets remain
+retryable and errors are still reported. New store-delivered images continue
+to appear exactly once. No independent UI/shortcut history path is introduced.
+
+Four new units cover baseline/local replacements, pending results, failure
+retry and independent page lifetimes. Actual cold image history checks retain
+50 entries, keyboard delete/undo/redo, node counts and exact source pixels;
+the same checks pass on a genuinely new store-delivered image. The initial
+full gate and performance measurements above remain fixed bf96729 evidence.
+The follow-up candidate requires another complete gate, new paired measurements
+and a fresh complete production receipt; neither failed production run is
+converted into a pass.
+
+## Final production-repair acceptance
+
+Fixed `2782d88f809099b4b876e52af0aa8a54ae18c448` completed one new clean gate: 105/105 steps,
+101 core browser suites, 4835 units passed / four skipped, 1447 design files.
+There are now 92 registered capability groups; all remain partial. Eleven
+standalone suites remain not run. The new baseline and actual store-arrival
+history checks both pass, alongside the original registered assertions.
+
+Four fresh production-browser sessions rerun current-main control 0f096fa
+versus this final combination; original imported saved baseline length is
+43137170 characters. No previous timing result substitutes for these runs.
+
+| Observation | Forward before -> after | Reverse before -> after |
+| --- | --- | --- |
+| Actual key median | 540.5 -> 277.5ms | 596.0 -> 274.5ms |
+| Fifty synchronous API setup edits | 1430.0 -> 1455.2ms | 1398.4 -> 1414.9ms |
+| Same 1000x800 viewport difference | 0 pixels | 0 pixels |
+
+Key medians improve 48.7%/53.9%. API setup changes +1.8%/+1.2%.
+All five decoded pages / 56422 nodes retain exact settled/resized layouts,
+serialized values and exact JSON; original file SHA-256, 478 assets and
+247642346 asset bytes remain unchanged. These are shared-host script waits,
+not physical latency, FPS or complete Figma property parity.
+
+The same production build also passes the complete production interaction
+harness on a local static server before publication, including the formerly
+failing full-history redo, actual new store-delivery history, exact pixels,
+zoom, constraints, selection, incremental dirty checks and session restoration.
+This local candidate receipt is distinct from the final public-domain receipt.
+Both earlier public failures remain in `before-image-history-repair/`.
+
+Final PR/main/deployment and independent canonical-byte/public interaction
+receipts live in private `dirty-checkpoints/`. Signed Electron, physical IME,
+all Figma fonts/effects, arrivals during page opening and cancellation during
+external decode remain unverified. Failed external asset retries are unit
+covered; live failed-service behavior is not certified.
