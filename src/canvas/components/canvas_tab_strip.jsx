@@ -89,7 +89,10 @@ export default function CanvasTabStrip({
               ) : null}
               <button
                 type="button"
-                onClick={() => onClose(document.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose(document.id);
+                }}
                 className="group/close -m-1.5 flex size-7 shrink-0 items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
                 style={{ WebkitAppRegion: "no-drag" }}
                 title={t("canvasTabs.close")}

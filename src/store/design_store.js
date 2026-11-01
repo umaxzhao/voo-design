@@ -88,12 +88,35 @@ export const useDesignStore = create((set, get) => {
     const state = get();
     const doc = id === state.activeDocumentId ? state : state.openDocuments.find(doc => doc.id === id);
     if (!doc || (doc.isDirty && !confirmClose())) return false;
-    if (id === state.activeDocumentId) {
-      const next = state.openDocuments.filter(doc => doc.id !== id);
-      if (next.length) get().switchDocument(next[next.length - 1].id);
-      else set({ activeDocumentId: null, welcomeOpen: true, nodes: [], editingNodeId: null, editingNodeIds: [], fileName: null, filePath: null, fileHandle: null, isDirty: false, undoStack: [], redoStack: [] });
+    const next = state.openDocuments.filter(doc => doc.id !== id);
+    if (next.length === 0) {
+      set({
+        activeDocumentId: null,
+        welcomeOpen: true,
+        openDocuments: [],
+        nodes: [],
+        edges: [],
+        images: {},
+        figSource: null,
+        canvasBackgroundColor: WORKSPACE_BACKGROUND,
+        streamingPreview: null,
+        streamingPreviewNodeId: null,
+        editingNodeId: null,
+        editingNodeIds: [],
+        editingGroupId: null,
+        fileName: null,
+        filePath: null,
+        fileHandle: null,
+        isDirty: false,
+        undoStack: [],
+        redoStack: [],
+      });
+      return true;
     }
-    set(state => ({ openDocuments: state.openDocuments.filter(doc => doc.id !== id) }));
+    if (id === state.activeDocumentId) {
+      get().switchDocument(next[next.length - 1].id);
+    }
+    set({ openDocuments: next });
     return true;
   },
   // Core state
