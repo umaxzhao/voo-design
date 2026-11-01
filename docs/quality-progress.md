@@ -3,7 +3,7 @@
 最近一次完整核心验证：[e90166f](https://github.com/umaxzhao/voo-design/commit/e90166f7e68307df7743cd859d3f9deae389d917)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，设计检查 1441 文件通过。四个平台原生包也通过，但发布草稿组装仍有独立问题，见下方。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
-## 三平台 GitHub 预发布（核心与原生通过，组装修复中）
+## 三平台 GitHub 预发布（原生通过，完整门禁复核中）
 
 - 候选 `1.0.0-beta.1`：Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生 runner、七个安装载荷。完整 Web 门禁及四个平台全部成功后，才合并更新元数据、核验 SHA-512/尺寸、生成 SHA256SUMS 和草稿；工作流不自动公开稳定版，也不覆盖已有 Release。
 - `platform.desktop-release`：修复 Windows setup/portable 同名覆盖、Mac 中文语言资源被剔除、ASAR 的 Windows 路径分隔符与间接运行依赖漏检；独立 npm ci 和真实原生包检查替代共享工作区打包结论。每份原生收据必须匹配候选版本、架构和提交。
@@ -12,6 +12,7 @@
 - 已保留失败：初轮 [`b758659`](https://github.com/umaxzhao/voo-design/actions/runs/41270179543) 的旧菜单源码位置断言，改为实际菜单点击；后续空签名 secret 被当作证书路径、Windows ASAR 提取路径、Vite optimizer 退出后的缓存删除竞态均有修复与回归。`4101979` 四原生任务通过，但完整 Web 在第 58 步 HTML 文字像素对照失败，故没有草稿；[`540e60d` 的 CI 截图](https://github.com/umaxzhao/voo-design/actions/runs/41273421739) 复现 4.688% 差异并保留原图/画布/差异图/测量值。文字几何相同，屏幕 LCD 子像素与透明 Canvas 灰度抗锯齿不同；测试统一灰度模式，原 1% 门槛和所有节点/颜色断言保留，Linux 预检已通过。本地 30 项相关单测、设计检查与浏览器像素对照通过，不冒记为完整候选通过。
 - 固定 [`6c1f7bf`](https://github.com/umaxzhao/voo-design/commit/6c1f7bfae4083fef81686b9b5a28a0325eac3440) 的 [Release 门禁](https://github.com/umaxzhao/voo-design/actions/runs/41275043454)：字体/离线菜单预检、四原生、基础 PR 及 4772 项单测/4 跳过通过，完整门禁执行 97/105 步后在 `editor-optional-loading` 失败，草稿未创建。该测试把两个 span 拼为 `DuplicateCtrl+D` 后用词边界匹配，macOS 的 `Duplicate⌘D` 则恰好通过；本机注入 Linux 平台标识已复现原断言失败。现在按独立命令标签定位，另外精确验证快捷键和真实焦点，并保留全部键盘导航、绘图、复制、单次撤销、延迟模块断言；浏览器模拟 Linux/macOS/Windows 三种格式，不冒充三个真实 OS。此前 17 组补充本机检查仍只是旧固定版本的单独证据（`/private/tmp/voo-beta-tail-local-evidence.json`），不拼接为完整 Linux 通过。
 - 应用源码固定为 [`e90166f`](https://github.com/umaxzhao/voo-design/commit/e90166f7e68307df7743cd859d3f9deae389d917)，已正常合入 `882cd2a` 的历史资源优化，保留双方相同的 Vite 清理修复，登记为 87 组能力。旧 `60da648` 早期取消，不作为完整结果。[该轮 CI](https://github.com/umaxzhao/voo-design/actions/runs/41276919981) 的 **105/105 核心步骤、101 组浏览器、4781 单测/4 跳过、四原生**全部通过，报告 `complete=true`；11 组独立额外检查仍为 not-run，功能覆盖仍为 partial。草稿组装因 AppImage 实际使用 GNU 名称 `linux-x86_64`、组装器却要求 `linux-x64` 而失败，没有创建 Release。真实 Linux 包和元数据已取回；修正严格的文件名映射，原 x64 原生收据与文件 SHA-512 校验保持不变。应用功能未再改动，发布工具修复后将重新跑全套流水线。
+- 后续 [`782e7a3` 门禁](https://github.com/umaxzhao/voo-design/actions/runs/41279268095) 四原生通过；完整核心执行 97/105 步，在冷加载右键菜单的焦点断言失败，报告 `complete=false`，没有草稿。此前已取回 e90166f 的真实七个载荷，对 AppImage 文件名修复后的组装器独立核验通过：19 项 SHA-256 与全部更新元数据 SHA-512/尺寸匹配。菜单问题用“加载时背景恢复焦点”真实浏览器场景稳定复现，导航键与 Tab 现在主动恢复到加载菜单，保留原有键盘、撤销与取消断言；修复后重新运行完整门禁，不把前轮通过继承为本轮通过。
 - 在线预览已以 e90166f 的 CI 静态产物更新至 [voo.run/editor](https://voo.run/editor/)：入口及 12 项关键资源逐字节一致；真实线上检查验证约束轴/撤销、390px Browser 分屏/48px 复制/撤销、文件卡片打开和旧分享重定向保留房间与 hash，零页面异常；实际加载的 JS/CSS 逐一匹配本地 CI 产物。证据 `/private/tmp/voo-beta-deployment-proof.json`、`/private/tmp/voo-beta-production-proof.json`。
 - 验收边界：实际打包应用的启动、指针绘图/撤销重做、原生文件写读、取消脏退出后 bridge 存活、新进程/隔离 profile 通过真实工作区文件卡片重开；不是人工运行外层安装器。未配置签名 secrets，未认证签名/公证、系统信任交互、旧版升级及真实付费/CLI/模型服务；4 项单测跳过与 11 组独立额外检查仍需按记录单独验收。[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)。
 

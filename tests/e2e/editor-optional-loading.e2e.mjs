@@ -93,6 +93,13 @@ for (const platform of ["linux", "darwin", "win32"]) {
       assert.equal(await loading.getAttribute("role"), "menu");
       await assertCanvasVisible();
       assert.deepEqual(await selected(), ["optional-rect"]);
+      // A delayed background focus restore must not strand keyboard users while
+      // the real menu module is blocked. Navigation must reclaim the surface.
+      assert.equal(await page.getByTestId("editor-top-bar").evaluate(header => {
+        const button = [...header.querySelectorAll("button")].find(element => !element.disabled && element.getClientRects().length);
+        button?.focus({ preventScroll: true });
+        return Boolean(button && document.activeElement === button);
+      }), true);
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Tab");
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-testid")), "editor-surface-loading");
