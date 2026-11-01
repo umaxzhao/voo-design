@@ -83,7 +83,7 @@ await withEditorBrowser(async ({ page }) => {
     const style = getComputedStyle(document.querySelector(".app-root-frame"));
     return [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft].map(parseFloat);
   });
-  assert.deepEqual(await padding(), [16, 14, 12, 14], "safe-area protection does not depend on a coarse pointer");
+  assert.deepEqual(await padding(), [16, 14, 12, 14], "balanced safe-area protection does not depend on a coarse pointer");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await settle(page);
   assert.deepEqual(await padding(), [4, 4, 4, 4]);
@@ -175,7 +175,7 @@ await withEditorBrowser(async ({ page }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 20, bottom: 12, left: 36 } });
   await settle(page);
-  assert.deepEqual(await padding(), [4, 40, 16, 40], "landscape phones retain nonzero safe insets above the narrow breakpoint");
+  assert.deepEqual(await padding(), [4, 40, 16, 40], "landscape phones balance the largest safe inset on both sides above the narrow breakpoint");
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 390, height: 844 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
