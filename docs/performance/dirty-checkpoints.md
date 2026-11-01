@@ -1,8 +1,10 @@
 # Incremental document dirty checkpoints
 
 Scope: `documents.dirty-checkpoints`, shared engine/history UI, keyboard and
-Agent entry points. Verified source `ba834ccee348abbea025111b9e86ce53820b5b8c`,
-against baseline main `8c270d0`. `native_studio` remains excluded.
+Agent entry points; `inspector.field-commit` for the coalesced numeric display.
+Verified combined source `bf9672972d0046fdd94324c4679d63fcd717c112`,
+against baseline main `0f096fa`. Historical 8c270d0/ba834cc runs below remain
+explicitly pre-integration evidence. `native_studio` remains excluded.
 No controls, dependencies or persisted-format changes.
 
 ## Cause and implementation
@@ -44,7 +46,7 @@ snapshot path; this batch does not remove every possible serialization.
 | Saved equality | Undo by reference, manually restored values, count/order, metadata, transient blob/default adjustments and actual adjustments. | Targeted units passed |
 | Compatibility | Unknown/legacy/null/empty baseline, generic history fallback, pixel/transform flags. | Targeted units passed |
 | Actual editor | Zero full snapshots across isolated edits; real arrow/undo/redo, actual MCP styles, save marker, capture/restore session. | Targeted browser passed |
-| Full release | Clean ba834cc: 105/105 steps, 101 core browsers, 4819 units passed / four skipped, design lint 1446 files. | Passed; eleven standalone checks not run |
+| Full release | Clean bf96729: 105/105 steps, 101 core browsers, 4831 units passed / four skipped, design lint 1446 files. | Passed; eleven standalone checks not run |
 | Production | Independent canonical bytes and real interaction receipts in private dirty-checkpoints/. | Separate post-publication evidence; not inherited from the core gate |
 | Remaining | Direct mutation of immutable engine nodes, every legacy format, asynchronous native writes, signed Electron and physical devices. | Not certified |
 
@@ -75,7 +77,7 @@ needed the intentional one-argument `serializeDocumentFields` addition.
 All previous names/arity checks remain; no failure is skipped or weakened.
 The corrected committed candidate requires a fresh complete release.
 
-## Final fixed-source comparison
+## Pre-integration fixed-source comparison
 
 Four fresh production sessions, before/after/after-reverse/before-reverse, with
 a uniform ten-second pause before each. Both versions use the same CPU sampling,
@@ -112,10 +114,10 @@ Later documentation commits do not change the application or registered tests.
 ## Published-main integration
 
 Remote 0f096fa contains separately verified layer-order and loading-clearance
-fixes. Preserve them in the combined candidate. The ba834cc results above are
-pre-integration evidence only; rerun the entire clean gate and fresh paired
-performance against 0f096fa before publication. No earlier result certifies
-the changed combined source.
+fixes, preserved in the combined candidate. The ba834cc results above remain
+pre-integration evidence only. The complete fresh gate and paired measurements
+against 0f096fa are recorded below; no earlier result certifies the changed
+combined source.
 
 The first combined gate on 817d9b3 stopped at inspector step 84: actual
 multi-selection rotation undo restored both model values but left the field
@@ -127,5 +129,38 @@ The effect previously observed only value changes. Reconcile every unfocused
 render without overwriting a focused draft; retain Enter, Escape and blur
 assertions plus the original real-engine/MCP undo scenario. This is part of
 `inspector.field-commit`; add explicit field and harness ownership. The failing
-harness and corrected targeted inspector run are retained. The updated combined
-source requires another complete clean gate and fresh measurements.
+harness and corrected targeted inspector run are retained. That updated source
+required the complete clean gate and fresh measurements recorded below.
+
+## Final combined acceptance
+
+Fixed bf96729 reruns the complete unchanged core gate: 105/105 steps,
+101 core browser suites, 4831 units passed / four skipped, 1446 design files
+passed. Eleven standalone suites remain not run. Original failing gates remain
+independent incomplete receipts; this is one fresh clean execution.
+
+Four new production-browser sessions compare current main 0f096fa against
+bf96729, in forward and reverse order with the same uniform ten-second pause.
+The real imported baseline remains clean and 43137170 characters long.
+
+| Observation | Forward before -> after | Reverse before -> after |
+| --- | --- | --- |
+| Actual key median | 620.5 -> 299.0ms | 655.5 -> 299.5ms |
+| Fifty synchronous API setup edits | 1424.0 -> 1438.1ms | 1501.8 -> 1471.6ms |
+| Same 1000x800 viewport difference | 0 pixels | 0 pixels |
+
+Key medians improve 51.8%/54.3%. API setup changes +1.0%/-2.0%.
+These are actual key-to-script-settle waits on one shared host, not physical
+input-to-photon latency, GPU FPS or Figma parity. All raw samples, load averages,
+CPU profiles and exact viewport pixels remain in private evidence.
+
+All five decoded pages / 56422 nodes retain old VOO settled layout, serialized
+values and exact canonical JSON, including one representative resize per page.
+All 478 assets / 247642346 asset bytes remain; the original file hash is unchanged.
+This does not certify every original Figma property, effect, font or page pixel.
+The numeric regression also checks focused drafts, Enter, Escape and blur; the
+real multiselection/MCP undo assertion remains unchanged.
+
+Publication receipts, deployed canonical bytes and actual production checks
+are recorded separately in private `dirty-checkpoints/`. Those receipts do not
+extend the above local coverage to signed Electron or physical devices.
