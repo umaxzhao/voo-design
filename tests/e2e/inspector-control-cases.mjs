@@ -29,15 +29,37 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   await stroke.click();
   const strokeDialog = page.getByRole("dialog", { name: "Stroke", exact: true });
   await strokeDialog.waitFor();
+  const assertCircles = async (locator, label) => {
+    const shapes = await locator.evaluateAll(elements => elements.map(el => {
+      const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+      const radius = style.borderTopLeftRadius.endsWith("%")
+        ? box.width * parseFloat(style.borderTopLeftRadius) / 100
+        : parseFloat(style.borderTopLeftRadius);
+      return { width: box.width, height: box.height, radius };
+    }));
+    assert.ok(shapes.length > 0, `${label} must exist`);
+    assert.ok(shapes.every(shape => Math.abs(shape.width - shape.height) < 0.5 && shape.radius >= shape.width / 2),
+      `${label} must use circular color chips: ${JSON.stringify(shapes)}`);
+  };
+  await assertCircles(strokeDialog.locator('button[style*="background-color"]'), "Picker presets and document colors");
+  await assertCircles(panel.getByRole("button", { name: "Fill", exact: true }), "Fill swatch");
+  await assertCircles(stroke, "Stroke swatch");
+
   await strokeDialog.getByRole("tab", { name: "Gradient", exact: true }).click();
   await settle();
-  assert.match(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), /^linear-gradient/);
+  const linearStroke = await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke);
+  assert.match(linearStroke, /^linear-gradient/);
+  await assertCircles(strokeDialog.locator("[data-stop-handle]"), "Gradient stop swatches");
+  await strokeDialog.getByRole("button", { name: "Mesh", exact: true }).click();
+  await assertCircles(strokeDialog.getByRole("group", { name: "Gradient points", exact: true }).getByRole("button"), "Mesh point swatches");
   await page.keyboard.press("Escape");
   await strokeDialog.waitFor({ state: "detached" });
   assert.equal(await stroke.evaluate(el => el === document.activeElement), true);
   await tool("undo"); await settle();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), linearStroke);
+  await tool("undo"); await settle();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), original.stroke);
-  mark("stroke row removes its duplicate paint-type icon; swatch gradient editing, Escape focus and one-step undo remain available");
+  mark("presets, fill/stroke chips, gradient stops and mesh points are circles; gradient/mesh edits undo individually and Escape restores focus");
 
   await x.fill(String(original.x + 20)); await x.press("Enter"); await settle();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").x), original.x + 20);
