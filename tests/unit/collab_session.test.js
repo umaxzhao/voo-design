@@ -7,6 +7,42 @@ globalThis.crypto ??= webcrypto;
 import { MSG, encode } from "../../src/canvas/collab/protocol.js";
 import { encodeBinaryFrame } from "../../src/canvas/collab/chunking.js";
 import { STATUS, createCollabSession } from "../../src/canvas/collab/session.js";
+import { roomSecretFromLink } from "../../src/canvas/collab/room.js";
+
+/** Reproduce the HELLO proof a peer with the room link would send. */
+async function roomProof(secret, peerId) {
+  const source = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret), "HKDF", false, ["deriveKey"],
+  );
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "HKDF", hash: "SHA-256", salt: new Uint8Array(),
+      info: new TextEncoder().encode("voo-room-proof-v1"),
+    },
+    source, { name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC", key, new TextEncoder().encode(peerId),
+  );
+  return [...new Uint8Array(signature)]
+    .map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Wait until an asynchronous wire side effect has landed (proof crypto is async). */
+async function waitFor(predicate, timeoutMs = 1000) {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) throw new Error("waitFor timed out");
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
+function helloWire({ peerId, access = "edit", readOnly = false, proof }) {
+  return JSON.stringify({
+    t: MSG.HELLO, v: 1, peerId, name: peerId, colour: "#123456",
+    access, readOnly, proof,
+  });
+}
 
 /** A transport that records what was sent and lets a test play peers back. */
 function fakeTransport() {
@@ -434,4 +470,148 @@ test("unknown peer message recovery: receiving a non-HELLO message prompts HELLO
   const msg = JSON.parse(sentToUnknown[0].wire);
   assert.equal(msg.t, MSG.HELLO);
   assert.equal(msg.reply, true, "asks the unknown peer to identify itself");
+});
+
+test("a peer that announces read-only cannot write the shared document", async () => {
+  const transport = fakeTransport();
+  const session = createCollabSession({
+    connect: transport.connect,
+    userId: "host",
+    setInterval: () => 1,
+    clearInterval: () => {},
+  });
+  const seen = [];
+  session.setHandlers({
+    onDocument: (message) => seen.push(["doc", message.workflowId]),
+    onStroke: (message) => seen.push(["stroke", message.nodeId]),
+  });
+  session.start();
+  const secret = roomSecretFromLink(session.getSnapshot().link);
+
+  transport.handlers.onPeer("viewer-conn");
+  await transport.handlers.onMessage(
+    "viewer-conn",
+    helloWire({ peerId: "viewer", access: "view", readOnly: true, proof: await roomProof(secret, "viewer") }),
+  );
+  await transport.handlers.onMessage(
+    "viewer-conn",
+    encode(MSG.DOC, { workflowId: "w1", document: { nodes: [] } }),
+  );
+  await transport.handlers.onMessage(
+    "viewer-conn",
+    encode(MSG.STROKE, { nodeId: "layer-1", points: [[0, 0]] }),
+  );
+  assert.deepEqual(seen, [], "read-only peer writes are discarded");
+
+  // A peer in the same room that did not announce read-only still syncs.
+  transport.handlers.onPeer("editor-conn");
+  await transport.handlers.onMessage(
+    "editor-conn",
+    helloWire({ peerId: "editor", access: "edit", readOnly: false, proof: await roomProof(secret, "editor") }),
+  );
+  await transport.handlers.onMessage(
+    "editor-conn",
+    encode(MSG.DOC, { workflowId: "w2", document: { nodes: [] } }),
+  );
+  assert.deepEqual(seen, [["doc", "w2"]]);
+});
+
+test("a read-only guest never publishes document or stroke edits", async () => {
+  const transport = fakeTransport();
+  const session = createCollabSession({
+    connect: transport.connect,
+    userId: "guest",
+    setInterval: () => 1,
+    clearInterval: () => {},
+  });
+  // A guest enters through a link (it carries the room secret) and is granted view.
+  session.start("abcdefgh", { secret: "abcdefghijklmnopqrstuv" });
+  session.setAccess("view");
+  assert.equal(session.getSnapshot().readOnly, true);
+  // Let the re-announced HELLO (which carries the readOnly flag) reach the wire.
+  const isHello = (entry) => {
+    if (typeof entry.wire !== "string") return false;
+    try { return JSON.parse(entry.wire).t === MSG.HELLO; } catch { return false; }
+  };
+  await waitFor(() => transport.sent.some(isHello));
+
+  const before = transport.sent.length;
+  session.broadcast(MSG.DOC, { workflowId: "w", document: { nodes: [] } });
+  session.sendTo("host-conn", MSG.STROKE, { nodeId: "n", points: [] });
+  const published = transport.sent
+    .slice(before)
+    .filter((entry) => entry.wire !== "close")
+    .map((entry) => JSON.parse(entry.wire).t);
+  assert.ok(!published.includes(MSG.DOC), `unexpected DOC in ${published}`);
+  assert.ok(!published.includes(MSG.STROKE), `unexpected STROKE in ${published}`);
+
+  // Non-edit traffic still flows so the viewer stays present.
+  session.broadcast(MSG.CURSOR, { peerId: "guest", cursor: { x: 1, y: 2 } });
+  assert.equal(JSON.parse(transport.sent.at(-1).wire).t, MSG.CURSOR);
+
+  // The greeting advertises the role so a receiver can enforce it.
+  const hellos = transport.sent
+    .filter((entry) => entry.wire !== "close")
+    .map((entry) => JSON.parse(entry.wire))
+    .filter((message) => message.t === MSG.HELLO);
+  assert.equal(hellos.at(-1).readOnly, true);
+});
+
+test("a host that grants view access can still publish document edits", async () => {
+  const transport = fakeTransport();
+  const session = createCollabSession({
+    connect: transport.connect,
+    userId: "host",
+    setInterval: () => 1,
+    clearInterval: () => {},
+  });
+  session.start("abcdefgh", { viaLink: false });
+  const secret = roomSecretFromLink(session.getSnapshot().link);
+  transport.handlers.onPeer("guest-conn");
+  await transport.handlers.onMessage(
+    "guest-conn",
+    helloWire({ peerId: "guest", access: "edit", readOnly: false, proof: await roomProof(secret, "guest") }),
+  );
+  session.setAccess("view");
+  // The host grants the room a view role; it keeps editing its own room.
+  assert.equal(session.getSnapshot().readOnly, false);
+
+  const before = transport.sent.length;
+  session.broadcast(MSG.DOC, { workflowId: "w", document: { nodes: [] } });
+  const published = transport.sent
+    .slice(before)
+    .filter((entry) => entry.wire !== "close")
+    .map((entry) => JSON.parse(entry.wire).t);
+  assert.ok(published.includes(MSG.DOC));
+});
+
+test("a host started with an explicit room id mints the room secret", () => {
+  const transport = fakeTransport();
+  const session = createCollabSession({
+    connect: transport.connect,
+    userId: "host",
+    setInterval: () => 1,
+    clearInterval: () => {},
+  });
+  // The share UI always passes the room id it minted, so hosting must still
+  // create the secret the link carries; otherwise `#k=` never exists.
+  session.start("abcdefgh", { viaLink: false });
+  const secret = roomSecretFromLink(session.getSnapshot().link);
+  assert.match(secret, /^[A-Za-z0-9_-]{22}$/);
+  assert.ok(session.getSnapshot().link.includes("#k="));
+});
+
+test("restarting the same hosted room keeps the secret so old links stay valid", () => {
+  const transport = fakeTransport();
+  const session = createCollabSession({
+    connect: transport.connect,
+    userId: "host",
+    setInterval: () => 1,
+    clearInterval: () => {},
+  });
+  session.start("abcdefgh", { viaLink: false });
+  const first = roomSecretFromLink(session.getSnapshot().link);
+  session.stop();
+  session.start("abcdefgh", { viaLink: false });
+  assert.equal(roomSecretFromLink(session.getSnapshot().link), first);
 });

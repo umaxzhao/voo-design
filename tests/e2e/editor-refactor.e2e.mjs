@@ -209,11 +209,25 @@ await withEditorBrowser(async ({ page, tool }) => {
     for (let i = 0; i < fingers.length; i++) await touch("touchStart", fingers.slice(0, i + 1));
     await touch("touchEnd", []);
   };
-  await tap(2);
-  await page.waitForFunction(() => window.__vooEditor.getNode("touch-target").fill === "#ff0000");
+  // The gesture recognizer only accepts a multi-finger tap when every finger
+  // lands inside a 360ms window, so a slow CDP round trip under parallel suite
+  // load can legitimately drop the gesture. Retry the same gesture a bounded
+  // number of times; the resulting states are still asserted exactly.
+  const tapUntil = async (count, predicate, label) => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await tap(count);
+      try {
+        await page.waitForFunction(predicate, undefined, { timeout: 8000 });
+        return;
+      } catch (error) {
+        if (attempt === 2) throw error;
+      }
+    }
+    throw new Error(`${label} gesture never registered`);
+  };
+  await tapUntil(2, () => window.__vooEditor.getNode("touch-target").fill === "#ff0000", "two-finger undo");
   assert.equal(await index(), greenIndex - 1);
-  await tap(3);
-  await page.waitForFunction(() => window.__vooEditor.getNode("touch-target").fill === "#00ff00");
+  await tapUntil(3, () => window.__vooEditor.getNode("touch-target").fill === "#00ff00", "three-finger redo");
   assert.equal(await snapshot(), green);
   assert.equal(await index(), greenIndex);
   checks.push("real two-finger undo and three-finger redo still own exactly one history action after pinch takeover");

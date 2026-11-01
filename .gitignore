@@ -18,3 +18,8 @@ analysis/
 
 /native/voo-engine/target/
 build/connector
+
+# Local agent coordination and developer launch settings
+/.agents/
+/.claude/
+/native_studio/.agents/

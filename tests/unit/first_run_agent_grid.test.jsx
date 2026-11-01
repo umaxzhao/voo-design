@@ -166,6 +166,16 @@ describe("agent card grid", () => {
     expect(html).toContain("去配置");
     expect(html).not.toContain("firstRun.");
   });
+  it.each(["en", "zh"])("resolves a non-empty label for every cloud provider card in %s", async (locale) => {
+    await loadLocale(locale);
+    const html = render(done({}), { cloudProviders: CLOUD_PROVIDER_PRESETS });
+    // An unresolved key renders as its raw `firstRun.*` identifier.
+    expect(html).not.toContain("firstRun.");
+    for (const preset of CLOUD_PROVIDER_PRESETS) {
+      expect(t(preset.labelKey)).not.toBe(preset.labelKey);
+      expect(html).toContain(`>${t(preset.labelKey)}<`);
+    }
+  });
   it("offers only platforms that can run as a native agent", () => {
     expect(selectableCliAgents().map((entry) => entry.id)).toEqual(["codex", "claude", "antigravity", "deepseek-harness"]);
   });
