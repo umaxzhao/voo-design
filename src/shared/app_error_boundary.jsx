@@ -1,6 +1,9 @@
 import React from "react";
 import { t } from "./i18n.js";
 import { captureError, formatReport } from "./error_collector.js";
+import VooBrandLogo from "../canvas/components/voo_brand_logo.jsx";
+import { Button } from "../canvas/components/ui/button.jsx";
+import styles from "./app-error-boundary.module.css";
 
 /**
  * Top-level React error boundary with zh/en copy and sanitized diagnostics.
@@ -43,121 +46,46 @@ export class AppErrorBoundary extends React.Component {
     if (!this.state.hasError) return this.props.children;
     const detail = this.state.error?.message || t("app.error.unknown");
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100%",
-          width: "100%",
-          boxSizing: "border-box",
-          padding: "24px",
-          color: "#f4f4f5",
-          fontFamily: "var(--font-ui)",
-          background: "radial-gradient(ellipse at 50% 42%, #1d2028 0%, #111214 62%)",
-        }}
-      >
-        <section
-          role="alert"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            width: "min(100%, 520px)",
-            boxSizing: "border-box",
-            padding: "36px 32px 28px",
-            textAlign: "center",
-            background: "rgba(29, 30, 34, 0.82)",
-            border: "1px solid rgba(255, 255, 255, 0.09)",
-            borderRadius: "16px",
-            boxShadow: "0 24px 80px rgba(0, 0, 0, 0.32)",
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              placeItems: "center",
-              width: "48px",
-              height: "48px",
-              marginBottom: "20px",
-              color: "#ff8585",
-              background: "rgba(255, 107, 107, 0.11)",
-              border: "1px solid rgba(255, 107, 107, 0.2)",
-              borderRadius: "14px",
-            }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 8v5m0 3h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3l-7.5-13.1a2 2 0 0 0-3.4 0Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+      <main className={styles.screen}>
+        <section role="alert" aria-labelledby="app-error-title" className={styles.content}>
+          <div className={styles.brand} aria-hidden="true">
+            <VooBrandLogo className={styles.logo} />
           </div>
-          <h2 style={{ margin: "0 0 10px", fontSize: "20px", lineHeight: 1.4, fontWeight: 600, letterSpacing: "-0.02em" }}>
+          <h1 id="app-error-title" className={styles.title}>
             {t("app.error.title")}
-          </h2>
-          <p style={{ margin: "0 0 24px", maxWidth: "400px", color: "#a1a1aa", fontSize: "14px", lineHeight: 1.7 }}>
-            {t("app.error.body")}
-          </p>
-          <div style={{ display: "flex", justifyContent: "center", gap: "10px", width: "100%", flexWrap: "wrap" }}>
-            <button type="button" onClick={() => window.location.reload()} style={btnPrimary}>
+          </h1>
+          <p className={styles.description}>{t("app.error.body")}</p>
+          <div className={styles.actions}>
+            <Button variant="primary" size="lg" className={styles.button}
+              onClick={() => window.location.reload()}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"
+                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
               {t("app.error.reload")}
-            </button>
-            <button
-              type="button"
-              aria-expanded={this.state.showDetails}
-              onClick={() => this.setState((s) => ({ showDetails: !s.showDetails }))}
-              style={btnSecondary}
-            >
+            </Button>
+            <Button variant="ghost" size="lg" className={styles.button}
+              aria-expanded={this.state.showDetails} aria-controls="app-error-details"
+              onClick={() => this.setState((state) => ({ showDetails: !state.showDetails }))}>
               {t("app.error.details")}
-            </button>
-            <button type="button" onClick={this.handleCopy} style={btnSecondary}>
-              {this.state.copied ? t("app.error.copied") : t("app.error.copyDiagnostics")}
-            </button>
+              <svg className={styles.chevron} width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Button>
           </div>
-          {this.state.showDetails ? (
-            <pre
-              style={{
-                width: "100%",
-                maxHeight: "160px",
-                boxSizing: "border-box",
-                overflow: "auto",
-                textAlign: "left",
-                whiteSpace: "pre-wrap",
-                overflowWrap: "anywhere",
-                fontSize: "12px",
-                lineHeight: 1.6,
-                color: "#d4d4d8",
-                background: "#151619",
-                border: "1px solid #303136",
-                padding: "12px 14px",
-                borderRadius: "10px",
-                margin: "18px 0 0",
-              }}
-            >
-              {detail}
-            </pre>
-          ) : null}
+          <div id="app-error-details" hidden={!this.state.showDetails} className={styles.details}>
+            <pre className={styles.message}>{detail}</pre>
+            <Button variant="secondary" size="lg" className={styles.button} onClick={this.handleCopy}
+              ariaLabel={this.state.copied ? t("app.error.copied") : t("app.error.copyDiagnostics")}>
+              <span role="status">
+                {this.state.copied ? t("app.error.copied") : t("app.error.copyDiagnostics")}
+              </span>
+            </Button>
+          </div>
         </section>
-      </div>
+      </main>
     );
   }
 }
-
-const btnPrimary = {
-  minHeight: "40px",
-  padding: "0 18px",
-  borderRadius: "9px",
-  background: "#3478f6",
-  color: "#fff",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "14px",
-  fontWeight: 500,
-};
-
-const btnSecondary = {
-  ...btnPrimary,
-  background: "#292a2e",
-  border: "1px solid #414247",
-  color: "#e4e4e7",
-};
 
 export default AppErrorBoundary;
