@@ -246,3 +246,75 @@ ANGLE SwiftShader run measured a maximum difference of 1 and verifies resource
 release. CPU/GPU direction precision and radius bounds are now shared. This is
 correctness evidence for that software renderer, not a physical-GPU FPS result
 or a guarantee for every driver.
+
+## Next performance work — 2026-11-01
+
+This is an audit/backlog, not another optimization release. Source reviewed:
+`df5bdb88932395a98c9445fb8513ede708252002`; the identified hot-path files
+are unchanged from `cf9e00d`. `native_studio` is excluded. Existing passes
+remain bound to their original revisions; no new browser FPS or Electron
+acceptance is claimed here.
+
+Evidence is separated deliberately:
+
+- Historical browser production profile on the unchanged `test.fig`: a 975ms
+  zoom window includes about 75ms in the layer controller, 145ms in layer-pass
+  drawing, 103ms in React work and 44ms in GC. Inclusive stacks overlap and
+  must not be added. Idle/program samples are not assigned to those functions.
+  The recorded pan waits have median 171.5ms; six zoom waits have median 82.5ms,
+  with a 248ms first event. These include automation/two rAFs, not GPU FPS.
+- Current-source Node probes use the previously decoded private file snapshot:
+  five pages have 17,499 / 11,051 / 5,478 / 6,024 / 16,370 nodes, 56,422 total.
+  They do not reload original images or establish browser frame-time savings.
+- Private scripts, raw samples and CPU stack summary are stored under the
+  visualization artifact `performance-follow-up/`, not committed design data.
+
+| Order | Area / capability | Evidence and next action |
+| --- | --- | --- |
+| P0 | Layer model: `layers.nesting`, `canvas.performance` | `useEditorLayersController` calls `buildEditorLayerTree` on every render. The tree builds multiple whole-document maps; `buildVisibleTreeItems` separately builds row descriptors. DOM virtualization already exists, but does not avoid this model work. Cache immutable topology, then visible/search rows by their real dependencies; keep selection/hover/opacity controls separate. |
+| P0 | Durable save: `documents.autosave` | `createEditorDraftSaver.save` serializes an entire page for its signature; `hasChangedDocument` serializes it again after completion. The 17,499-node page produces 43,344,368 JSON bytes; current Node serialize+stringify median is 195ms (five samples, max 337ms). Use acknowledged document/region/pixel revisions and shared serialized snapshots, retaining flush, error and close guarantees. No browser autosave trace has yet attributed a stall to this path. |
+| P0 | History asset pins: `documents.undo-redo` | History already shares immutable document references; do not replace it blindly. `refreshBitmapCachePins` scans every historical node array on each `setDoc`, even with only 154 unique image IDs. Actual-node synthetic contexts measure about 5ms for one entry versus 163ms for 50. Cache asset sets by immutable node arrays and update reference counts as entries change/drop. This is a Node stress case, not recorded user history. |
+| P1 | Precise drawing: `canvas.zoom-preview`, `compositing.artwork-parity` | The spatial index is non-enumerable. `layerPassDocument` spreads the document and loses it; `renderEngineLayerPass` does not explicitly supply it to `draw`. A real-node probe confirms original index present/pass index absent. Reuse the existing index safely before considering Frame/tile caches and cancellable refinement. |
+| P1 | Import: `documents.import-export`, `vectors.native-fig-properties` | Ordinary file opening supplies no `onChunk`, while the worker always emits every node chunk; COMPLETE later sends the whole mapped scene. These are separate structured clones, though aliases inside a single COMPLETE message share identity and must not be double-counted. Negotiate chunk delivery only for a real consumer. Then prioritize first-page mapping/visible assets and bounded batched persistence. Keep full import, CRC verification, cancellation, errors and export completeness. |
+| P2 | Bitmap/texture pressure: `images`, `compositing` | A 256MiB decoded bitmap budget, LRU and mipmaps already exist. Pinned current/history keys can intentionally prevent eviction, and the budget is per cache; it is not a whole-application memory cap. Separate durable/history asset retention from reclaimable decoded/GPU copies and measure a shared budget. The historical main JS heap is about 365MiB, excluding worker/bitmap/GPU memory; this is not a leak finding. |
+
+### Node probe details and limits
+
+One-page layer model rebuild: median 29.8ms across nine warmed samples.
+The all-five-root stress context builds 56,423 items in 43.0ms; a no-match
+search takes 189.1ms. The historical browser did not record all panel props,
+so this all-page context is not claimed as its exact UI state. Search can
+revisit descendants through multiple ancestor checks; memoize subtree matches
+per query/locale and retain the existing collapsed/clip/instance semantics.
+
+Two hypothetical 1440x1000 world-space viewports at 100% return exactly the
+same candidate sets with the linear and indexed queries (4,977 / 5,094 IDs,
+including non-cullable nodes). Linear medians are 7.89 / 7.47ms; indexed
+medians 0.206 / 0.221ms. Index construction costs 75ms, so reuse/incremental
+updates matter. This is query-only, not a measured total-painter speedup,
+and two equal sets do not certify every mask/effect/clip arrangement.
+
+The historical import becomes interactive in about 12s and records a 1.29s
+long task. Kiwi decoding already runs in a worker; the audit does not assign
+that task to a particular phase. Instrument message receipt, asset persistence,
+scene publication, first paint and sidebar build before promising a loading
+speedup. Image extraction currently awaits each asset's persistence ACK; any
+pipeline must keep byte bounds and backpressure rather than launch unbounded
+work. Current node mapping builds each full page before emitting its chunks.
+
+### Next acceptance sequence
+
+1. Implement layer topology/search memoization and subscriber-aware import
+   chunks first; they remove identified repeated work with limited surface area.
+2. Isolate durable revision/serialization and history asset-set caching changes;
+   verify last-edit close, delayed/failed saves, redo branches and bitmap recovery.
+3. Exercise precise painting/index reuse at overview, 25%, 100%, 200% and DPR2,
+   including rapid reversals, long pans, negative coordinates, masks and effects.
+4. Keep actual input-to-present traces separate from script waits, Node probes,
+   retained memory and cold load. Repeat warm/cold and reverse-order controls;
+   preserve exact pixels, selection and one-step history before declaring gains.
+
+All rows above remain **unimplemented / browser performance unverified**.
+No Figma parity, 60FPS, total-memory reduction or installer certification follows
+from these CPU probes. Extend the maintained audit with measured changes rather
+than turning these hypotheses into passed acceptance rows.
