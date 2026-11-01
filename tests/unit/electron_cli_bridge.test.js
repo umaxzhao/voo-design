@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { DEFAULT_CLI_BRIDGE_ORIGINS } from "../../electron/cli_bridge_server.js";
 const nativeRequire = createRequire(import.meta.url);
 
-function boot(startCliBridgeServer, env = {}) {
+function boot(startCliBridgeServer, env = {}, dirty = false) {
   const events = new Map();
   let ready;
   let retry;
@@ -15,7 +15,9 @@ function boot(startCliBridgeServer, env = {}) {
     on: (name, cb) => events.set(name, cb),
     quit: vi.fn(),
   };
-  const window = { once() {}, on() {}, loadURL() {}, webContents: {} };
+  const window = { once() {}, on() {}, loadURL() {}, isDestroyed: () => false,
+    webContents: { on() {}, executeJavaScript: vi.fn(async () => dirty) } };
+  const dialog = { showMessageBox: vi.fn(async () => ({ response: 0 })) };
   const BrowserWindow = vi.fn(function () { return window; });
   const importModule = async (id) => {
     if (id === "./cli_bridge_server.js") return { startCliBridgeServer, DEFAULT_CLI_BRIDGE_ORIGINS };
@@ -26,12 +28,13 @@ function boot(startCliBridgeServer, env = {}) {
   vm.runInNewContext(source, {
     require: (id) => {
       if (id === "electron") return {
-        app, BrowserWindow, ipcMain: { handle() {} },
+        app, BrowserWindow, dialog, ipcMain: { handle() {} },
         Menu: { buildFromTemplate() {}, setApplicationMenu() {} },
       };
       if (id === "node:path") return path;
       if (id === "node:fs") return fs;
       if (id === "./packaged_smoke.cjs") return () => {};
+      if (id === "./native-menu.cjs" || id === "./close-guard.cjs") return nativeRequire(`../../electron/${id.slice(2)}`);
       if (id === "./client-models.cjs") return nativeRequire("../../electron/client-models.cjs");
       return { registerWorkspaceIpc() {}, setupUpdater() {} };
     },
@@ -41,12 +44,22 @@ function boot(startCliBridgeServer, env = {}) {
     setTimeout(callback) { retry = callback; return 1; },
     clearTimeout() { retry = null; }, importModule,
   });
-  return { ready, app, events, BrowserWindow, retry: () => retry?.() };
+  return { ready, app, events, BrowserWindow, dialog, retry: () => retry?.() };
 }
 
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
 
 describe("Electron external MCP bridge lifecycle", () => {
+  it("keeps the bridge connected when dirty quit is cancelled, then closes after explicit discard", async () => {
+    const close = vi.fn(async () => {});
+    const main = boot(async () => ({ port: 4179, close }), {}, true);
+    main.ready(); await flush();
+    await main.events.get("before-quit")({ preventDefault() {} });
+    expect(close).not.toHaveBeenCalled(); expect(main.app.quit).not.toHaveBeenCalled();
+    main.dialog.showMessageBox.mockResolvedValueOnce({ response: 1 });
+    await main.events.get("before-quit")({ preventDefault() {} });
+    expect(close).toHaveBeenCalledOnce(); expect(main.app.quit).toHaveBeenCalledOnce();
+  });
   it("starts the default bridge with its default channel registration and closes once on quit", async () => {
     const close = vi.fn(async () => {});
     const start = vi.fn(async () => ({ port: 4179, close }));

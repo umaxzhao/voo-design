@@ -6,31 +6,32 @@ rules, use [engineering-workflow.md](engineering-workflow.md) and run
 `node scripts/verify-editor-release.mjs` on the exact clean revision. Current
 UI rules in `Design.md` supersede historical descriptions of default controls.
 
-**Version**: 1.0.0  
+**Version**: 1.0.0-beta.1
 **Target Branch**: main  
 **Release Artifacts**: AppImage (Linux), DMG (macOS), NSIS (Windows)
 
 ---
 
-## Current readiness review — 2026-11-01
+## Desktop prerelease implementation — 2026-11-01
 
-Configuration reviewed at `ed3db20`; this is not installer execution evidence.
-GitHub currently has no releases/tags or runs of `release.yml`. Repository Actions
-signing secrets are not configured (names only were inspected, never values).
+Candidate version: `1.0.0-beta.1`. Initial audit at `ed3db20` found no tags,
+releases, release-workflow runs or configured signing secrets. Only secret
+names were inspected, never values. Historical checked boxes remain historical.
 
-The Electron targets cover Windows x64 NSIS/Portable, macOS DMG/ZIP and Linux
-AppImage/DEB, but the current tag workflow builds and publishes only AppImage.
-macOS/Windows are optional manual jobs and upload Actions artifacts only. Those
-jobs omit the connector-resource preparation required by `extraResources`.
-Update manifests, blockmaps and checksums are not attached by this workflow.
-macOS Intel/Apple Silicon need explicit architecture coverage.
+The new workflow builds Windows x64 setup/portable, Linux x64 AppImage and Mac
+Intel/Apple Silicon DMG/ZIP on four native runners. Run with `create_draft=true`
+to assemble a draft after every native job succeeds. It checks ASAR runtime
+assets/transitive dependencies, connector resources, locale resources, packaged
+startup, real pointer drawing/history, native workspace I/O, cancellation of
+dirty quit while retaining the bridge, and fresh-process project opening.
+The native OS picker/confirmation choices are automated, not manually tested.
 
-Before a three-platform release: prepare connector resources on each native
-runner; build and inspect every intended package; exercise installation/launch,
-file roundtrip, local CLI/model access and updates; verify signing/notarization
-where configured; publish all required assets together after the jobs succeed.
-Unsigned prereleases can be clearly labeled; web-editor tests alone cannot
-certify packaged/native applications. This review creates no tag or Release.
+The assembly step requires four matching-version/commit smoke receipts,
+checks every update payload hash/size, merges both Mac metadata files and adds
+checksums. Native screenshots/receipts are retained as CI artifacts. Unsigned
+previews and remaining trust/installer/service/upgrade contexts are disclosed.
+No workflow automatically publishes a stable release or overwrites an existing
+one. Current execution/revision is maintained in [quality-progress.md](quality-progress.md).
 
 ## Pre-Release Phase
 

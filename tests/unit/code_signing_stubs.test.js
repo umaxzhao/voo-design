@@ -37,15 +37,18 @@ describe('optional code signing', () => {
     expect(pkg.build.mac.entitlementsInherit).toBe(pkg.build.mac.entitlements);
     for (const key of ['dist', 'dist:all', 'dist:dir', 'electron:build']) expect(pkg.scripts[key]).toContain('scripts/signing-env.mjs');
   });
-  it('parses a secret-referenced release workflow with unsigned Linux enabled', () => {
+  it('builds four native targets before a write-scoped draft job', () => {
     const source = readFileSync('.github/workflows/release.yml', 'utf8');
     const workflow = yaml.load(source);
     expect(workflow.on.push.tags).toEqual(['v*']);
-    expect(workflow.on.workflow_dispatch.inputs.build_mac.default).toBe(false);
-    expect(workflow.permissions.contents).toBe('write');
-    expect(workflow.jobs.linux['runs-on']).toBe('ubuntu-latest');
-    expect(workflow.jobs.linux.if).toBeUndefined();
-    expect(workflow.jobs.desktop.if).toContain('inputs.build_mac');
+    expect(workflow.on.workflow_dispatch.inputs.create_draft.default).toBe(false);
+    expect(workflow.permissions.contents).toBe('read');
+    expect(workflow.jobs.build.needs).toBe('checks');
+    expect(workflow.jobs.build.strategy.matrix.include.map(target => `${target.platform}/${target.arch}`)).toEqual(['linux/x64', 'win/x64', 'mac/x64', 'mac/arm64']);
+    expect(workflow.jobs.draft.needs).toEqual(['checks', 'build']);
+    expect(workflow.jobs.draft.permissions.contents).toBe('write');
+    expect(source).toContain('--draft --prerelease');
+    expect(pkg.build.nsis.artifactName).not.toBe(pkg.build.portable.artifactName);
     for (const key of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'WIN_CSC_LINK', 'WIN_CSC_KEY_PASSWORD', 'APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID']) expect(source).toContain(`secrets.${key}`);
     expect(source).not.toMatch(/BEGIN (?:RSA |EC )?PRIVATE KEY|-----BEGIN CERTIFICATE|(?:password|token):\s*["']?[A-Za-z0-9]{12}/i);
   });

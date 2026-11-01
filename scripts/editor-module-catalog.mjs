@@ -247,6 +247,10 @@ export const EDITOR_MODULES = [
       "src/App.jsx", "src/app_title_bar.jsx", "src/canvas/components/voo_brand_logo.jsx",
       "src/canvas/components/loading_modal.*", "tests/unit/loading_modal.test.jsx",
       "scripts/release-command-pool.mjs", "scripts/verify-editor-release.mjs", "tests/unit/release-command-pool.test.js",
+      ".github/workflows/release.yml", "scripts/desktop-release-plan.mjs", "scripts/build-desktop-release.mjs",
+      "scripts/assemble-desktop-release.mjs", "scripts/smoke-desktop-release.mjs",
+      "tests/unit/desktop-release.test.js", "tests/unit/code_signing_stubs.test.js",
+      "tests/unit/native-close-guard.test.js", "tests/unit/electron_cli_bridge.test.js",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
@@ -262,7 +266,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
-      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
+      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.desktop-release", "platform.desktop-close",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
@@ -272,6 +276,7 @@ export const EDITOR_MODULES = [
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
     ],
     remaining: [
+      "Desktop release acceptance runs separately on four native CI targets; browser passes do not certify installers, signatures or upgrades.",
       "Paid endpoints, authenticated external clients, signed installers and skipped collaboration cases require separate evidence and cannot inherit an offline pass.",
     ],
   },

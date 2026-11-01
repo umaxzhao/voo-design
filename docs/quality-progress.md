@@ -3,13 +3,14 @@
 最近一次完成的核心检查：[2cb69e5](https://github.com/umaxzhao/voo-design/commit/2cb69e5c1754de27e5553c38a42fa8d2e43f2884)；104 项全量门禁逐项通过（含全量单测 4721 通过/4 跳过、100 组浏览器 E2E 套件零失败）。证据 `/private/tmp/voo-release-toolbar.json`。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
-## 三平台 GitHub Release 就绪检查（待完成）
+## 三平台 GitHub 预发布（实现与验收中）
 
-- 2026-11-01，只读核对源码 `ed3db20` 的发布配置与 GitHub 记录：版本仍为 `1.0.0`；当前 Release、版本标签和 `release.yml` 运行记录均为 0。仓库没有配置 Actions 签名 secrets；仅查配置名称，未读取任何密钥或证书。
-- 已配置 Electron 目标：Windows x64 NSIS/Portable、macOS DMG/ZIP、Linux AppImage/DEB。这是构建配置，不是三个系统已安装、启动并验收的证明；macOS Intel/Apple Silicon 尚需明确分别构建。
-- 发布流程缺口：标签仅自动构建/发布 Linux AppImage；Mac/Windows 仅手动开启、只上传 Actions artifacts；未统一上传更新元数据/blockmaps/校验和。桌面作业还缺少 `build-connector-resource.mjs` 预构建步骤，不能复用开发机残留资源。
-- 先补齐原生 runner 构建与安装包检查，再验证启动、创建/保存/重开、模型下载、本地 CLI、签名/公证及更新。可以准备三平台预发布；目前不能宣布三平台正式版已就绪。本轮未创建 tag 或 Release，也未把 Web 测试继承为安装包通过。
-- [发布清单](release-checklist.md)。本条为发布流程审计，不修改应用；后续源码不继承旧固定提交的通过结果。
+- 候选 `1.0.0-beta.1`：Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，四个原生 runner；完整 Web 核心门禁在前，随后各平台实际打包、ASAR/依赖/connector 检查和原生冒烟，全部成功后才组装草稿。没有自动公开发布步骤。
+- `platform.desktop-release`：安装包命名无空格，setup/portable 不再覆盖；合并两种 Mac 架构更新文件，逐个核验更新载荷 SHA-512/尺寸，附 SHA256SUMS 与对应提交的四份原生检查记录。缺失/旧提交/损坏/遗漏架构会阻止组装。
+- 实际首包复现 Mac 中文语言资源被剔除，以及共享 node_modules 导致 updater 间接依赖漏包。改为平台语言标识、递归运行依赖检查，并用独立 npm ci 验证；Mac 包内容已通过。共享工作树首包失败记录保留，不作为验收通过。
+- `platform.desktop-close`：真实脏文档关闭被阻止却无原生选择。补共享关闭/退出确认，默认继续编辑，明确放弃才退出；取消确认发生在 CLI 服务清理之前。主入口菜单提取后 401→246 行，既有菜单行为保留，所有新增模块低于 400 行。
+- 本地 60 项定向检查、设计检查通过，独立依赖安装生成的 Mac arm64 包内容和实际绘图/原生 I/O/退出取消/新进程文件卡片重开通过；这是未提交快照的诊断证据，不是四平台固定提交验收。全量单测首轮被沙箱 EPERM 阻止，放开本地监听后旧阶段 4746 通过/4 跳过。后续退出修复不继承该全量结果，最终以固定提交 CI 记录为准。尚未创建 Release/tag，不把 Web 通过继承为三平台安装包通过。
+- 签名 secrets 未配置；草稿将明确未签名/未公证及尚未验收的交互安装、真实服务与旧版更新。证据暂存 `/private/tmp/voo-desktop-*`；[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)。
 
 ## 本轮：顶部工具栏鼠标悬停自动展开二级菜单与橡皮擦添加移除背景（已验证通过）
 

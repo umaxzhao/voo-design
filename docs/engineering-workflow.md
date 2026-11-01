@@ -25,12 +25,12 @@ The release verifier imports this catalog; do not create another suite list.
 | `inspector` | Fields, menus, toolbar, responsive UI and i18n | Commit/cancel, selection changes, focus and async locale |
 | `platform` | Agent, runtime, loading, native integration and collaboration | Auth, process ownership, reconnect and unmount |
 
-The current inventory contains 81 capability groups, not a census of every
+The current inventory contains 84 capability groups, not a census of every
 button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.
 
-The existing core release contains 100 browser suites. Another 11 standalone
+The existing core release contains 101 browser suites. Another 11 standalone
 suites are explicitly listed in `ADDITIONAL_BROWSER_CHECKS`: 8 need fixture,
 assertion and service-requirement review; `canvas_fps`, `image-electron` and
 `image-network` run separately for hardware, native-host and network/model
@@ -167,3 +167,13 @@ pointer test. Generated fixtures must not touch the user's current project.
 
 Do not end with "the whole project is fully tested." State what was checked,
 what was repaired, what remains unverified and which revision was deployed.
+
+## Native desktop release gate
+
+`platform.desktop-release` and `platform.desktop-close` have a separate native
+CI gate in `.github/workflows/release.yml`: four native platform/architecture
+jobs, real packaged executables, content/transitive dependency inspection and
+filesystem/cold-open/quit-cancellation smoke. Web-browser results never certify
+these capabilities. Keep signatures, interactive installation and live update
+acceptance separate even after all native smoke jobs pass. See the current
+[release checklist](release-checklist.md) and [progress](quality-progress.md).
