@@ -1,9 +1,9 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证：[ba1a1cd](https://github.com/umaxzhao/voo-design/commit/ba1a1cd9f22bbb643d7ce3aef6658f8d4c56a2a9)；105/105 步通过，含 101 组核心浏览器、4813 单测通过/4 跳过，设计检查 1445 文件通过。本轮为 Web 源码验证；原生包验收属于下方各自固定版本。
+最近一次完整核心验证：[00b3f98](https://github.com/umaxzhao/voo-design/commit/00b3f982120efac466e3c24f18beccc19f6b5243)；105/105 步通过，101 组核心浏览器、4825 单测通过/4 跳过，设计检查 1445 文件通过。线上 Web 预览已部署同一构建；原生安装包仍按各自 Release 固定提交验收。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：相对排序与 Loading 旋转间距（专项通过，最新基线待验收）
-- 蒙版多选重复排序、锁定 Frame 子层仍可排序、单节点接口拆散 Frame 三个缺口已复现并修复；Loading 增加留白保留 20px 原断言。34 项定向单测、10 个排序上下文及 8 个旋转角度通过，`7056abe` / `6605aa8` 分别完成其固定版本 91/103 项门禁，未继承为新版本通过。中断后确认 `43f0c6d` 仅完成单测、没有完整报告；最新主线已到 `8c270d0`，现整合所有已发布修复，准备 105 项完整门禁与发布。绝对位置拖排、置顶/置底和原生包不在这十个新增上下文内。[范围与证据](audits/design-editor-interaction-audit.md#relative-layer-order-audit--2026-11-01)。
+## 本轮：相对排序与 Loading 旋转间距（已完成声明范围）
+- 修复蒙版多选重复调序、锁定 Frame 子层仍可调序、单节点接口拆散 Frame 三个缺口；Loading 补足旋转留白，保留原 20px 要求并新增八角度检查。保留最新主线全部已发布功能，固定 `00b3f98` **105/105 完整发布步骤、101 组核心浏览器、4825 单测通过/4 跳过及 CI 通过**，未拼接旧报告。新增 12 条单测与 10 个排序上下文，本地主应用三个任务文件一致、十场景及 Loading 完整套件通过，其他草稿保留。已部署 [Web 预览](https://voo.run/editor/)，入口及实际加载的 82 项 JS/CSS SHA-256 一致，六个线上排序场景、八个旋转角度、实际像素及一次撤销/重做通过，零页面异常。最小代表性旋转间距 22.06px。[PR #80](https://github.com/umaxzhao/voo-design/pull/80) 汇总修复与验收记录；证据 `/private/tmp/voo-license-regression/layer-order-{release,ci,primary-proof,production-proof}.json`。功能覆盖仍部分；绝对位置拖排、置顶/置底和原生包不由这十个新上下文认证，本轮未重发安装包。[范围与证据](audits/design-editor-interaction-audit.md#relative-layer-order-audit--2026-11-01)。
 ## 三平台 GitHub Beta（门禁与产物核验通过）
 - [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
 - 固定验证源码 [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78) 的 [完整 CI](https://github.com/umaxzhao/voo-design/actions/runs/41281003764) 全部成功：**105/105 步、101 组核心浏览器、4781 单测通过/4 跳过、1441 文件设计检查**；580 个测试文件通过/3 跳过。报告 `complete=true`，12 个模块、87 组能力的功能覆盖仍为 partial，11 组独立额外检查明确 not-run。Release 附带 `web-release-checks.json`，不以其他提交或脏工作区继承通过。
