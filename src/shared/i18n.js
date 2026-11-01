@@ -155,8 +155,24 @@ export async function setLocale(locale) {
     return;
   }
   try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("ciw.locale", locale);
+    }
+  } catch {
+    // Storage access may be restricted (e.g. private browsing or sandboxed iframes).
+  }
+  try {
     return await loadLocale(locale);
   } catch (error) {
+    if (state.requestedLocale === locale) {
+      try {
+        if (typeof localStorage !== "undefined") {
+          localStorage.setItem("ciw.locale", state.activeLocale);
+        }
+      } catch {
+        // Storage access may be restricted.
+      }
+    }
     console.warn(`[i18n] Failed to load locale "${locale}"; keeping the current locale.`, error);
   }
 }

@@ -112,6 +112,8 @@ const ALLOWED_HUES = new Set([
 const ACCENTS = {
   "#a7ffd4":
     "mint — system & flow (wires, selection, connection state, focus ring)",
+  "#0d7647":
+    "mint, light theme text variant — high-contrast text on light surfaces (>= 4.5:1)",
   "#E5B2FF":
     "purple — AI & editor (AI actions, masks, layer highlight, generation)",
   "#eed0ff": "purple, text variant — for text sitting on a purple wash",
