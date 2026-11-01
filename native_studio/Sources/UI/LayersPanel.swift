@@ -134,7 +134,7 @@ private enum LayersMetrics {
     static let footerTopGap: CGFloat = 8
     static let dividerHeight: CGFloat = 1
     static let rowHeight: CGFloat = 32       // web: min-h-8 (h32, py-1)
-    static let rowSpacing: CGFloat = 4
+    static let rowSpacing: CGFloat = 2
     static let rowInset: CGFloat = 12
     static let rowCornerRadius: CGFloat = 8  // web rounded-lg
     /// Disclosure slot: 28×28 hit area with a 12pt chevron (web `-mx-1.5 -my-1`).
@@ -318,8 +318,8 @@ final class LayersTabButton: NSButton {
 /// Two-segment tab strip that swaps the card body between the layer tree and
 /// the (native-only) empty Assets state.
 final class LayersTabStripView: NSView {
-    let layersTab = LayersTabButton(title: "Layers")
-    let assetsTab = LayersTabButton(title: "Assets")
+    let layersTab = LayersTabButton(title: NativeCopy.text(.layersTab))
+    let assetsTab = LayersTabButton(title: NativeCopy.text(.assetsTab))
     var onSelectTab: ((Int) -> Void)?
     private(set) var selectedIndex: Int = 0
 
@@ -1231,6 +1231,32 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
 
     // MARK: New public API (host wires these)
 
+    public var searchQuery: String = "" { didSet { rebuildVisibleRows() } }
+    public var onPresentationChange: (() -> Void)?
+    public var onSelectCanvasBackground: (() -> Void)?
+    public var canvasBackgroundColor: String? {
+        didSet { refreshCanvasBackground() }
+    }
+
+    /// Includes the authored layer rows, canvas background and fixed card chrome.
+    public var preferredCardHeight: CGFloat {
+        if isAssetsTabActive { return 198 }
+        let rowsHeight = rowBlockHeight(max(1, visibleNodes.count))
+        return 166 + rowsHeight + (showsCanvasBackground ? 36 : 0)
+    }
+
+    private var showsCanvasBackground: Bool {
+        guard canvasBackgroundColor != nil, !isAssetsTabActive else { return false }
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        return query.isEmpty
+            || NativeLayerBackgroundButton.label.localizedCaseInsensitiveContains(query)
+            || (canvasBackgroundColor?.localizedCaseInsensitiveContains(query) ?? false)
+    }
+
+    private let canvasBackgroundButton = NativeLayerBackgroundButton()
+    private var canvasBackgroundHeight: NSLayoutConstraint?
+    private var canvasBackgroundGap: NSLayoutConstraint?
+
     public var onSearchTapped: (() -> Void)?
     public var onSortTapped: (() -> Void)?
     public var onAddLayer: (() -> Void)?
@@ -1397,7 +1423,19 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         searchButton.translatesAutoresizingMaskIntoConstraints = false
         searchButton.iconSize = LayersMetrics.headerIconSize
         searchButton.setAccessibilityIdentifier("Layers.Search")
-        searchButton.onClick = { [weak self] in self?.onSearchTapped?() }
+        searchButton.onClick = { [weak self] in
+            guard let self else { return }
+            if let onSearchTapped = self.onSearchTapped {
+                onSearchTapped()
+            } else {
+                NativeLayerSearch.shared.show(
+                    relativeTo: self.searchButton, query: self.searchQuery
+                ) {
+                    [weak self] query in
+                    self?.searchQuery = query
+                }
+            }
+        }
         addSubview(searchButton)
 
         sortButton.translatesAutoresizingMaskIntoConstraints = false
@@ -1485,6 +1523,11 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         assetsEmptyLabel.setAccessibilityIdentifier("Layers.AssetsEmpty")
         addSubview(assetsEmptyLabel)
 
+        canvasBackgroundButton.translatesAutoresizingMaskIntoConstraints = false
+        canvasBackgroundButton.onPick = { [weak self] in self?.onSelectCanvasBackground?() }
+        addSubview(canvasBackgroundButton)
+        canvasBackgroundButton.isHidden = true
+
         // 5. Footer toolbar. Web order (footer.jsx): [mask][adjustment][new layer]
         // on the left, trash right-aligned; 28×28 buttons with 13pt icons.
         let footerButtons: [(LayersIconButton, String, String)] = [
@@ -1566,10 +1609,10 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
             scrollView.topAnchor.constraint(equalTo: controlsDivider.bottomAnchor, constant: LayersMetrics.treeTopGap),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.rowInset),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.rowInset),
-            scrollView.bottomAnchor.constraint(
-                lessThanOrEqualTo: footerDivider.topAnchor,
-                constant: -LayersMetrics.treeBottomGap
-            ),
+            canvasBackgroundButton.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            canvasBackgroundButton.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            canvasBackgroundButton.bottomAnchor.constraint(
+                equalTo: footerDivider.topAnchor, constant: -LayersMetrics.treeBottomGap),
 
             footerDivider.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.contentInset),
             footerDivider.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.contentInset),
@@ -1611,6 +1654,13 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
             deleteButton.heightAnchor.constraint(equalToConstant: footerSize)
         ])
 
+        let backgroundHeight = canvasBackgroundButton.heightAnchor.constraint(equalToConstant: 0)
+        let backgroundGap = scrollView.bottomAnchor.constraint(
+            lessThanOrEqualTo: canvasBackgroundButton.topAnchor)
+        NSLayoutConstraint.activate([backgroundHeight, backgroundGap])
+        canvasBackgroundHeight = backgroundHeight
+        canvasBackgroundGap = backgroundGap
+
         let heightConstraint = scrollView.heightAnchor.constraint(
             equalToConstant: rowBlockHeight(2)
         )
@@ -1632,12 +1682,28 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
 
     /// Rebuilds the rendered rows from `nodes` minus the subtrees of collapsed ids.
     private func computeVisibleNodes() -> [VOONode] {
-        guard !collapsedIds.isEmpty else { return nodes }
+        let orderedNodes = NativeLayerOrder.rows(nodes)
+        if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            var included = Set(
+                nodes.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }.map(\.id))
+            let byId = Dictionary(
+                nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            for id in Array(included) {
+                var cursor = byId[id]?.parentId
+                var visited = Set<String>()
+                while let parent = cursor, visited.insert(parent).inserted {
+                    included.insert(parent)
+                    cursor = byId[parent]?.parentId
+                }
+            }
+            return orderedNodes.filter { included.contains($0.id) }
+        }
+        guard !collapsedIds.isEmpty else { return orderedNodes }
         var byId: [String: VOONode] = [:]
         for candidate in nodes { byId[candidate.id] = candidate }
         var result: [VOONode] = []
         result.reserveCapacity(nodes.count)
-        for node in nodes {
+        for node in orderedNodes {
             var cursor = node.parentId
             var steps = 0
             var hidden = false
@@ -1695,6 +1761,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         }
         isSyncingSelection = false
         updateFooterSelectionState()
+        refreshCanvasBackground()
         needsLayout = true
         needsDisplay = true
     }
@@ -1826,7 +1893,20 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         }
         isSyncingSelection = false
         updateFooterSelectionState()
+        refreshCanvasBackground()
         needsLayout = true
+    }
+
+    private func refreshCanvasBackground() {
+        let visible = showsCanvasBackground
+        canvasBackgroundButton.hex = canvasBackgroundColor ?? "transparent"
+        canvasBackgroundButton.isHidden = !visible
+        canvasBackgroundHeight?.constant = visible ? 32 : 0
+        // NSTableView includes the final 2pt intercell gap in its row rect.
+        // Count that gap toward the web's 4pt background/8pt footer spacing.
+        canvasBackgroundGap?.constant = visible ? -2 : 2
+        needsLayout = true
+        onPresentationChange?()
     }
 
     // MARK: Layout
@@ -1875,10 +1955,11 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
             - LayersMetrics.footerTopGap
             - LayersMetrics.dividerHeight
             - LayersMetrics.treeBottomGap
+            - (showsCanvasBackground ? 34 : -2)
         let available = max(0, treeBottomFromTop - scrollTopFromTop)
-        let capacity = max(1, Int(floor((available + LayersMetrics.rowSpacing) / stride)))
+        let capacity = max(1, Int(floor(available / stride)))
         let count = max(1, visibleNodes.count)
-        let wanted = rowBlockHeight(min(count, capacity))
+        let wanted = rowBlockHeight(min(count, capacity)) + LayersMetrics.rowSpacing
         let desired = max(0, min(available, wanted))
         if let constraint = scrollViewHeightConstraint, abs(constraint.constant - desired) > 0.5 {
             constraint.constant = desired
@@ -1890,7 +1971,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         if let column = tableView.tableColumns.first, abs(column.width - width) > 0.5 {
             column.width = width
         }
-        let rowsHeight = rowBlockHeight(max(visibleNodes.count, 1))
+        let rowsHeight = rowBlockHeight(max(visibleNodes.count, 1)) + LayersMetrics.rowSpacing
         let requiredHeight = max(scrollView.contentSize.height, rowsHeight)
         let target = NSRect(x: 0, y: 0, width: width, height: requiredHeight)
         if abs(listContainer.frame.width - width) > 0.5 || abs(listContainer.frame.height - requiredHeight) > 0.5 {
@@ -1909,7 +1990,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
             opacityPill.titleText = "100"
             opacityPill.isActive = false
             opacityPill.setAccessibilityValue("No selection")
-            blendPill.titleText = "Normal"
+            blendPill.titleText = NativeCopy.text(.normalBlend)
             blendPill.isActive = false
             blendPill.setAccessibilityValue("No selection")
             return
@@ -1925,7 +2006,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     private static func displayName(forBlendMode raw: String) -> String {
         let key = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if key.isEmpty || key.contains("source") || key == "normal" || key == "正常" {
-            return "Normal"
+            return NativeCopy.text(.normalBlend)
         }
         if let match = blendModes.first(where: { $0.raw == key }) {
             return match.title
@@ -1967,7 +2048,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         menu.autoenablesItems = false
         for mode in Self.blendModes {
             let item = NSMenuItem(
-                title: mode.title,
+                title: Self.displayName(forBlendMode: mode.raw),
                 action: #selector(handleBlendMenuSelection(_:)),
                 keyEquivalent: ""
             )
@@ -2007,7 +2088,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         guard row >= 0, row < visibleNodes.count, let callback = onMoveLayer else { return }
         let nodeId = visibleNodes[row].id
         guard let sourceIndex = nodes.firstIndex(where: { $0.id == nodeId }) else { return }
-        let target = max(0, min(nodes.count - 1, sourceIndex + offset))
+        let target = max(0, min(nodes.count - 1, sourceIndex - offset))
         guard target != sourceIndex else { return }
         callback(nodeId, target)
     }
@@ -2118,6 +2199,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         groupButton.isHidden = active
         deleteButton.isHidden = active
         assetsEmptyLabel.isHidden = !active
+        refreshCanvasBackground()
         updateFooterSelectionState()
         needsLayout = true
         needsDisplay = true
@@ -2177,9 +2259,11 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         var targetIndex: Int
         if row < visibleNodes.count,
            let idx = nodes.firstIndex(where: { $0.id == visibleNodes[row].id }) {
-            targetIndex = idx
+            // The UI shows the highest paint first; dropping above that row
+            // inserts after its node in the document's forward paint order.
+            targetIndex = idx + 1
         } else {
-            targetIndex = nodes.count
+            targetIndex = 0
         }
         if sourceIndex < targetIndex {
             targetIndex -= 1

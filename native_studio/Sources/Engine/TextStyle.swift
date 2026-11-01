@@ -32,12 +32,14 @@ public enum TextStyleResolver {
 
     public static func nsWeight(for token: String?) -> NSFont.Weight {
         switch (token ?? "regular").lowercased() {
-        case "thin": return .thin
-        case "light": return .light
-        case "medium": return .medium
-        case "semibold", "semi-bold": return .semibold
-        case "bold": return .bold
-        case "heavy", "black": return .heavy
+        case "100", "ultralight": return .ultraLight
+        case "200", "thin": return .thin
+        case "300", "light": return .light
+        case "500", "medium": return .medium
+        case "600", "semibold", "semi-bold": return .semibold
+        case "700", "bold": return .bold
+        case "800", "heavy": return .heavy
+        case "900", "black": return .black
         default: return .regular
         }
     }

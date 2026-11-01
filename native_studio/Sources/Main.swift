@@ -69,6 +69,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             window.layoutIfNeeded()
         }
 
+        // Exercise the normal file operation in deterministic rendering audits.
+        if let path = ProcessInfo.processInfo.environment["VOO_SNAPSHOT_DOCUMENT"] {
+            controller.openDocumentFromURL(URL(fileURLWithPath: path))
+        }
+
         if ProcessInfo.processInfo.environment["VOO_HEADLESS"] != "1" {
             NSApp.activate(ignoringOtherApps: true)
         }
@@ -137,6 +142,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApp.terminate(nil)
             }
         }
+    }
+
+    public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply
+    {
+        (windowController?.confirmDocumentReplacement() ?? true) ? .terminateNow : .terminateCancel
     }
 
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

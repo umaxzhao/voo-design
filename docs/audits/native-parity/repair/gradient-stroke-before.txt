@@ -1,0 +1,47 @@
+=== [Integrated Mode] Compiling against production Sources/ ===
+=== 正在编译 VOO Design Native Studio E2E 测试套件 ===
+=== 正在执行 VOO Design Native Studio E2E 测试 ===
+2026-11-01 09:01:07.534 VOODesignE2ETests[71795:10004346] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+2026-11-01 09:01:09.388 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: creation.started
+2026-11-01 09:01:09.391 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: shape.created.rect
+2026-11-01 09:01:09.722 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 09:01:10.182 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: path.created
+2026-11-01 09:01:10.287 VOODesignE2ETests[71795:10004346] [VOO Design Native] 抓手工具：拖拽平移画布
+2026-11-01 09:01:10.296 VOODesignE2ETests[71795:10004346] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 09:01:10.297 VOODesignE2ETests[71795:10004346] [VOO Design Native] 魔棒选择：点击选中相同填充色的图层
+2026-11-01 09:01:10.604 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 09:01:10.615 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 09:01:10.708 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 09:01:10.717 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 09:01:10.718 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: paint.erase.started
+2026-11-01 09:01:10.724 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: paint.erase.committed
+2026-11-01 09:01:10.932 VOODesignE2ETests[71795:10004346] [VOO Design Native] 已创建页面: Page 2
+2026-11-01 09:01:11.033 VOODesignE2ETests[71795:10004346] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 09:01:11.137 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 09:01:11.748 VOODesignE2ETests[71795:10004346] [VOO Design Native] canvas tool: text.insertion.requested
+================================================================================
+             VOO DESIGN NATIVE STUDIO — OPAQUE-BOX E2E TEST RUNNER
+================================================================================
+Target: VOO Design Native (Swift 6 + AppKit + CoreGraphics + Metal)
+Filter: Tier = All (1-4), Pattern = None
+Total registered test cases: 411 | Selected: 411
+--------------------------------------------------------------------------------
+
+  [31m[FAIL][0m (0.003s) [T3] [Native-Rendering] test_GradientStageAndExportPixelsMatchAndTopLeftCoordinatesStayUpright
+         [31m↳ [NativeWorkflowParityTests.swift:98] Gradient export retains the solid outline[0m
+
+================================================================================
+                             TEST RESULTS SUMMARY
+================================================================================
+Tier & Feature Category                   Total     Passed    Failed    Pass Rate
+--------------------------------------------------------------------------------
+Tier 1: Feature Coverage (F1-F18)         256       256       0          100.0%
+Tier 2: Boundary & Corner Cases           105       105       0          100.0%
+Tier 3: Cross-Feature Combinations        40        39        1           97.5%
+Tier 4: Real-World Scenarios              10        10        0          100.0%
+--------------------------------------------------------------------------------
+TOTAL                                     411       410       1           99.8%
+================================================================================
+Execution Time: 7.042 seconds
+[31m✗ TEST SUITE FAILED with 1 failure(s) (Exit Code 1)[0m
+

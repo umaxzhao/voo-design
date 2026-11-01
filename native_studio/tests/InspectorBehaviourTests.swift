@@ -17,43 +17,46 @@ public final class InspectorBehaviourTests {
     public static func registerTests() {
         let registry = TestRegistry.shared
 
-        // 1. Fill row: remove → "none", eye restores the colour that was hidden.
+        // Hiding preserves stored paint; removing empties the stack and exposes Add.
         registry.register(tier: 1, feature: "Inspector-PaintRows", name: "test_Inspector_FillRowRemoveAndEyeTogglePaint") {
             let panel = PropertiesPanelView(frame: NSRect(x: 0, y: 0, width: 288, height: 720))
-            let node = VOONode(id: "rect_1", kind: .rect, name: "Rectangle", x: 0, y: 0,
-                               width: 100, height: 100, style: LayerStyle(fill: "#4ade80"))
-            var fills: [String] = []
-            panel.onFillChange = { fills.append($0) }
+            let node = VOONode(id: "rect_1", kind: .rect, style: LayerStyle(fill: "#4ade80"))
+            var mutations = 0
+            panel.onPaintMutation = { _ in mutations += 1 }
             panel.configure(with: node)
-            panel.layoutSubtreeIfNeeded()
-
-            let remove = try requireButton(panel, id: "Inspector.Properties.FillRemove")
-            remove.performClick(nil)
-            try TestAssertions.assertEqual(fills.last, "none", "Fill remove sets the paint to none")
-
             let eye = try requireButton(panel, id: "Inspector.Properties.FillEye")
             eye.performClick(nil)
-            try TestAssertions.assertEqual(fills.last?.uppercased(), "#4ADE80", "Fill eye restores the hidden colour")
+            try TestAssertions.assertEqual(panel.node?.fill, node.fill)
+            try TestAssertions.assertFalse(panel.node!.nativePaints(.fill)[0].isVisible)
+            eye.performClick(nil)
+            try TestAssertions.assertTrue(panel.node!.nativePaints(.fill)[0].isVisible)
+            let remove = try requireButton(panel, id: "Inspector.Properties.FillRemove")
+            remove.performClick(nil)
+            try TestAssertions.assertEqual(panel.node?.nativePaints(.fill).count, 0)
+            panel.layoutSubtreeIfNeeded()
+            let add = try requireButton(panel, id: "Inspector.Properties.FillAdd")
+            try TestAssertions.assertFalse(add.isHidden)
+            add.performClick(nil)
+            try TestAssertions.assertEqual(panel.node?.nativePaints(.fill).count, 1)
+            try TestAssertions.assertEqual(mutations, 4)
         }
 
-        // 2. Stroke row mirrors the fill row behaviour.
         registry.register(tier: 1, feature: "Inspector-PaintRows", name: "test_Inspector_StrokeRowRemoveAndEyeTogglePaint") {
             let panel = PropertiesPanelView(frame: NSRect(x: 0, y: 0, width: 288, height: 720))
-            let node = VOONode(id: "rect_2", kind: .rect, name: "Rectangle", x: 0, y: 0,
-                               width: 100, height: 100,
-                               style: LayerStyle(fill: "#ffffff", stroke: "#b2ffd6", strokeWidth: 2))
-            var strokes: [String] = []
-            panel.onStrokeChange = { strokes.append($0) }
+            let node = VOONode(
+                id: "rect_2", kind: .rect,
+                style: LayerStyle(fill: "#ffffff", stroke: "#b2ffd6", strokeWidth: 2))
             panel.configure(with: node)
-            panel.layoutSubtreeIfNeeded()
-
-            let remove = try requireButton(panel, id: "Inspector.Properties.StrokeRemove")
-            remove.performClick(nil)
-            try TestAssertions.assertEqual(strokes.last, "none", "Stroke remove sets the paint to none")
-
             let eye = try requireButton(panel, id: "Inspector.Properties.StrokeVisible")
             eye.performClick(nil)
-            try TestAssertions.assertEqual(strokes.last?.uppercased(), "#B2FFD6", "Stroke eye restores the hidden colour")
+            try TestAssertions.assertEqual(panel.node?.stroke, node.stroke)
+            try TestAssertions.assertEqual(panel.node?.strokeWidth, 2)
+            try TestAssertions.assertFalse(panel.node!.nativePaints(.stroke)[0].isVisible)
+            eye.performClick(nil)
+            try TestAssertions.assertTrue(panel.node!.nativePaints(.stroke)[0].isVisible)
+            let remove = try requireButton(panel, id: "Inspector.Properties.StrokeRemove")
+            remove.performClick(nil)
+            try TestAssertions.assertEqual(panel.node?.strokeWidth, 0)
         }
 
         // 3. Constraints survive the model round trip (old files have no key).
@@ -406,18 +409,12 @@ public final class InspectorBehaviourTests {
                 ("docs/examples/pulse-dashboard.voo", 75),
                 ("docs/examples/music-discovery.voo", 175)
             ]
-            let root = (ProcessInfo.processInfo.environment["PROJECT_ROOT"] ?? ".") as NSString
+            let root = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             for (relPath, minNodes) in samples {
-                let candidatePaths = [
-                    relPath,
-                    root.appendingPathComponent(relPath),
-                    (root.deletingLastPathComponent as NSString).appendingPathComponent(relPath),
-                    ("/Volumes/TD/Projects/voo_design" as NSString).appendingPathComponent(relPath)
-                ]
-                guard let found = candidatePaths.first(where: { FileManager.default.fileExists(atPath: $0) }) else {
-                    continue
-                }
-                let url = URL(fileURLWithPath: found)
+                let url = root.appendingPathComponent(relPath)
+                try TestAssertions.assertTrue(
+                    FileManager.default.fileExists(atPath: url.path), "Missing fixture: \(relPath)")
                 let doc = try DocumentIO.shared.loadDocument(from: url)
                 try TestAssertions.assertTrue(doc.nodes.count >= minNodes, "\(relPath) must decode at least \(minNodes) nodes (got \(doc.nodes.count))")
                 try TestAssertions.assertTrue(doc.canvas.width > 0, "\(relPath) canvas width > 0")
@@ -435,8 +432,11 @@ public final class InspectorBehaviourTests {
             controller.mainContentView.frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
             controller.mainContentView.layoutSubtreeIfNeeded()
 
-            let sample = "/Volumes/TD/Projects/voo_design/docs/examples/f1-grand-prix.voo"
-            guard FileManager.default.fileExists(atPath: sample) else { return }
+            let sample = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("docs/examples/f1-grand-prix.voo").path
+            try TestAssertions.assertTrue(
+                FileManager.default.fileExists(atPath: sample), "Missing F1 fixture")
 
             controller.openEditor(project: sample)
             try TestAssertions.assertFalse(controller.mainContentView.isWelcomeOpen, "Welcome dashboard must close")

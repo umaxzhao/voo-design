@@ -25,26 +25,26 @@ public enum StudioToolType: String, CaseIterable, Sendable, Equatable {
     public var displayName: String {
         switch self {
         case .move: return "Select (Move)"
-        case .node: return "Frame (Crop)"
+        case .node: return "Edit nodes"
         case .pen: return "Pen"
         case .shapes: return "Shapes"
         case .brush: return "Brush"
         case .eraser: return "Eraser"
         case .text: return "Text"
-        case .artboard: return "3D / Artboard"
+        case .artboard: return "Frame"
         }
     }
 
     public var defaultShortcut: Character? {
         switch self {
         case .move: return "V"
-        case .node: return "F"
+        case .node: return "A"
         case .pen: return "P"
         case .shapes: return "R"
         case .brush: return "B"
         case .eraser: return "E"
         case .text: return "T"
-        case .artboard: return "A"
+        case .artboard: return "F"
         }
     }
 
@@ -145,8 +145,8 @@ public final class ToolRailState: @unchecked Sendable {
             activeTool = .move
             matched = .move
         case "f", "F":
-            activeTool = .node
-            matched = .node
+            activeTool = .artboard
+            matched = .artboard
         case "p", "P":
             activeTool = .pen
             let nextIndex = (penSubToolIndex + 1) % penSubTools.count
@@ -165,8 +165,8 @@ public final class ToolRailState: @unchecked Sendable {
             activeTool = .eraser
             matched = .eraser
         case "a", "A":
-            activeTool = .artboard
-            matched = .artboard
+            activeTool = .node
+            matched = .node
         default:
             return nil
         }
@@ -195,6 +195,9 @@ public final class ToolButton: NSButton {
         }
     }
     public var onTriggerFlyout: ((ToolButton) -> Void)?
+    public private(set) var menuTrigger: NSButton?
+    var onHoverChanged: ((Bool) -> Void)?
+    private var isHovered = false
 
     public var isToolActive: Bool = false {
         didSet {
@@ -240,6 +243,48 @@ public final class ToolButton: NSButton {
         }
     }
 
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas where area.owner === self {
+            removeTrackingArea(area)
+        }
+        addTrackingArea(
+            NSTrackingArea(
+                rect: .zero,
+                options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                owner: self, userInfo: nil))
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+        onHoverChanged?(true)
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+        onHoverChanged?(false)
+    }
+
+    func installMenuTrigger(onClick: @escaping () -> Void) {
+        let trigger = NativeToolMenuTrigger(identifier: toolType.accessibilityIdentifier + ".Menu")
+        trigger.onTrigger = onClick
+        addSubview(trigger)
+        menuTrigger = trigger
+        needsLayout = true
+    }
+
+    func setMenuExpanded(_ expanded: Bool) {
+        (menuTrigger as? NativeToolMenuTrigger)?.expanded = expanded
+    }
+
+    public override func layout() {
+        super.layout()
+        let y = isFlipped ? bounds.maxY - 14 : bounds.minY
+        menuTrigger?.frame = CGRect(x: bounds.midX - 7, y: y, width: 14, height: 14)
+    }
+
     public override var isHighlighted: Bool {
         didSet {
             if oldValue != isHighlighted {
@@ -262,26 +307,30 @@ public final class ToolButton: NSButton {
             // Iconic VOO signature: Active tool is pure white circular pill!
             ctx.setFillColor(NSColor.white.cgColor)
             ctx.fillEllipse(in: circleRect)
-        } else if isHighlighted {
+        } else if isHighlighted || isHovered {
             // Hover state: `hover:bg-neutral-800` (#262626).
             ctx.setFillColor(NSColor(white: 0.15, alpha: 1.0).cgColor)
             ctx.fillEllipse(in: circleRect)
         }
 
         // 2. Vector Icon Glyph Drawing (web icons are size 16 inside the 44pt button)
-        let iconColor: NSColor = isToolActive ? .black : (isHighlighted ? NSColor(white: 0.96, alpha: 1.0) : NSColor(white: 0.64, alpha: 1.0))
+        let iconColor: NSColor =
+            isToolActive
+            ? .black
+            : ((isHighlighted || isHovered)
+                ? NSColor(white: 0.96, alpha: 1.0) : NSColor(white: 0.64, alpha: 1.0))
         let glyphRect = CGRect(x: b.midX - 8, y: b.midY - 8, width: 16, height: 16)
 
         switch toolType {
         case .move:
-            VooIconFactory.drawCursor(in: glyphRect, color: iconColor, isSolid: isToolActive)
+            VooIconFactory.drawCursor(in: glyphRect, color: iconColor, isSolid: false)
         case .node:
             // Web rail slot 2 is Lucide `crop` (a frame with corner ticks). The
             // shared `.frame` entry is Lucide `frame` (a # hash), which reads as a
             // grid at 16pt, so draw the crop geometry the rail actually shows.
             RailGlyphDrawing.draw(.crop, in: glyphRect, color: iconColor)
         case .pen:
-            let sub = toolRailState?.penSubTool ?? .pen
+            let sub = isToolActive ? (toolRailState?.penSubTool ?? .pen) : .pen
             switch sub {
             case .pen:
                 VooIconFactory.drawPen(in: glyphRect, color: iconColor)
@@ -291,7 +340,7 @@ public final class ToolButton: NSButton {
                 VooIconFactory.drawPencil(in: glyphRect, color: iconColor)
             }
         case .shapes:
-            let sub = toolRailState?.shapeSubTool ?? .rect
+            let sub = isToolActive ? (toolRailState?.shapeSubTool ?? .rect) : .rect
             switch sub {
             case .rect:
                 VooIconFactory.drawRect(in: glyphRect, color: iconColor)
@@ -324,16 +373,17 @@ public final class ToolButton: NSButton {
         case .artboard:
             // Lucide `scan`: an artboard/frame boundary with corner brackets (a 3D
             // cube is the object tool's glyph, not the artboard's).
-            RailGlyphDrawing.draw(.artboard, in: glyphRect, color: iconColor)
+            VooIconFactory.drawFrame(in: glyphRect, color: iconColor)
         }
 
-        // 3. Family chevron: web caret at the button's bottom-right. `NSButton` is
-        //    flipped (y grows downwards), so the bottom edge is `bounds.maxY`;
-        //    honour that explicitly so the caret cannot drift back to the top.
-        if hasSubtools {
-            let chevronColor: NSColor = isToolActive ? NSColor(white: 0, alpha: 0.65) : (isHighlighted ? NSColor.white : NSColor(white: 1.0, alpha: 0.40))
-            let chevronY = isFlipped ? b.maxY - 10 : b.minY + 4
-            let chevronRect = CGRect(x: b.maxX - 9, y: chevronY, width: 6, height: 6)
+        // Family menus occupy a centred 14pt target along the bottom edge.
+        if hasSubtools && menuTrigger == nil {
+            let chevronColor: NSColor =
+                isToolActive
+                ? NSColor(white: 0, alpha: 0.65)
+                : ((isHighlighted || isHovered) ? NSColor.white : NSColor(white: 1.0, alpha: 0.40))
+            let chevronY = isFlipped ? b.maxY - 12 : b.minY + 2
+            let chevronRect = CGRect(x: b.midX - 5, y: chevronY, width: 10, height: 10)
             VooIconFactory.drawChevronDown(in: chevronRect, color: chevronColor, strokeWidth: 1.2)
         }
     }
@@ -461,12 +511,20 @@ public enum ToolRailAccessory: String, CaseIterable, Sendable {
     case hand
     case lasso
     case wand
+    case fill
+    case healing
+    case crop
+    case marquee
 
     public var displayName: String {
         switch self {
         case .hand: return "Hand (Pan)"
         case .lasso: return "Lasso Select"
         case .wand: return "Magic Wand"
+        case .fill: return NativeToolbarCopy.text(.fill)
+        case .healing: return NativeToolbarCopy.text(.healing)
+        case .crop: return NativeToolbarCopy.text(.crop)
+        case .marquee: return NativeToolbarCopy.text(.selection)
         }
     }
 
@@ -475,6 +533,10 @@ public enum ToolRailAccessory: String, CaseIterable, Sendable {
         case .hand: return "ToolRail.Hand"
         case .lasso: return "ToolRail.Lasso"
         case .wand: return "ToolRail.Wand"
+        case .fill: return "ToolRail.Fill"
+        case .healing: return "ToolRail.Healing"
+        case .crop: return "ToolRail.Crop"
+        case .marquee: return "ToolRail.Marquee"
         }
     }
 }
@@ -531,7 +593,7 @@ public final class ToolRailAccessoryButton: NSButton {
         let circleRect = CGRect(x: (b.width - circleSize) / 2, y: (b.height - circleSize) / 2,
                                 width: circleSize, height: circleSize)
         if isAccessoryActive {
-            ctx.setFillColor(NSColor.white.cgColor)
+            ctx.setFillColor((accessory == .healing ? NSColor(hex: "E5B2FF") : .white).cgColor)
             ctx.fillEllipse(in: circleRect)
         } else if isHovered {
             // Web: `hover:bg-neutral-800` (#262626).
@@ -547,9 +609,25 @@ public final class ToolRailAccessoryButton: NSButton {
         case .hand:
             VooIconFactory.draw(.hand, in: glyph, color: color, strokeWidth: 1.5)
         case .lasso:
+            VooIconFactory.draw(.lasso, in: glyph, color: color, strokeWidth: 1.5)
+        case .marquee:
             RailGlyphDrawing.draw(.squareDashed, in: glyph, color: color)
         case .wand:
             VooIconFactory.draw(.wand, in: glyph, color: color, strokeWidth: 1.5)
+        case .crop:
+            RailGlyphDrawing.draw(.crop, in: glyph, color: color)
+        case .fill:
+            NativeToolbarGlyphs.drawBucket(in: glyph, color: color)
+        case .healing:
+            NativeToolbarGlyphs.drawHealing(
+                in: glyph,
+                color: isAccessoryActive ? .black : NSColor(hex: "E5B2FF"))
+        }
+        if accessory == .marquee || accessory == .fill || accessory == .healing {
+            let caretY = isFlipped ? b.maxY - 12 : b.minY + 2
+            VooIconFactory.drawChevronDown(
+                in: CGRect(x: b.midX - 5, y: caretY, width: 10, height: 10),
+                color: NSColor(hex: "a3a3a3"), strokeWidth: 1.2)
         }
     }
 }
@@ -634,27 +712,24 @@ public final class ToolRailView: NSView {
     // Pill:      `flex items-center gap-1 rounded-full border border-white/10
     //             bg-black/90 p-1.5`  -> padding 6, gap 4, radius full.
     // Button:    `h-11 w-11 rounded-full p-0` -> 44x44, icon 16.
-    // Trailing:  1×20 divider (white/12) + 44pt VOO brand/AI avatar, 4pt gaps.
+    // The border adds 1pt outside the 6pt padding on every edge.
     public static let buttonSize: CGFloat = 44.0
     public static let itemGap: CGFloat = 4.0
-    public static let horizontalPadding: CGFloat = 6.0
-    public static let pillHeight: CGFloat = 56.0
-    public static let entryCount: Int = 11
+    public static let horizontalPadding: CGFloat = 7.0
+    public static let pillHeight: CGFloat = 58.0
+    public static let entryCount: Int = 12
     public static let dividerWidth: CGFloat = 1.0
     public static let avatarSize: CGFloat = 44.0
 
-    /// Width is derived from the layout (not hardcoded):
-    /// padding + 11 tools + 10 gaps + gap + divider + gap + avatar + padding
-    /// = 6 + 524 + 4 + 1 + 4 + 44 + 6 = 589.
+    /// Twelve 44pt tools, eleven 4pt gaps, plus padding and the border.
     public static var preferredWidth: CGFloat {
-        let toolRow = buttonSize * CGFloat(entryCount) + itemGap * CGFloat(entryCount - 1)
-        return horizontalPadding * 2
-            + toolRow
-            + itemGap + dividerWidth + itemGap
-            + avatarSize
+        horizontalPadding * 2
+            + buttonSize * CGFloat(entryCount)
+            + itemGap * CGFloat(entryCount - 1)
     }
 
     public let state: ToolRailState
+    let familyMenuHover = NativeToolMenuHover()
     public weak var delegate: StudioDelegate?
 
     public private(set) var toolButtons: [StudioToolType: ToolButton] = [:]
@@ -663,6 +738,7 @@ public final class ToolRailView: NSView {
     /// Web rail's trailing brand medallion; opens the AI agent panel.
     public let brandAvatarButton = ToolRailBrandAvatarButton(frame: NSRect(x: 0, y: 0, width: 44, height: 44))
     private let dividerView = ToolRailDividerView(frame: .zero)
+    public var onBrushSettingsRequested: ((NSView) -> Void)?
     public var onBrandAvatarTapped: (() -> Void)?
 
     // Direct accessors for tests & legacy compatibility
@@ -675,10 +751,7 @@ public final class ToolRailView: NSView {
     public var textToolButton: NSButton { toolButtons[.text]! }
     public var artboardToolButton: NSButton { toolButtons[.artboard]! }
 
-    /// One entry in the pill, in left-to-right order, matching the web rail's
-    /// glyph sequence as closely as the native tool inventory allows:
-    /// Select, Hand, Frame/Crop, Marquee, Brush, Pen, Text, Eraser, Shape,
-    /// Artboard, Wand.
+    /// Match the web toolbar order. Node editing is a contextual operation.
     private enum RailEntry {
         case tool(StudioToolType)
         case accessory(ToolRailAccessory)
@@ -688,14 +761,15 @@ public final class ToolRailView: NSView {
         .tool(.move),
         .accessory(.hand),
         .tool(.artboard),
-        .tool(.node),
-        .accessory(.lasso),
+        .accessory(.crop),
+        .accessory(.marquee),
         .tool(.brush),
         .tool(.eraser),
         .tool(.text),
         .tool(.pen),
         .tool(.shapes),
-        .accessory(.wand)
+        .accessory(.fill),
+        .accessory(.healing),
     ]
 
     public init(state: ToolRailState = ToolRailState()) {
@@ -742,11 +816,21 @@ public final class ToolRailView: NSView {
                 let btn = ToolButton(toolType: tool, toolRailState: state)
                 btn.target = self
                 btn.action = #selector(toolButtonClicked(_:))
-                if tool == .pen || tool == .shapes || tool == .brush {
+                if tool == .move || tool == .pen || tool == .shapes || tool == .brush {
                     btn.hasSubtools = true
                 }
                 btn.onTriggerFlyout = { [weak self] button in
                     self?.showFlyout(for: button)
+                }
+                if tool == .pen || tool == .shapes {
+                    btn.installMenuTrigger { [weak self, weak btn] in
+                        guard let self, let btn else { return }
+                        self.toggleFamilyMenu(for: btn)
+                    }
+                    btn.onHoverChanged = { [weak self, weak btn] entered in
+                        guard let self, let btn else { return }
+                        self.handleFamilyHover(for: btn, entered: entered)
+                    }
                 }
                 addSubview(btn)
                 toolButtons[tool] = btn
@@ -760,15 +844,17 @@ public final class ToolRailView: NSView {
             }
         }
 
-        // Trailing brand/AI medallion, preceded by the web rail's 1×20 divider.
-        dividerView.translatesAutoresizingMaskIntoConstraints = true
-        addSubview(dividerView)
+        // Node editing remains available through its shortcut and contextual
+        // controls; its legacy button is not a crop-tool substitute.
+        let nodeButton = ToolButton(toolType: .node, toolRailState: state)
+        nodeButton.isHidden = true
+        nodeButton.target = self
+        nodeButton.action = #selector(toolButtonClicked(_:))
+        toolButtons[.node] = nodeButton
 
-        brandAvatarButton.translatesAutoresizingMaskIntoConstraints = true
-        brandAvatarButton.onClick = { [weak self] in
-            self?.onBrandAvatarTapped?()
-        }
-        addSubview(brandAvatarButton)
+        // The Agent has one home in the bottom-right FAB. Keep the legacy
+        // callback available without adding a duplicate medallion to the rail.
+        brandAvatarButton.onClick = { [weak self] in self?.onBrandAvatarTapped?() }
 
         updateSelection()
         needsLayout = true
@@ -776,15 +862,13 @@ public final class ToolRailView: NSView {
 
     public override func layout() {
         super.layout()
+        let scale = min(1, bounds.width / ToolRailView.preferredWidth)
         let count = CGFloat(ToolRailView.orderedEntries.count)
-        let toolRow = count * ToolRailView.buttonSize + (count - 1) * ToolRailView.itemGap
-        let trailingRow = ToolRailView.itemGap
-            + ToolRailView.dividerWidth
-            + ToolRailView.itemGap
-            + ToolRailView.avatarSize
-        let contentWidth = toolRow + trailingRow
-        var x = max(ToolRailView.horizontalPadding, (bounds.width - contentWidth) / 2.0)
-        let y = (bounds.height - ToolRailView.buttonSize) / 2.0
+        let toolRow =
+            count * ToolRailView.buttonSize * scale + (count - 1) * ToolRailView.itemGap * scale
+        let contentWidth = toolRow
+        var x = max(ToolRailView.horizontalPadding * scale, (bounds.width - contentWidth) / 2.0)
+        let y = (bounds.height - ToolRailView.buttonSize * scale) / 2.0
 
         for entry in ToolRailView.orderedEntries {
             let view: NSView
@@ -796,31 +880,21 @@ public final class ToolRailView: NSView {
                 guard let button = accessoryButtons[accessory] else { continue }
                 view = button
             }
-            view.frame = NSRect(x: ceil(x), y: y, width: ToolRailView.buttonSize, height: ToolRailView.buttonSize)
-            x += ToolRailView.buttonSize + ToolRailView.itemGap
+            view.frame = NSRect(
+                x: ceil(x), y: y, width: ToolRailView.buttonSize * scale,
+                height: ToolRailView.buttonSize * scale)
+            x += (ToolRailView.buttonSize + ToolRailView.itemGap) * scale
         }
-
-        // 1×20 divider, centred vertically.
-        x += ToolRailView.itemGap
-        dividerView.frame = NSRect(
-            x: ceil(x),
-            y: (bounds.height - ToolRailDividerView.preferredHeight) / 2.0,
-            width: ToolRailView.dividerWidth,
-            height: ToolRailDividerView.preferredHeight
-        )
-        x += ToolRailView.dividerWidth + ToolRailView.itemGap
-
-        brandAvatarButton.frame = NSRect(
-            x: ceil(x),
-            y: y,
-            width: ToolRailView.avatarSize,
-            height: ToolRailView.avatarSize
-        )
     }
 
     @objc private func toolButtonClicked(_ sender: ToolButton) {
-        if state.activeTool == sender.toolType && sender.hasSubtools {
-            showFlyout(for: sender)
+        familyMenuHover.cancel()
+        ToolFlyoutPopover.shared.close()
+        // The main button chooses the family's default; the caret opens its menu.
+        if sender.toolType == .pen { state.selectPenSubTool(.pen) }
+        if sender.toolType == .shapes { state.selectShapeSubTool(.rect) }
+        if sender.toolType == .brush && state.activeTool == .brush {
+            onBrushSettingsRequested?(sender)
             return
         }
         state.selectTool(sender.toolType)
@@ -828,11 +902,46 @@ public final class ToolRailView: NSView {
         delegate?.didSelectTool(sender.toolType)
     }
 
-    public func showFlyout(for button: ToolButton) {
+    func toggleFamilyMenu(for button: ToolButton) {
+        familyMenuHover.cancel()
+        let menu = ToolFlyoutPopover.shared
+        if menu.isOpen && menu.currentTool == button.toolType {
+            if menu.isHoverOpened { menu.pin() } else { menu.close() }
+        } else {
+            showFlyout(for: button)
+        }
+    }
+
+    func handleFamilyHover(for button: ToolButton, entered: Bool) {
+        let menu = ToolFlyoutPopover.shared
+        familyMenuHover.cancel()
+        if entered {
+            guard !menu.isOpen || menu.currentTool != button.toolType else { return }
+            familyMenuHover.schedule(after: NativeToolMenuHover.openDelay) {
+                [weak self, weak button] in
+                guard let self, let button else { return }
+                self.showFlyout(for: button, openedByHover: true)
+            }
+        } else if menu.isHoverOpened && menu.currentTool == button.toolType {
+            scheduleFamilyMenuClose()
+        }
+    }
+
+    private func scheduleFamilyMenuClose() {
+        familyMenuHover.schedule(after: NativeToolMenuHover.closeDelay) {
+            ToolFlyoutPopover.shared.close()
+        }
+    }
+
+    public func showFlyout(for button: ToolButton, openedByHover: Bool = false) {
+        if button.toolType == .brush {
+            onBrushSettingsRequested?(button)
+            return
+        }
         let currentSub: String
         switch button.toolType {
-        case .pen: currentSub = state.currentPenSubTool
-        case .shapes: currentSub = state.shapeSubTool.rawValue
+        case .pen: currentSub = state.activeTool == .pen ? state.currentPenSubTool : ""
+        case .shapes: currentSub = state.activeTool == .shapes ? state.shapeSubTool.rawValue : ""
         case .brush: currentSub = state.selectionSubTool.rawValue
         default: currentSub = ""
         }
@@ -840,12 +949,16 @@ public final class ToolRailView: NSView {
         ToolFlyoutPopover.shared.onPenSubToolSelected = { [weak self] sub in
             guard let self = self else { return }
             self.state.selectPenSubTool(sub)
-            self.toolButtons[.pen]?.needsDisplay = true
+            self.state.selectTool(.pen)
+            self.updateSelection()
+            self.delegate?.didSelectTool(.pen)
         }
         ToolFlyoutPopover.shared.onShapeSubToolSelected = { [weak self] sub in
             guard let self = self else { return }
             self.state.selectShapeSubTool(sub)
-            self.toolButtons[.shapes]?.needsDisplay = true
+            self.state.selectTool(.shapes)
+            self.updateSelection()
+            self.delegate?.didSelectTool(.shapes)
         }
         ToolFlyoutPopover.shared.onSelectionSubToolSelected = { [weak self] sub in
             guard let self = self else { return }
@@ -853,17 +966,44 @@ public final class ToolRailView: NSView {
             self.toolButtons[.brush]?.needsDisplay = true
         }
 
-        ToolFlyoutPopover.shared.show(for: button.toolType, relativeTo: button, currentSelection: currentSub)
+        let menu = ToolFlyoutPopover.shared
+        menu.onClosed = { [weak self] in
+            guard let self else { return }
+            self.familyMenuHover.cancel()
+            for button in self.toolButtons.values { button.setMenuExpanded(false) }
+        }
+        menu.onPointerEntered = { [weak self] in self?.familyMenuHover.cancel() }
+        menu.onPointerExited = { [weak self] in
+            if menu.isHoverOpened { self?.scheduleFamilyMenuClose() }
+        }
+        menu.show(
+            for: button.toolType, relativeTo: button, currentSelection: currentSub,
+            openedByHover: openedByHover)
+        button.setMenuExpanded(menu.isOpen)
     }
 
     public func updateSelection() {
         for (tool, btn) in toolButtons {
             btn.isToolActive = (tool == state.activeTool)
+            let sub: String?
+            switch tool {
+            case .pen: sub = btn.isToolActive ? state.currentPenSubTool : "pen"
+            case .shapes: sub = btn.isToolActive ? state.shapeSubTool.rawValue : "rect"
+            default: sub = nil
+            }
+            if let sub {
+                let title = NativeToolMenuModel.title(sub)
+                btn.setAccessibilityLabel(title)
+                btn.toolTip = title
+            }
             btn.needsDisplay = true
         }
     }
 
     public func setAccessoryActive(_ accessory: ToolRailAccessory?) {
+        for (tool, button) in toolButtons {
+            button.isToolActive = accessory == nil && tool == state.activeTool
+        }
         for (key, button) in accessoryButtons {
             button.isAccessoryActive = (key == accessory)
         }
@@ -872,13 +1012,19 @@ public final class ToolRailView: NSView {
     public var handButton: ToolRailAccessoryButton? { accessoryButtons[.hand] }
     public var lassoButton: ToolRailAccessoryButton? { accessoryButtons[.lasso] }
     public var wandButton: ToolRailAccessoryButton? { accessoryButtons[.wand] }
+    public var marqueeButton: ToolRailAccessoryButton? { accessoryButtons[.marquee] }
+    public var cropButton: ToolRailAccessoryButton? { accessoryButtons[.crop] }
+    public var fillButton: ToolRailAccessoryButton? { accessoryButtons[.fill] }
+    public var healingButton: ToolRailAccessoryButton? { accessoryButtons[.healing] }
 
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         // Floating Pill Chrome (web: `rounded-full border border-white/10 bg-black/90`)
         let pillRadius = bounds.height / 2.0
-        let path = CGPath(roundedRect: bounds, cornerWidth: pillRadius, cornerHeight: pillRadius, transform: nil)
+        let path = CGPath(
+            roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), cornerWidth: pillRadius,
+            cornerHeight: pillRadius, transform: nil)
 
         // Background: black/90
         ctx.setFillColor(NSColor.black.withAlphaComponent(0.90).cgColor)

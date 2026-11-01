@@ -201,6 +201,7 @@ public final class CurveConversionEngine {
 // MARK: - Canvas Stage View (High Performance Interactive Studio Viewport)
 
 public class CanvasStageView: NSView {
+    public override var isFlipped: Bool { true }
     // Document State
     /// Last-known rect of every frame, used by `applyConstraints(frameId:)` to
     /// compute the resize delta of a frame after a host-driven resize.
@@ -365,6 +366,8 @@ public class CanvasStageView: NSView {
     public private(set) var isPainting: Bool = false
 
     /// Brush ink colour (hex). Default mint, mirrors the VOO editor accent.
+    public var brushOpacity: CGFloat = 1
+    public var shapeCreationStyle = LayerStyle(fill: "#D4D4D4", stroke: "#FFFFFF", strokeWidth: 1)
     public var brushColorHex: String = "#b2ffd6"
     /// Brush dab diameter in document points.
     public var brushDiameter: CGFloat = 24
@@ -964,6 +967,19 @@ public class CanvasStageView: NSView {
         var leading: CGFloat = 0
         _ = CTLineGetTypographicBounds(line, &ascent, &descent, &leading)
 
+        if isFlipped {
+            let labelY = frameRect.minY - Self.frameLabelTopOffset / safeZoom
+            let iconSize = Self.frameLabelIconSize / safeZoom
+            let iconRect = CGRect(x: frameRect.minX, y: labelY, width: iconSize, height: iconSize)
+            VooIconFactory.drawFrame(in: iconRect, color: color, strokeWidth: 1.5)
+            attributed.draw(
+                at: CGPoint(
+                    x: frameRect.minX + (Self.frameLabelIconSize + Self.frameLabelIconGap)
+                        / safeZoom,
+                    y: labelY))
+            return
+        }
+
         // CSS half-leading: leading is split above and below the ascent/descent box.
         let lineHeight = Self.frameLabelLineHeight / safeZoom
         let halfLeading = max((lineHeight - (ascent + descent)) / 2.0, 0.0)
@@ -1065,12 +1081,13 @@ public class CanvasStageView: NSView {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         // 1. Stage Background (web editor workspace ground #525252)
-        ctx.setFillColor(ThemeTokens.colorStageStudio.cgColor)
+        let workspaceColor = document.workspaceBackgroundColor
+        if workspaceColor == "transparent" { ctx.clear(bounds) }
+        ctx.setFillColor((NSColor(hexString: workspaceColor) ?? .clear).cgColor)
         ctx.fill(bounds)
 
-        // 1.1 Stage dot grid: always on in the web free-page stage, under the
-        // artboards. `showGrid` keeps its own meaning (layout grid lines).
-        drawStageDotGrid(in: ctx)
+        // The web workspace renderer covers the decorative DOM dot grid.
+        // Keep the explicit document layout grid separate from this background.
 
         let rulerOffset = showRulers ? ThemeTokens.rulerTrackThickness : 0.0
         let originX = rulerOffset + panOffset.x
@@ -1176,7 +1193,11 @@ public class CanvasStageView: NSView {
             let canvas = document.canvas
             ctx.saveGState()
             ctx.interpolationQuality = .high
-            ctx.draw(paintImage, in: CGRect(x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height))
+            ctx.saveGState()
+            ctx.translateBy(x: canvas.x, y: canvas.y + canvas.height)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.draw(paintImage, in: CGRect(x: 0, y: 0, width: canvas.width, height: canvas.height))
+            ctx.restoreGState()
             ctx.restoreGState()
         }
 
@@ -1669,7 +1690,8 @@ public class CanvasStageView: NSView {
     public static func drawStroke(for node: VOONode, path: CGPath, in rect: CGRect, ctx: CGContext) {
         guard node.style.strokeWidth > 0, let strokeColor = NSColor(hexString: node.style.stroke) else { return }
         let strokeAlpha = node.style.strokeOpacity ?? 1.0
-        ctx.setStrokeColor(strokeColor.withAlphaComponent(strokeAlpha).cgColor)
+        ctx.setStrokeColor(
+            strokeColor.withAlphaComponent(strokeColor.alphaComponent * strokeAlpha).cgColor)
         applyStrokeStyle(style: node.style, to: ctx)
 
         let align = node.style.strokeAlign ?? "center"
@@ -1704,7 +1726,7 @@ public class CanvasStageView: NSView {
         let paddedRect = rect.insetBy(dx: -pad, dy: -pad)
         guard paddedRect.width > 0, paddedRect.height > 0 else { return }
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
         guard let offscreen = CGContext(
             data: nil,
@@ -1736,7 +1758,9 @@ public class CanvasStageView: NSView {
         }
     }
 
-    private func drawNodeContents(_ node: VOONode, in ctx: CGContext, rect: CGRect) {
+    private func drawNodeContents(
+        _ node: VOONode, in ctx: CGContext, rect: CGRect, paintOpacity: CGFloat = 1
+    ) {
         let path = Self.shapePath(for: node, in: rect)
 
         // Drop shadow
@@ -1754,14 +1778,8 @@ public class CanvasStageView: NSView {
         // them); frames keep their fill but their outline is stage chrome.
         let isPureContainer = node.kind == .group
         if !isPureContainer, node.kind != .text, node.kind != .image {
-            if let gradient = Self.parseGradient(from: node.style.fill) {
-                Self.drawGradientFill(parsed: gradient, in: rect, path: path, ctx: ctx)
-            } else if let fillColor = NSColor(hexString: node.style.fill) {
-                let fillAlpha = node.style.fillOpacity ?? 1.0
-                ctx.setFillColor(fillColor.withAlphaComponent(fillAlpha).cgColor)
-                ctx.addPath(path)
-                ctx.fillPath()
-            }
+            NativePaintRenderer.fills(
+                node, path: path, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Inner shadow
@@ -1789,28 +1807,13 @@ public class CanvasStageView: NSView {
         // Stroke. Frames use the stage's 1px outline (selected mint / idle
         // white-10) instead of a model stroke, and groups have no paint at all.
         if !isPureContainer, node.kind != .text, node.kind != .image, node.kind != .frame {
-            Self.drawStroke(for: node, path: path, in: rect, ctx: ctx)
+            NativePaintRenderer.strokes(
+                node, path: path, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Text rendering if text node
-        if node.kind == .text, let text = node.text {
-            let fontSize = node.fontSize ?? 16.0
-            let color = NSColor(hexString: node.style.fill) ?? NSColor.white
-            let attrs = TextStyleResolver.resolvedAttributes(for: node, color: color, size: fontSize)
-            // Web paints the text stroke underneath the fill; AppKit's negative
-            // strokeWidth percentage is stroke-only, same paint order.
-            let hasStroke = node.style.strokeWidth > 0 && !node.style.stroke.isEmpty &&
-                node.style.stroke.lowercased() != "none" &&
-                node.style.stroke != "transparent"
-            if hasStroke, let strokeColor = NSColor(hexString: node.style.stroke) {
-                var strokeAttrs = attrs
-                strokeAttrs[.strokeColor] = strokeColor.withAlphaComponent(node.style.strokeOpacity ?? 1.0)
-                strokeAttrs[.strokeWidth] = -(node.style.strokeWidth / max(fontSize, 1.0)) * 100.0
-                NSAttributedString(string: text, attributes: strokeAttrs)
-                    .draw(with: rect, options: [.usesLineFragmentOrigin])
-            }
-            NSAttributedString(string: text, attributes: attrs)
-                .draw(with: rect, options: [.usesLineFragmentOrigin])
+        if node.kind == .text {
+            NativePaintRenderer.text(node, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Image rendering for image nodes
@@ -1856,7 +1859,7 @@ public class CanvasStageView: NSView {
         if let gBlur = node.effects?.gaussianBlur, gBlur.enabled, gBlur.radius > 0 {
             renderNodeWithGaussianBlur(node: node, in: ctx, rect: rect, blurRadius: gBlur.radius)
         } else {
-            drawNodeContents(node, in: ctx, rect: rect)
+            drawNodeContents(node, in: ctx, rect: rect, paintOpacity: effectiveOpacity(for: node))
         }
 
         ctx.restoreGState()
@@ -3586,7 +3589,11 @@ public class CanvasStageView: NSView {
         if let source = node.src, let image = Self.decodedImage(for: source) {
             ctx.saveGState()
             ctx.clip(to: rect)
-            ctx.draw(image, in: rect)
+            ctx.saveGState()
+            ctx.translateBy(x: rect.minX, y: rect.maxY)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.draw(image, in: CGRect(origin: .zero, size: rect.size))
+            ctx.restoreGState()
             ctx.restoreGState()
         } else {
             drawImagePlaceholder(in: ctx, rect: rect)
@@ -3876,7 +3883,7 @@ public class CanvasStageView: NSView {
             context.setBlendMode(.normal)
             let color = NSColor(hexString: brushColorHex) ?? ThemeTokens.colorMint
             let resolved = color.usingColorSpace(.sRGB) ?? color
-            context.setFillColor(resolved.cgColor)
+            context.setFillColor(resolved.withAlphaComponent(brushOpacity).cgColor)
         }
         context.fillEllipse(in: CGRect(
             x: center.x - radius,
@@ -4085,7 +4092,7 @@ public class CanvasStageView: NSView {
                         y: rect.origin.y,
                         width: rect.width,
                         height: rect.height,
-                        style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                        style: shapeCreationStyle
                     )
                 } else {
                     node = VOONode(
@@ -4095,7 +4102,7 @@ public class CanvasStageView: NSView {
                         y: rect.origin.y,
                         width: rect.width,
                         height: rect.height,
-                        style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                        style: shapeCreationStyle
                     )
                 }
             case .ellipse:
@@ -4106,7 +4113,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                    style: shapeCreationStyle
                 )
             case .polygon:
                 let pts = ShapeGenerators.regularPolygonPoints(in: rect, sides: 6)
@@ -4120,7 +4127,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal"),
+                    style: shapeCreationStyle,
                     points: anchors
                 )
             case .star:
@@ -4135,7 +4142,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal"),
+                    style: shapeCreationStyle,
                     points: anchors
                 )
             case .line:
@@ -4385,6 +4392,7 @@ public class CanvasStageView: NSView {
 /// Bezier handle knobs connected by mint lines. The overlay is never
 /// hit-tested; `CanvasStageView` drives all anchor/handle gestures.
 public final class PathEditingOverlayView: NSView {
+    public override var isFlipped: Bool { true }
     public var zoom: CGFloat = 1.0 {
         didSet { if oldValue != zoom { needsDisplay = true } }
     }
@@ -4517,6 +4525,7 @@ public final class PathEditingOverlayView: NSView {
 /// (mint stroke, anchor dots and symmetric handle projections).
 /// It is never hit-tested, so all gestures continue to reach `CanvasStageView`.
 public final class CanvasCreationPreviewView: NSView {
+    public override var isFlipped: Bool { true }
     public var zoom: CGFloat = 1.0 {
         didSet { if oldValue != zoom { needsDisplay = true } }
     }

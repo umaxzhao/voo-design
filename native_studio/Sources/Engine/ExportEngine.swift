@@ -100,7 +100,7 @@ public final class ExportEngine {
         let pixelHeight = Int(max(1, canvas.height * scale).rounded())
         guard pixelWidth > 0, pixelHeight > 0 else { throw ExportError.emptyCanvas }
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
         guard let ctx = CGContext(data: nil,
                                   width: pixelWidth,
@@ -220,19 +220,19 @@ public final class ExportEngine {
                 let size = node.fontSize ?? 16
                 let weight = node.fontWeight ?? "400"
                 let align = node.textAlign ?? "left"
-                let text = node.text ?? node.name
+                let text = ExportMarkup.escape(node.text ?? node.name)
                 html += """
-                    <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); color: \(node.style.fill); font-family: \(font); font-size: \(size)px; font-weight: \(weight); text-align: \(align); \(rot)">\(text)</div>
-                """
+                        <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); color: \(node.style.fill); font-family: \(font); font-size: \(size)px; font-weight: \(weight); text-align: \(align); \(rot)">\(text)</div>
+                    """
             case .ellipse:
                 html += """
                     <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); background-color: \(bg); border: \(border); border-radius: 50%; \(rot)"></div>
                 """
             case .image:
-                let src = node.text?.hasPrefix("data:") == true ? (node.text ?? "") : ""
+                let src = ExportMarkup.escape(node.src ?? "")
                 html += """
-                    <img class="layer" src="\(src)" alt="\(node.name)" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); border-radius: \(radius)px; object-fit: cover; \(rot)">
-                """
+                        <img class="layer" src="\(src)" alt="\(ExportMarkup.escape(node.name))" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); border-radius: \(radius)px; object-fit: cover; \(rot)">
+                    """
             default:
                 html += """
                     <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); background-color: \(bg); border: \(border); border-radius: \(radius)px; \(rot)"></div>
@@ -314,79 +314,22 @@ public final class ExportEngine {
             }
         }
 
-        let fillColor = NSColor(hex: node.style.fill)
-        let strokeColor = NSColor(hex: node.style.stroke)
-
         switch node.kind {
-        case .rect, .frame, .group, .boolean:
-            let rect = CGRect(x: node.x, y: node.y, width: node.width, height: node.height)
-            let radius = node.cornerRadii?.tl ?? 0
-            let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-            paint(path: path, fill: fillColor, stroke: strokeColor, strokeWidth: node.style.strokeWidth, in: ctx)
-
-        case .ellipse:
-            let rect = CGRect(x: node.x, y: node.y, width: node.width, height: node.height)
-            ctx.addEllipse(in: rect)
-            if fillColor.alphaComponent > 0 {
-                ctx.setFillColor(fillColor.cgColor)
-                ctx.fillPath()
-            }
-            if node.style.strokeWidth > 0 {
-                ctx.addEllipse(in: rect)
-                ctx.setStrokeColor(strokeColor.cgColor)
-                ctx.setLineWidth(node.style.strokeWidth)
-                ctx.strokePath()
-            }
-
-        case .path:
-            let path = buildPath(from: node.points ?? [])
-            paint(path: path, fill: fillColor, stroke: strokeColor, strokeWidth: max(node.style.strokeWidth, 1.0), in: ctx)
-
-        case .image:
-            drawImageNode(node, in: ctx)
-
+        case .group: break
+        case .image: drawImageNode(node, in: ctx)
         case .text:
-            drawText(node, in: ctx)
-
+            NativePaintRenderer.text(node, rect: node.bounds, opacity: node.opacity, context: ctx)
         default:
-            let rect = CGRect(x: node.x, y: node.y, width: node.width, height: node.height)
-            paint(path: CGPath(rect: rect, transform: nil), fill: fillColor, stroke: strokeColor, strokeWidth: node.style.strokeWidth, in: ctx)
+            let path = CanvasStageView.shapePath(for: node, in: node.bounds)
+            NativePaintRenderer.fills(
+                node, path: path, rect: node.bounds, opacity: node.opacity, context: ctx)
+            if node.kind != .frame {
+                NativePaintRenderer.strokes(
+                    node, path: path, rect: node.bounds, opacity: node.opacity, context: ctx)
+            }
         }
 
         ctx.restoreGState()
-    }
-
-    private func paint(path: CGPath, fill: NSColor, stroke: NSColor, strokeWidth: CGFloat, in ctx: CGContext) {
-        // The export context is flipped; drawing text and paths through AppKit
-        // helpers keeps glyphs upright while shapes stay inline with the model.
-        if fill.alphaComponent > 0 {
-            ctx.addPath(path)
-            ctx.setFillColor(fill.cgColor)
-            ctx.fillPath()
-        }
-        if strokeWidth > 0, stroke.alphaComponent > 0 {
-            ctx.addPath(path)
-            ctx.setStrokeColor(stroke.cgColor)
-            ctx.setLineWidth(strokeWidth)
-            ctx.strokePath()
-        }
-    }
-
-    private func buildPath(from points: [PenAnchor]) -> CGPath {
-        let path = CGMutablePath()
-        guard let first = points.first else { return path }
-        path.move(to: CGPoint(x: first.x, y: first.y))
-        for index in 1..<max(points.count, 1) {
-            let prev = points[index - 1]
-            let curr = points[index]
-            let cp1 = prev.outHandle ?? CGPoint(x: prev.x, y: prev.y)
-            let cp2 = curr.inHandle ?? CGPoint(x: curr.x, y: curr.y)
-            path.addCurve(to: CGPoint(x: curr.x, y: curr.y), control1: cp1, control2: cp2)
-        }
-        if first.isClosed, points.count > 2 {
-            path.closeSubpath()
-        }
-        return path
     }
 
     private func drawImageNode(_ node: VOONode, in ctx: CGContext) {
@@ -407,27 +350,6 @@ public final class ExportEngine {
         ctx.scaleBy(x: 1, y: -1)
         ctx.draw(image, in: CGRect(x: -rect.width / 2.0, y: -rect.height / 2.0,
                                     width: rect.width, height: rect.height))
-        ctx.restoreGState()
-    }
-
-    private func drawText(_ node: VOONode, in ctx: CGContext) {
-        let text = node.text ?? node.name
-        guard !text.isEmpty else { return }
-        let fontSize = node.fontSize ?? 16
-        let color = NSColor(hex: node.style.fill)
-        let attributes = TextStyleResolver.attributes(for: node, color: color, size: fontSize)
-        let attributed = NSAttributedString(string: text, attributes: attributes)
-
-        // Flip locally so glyphs are not mirrored by the export transform, and
-        // publish an NSGraphicsContext so AppKit text layout can draw.
-        ctx.saveGState()
-        ctx.translateBy(x: node.x, y: node.y + fontSize)
-        ctx.scaleBy(x: 1, y: -1)
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
-        let rect = CGRect(x: 0, y: -fontSize * 0.22, width: max(node.width, 10), height: max(node.height, fontSize * 1.4))
-        attributed.draw(with: rect, options: [.usesLineFragmentOrigin, .usesFontLeading])
-        NSGraphicsContext.restoreGraphicsState()
         ctx.restoreGState()
     }
 

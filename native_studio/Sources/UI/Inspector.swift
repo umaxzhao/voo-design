@@ -25,6 +25,9 @@ public protocol InspectorDelegate: AnyObject {
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat)
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?)
     func inspectorDidChangeEffects(id: String, effects: LayerEffects)
+    func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation)
+    func inspectorPaintInteractionChanged(active: Bool)
+    func inspectorDidRequestFlip(horizontal: Bool)
     func inspectorDidToggleVisibility(id: String, visible: Bool)
     func inspectorDidToggleLock(id: String, locked: Bool)
     /// Figma-style constraints changed for a layer:
@@ -44,6 +47,9 @@ public extension InspectorDelegate {
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat) {}
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?) {}
     func inspectorDidChangeEffects(id: String, effects: LayerEffects) {}
+    func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation) {}
+    func inspectorPaintInteractionChanged(active: Bool) {}
+    func inspectorDidRequestFlip(horizontal: Bool) {}
     func inspectorDidToggleVisibility(id: String, visible: Bool) {}
     func inspectorDidToggleLock(id: String, locked: Bool) {}
     func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String) {}
@@ -136,6 +142,9 @@ public class InspectorView: NSView {
     public private(set) var arePropertiesVisible: Bool = true
     /// Web-parity PROPERTIES card content (visible, functional inspector).
     public let propertiesPanel = PropertiesPanelView()
+    let canvasPropertiesPanel = NativeCanvasPropertiesView(frame: .zero)
+    public var onCanvasBackgroundChange: ((String) -> Void)?
+    private var hasCanvasDocument = false
     /// Scroll container that keeps the native-only TRANSFORM / APPEARANCE sections
     /// reachable below the 368pt-tall web-sized card fold.
     public let propertiesScrollView = PropertiesScrollView()
@@ -153,6 +162,9 @@ public class InspectorView: NSView {
     private var propertiesBlendMode = "source-over"
     private var propertiesX: CGFloat = 0
     private var propertiesY: CGFloat = 0
+    private var normalDockConstraints: [NSLayoutConstraint] = []
+    private var swappedDockConstraints: [NSLayoutConstraint] = []
+    public private(set) var panelsAreSwapped = false
     private var propertiesWidth: CGFloat = 0
     private var propertiesHeight: CGFloat = 0
     private var propertiesRotation: CGFloat = 0
@@ -165,6 +177,7 @@ public class InspectorView: NSView {
     private var propertiesLetterSpacing: CGFloat = 0
     private var panelHeightConstraint: NSLayoutConstraint?
     private var cardHeightConstraint: NSLayoutConstraint?
+    private var layersHeightConstraint: NSLayoutConstraint?
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -242,6 +255,18 @@ public class InspectorView: NSView {
         appearancePanel.isHidden = true
         propertiesCard.addSubview(transformPanel)
         propertiesCard.addSubview(appearancePanel)
+        canvasPropertiesPanel.translatesAutoresizingMaskIntoConstraints = false
+        canvasPropertiesPanel.isHidden = true
+        canvasPropertiesPanel.onBackgroundChange = { [weak self] color in
+            self?.onCanvasBackgroundChange?(color)
+        }
+        propertiesCard.addSubview(canvasPropertiesPanel)
+        NSLayoutConstraint.activate([
+            canvasPropertiesPanel.topAnchor.constraint(equalTo: propertiesCard.topAnchor),
+            canvasPropertiesPanel.leadingAnchor.constraint(equalTo: propertiesCard.leadingAnchor),
+            canvasPropertiesPanel.trailingAnchor.constraint(equalTo: propertiesCard.trailingAnchor),
+            canvasPropertiesPanel.bottomAnchor.constraint(equalTo: propertiesCard.bottomAnchor),
+        ])
 
         // The web inspector is content-driven (~704pt for a shape at 1440x900):
         // the card height follows the panel's measured content height, capped by
@@ -252,19 +277,32 @@ public class InspectorView: NSView {
         // Layout Constraints:
         // Layers Panel: Floating on the left
         // Properties Card: Floating on the right
+        normalDockConstraints = [
+            layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+        ]
+        swappedDockConstraints = [
+            layersPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            propertiesCard.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+        ]
+        NSLayoutConstraint.activate(normalDockConstraints)
+        layersPanel.onSortTapped = { [weak self] in self?.swapPanels() }
+        propertiesPanel.onSwapPanels = { [weak self] in self?.swapPanels() }
+        propertiesPanel.onPresentationChange = { [weak self] in self?.needsLayout = true }
+        layersPanel.onPresentationChange = { [weak self] in self?.needsLayout = true }
+        let layersHeight = layersPanel.heightAnchor.constraint(
+            equalToConstant: layersPanel.preferredCardHeight)
+        layersHeightConstraint = layersHeight
         NSLayoutConstraint.activate([
             // Left Floating Card (web: md:w-64 = 256, p12, rounded-3xl, centred).
-            // Verified against the current web build at 1:1: the LAYERS card is
-            // 256×236 (border box x22..277 / y352..587). 236 = header 50 + controls
-            // 45 + two 32pt rows + 4 gap + footer 45 + p12 + 1px border.
-            layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            // The layer card grows with expanded rows, then scrolls at the
+            // same viewport clearance cap as the Electron layer card.
             layersPanel.centerYAnchor.constraint(equalTo: centerYAnchor),
             layersPanel.widthAnchor.constraint(equalToConstant: 256),
-            layersPanel.heightAnchor.constraint(equalToConstant: 236),
+            layersHeight,
 
             // Right Floating Card (web: md:w-72 = 288, p12, rounded-3xl, centred;
             // the fixed 368pt visible height scrolls to the rest of the sections).
-            propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             propertiesCard.centerYAnchor.constraint(equalTo: centerYAnchor),
             propertiesCard.widthAnchor.constraint(equalToConstant: 288),
             cardHeight,
@@ -438,6 +476,16 @@ public class InspectorView: NSView {
             self.delegate?.inspectorDidChangeConstraints(id: id, horizontal: horizontal, vertical: vertical)
         }
 
+        propertiesPanel.onPaintMutation = { [weak self] mutation in
+            guard let self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidMutatePaint(id: id, mutation: mutation)
+        }
+        propertiesPanel.onFlipRequest = { [weak self] horizontal in
+            self?.delegate?.inspectorDidRequestFlip(horizontal: horizontal)
+        }
+        propertiesPanel.onPaintInteraction = { [weak self] active in
+            self?.delegate?.inspectorPaintInteractionChanged(active: active)
+        }
         propertiesPanel.onEffectsChange = { [weak self] effects in
             guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
             self.delegate?.inspectorDidChangeEffects(id: id, effects: effects)
@@ -558,26 +606,58 @@ public class InspectorView: NSView {
         }
     }
 
-    /// The web inspector only floats the right properties card while something is
-    /// selected; the layers card stays visible at all times.
+    public func configureCanvas(document: VOODocument) {
+        hasCanvasDocument = true
+        canvasPropertiesPanel.configure(document: document)
+        layersPanel.canvasBackgroundColor = document.workspaceBackgroundColor
+        setPropertiesVisible(arePropertiesVisible)
+    }
+
+    /// An empty selection displays the canvas properties in the same card.
     public func setPropertiesVisible(_ visible: Bool) {
-        guard arePropertiesVisible != visible else { return }
         arePropertiesVisible = visible
-        propertiesCard.isHidden = !visible
+        propertiesCard.isHidden = !visible && !hasCanvasDocument
+        propertiesScrollView.isHidden = !visible
+        canvasPropertiesPanel.isHidden = visible || !hasCanvasDocument
+        needsLayout = true
+    }
+
+    public func swapPanels() {
+        panelsAreSwapped.toggle()
+        NSLayoutConstraint.deactivate(
+            panelsAreSwapped ? normalDockConstraints : swappedDockConstraints)
+        NSLayoutConstraint.activate(
+            panelsAreSwapped ? swappedDockConstraints : normalDockConstraints)
+        needsLayout = true
     }
 
     public override func layout() {
         super.layout()
         syncPropertiesCardHeight()
+        syncLayersCardHeight()
+    }
+
+    private func syncLayersCardHeight() {
+        guard bounds.height > 0 else { return }
+        let cap = max(198, min(bounds.height * 0.75, bounds.height - 144))
+        let wanted = min(layersPanel.preferredCardHeight, cap)
+        if let constraint = layersHeightConstraint, abs(constraint.constant - wanted) > 0.5 {
+            constraint.constant = wanted
+            needsLayout = true
+        }
     }
 
     /// Card height = measured content height + the card's 12pt bottom inset, capped
     /// by the available shell height (the scroll view then scrolls the overflow).
     private func syncPropertiesCardHeight() {
         guard bounds.height > 0 else { return }
-        let content = max(propertiesPanel.contentHeight, 240)
-        // Web caps the card at ~704pt (max-h-75vh); never taller than the shell.
-        let maxAvailable = max(240, min(bounds.height - 32, 712))
+        let content =
+            arePropertiesVisible
+            ? max(propertiesPanel.contentHeight, 240)
+            : NativeCanvasPropertiesView.preferredContentHeight - 12
+        // Web DOCKED_PANEL_MAX_HEIGHT_CLASS reserves 9rem (144pt) around the
+        // centred card so it clears the bottom controls at every window height.
+        let maxAvailable = max(240, bounds.height - 144)
         let wanted = min(content + 12, maxAvailable)
         if let constraint = cardHeightConstraint, abs(constraint.constant - wanted) > 0.5 {
             constraint.constant = wanted

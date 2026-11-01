@@ -97,6 +97,7 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
     case minus
     /// Web bar visibility toggle (Lucide `eye`).
     case eye
+    case eyeOff
     /// Web bar overflow menu trigger (Lucide `more-horizontal`).
     case more
 
@@ -150,6 +151,8 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
             VooIconFactory.drawMinus(in: rect, color: color, strokeWidth: strokeWidth)
         case .eye:
             VooIconFactory.draw(.eye, in: rect, color: color, strokeWidth: strokeWidth)
+        case .eyeOff:
+            VooIconFactory.draw(.eyeOff, in: rect, color: color, strokeWidth: strokeWidth)
         case .more:
             // Lucide `more-horizontal`: three filled 2.6pt dots on the 24-unit grid.
             EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
@@ -353,7 +356,7 @@ public final class EditorChromeIconButton: NSButton {
 
     // MARK: Configuration
 
-    public let glyph: EditorChromeGlyph
+    public var glyph: EditorChromeGlyph { didSet { needsDisplay = true } }
 
     /// Invoked on click (after the button's enabled check).
     public var onClick: (() -> Void)?
@@ -366,6 +369,8 @@ public final class EditorChromeIconButton: NSButton {
     public var iconColor: NSColor = NSColor(white: 1.0, alpha: 1.0) {
         didSet { needsDisplay = true }
     }
+
+    public var disabledIconOpacity: CGFloat = 0.55
 
     public var hoverIconColor: NSColor? {
         didSet { needsDisplay = true }
@@ -510,7 +515,7 @@ public final class EditorChromeIconButton: NSButton {
             color = hoverIconColor
         }
         if !isEnabled {
-            color = color.withAlphaComponent(color.alphaComponent * 0.55)
+            color = color.withAlphaComponent(color.alphaComponent * disabledIconOpacity)
         }
 
         let side = min(glyphSize, min(bounds.width, bounds.height))
@@ -1439,11 +1444,9 @@ public final class StudioBottomZoomBar: NSView {
     // MARK: Metrics
 
     public static let preferredHeight: CGFloat = 32.0
-    /// 4 + 28×6 (undo/redo/zoomOut/zoomIn/eye/⋯) + 30 label + 3 separators
-    /// with 4pt spacing on each side + 4 = 233. The web's ~200pt bar uses 24pt
-    /// buttons; the native row keeps the 28pt buttons the tests assert.
-    public static let preferredWidth: CGFloat = 233.0
-    public static let buttonSize: CGFloat = 28.0
+    /// Electron: 8pt padding + five 24pt controls + 28pt guide toggle + 36pt readout + three 3pt dividers.
+    public static let preferredWidth: CGFloat = 201.0
+    public static let buttonSize: CGFloat = 24.0
     public static let horizontalPadding: CGFloat = 4.0
     public static let cornerRadius: CGFloat = 12.0
 
@@ -1502,7 +1505,7 @@ public final class StudioBottomZoomBar: NSView {
         zoomOutButton = EditorChromeIconButton(glyph: .minus, frame: .zero)
         zoomLabelButton = EditorChromePillButton(
             text: "100%",
-            font: ThemeFonts.mono(size: 11.0, weight: .medium),
+            font: NSFont.monospacedDigitSystemFont(ofSize: 10.0, weight: .regular),
             frame: .zero
         )
         moreButton = EditorChromeIconButton(glyph: .more, frame: .zero)
@@ -1522,7 +1525,7 @@ public final class StudioBottomZoomBar: NSView {
         zoomOutButton = EditorChromeIconButton(glyph: .minus, frame: .zero)
         zoomLabelButton = EditorChromePillButton(
             text: "100%",
-            font: ThemeFonts.mono(size: 11.0, weight: .medium),
+            font: NSFont.monospacedDigitSystemFont(ofSize: 10.0, weight: .regular),
             frame: .zero
         )
         moreButton = EditorChromeIconButton(glyph: .more, frame: .zero)
@@ -1596,9 +1599,9 @@ public final class StudioBottomZoomBar: NSView {
         zoomLabelButton.setAccessibilityRole(.button)
         zoomLabelButton.setAccessibilityLabel("Zoom level. Reset to 100%")
         zoomLabelButton.setAccessibilityHelp("Resets the canvas zoom to 100%")
-        zoomLabelButton.minimumWidth = 30.0
+        zoomLabelButton.minimumWidth = 36.0
         zoomLabelButton.contentHeight = Self.buttonSize
-        zoomLabelButton.horizontalPadding = 4.0
+        zoomLabelButton.horizontalPadding = 2.0
         zoomLabelButton.textColor = .black
         zoomLabelButton.hoverBackgroundColor = NSColor.black.withAlphaComponent(0.07)
         zoomLabelButton.pressedBackgroundColor = NSColor.black.withAlphaComponent(0.12)
@@ -1643,9 +1646,11 @@ public final class StudioBottomZoomBar: NSView {
         button.toolTip = label
         button.glyphSize = 13.0
         button.backgroundColor = .clear
-        button.hoverBackgroundColor = NSColor.black.withAlphaComponent(0.07)
-        button.pressedBackgroundColor = NSColor.black.withAlphaComponent(0.12)
-        button.cornerRadius = 7.0
+        button.hoverBackgroundColor = .clear
+        button.hoverIconColor = NSColor.black.withAlphaComponent(0.6)
+        button.disabledIconOpacity = 1.0
+        button.pressedBackgroundColor = .clear
+        button.cornerRadius = 8.0
         button.strokeWidth = 2.0
     }
 
@@ -1810,14 +1815,16 @@ public final class StudioBottomZoomBar: NSView {
         let undoAlpha: CGFloat = canUndo ? 1.0 : 0.30
         let redoAlpha: CGFloat = canRedo ? 1.0 : 0.30
         let gridAlpha: CGFloat = isGridEnabled ? 1.0 : 0.40
-        let visibilityAlpha: CGFloat = isVisibilityEnabled ? 1.0 : 0.30
 
         undoButton.iconColor = NSColor.black.withAlphaComponent(undoAlpha)
         redoButton.iconColor = NSColor.black.withAlphaComponent(redoAlpha)
         gridButton.iconColor = NSColor.black.withAlphaComponent(gridAlpha)
-        visibilityButton.iconColor = NSColor.black.withAlphaComponent(visibilityAlpha)
+        visibilityButton.iconColor = NSColor.black.withAlphaComponent(
+            isVisibilityEnabled ? 1.0 : 0.35)
+        visibilityButton.glyph = isVisibilityEnabled ? .eye : .eyeOff
         zoomInButton.iconColor = .black
         zoomOutButton.iconColor = .black
+        moreButton.iconColor = .black
 
         gridButton.setAccessibilityValue(isGridEnabled ? "On" : "Off")
         visibilityButton.setAccessibilityValue(isVisibilityEnabled ? "On" : "Off")
@@ -1828,15 +1835,15 @@ public final class StudioBottomZoomBar: NSView {
     // MARK: Layout
 
     /// Web row: undo · redo │ − 58% + │ eye │ ⋯
-    /// (buttons are adjacent like the web's `gap-0`; separators get 4pt air)
+    /// (buttons are adjacent like the web's `gap-0`; separators get 1pt margins)
     public override func layout() {
         super.layout()
         let height = bounds.height
         let originX = max(0.0, (bounds.width - StudioBottomZoomBar.preferredWidth) / 2.0)
         let buttonY = (height - Self.buttonSize) / 2.0
-        let separatorHeight: CGFloat = 14.0
+        let separatorHeight: CGFloat = 12.0
         let separatorY = (height - separatorHeight) / 2.0
-        let separatorGap: CGFloat = 4.0
+        let separatorGap: CGFloat = 1.0
         let side = Self.buttonSize
 
         var x = originX + Self.horizontalPadding
@@ -1848,21 +1855,21 @@ public final class StudioBottomZoomBar: NSView {
         x += 1.0 + separatorGap
         zoomOutButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
         x += side
-        zoomLabelButton.frame = NSRect(x: x, y: buttonY, width: 30.0, height: side)
-        x += 30.0
+        zoomLabelButton.frame = NSRect(x: x, y: buttonY, width: 36.0, height: side)
+        x += 36.0
         zoomInButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
         x += side + separatorGap
         secondSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
         x += 1.0 + separatorGap
-        visibilityButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
-        x += side + separatorGap
+        visibilityButton.frame = NSRect(x: x, y: (height - 28) / 2, width: 28, height: 28)
+        x += 28 + separatorGap
         thirdSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
         x += 1.0 + separatorGap
         moreButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
         x += side + Self.horizontalPadding
 
         // Hidden from the row (web keeps it in the ⋯ menu) but still laid out so
-        // host code and parity checks see a real 28×28 button.
+        // host code and parity checks see a real 24×24 button.
         gridButton.frame = NSRect(x: originX, y: buttonY, width: side, height: side)
     }
 

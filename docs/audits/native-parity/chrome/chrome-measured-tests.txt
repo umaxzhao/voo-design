@@ -1,0 +1,48 @@
+=== [Integrated Mode] Compiling against production Sources/ ===
+=== 正在编译 VOO Design Native Studio E2E 测试套件 ===
+=== 正在执行 VOO Design Native Studio E2E 测试 ===
+2026-11-01 12:23:17.841 VOODesignE2ETests[3290:11505674] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+2026-11-01 12:23:19.038 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: creation.started
+2026-11-01 12:23:19.044 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: shape.created.rect
+2026-11-01 12:23:19.409 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:23:19.880 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: path.created
+2026-11-01 12:23:19.990 VOODesignE2ETests[3290:11505674] [VOO Design Native] 抓手工具：拖拽平移画布
+2026-11-01 12:23:19.990 VOODesignE2ETests[3290:11505674] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 12:23:19.990 VOODesignE2ETests[3290:11505674] [VOO Design Native] 魔棒选择：点击选中相同填充色的图层
+2026-11-01 12:23:20.329 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 12:23:20.342 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 12:23:20.459 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 12:23:20.473 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 12:23:20.474 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: paint.erase.started
+2026-11-01 12:23:20.481 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: paint.erase.committed
+2026-11-01 12:23:20.721 VOODesignE2ETests[3290:11505674] [VOO Design Native] 已创建页面: Page 2
+2026-11-01 12:23:20.931 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:23:21.579 VOODesignE2ETests[3290:11505674] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:23:23.356 VOODesignE2ETests[3290:11505674] [VOO Design Native] Cropping is not implemented in the native editor yet.
+2026-11-01 12:23:23.357 VOODesignE2ETests[3290:11505674] [VOO Design Native] Image healing is not implemented in the native editor yet.
+2026-11-01 12:23:23.434 VOODesignE2ETests[3290:11505674] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 12:23:25.112 VOODesignE2ETests[3290:11505674] [VOO Design Native] This effect format is preserved but cannot be edited here yet.
+================================================================================
+             VOO DESIGN NATIVE STUDIO — OPAQUE-BOX E2E TEST RUNNER
+================================================================================
+Target: VOO Design Native (Swift 6 + AppKit + CoreGraphics + Metal)
+Filter: Tier = All (1-4), Pattern = None
+Total registered test cases: 441 | Selected: 441
+--------------------------------------------------------------------------------
+
+
+================================================================================
+                             TEST RESULTS SUMMARY
+================================================================================
+Tier & Feature Category                   Total     Passed    Failed    Pass Rate
+--------------------------------------------------------------------------------
+Tier 1: Feature Coverage (F1-F18)         258       258       0          100.0%
+Tier 2: Boundary & Corner Cases           108       108       0          100.0%
+Tier 3: Cross-Feature Combinations        65        65        0          100.0%
+Tier 4: Real-World Scenarios              10        10        0          100.0%
+--------------------------------------------------------------------------------
+TOTAL                                     441       441       0          100.0%
+================================================================================
+Execution Time: 8.043 seconds
+[32m✓ ALL 441 TESTS PASSED CLEANLY (>= 207 THRESHOLD MET) (Exit Code 0)[0m
+
