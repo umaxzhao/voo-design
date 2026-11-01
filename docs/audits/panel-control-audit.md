@@ -456,9 +456,9 @@ separate. No native, paid or physical-device context inherits a browser pass.
 | A4 | `resize_document` already appears in the Canvas tools table; schema/document parity tests pass. |
 | B1 | Prior test explicitly required the overlapping mobile drawer. Replaced with separate vertical geometry and usable heights; opening Browser still closes Agent, and reverse switching remains valid. |
 | B2 | Single-column phone cards, visible independent corner actions, no hidden interception and scroll padding above fixed Settings. Real card midpoint and More, plus keyboard opening, are covered in `ui-home-settings`. |
-| B3 | Committed composer keeps advanced controls behind its existing settings entry. Private uncommitted composer is a separate unintegrated redesign, not certified by this release or overwritten. |
-| B4 | Unit URL compatibility alone missed a deployed 404. Added scoped legacy redirect and rollback-safe nginx provisioning; final real-server fragment preservation must be recorded after deployment. |
-| B5 | Both named suites exist in current clean source. Module registration explicitly rejects missing files and duplicate ownership. |
+| B3 | Committed composer keeps advanced controls behind its existing settings entry. The private redesign now also uses one advanced entry for eight types/style/system/candidates/size, retains automatic sizing and attachment IDs, and passes scoped real UI and unit checks. Its original dialogs are archived; unrelated drafts remain untouched. |
+| B4 | Unit URL compatibility alone missed a deployed 404. Deployed a scoped legacy redirect and rollback-safe nginx provisioning; actual public redirects preserve the room and browser fragment, and no longer leak the private 8444 listener. The destination was intercepted before any room join. |
+| B5 | Both named suites exist in current clean source. Module registration explicitly rejects missing files and duplicate ownership. In the private tree, only the two truly absent entries were removed; two other standalone suites were explicitly left unreviewed, never marked passed. |
 | B6 | Existing comments slot/navigation and welcome inertness remain; run their current core regressions rather than reverting them. |
 | C | All ten named scripts become self-starting; paths are temporary OS paths. No assertions are discarded to hide failures. See gate records below. |
 
@@ -489,3 +489,38 @@ Earlier failed development runs stay failed; only the final clean revision's
 complete gate can certify integrated execution. The private generic `ui-audit`
 and its screenshot baseline collection have not been adopted here: missing
 baselines, skipped states and untested devices cannot count as passes.
+
+Final acceptance on unchanged clean source `db4a184b9bd712dbff87982ecd75a4b6a88ac826`: all 103 registered
+commands have a passing result, including 99 browser suites, 4717 unit passes
+and 4 skips. Build and design lint (1432 files) pass. This is a same-revision
+recovery, not one successful full-script invocation: startup/registration
+failures remain in `voo-claude-checklist-release-complete.json` and the first
+recovery receipt; `voo-claude-checklist-release-recovered-final.json` links the
+immutable source-report hashes and passing results. The existing 1% HTML and
+GL channel-delta thresholds were not relaxed. The earlier unrelated-height,
+hidden-action and rotating-icon geometry failures remain in their original
+reports. Loading layout now measures untransformed offsets while still checking
+rotation, spacing and reduced motion. HTML uses the shared isolated-cache server.
+
+Production is deployed through SSH la2. Index and 12 selected resources match
+the build byte-for-byte; 83 actually loaded JS/CSS paths match SHA-256. Real
+constraint midpoint/undo, phone Browser/editor separation, a 48px duplicate
+action/undo, file-card midpoint and default advanced disclosure pass with no
+page errors. The actual legacy redirect preserves the room and dummy fragment
+without joining a room. Evidence: `/private/tmp/voo-claude-production-proof.json`
+and `voo-claude-deployment-proof.json`. Nginx backup:
+`/etc/nginx/voo-editor-sharing-backup-lJVyNn`; prior app backup:
+`/srv/voo-run/editor-backups/db4a184b9bd712dbff87982ecd75a4b6a88ac826-20261101T014747Z`.
+Initial production-probe assumptions (Escape-cleared selection and absent
+versus explicit default constraints) were corrected in the probe, with original
+logs retained; the application source did not change.
+
+Private-workspace acceptance is deliberately partial: 120 related unit checks,
+design lint (1427 files), ten restored suites after explicit startup retries,
+and actual constraint/mobile/composer scenarios pass. Receipt:
+`/private/tmp/voo-claude-primary-proof.json`. The 38 original draft snapshots
+are hash-verified in
+`/Volumes/TD/Projects/voo_design/.local-drafts/claude-checklist-2026-11-01.tar`.
+This does not certify the entire dirty workspace or the private generic UI
+audit/baseline collection. Native packages, physical devices, WebKit/IME, paid
+services, live multi-peer networking and hardware performance remain unverified.
