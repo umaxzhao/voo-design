@@ -254,4 +254,5 @@ export const ADDITIONAL_BROWSER_CHECKS = [
   { suite: "canvas_fps", owner: "canvas", kind: "hardware", reason: "Hardware/scene-specific FPS gate; preserve environment and scene sizes." },
   { suite: "image-electron", owner: "platform", kind: "native", reason: "Separate isolated Electron and native filesystem acceptance." },
   { suite: "image-network", owner: "images", kind: "network", reason: "Separate real model downloads, inference and network acceptance." },
+  { suite: "ui-audit", owner: "inspector", kind: "audit", reason: "Generic layout scan and per-platform screenshot baselines; fails on known open findings until fixed or accepted with a reason." },
 ];

@@ -31,7 +31,7 @@ export function validateModuleCatalog(modules = EDITOR_MODULES, suiteExists = ()
   const additional = new Set();
   for (const check of additionalChecks) {
     if (!/^[a-z][a-z0-9_-]*$/.test(check.suite) || !ids.has(check.owner) || !check.reason?.trim() ||
-      !["unreviewed", "hardware", "native", "network"].includes(check.kind)) throw new Error(`Invalid standalone check: ${check.suite}`);
+      !["unreviewed", "hardware", "native", "network", "audit"].includes(check.kind)) throw new Error(`Invalid standalone check: ${check.suite}`);
     if (suites.has(check.suite) || additional.has(check.suite)) throw new Error(`Duplicate standalone suite: ${check.suite}`);
     if (!suiteExists(suitePath(check.suite))) throw new Error(`Missing standalone browser suite: ${check.suite}`);
     additional.add(check.suite);
