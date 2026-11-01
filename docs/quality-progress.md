@@ -1,5 +1,26 @@
 # 项目检查总进度
 
+## 本轮：Linux v1.0.0-beta.2 缺陷与补充清单集中修复与分支合入（源码完成，未推送未发布）
+
+- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `776b4a93`，未 push，未部署）。
+- **并行执行模式**：使用 Orca orchestration 在 8 个独立 child worktree 中启动子 Agent 针对各个独立模块进行修复与回归测试，协调者逐一审查、运行测试并合并入主分支。
+- **修复项与模块验证**：
+  1. `worker-psd-import` (PSD 位图水合与持久化)：`psd_to_voo.js` 与 `project_io.js` 对 PSD 导入产出的图层位图 assets 建立与 images 统一的水合映射，修复重新打开与存盘位图占位问题。定向单测 `tests/unit/psd_pipeline_reopen.test.js` (5/5 通过)。
+  2. `worker-provider-storage` (API 凭据与内置服务商配置)：`electron/main.cjs` 与 `electron/preload.cjs` 建立 Electron `safeStorage` IPC 加密信道，`credential_store.js` 写入后立即读回校验并回退 localStorage；`provider_client.js` 为内置 API 返回安全默认配置对象，防止解引用 `.configured` 报错。定向单测 `tests/unit/safe_storage_credentials.test.js` (8/8 通过)。
+  3. `worker-selection-component` (反选接错蒙版、组件主页创建与草稿丢失修复)：
+     - `image_editor.jsx` 反选动作修正为 `engine.invertPixelSelection()`，彻底解绑整图蒙版反转 `invertMask`。
+     - `design_store.js` 实现 `createComponentPage(hostId, options)`，自动排布主画板于右侧避免碰撞，并接入画布引擎撤销重做。
+     - `saveEditorDrafts` 接收 live engine 传入的 `entries` 并持久化到 `nodes` 和 `crashDraft`，解决崩溃恢复丢失最新画布内容问题。
+     - 定向单测 `tests/unit/selection_and_component_actions.test.js` (7/7 通过)。
+  4. `worker-frame-tool-pan` (Frame 工具移动根画板解绑与 Hand 工具平移)：Frame 拖拽新建逻辑与根画板移动解耦；空画布点击在单画板模式下不清除 `focusedId`，保证 Hand 工具可在空白处自如平移。定向单测 `tests/unit/frame_creation_and_hand_pan.test.js` (9/9 通过)。
+  5. `worker-export-fig-shortcuts` (Figma .fig 导出与快捷键冲突)：接入 `serializeVooToFig` 到右上角导出对话框；`editor-shortcut-modifiers.js` 清理 `Ctrl+]` 直接调用 `engine.bringToFront()`，避免被画笔缩放劫持；Agent 面板快捷键 `Ctrl+J`/`Ctrl+\` 冲突消解。定向单测 `tests/unit/export_fig_and_shortcuts.test.jsx` (15/15 通过)。
+  6. `worker-locale-theme-contrast` (语言持久化、错误键与高对比度)：`setLocale` 写入 `localStorage.setItem("ciw.locale", locale)`；i18n 补全 `editor.openFailed`；`src/theme-light.css` 与 `design/tokens.cjs` 将浅色薄荷绿 `#a7ffd4` 重映射为高对比度 `#0d7647` (对比度 >= 4.5:1)，并将半透明白字映射为深色中性字。定向单测 `tests/unit/locale_and_theme_contrast.test.js` (10/10 通过)。
+  7. `worker-upscale-cancel-timeout` (2X 本地超分模型编译取消与超时保护)：新建 `src/canvas/editor/upscale_compile.js`，实现 `createSessionWithTimeout` (20s 超时) 及轮询 `shouldStop` / AbortSignal 即时取消，在 `raster-image-actions.js` 中捕获取消时不弹出错误提示条。定向单测 `tests/unit/local_upscale_cancel_timeout.test.js` (13/13 通过)。
+  8. `worker-svg-import-defs` (复杂 SVG 渐变、clipPath、mask、text 导入保真)：在 `editor_svg_import.js` 与 `svg_to_nodes.js` 构建 `defsMap` 索引，解析 `linearGradient`/`radialGradient` 生成标准 CSS 渐变，将 `clipPath`/`mask` 实例化为剪裁遮罩节点，并解析 `<text>`/`<tspan>`。`graphic-1.svg` 导入不再退化为黑块。定向单测 `tests/unit/svg_to_nodes.test.js` (40/40), `tests/unit/svg_defs_import.test.js` (6/6 通过)。
+  9. `layer-panel-multiselect-reparent` (图层面板多选移入 Frame)：实测并补充全链路集成单测 `tests/unit/layer_panel_multiselect_reparent.test.js` (3/3 通过)，确认 `useLayerDrag` -> `useEditorLayerInteractions` -> `engine.moveIntoGroup(ids)` 一次性迁移多个选中根对象进有效 Frame，并支持单步 Undo/Redo。
+- **全量回归验证**：运行完整测试套件 `npx vitest run`：**603 个测试文件全部通过，4,977 项测试全部通过（0 失败，4 项跳过）**。
+- **约束声明**：严格遵守不 push 到远端、不运行部署脚本、不触碰 Codex `nba-font-fidelity` 分支与任务。
+
 ## 本轮：Figma 风格 Frame Selection 快捷键（源码完成，未发布）
 
 - 新能力 `layers.frame-selection`：Mac `⌥⌘G` / Windows `Ctrl+Alt+G` 将一个或多个所选对象包入透明 Frame；使用旋转/斜切后的几何边界，保留绝对坐标、已有子树和最近公共父级，一次提交并选中新 Frame。空选与继承锁定不修改文档。
