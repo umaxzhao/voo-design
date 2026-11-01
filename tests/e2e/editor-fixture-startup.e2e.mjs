@@ -92,36 +92,40 @@ async function upgradeStatus(port, origin) {
   });
 }
 
-const environments = [];
-try {
-  const results = await Promise.allSettled(Array.from({ length: 4 }, async () => {
-    environments.push(await startEditorBrowserServer());
-  }));
-  const errors = results.filter(result => result.status === "rejected").map(result => result.reason);
-  if (errors.length) throw new AggregateError(errors, "Concurrent fixture startup failed");
-  const ports = environments.map(({ origin, bridge }) => [Number(new URL(origin).port), bridge.port]).flat();
-  assert.equal(new Set(ports).size, 8);
-  for (const { origin, bridge } of environments) {
-    const response = await fetch(origin);
-    assert.equal(response.status, 200);
-    await response.body.cancel();
-    assert.equal(await canBind(Number(new URL(origin).port)), false);
-    assert.equal(await upgradeStatus(bridge.port, origin), 101);
-    assert.equal(await upgradeStatus(bridge.port, "http://unrelated.invalid"), 401);
+// Cold optimizer scans can finish during close and create a late build. Repeat
+// the real cancellation boundary; retain exact cache, authentication and port checks.
+for (let round = 0; round < 8; round += 1) {
+  const environments = [];
+  try {
+    const results = await Promise.allSettled(Array.from({ length: 4 }, async () => {
+      environments.push(await startEditorBrowserServer());
+    }));
+    const errors = results.filter(result => result.status === "rejected").map(result => result.reason);
+    if (errors.length) throw new AggregateError(errors, "Concurrent fixture startup failed");
+    const ports = environments.map(({ origin, bridge }) => [Number(new URL(origin).port), bridge.port]).flat();
+    assert.equal(new Set(ports).size, 8);
+    for (const { origin, bridge } of environments) {
+      const response = await fetch(origin);
+      assert.equal(response.status, 200);
+      await response.body.cancel();
+      assert.equal(await canBind(Number(new URL(origin).port)), false);
+      assert.equal(await upgradeStatus(bridge.port, origin), 101);
+      assert.equal(await upgradeStatus(bridge.port, "http://unrelated.invalid"), 401);
+    }
+  } finally {
+    await Promise.all(environments.map(environment => {
+      const firstClose = environment.close();
+      assert.equal(environment.close(), firstClose, "concurrent callers share one teardown");
+      return firstClose;
+    }));
   }
-  checks.push("concurrent listeners retain unique OS-assigned ports and bind bridge authentication to the actual Vite origin");
-} finally {
-  await Promise.all(environments.map(environment => {
-    const firstClose = environment.close();
-    assert.equal(environment.close(), firstClose, "concurrent callers share one teardown");
-    return firstClose;
-  }));
+  for (const { origin, bridge, cacheDir } of environments) {
+    await assert.rejects(access(cacheDir), { code: "ENOENT" });
+    assert.equal(await canBind(Number(new URL(origin).port)), true);
+    assert.equal(await canBind(bridge.port), true);
+  }
 }
-for (const { origin, bridge, cacheDir } of environments) {
-  await assert.rejects(access(cacheDir), { code: "ENOENT" });
-  assert.equal(await canBind(Number(new URL(origin).port)), true);
-  assert.equal(await canBind(bridge.port), true);
-}
+checks.push("eight concurrent cold-fixture rounds retain unique ports and bind bridge authentication to the actual Vite origin");
 checks.push("closing concurrent cold fixtures releases Vite/HMR and MCP ports and removes private optimizer caches");
 
 const origins = [];

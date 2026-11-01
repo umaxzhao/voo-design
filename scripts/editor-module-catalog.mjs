@@ -26,10 +26,11 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
       "src/canvas/editor/editor_engine_history*", "src/canvas/undo*",
+      "src/canvas/editor/editor-history-asset-pins.js", "tests/unit/editor-history-asset-pins.test.js",
     ],
     related: ["workspace","layers","images","platform"],
     features: [
-      "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip",
+      "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow",
