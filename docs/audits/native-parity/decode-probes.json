@@ -1,0 +1,128 @@
+{
+  "object-gradient": {
+    "exitCode": 0,
+    "summary": "{\"canvasHeight\":300,\"canvasWidth\":400,\"nodes\":1,\"title\":\"Untitled\"}",
+    "output": {
+      "canvas": {
+        "backgroundColor": "#171717",
+        "colorVariables": [],
+        "guides": [],
+        "height": 300,
+        "width": 400,
+        "x": 0,
+        "y": 0
+      },
+      "canvasType": "design",
+      "id": "7C63CB55-A3BB-4EA5-9EFE-34996D1B0FEF",
+      "nodes": [
+        {
+          "height": 100,
+          "id": "g",
+          "kind": "rect",
+          "name": "Layer",
+          "rotation": 0,
+          "shear": 0,
+          "style": {
+            "blendMode": "source-over",
+            "fill": "#262626",
+            "locked": false,
+            "opacity": 1,
+            "stroke": "none",
+            "strokeWidth": 0,
+            "visible": true
+          },
+          "width": 100,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "selectedNodeIds": [],
+      "title": "Untitled",
+      "version": 2
+    }
+  },
+  "corrupt-nodes": {
+    "exitCode": 0,
+    "summary": "{\"canvasHeight\":300,\"canvasWidth\":400,\"nodes\":0,\"title\":\"Untitled\"}",
+    "output": {
+      "canvas": {
+        "backgroundColor": "#171717",
+        "colorVariables": [],
+        "guides": [],
+        "height": 300,
+        "width": 400,
+        "x": 0,
+        "y": 0
+      },
+      "canvasType": "design",
+      "id": "7A7D6B41-7439-41C5-82E2-C88272598E38",
+      "nodes": [],
+      "selectedNodeIds": [],
+      "title": "Untitled",
+      "version": 2
+    }
+  },
+  "corrupt-geometry": {
+    "exitCode": 0,
+    "summary": "{\"canvasHeight\":300,\"canvasWidth\":400,\"nodes\":1,\"title\":\"Untitled\"}",
+    "output": {
+      "canvas": {
+        "backgroundColor": "#171717",
+        "colorVariables": [],
+        "guides": [],
+        "height": 300,
+        "width": 400,
+        "x": 0,
+        "y": 0
+      },
+      "canvasType": "design",
+      "id": "532CF96F-EEA0-43C1-ADC1-BC9416ABAE98",
+      "nodes": [
+        {
+          "height": 40,
+          "id": "bad",
+          "kind": "rect",
+          "name": "Layer",
+          "rotation": 0,
+          "shear": 0,
+          "style": {
+            "blendMode": "source-over",
+            "fill": "#262626",
+            "locked": false,
+            "opacity": 1,
+            "stroke": "none",
+            "strokeWidth": 0,
+            "visible": true
+          },
+          "width": 0.001,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "selectedNodeIds": [],
+      "title": "Untitled",
+      "version": 2
+    }
+  },
+  "json-envelope": {
+    "exitCode": 0,
+    "summary": "{\"canvasHeight\":800,\"canvasWidth\":1200,\"nodes\":0,\"title\":\"Untitled\"}",
+    "output": {
+      "canvas": {
+        "backgroundColor": "#171717",
+        "colorVariables": [],
+        "guides": [],
+        "height": 800,
+        "width": 1200,
+        "x": 0,
+        "y": 0
+      },
+      "canvasType": "design",
+      "id": "49A68CEA-F6BC-4BCE-BD44-1B57079471A4",
+      "nodes": [],
+      "selectedNodeIds": [],
+      "title": "Untitled",
+      "version": 2
+    }
+  }
+}

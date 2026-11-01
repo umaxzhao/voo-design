@@ -341,12 +341,13 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "group_layers",
-      description: "Group two or more layers into a new folder.",
+      description: "Group two or more layers into a folder or, when section is true, an organizational canvas Section.",
       parameters: {
         type: "object",
         properties: {
           layerIds: { type: "array", items: { type: "string" } },
           name: { type: "string" },
+          section: { type: "boolean", description: "Create a non-rendering Section container with a canvas boundary." },
         },
         required: ["layerIds"],
       },
@@ -968,7 +969,9 @@ function groupLayers(args = {}) {
   const groupsBefore = new Set((docBefore?.nodes || []).filter(isGroupNode).map((node) => node.id));
 
   editor.selectExactly?.(layerIds);
-  const result = editor.groupSelection?.();
+  const result = args.section === true
+    ? editor.createSection?.(args.name)
+    : editor.groupSelection?.();
 
   let groupId = typeof result === "string" ? result : result?.id ?? null;
   if (!groupId) {

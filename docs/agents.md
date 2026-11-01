@@ -16,6 +16,7 @@ kept in sync with undo/redo:
 
 | Tool | Effect |
 | :--- | :--- |
+| `resize_document` | Sets active document dimensions through the shared constraint-aware engine operation. |
 | `build_layout` | Builds a structured layout from a description. |
 | `stream_layout` | Streams incremental layout/HTML onto the canvas with live progressive rendering and commits upon completion. |
 | `generate_image` | Generates and places an image layer. |

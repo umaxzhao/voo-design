@@ -25,20 +25,20 @@ ReadySurface.propTypes = { readyRef: PropTypes.shape({ current: PropTypes.bool }
 function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list, t, failed, onRetry, launcherVisible = true, swapSide = false }) {
   // Only an open list owns the inspector. Standalone placement keeps its controls.
   const status = (
-    <div role={failed ? "alert" : "status"} aria-busy={!failed} data-testid={failed ? "editor-comments-error" : "editor-comments-loading"}
-      className="pointer-events-auto flex items-center gap-2 p-3 text-neutral-300">
-      {failed ? null : <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
-      <span className="text-[11px]">{t(failed ? "editor.comments.loadFailed" : "common.loading")}</span>
-      {failed ? <button type="button" onClick={onRetry}
-        className="rounded-lg px-2 py-1 text-[11px] outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
-        {t("error.retry")}
-      </button> : null}
-      <button type="button" onClick={open ? onClose : onToggleAddMode}
-        aria-label={t("editor.comments.close")}
-        className="flex size-7 items-center justify-center rounded-lg outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
-        <X size={13} />
-      </button>
-    </div>
+        <div role={failed ? "alert" : "status"} aria-busy={!failed} data-testid={failed ? "editor-comments-error" : "editor-comments-loading"}
+          className="pointer-events-auto flex items-center gap-2 p-3 text-neutral-300">
+          {failed ? null : <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
+          <span className="text-[11px]">{t(failed ? "editor.comments.loadFailed" : "common.loading")}</span>
+          {failed ? <button type="button" onClick={onRetry}
+            className="rounded-lg px-2 py-1 text-[11px] outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
+            {t("error.retry")}
+          </button> : null}
+          <button type="button" onClick={open ? onClose : onToggleAddMode}
+            aria-label={t("editor.comments.close")}
+            className="flex size-7 items-center justify-center rounded-lg outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
+            <X size={13} />
+          </button>
+        </div>
   );
   return (
     <div data-testid="editor-comments" aria-busy={(open || addMode) && !failed} className="pointer-events-none absolute inset-0 select-none font-mono">

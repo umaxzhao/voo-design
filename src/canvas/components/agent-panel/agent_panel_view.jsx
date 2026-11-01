@@ -1,12 +1,16 @@
 import { useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { ArrowUp, History, PanelLeft, Plus, X } from "lucide-react";
+import { ArrowUp, History, PanelLeft, Paperclip, Plus, X } from "lucide-react";
 import { VooBrandLogo } from "../../../app_title_bar.jsx";
 import ToolCallCard from "../tool_call_card.jsx";
 import AgentModelLabel from "./agent_model_label.jsx";
 import AgentModelMenu from "./agent_model_menu.jsx";
 import AgentContextChip from "./agent_context_chip.jsx";
+import PromptImageAttachments from "../prompt_image_attachments.jsx";
 import AgentSelectionSuggestions, { appendSuggestion } from "./agent_selection_suggestions.jsx";
+import ReasoningEffortControl from "./reasoning_effort_control.jsx";
+import AssistantMessageCopy from "./assistant_message_copy.jsx";
+import AgentSessionHistory from "./agent_session_history.jsx";
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -47,13 +51,17 @@ HeaderButton.propTypes = {
 export default function AgentPanelView({
   t, activeTitle, historyOpen, setHistoryOpen, setModelMenuOpen,
   startNewSession, onClose, modelMenuOpen, modelGroups, currentModel,
+  reasoningEfforts, reasoningEffort, onSelectReasoningEffort,
+  renamingSessionId, renameDraft, setRenamingSessionId, setRenameDraft,
+  renameSession,
   handleSelectModel, sessions, activeId, openSession, removeSession,
   isEmpty, setInput, transcript, directions, directionChoice, busy,
   pipelineProgress, streamingText, candidates, keepCandidate,
   activeContext, setActiveContext, cancelled, lastRequest, send,
-  error, configError, onSubmit, input, onKeyDown, turnRef
+  error, configError, onSubmit, input, onKeyDown, turnRef, references
 }) {
   const composerRef = useRef(null);
+  const fileInputRef = useRef(null);
   const modelTriggerRef = useRef(null);
   const closeModelMenu = useCallback(() => setModelMenuOpen(false), [setModelMenuOpen]);
   return (
@@ -84,42 +92,10 @@ export default function AgentPanelView({
         </HeaderButton>
       </header>
 
-      {historyOpen && (
-        <ul
-          aria-label={t("agent.history.title")}
-          className="absolute inset-x-2 top-12 z-10 flex max-h-[60%] flex-col gap-0.5 overflow-y-auto rounded-2xl bg-[#171717] p-2 shadow-panel"
-        >
-          {sessions.length === 0 && (
-            <li className="px-2.5 py-3 text-[12px] text-neutral-400">{t("agent.history.empty")}</li>
-          )}
-          {sessions.map((session) => {
-            const isActive = session.id === activeId;
-            return (
-              <li key={session.id} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => openSession(session)}
-                  aria-current={isActive}
-                  className={`flex-1 truncate rounded-xl px-2.5 py-2 text-left text-[12px] transition-colors hover:bg-white/[0.06] ${
-                    isActive ? "bg-[#E5B2FF]/10 text-[#eed0ff]" : "text-neutral-300"
-                  }`}
-                >
-                  {session.title || t("agent.history.untitled")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeSession(session.id)}
-                  aria-label={t("agent.history.delete")}
-                  title={t("agent.history.delete")}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-white"
-                >
-                  <X size={14} strokeWidth={1.5} aria-hidden="true" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {historyOpen && <AgentSessionHistory {...{
+        t, sessions, activeId, openSession, removeSession,
+        renamingSessionId, renameDraft, setRenameDraft, setRenamingSessionId, renameSession,
+      }} />}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4 pt-2">
         {isEmpty ? (
@@ -175,6 +151,7 @@ export default function AgentPanelView({
                     </div>
                   )}
                   <div>{item.content}</div>
+                  {item.role === "assistant" && <AssistantMessageCopy content={item.content} t={t} />}
                 </li>
               ),
             )}
@@ -226,9 +203,9 @@ export default function AgentPanelView({
       {!busy && lastRequest && (
         <div className="mx-4 mb-2 flex gap-2 text-[12px]">
           <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(lastRequest.text, lastRequest.context, undefined, lastRequest.generation)}>{t("agent.panel.retry")}</button>
+            onClick={() => send(lastRequest.text, lastRequest.context, undefined, lastRequest.generation, lastRequest.attachments)}>{t("agent.panel.retry")}</button>
           {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest, lastRequest.generation)}>{t("agent.panel.resume")}</button>}
+            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest, lastRequest.generation, lastRequest.attachments)}>{t("agent.panel.resume")}</button>}
         </div>
       )}
       {error && (
@@ -245,7 +222,9 @@ export default function AgentPanelView({
           )}
         </div>
       )}
-      <form ref={composerRef} onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 shrink-0 mb-3 rounded-2xl p-3">
+      <form ref={composerRef} onSubmit={onSubmit} onPaste={references?.onPaste} className="prompt-composer agent-composer relative mx-3 shrink-0 mb-3 rounded-2xl p-3">
+        {references && <PromptImageAttachments references={references} t={t} />}
+        {references && <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple className="sr-only" onChange={(event) => { void references.addFiles(event.target.files); event.target.value = ""; }} />}
         <AgentContextChip context={activeContext} onDetach={() => setActiveContext(null)} t={t} />
         {modelMenuOpen && (
           <AgentModelMenu currentModel={currentModel} groups={modelGroups}
@@ -259,9 +238,10 @@ export default function AgentPanelView({
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}
           rows={3}
-          className="w-full resize-none bg-transparent text-xs leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
+          className="w-full resize-none bg-transparent text-xs max-sm:text-[15px] leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
         <div className="flex items-center gap-2 pt-2">
+          {references && <button type="button" onClick={() => fileInputRef.current?.click()} aria-label={t("welcome.prompt.addAttachment")} title={t("welcome.prompt.addAttachment")} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200"><Paperclip size={15} /></button>}
           <span className="min-w-0 flex-1" aria-hidden="true" />
           {currentModel && (
             <button
@@ -282,6 +262,12 @@ export default function AgentPanelView({
               <AgentModelLabel modelId={currentModel} size={12} />
             </button>
           )}
+          <ReasoningEffortControl
+            efforts={reasoningEfforts}
+            value={reasoningEffort}
+            onChange={onSelectReasoningEffort}
+            t={t}
+          />
           {busy && (
             <button
               type="button"
@@ -294,7 +280,7 @@ export default function AgentPanelView({
           )}
           <button
             type="submit"
-            disabled={busy || !input.trim()}
+            disabled={busy || references?.isReading || (!input.trim() && !references?.attachments.length)}
             aria-label={t("agent.panel.send")}
             title={t("agent.panel.send")}
             className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#E5B2FF] text-black transition-colors hover:bg-[#eed0ff] disabled:opacity-40"
@@ -308,6 +294,7 @@ export default function AgentPanelView({
 }
 
 AgentPanelView.propTypes = {
+  references: PropTypes.object,
   t: PropTypes.func.isRequired,
   activeTitle: PropTypes.string,
   historyOpen: PropTypes.bool,
@@ -318,6 +305,14 @@ AgentPanelView.propTypes = {
   modelMenuOpen: PropTypes.bool,
   modelGroups: PropTypes.array.isRequired,
   currentModel: PropTypes.string,
+  reasoningEfforts: PropTypes.arrayOf(PropTypes.string),
+  reasoningEffort: PropTypes.string,
+  onSelectReasoningEffort: PropTypes.func,
+  renamingSessionId: PropTypes.string,
+  renameDraft: PropTypes.string,
+  setRenamingSessionId: PropTypes.func,
+  setRenameDraft: PropTypes.func,
+  renameSession: PropTypes.func,
   handleSelectModel: PropTypes.func.isRequired,
   sessions: PropTypes.array.isRequired,
   activeId: PropTypes.string,

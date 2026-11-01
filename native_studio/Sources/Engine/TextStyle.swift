@@ -15,14 +15,31 @@ public enum TextStyleResolver {
 
     // MARK: Fonts
 
+    /// Regular-instance PostScript names for the bundled OFL text faces whose CSS
+    /// family token is not itself a PostScript name (measured from the TTFs in
+    /// `Resources/Fonts`). CoreText reports these families correctly on macOS 14,
+    /// so this table is the last-resort fallback: it keeps a document's CSS stack
+    /// (`"'Bitter', 'Rockwell', serif"`, `"'ZCOOL KuaiLe', 'PingFang SC', …"`)
+    /// resolving to the bundled face even where only the PostScript name is
+    /// exposed, instead of silently dropping to the system fallback.
+    private static let bundledFaceAliases: [String: String] = [
+        "archivo black": "ArchivoBlack-Regular",
+        "bitter": "Bitter-Regular",
+        "caveat": "Caveat-Regular",
+        "playfair display": "PlayfairDisplay-Regular",
+        "zcool kuaile": "ZCOOLKuaiLe-Regular",
+    ]
+
     public static func nsWeight(for token: String?) -> NSFont.Weight {
         switch (token ?? "regular").lowercased() {
-        case "thin": return .thin
-        case "light": return .light
-        case "medium": return .medium
-        case "semibold", "semi-bold": return .semibold
-        case "bold": return .bold
-        case "heavy", "black": return .heavy
+        case "100", "ultralight": return .ultraLight
+        case "200", "thin": return .thin
+        case "300", "light": return .light
+        case "500", "medium": return .medium
+        case "600", "semibold", "semi-bold": return .semibold
+        case "700", "bold": return .bold
+        case "800", "heavy": return .heavy
+        case "900", "black": return .black
         default: return .regular
         }
     }
@@ -34,7 +51,20 @@ public enum TextStyleResolver {
             ?? NSFont.systemFont(ofSize: resolvedSize, weight: .regular)
         let weight = nsWeight(for: node.fontWeight)
         guard weight != .regular else { return base }
+
+        // The bundled text faces are variable fonts. Carrying the weight trait on
+        // a *named-instance* descriptor keeps that instance (e.g. always Bitter
+        // Regular); going through a family descriptor lets CoreText pick the
+        // matching instance (Bitter-Bold, PlayfairDisplayRoman-Bold,
+        // Inter-Regular_Bold, …) — the face the web build's `font-weight` renders.
         let traits: [NSFontDescriptor.TraitKey: Any] = [.weight: weight.rawValue]
+        let familyDescriptor = NSFontDescriptor(fontAttributes: [
+            .family: base.familyName ?? base.fontName,
+            .traits: traits,
+        ])
+        if let matched = NSFont(descriptor: familyDescriptor, size: resolvedSize) {
+            return matched
+        }
         let weighted = base.fontDescriptor.addingAttributes([.traits: traits])
         return NSFont(descriptor: weighted, size: resolvedSize) ?? base
     }
@@ -43,7 +73,8 @@ public enum TextStyleResolver {
     /// `"'Inter', system-ui, sans-serif"`, so the first concrete family that the
     /// system (or the bundled OFL faces in `Resources/Fonts`) can provide wins.
     public static func resolveFamily(_ token: String, size: CGFloat) -> NSFont? {
-        // Ensure the bundled faces (Intel One Mono + Inter) are registered.
+        // Ensure the bundled faces (Intel One Mono, Inter + the OFL text faces)
+        // are registered.
         VooMonoTypeface.registerBundledFonts()
 
         let candidates = token
@@ -68,6 +99,10 @@ public enum TextStyleResolver {
                let font = NSFont(name: name, size: size) {
                 return font
             }
+            if let postScript = bundledFaceAliases[family.lowercased()],
+               let font = NSFont(name: postScript, size: size) {
+                return font
+            }
         }
         return nil
     }
@@ -85,7 +120,7 @@ public enum TextStyleResolver {
         let style = NSMutableParagraphStyle()
         style.alignment = alignment(for: node.textAlign)
         style.lineHeightMultiple = max(CGFloat(node.lineHeight ?? 1.2), 0.8)
-        style.lineBreakMode = .byWordWrapping
+        style.lineBreakMode = (node.boxWidth ?? 0) > 0 ? .byWordWrapping : .byClipping
         return style
     }
 

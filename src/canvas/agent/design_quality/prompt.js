@@ -30,7 +30,7 @@ export function buildDesignQualityPrompt({ userText, kit, designSystem, sceneKin
     `Don't: ${activeKit.donts.join("; ")}.`,
     "",
     "[Workflow — tokens first]",
-    "1. Build the complete screen with build_layout in 1-3 calls: include every section, real copy, and all text. For one poster or page, use one top-level Frame and nest all visual and editable text layers beneath it; create multiple root Frames only for separate variants. You may batch multiple tool calls in one step.",
+    "1. Build the complete screen with build_layout in 1-3 calls: include every section, real copy, and all text. For one poster or page, use one top-level Frame. For presentation decks (PPT/slides) or multi-screen flows, create each slide/screen as an independent top-level root Frame side by side without any outer enclosing container. Never wrap separate slides inside a giant parent frame. You may batch multiple tool calls in one step.",
     "2. Set colours and fonts directly from the style kit tokens on each node; do not spend calls on separate bind_variable operations or token creation.",
     "3. ALWAYS use Auto Layout wherever applicable: All UI containers, navigation bars, header rows, card content, button groups, metadata badges, lists, and column grids MUST be built using nested Auto Layout frames (direction: 'horizontal' | 'vertical', with explicit 4-multiple gap, padding, alignItems, and justifyContent). Use fixed/hug frame sizing and layoutWidth/layoutHeight: 'hug' or 'fill' on children so layers dynamically reflow when text or content changes. Reserve absolute positioning strictly for free-form artwork or floating overlays.",
     "4. Avoid hand-drawn path illustrations; use simple shapes or image placeholders.",

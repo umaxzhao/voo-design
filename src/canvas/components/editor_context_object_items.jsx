@@ -73,6 +73,16 @@ export default function EditorContextObjectItems({ model }) {
       <button
         type="button"
         role="menuitem"
+        className={canGroup ? itemClass : disabledClass}
+        disabled={!canGroup}
+        onClick={() => run(() => engine.createSection(t("editor.menu.sectionName")))}
+      >
+        <span>{t("editor.menu.createSection")}</span>
+      </button>
+
+      <button
+        type="button"
+        role="menuitem"
         className={canUngroup ? itemClass : disabledClass}
         disabled={!canUngroup}
         onClick={() => run(() => engine.ungroupSelection())}

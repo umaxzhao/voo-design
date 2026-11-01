@@ -68,6 +68,17 @@ describe("streamCliStep", () => {
     expect(step.toolCalls).toEqual([{ id: "call_1", name: "create_frame", arguments: '{"width":400}' }]);
   });
 
+  it("forwards a selected Codex reasoning effort to the native bridge", async () => {
+    const advance = vi.fn().mockResolvedValue({ ok: true, done: true, text: "Done." });
+    setBridge({ advance, cancel: vi.fn() });
+    await streamCliStep({
+      config: { model: "codex:gpt-6-astra", reasoningEffort: "high" },
+      messages: [{ role: "user", content: "Make a poster" }],
+      tools: [],
+    });
+    expect(advance.mock.calls[0][0].reasoningEffort).toBe("high");
+  });
+
   it("returns no tool calls when the turn ends in plain text", async () => {
     setBridge({
       advance: async (opts) => ({ ok: true, threadId: opts.threadId, done: true, text: "Done." }),
@@ -81,5 +92,17 @@ describe("streamCliStep", () => {
     });
     expect(step.text).toBe("Done.");
     expect(step.toolCalls).toEqual([]);
+  });
+
+  it("forwards the selected Codex reasoning effort to the native session", async () => {
+    const advance = vi.fn().mockResolvedValue({ ok: true, done: true, text: "Done." });
+    setBridge({ advance, cancel: vi.fn().mockResolvedValue({ ok: true }) });
+    await streamCliStep({
+      config: { model: "codex:gpt-6-astra", reasoningEffort: "high" },
+      messages: [{ role: "user", content: "Review this frame" }],
+      tools: [],
+      signal: new AbortController().signal,
+    });
+    expect(advance.mock.calls[0][0].reasoningEffort).toBe("high");
   });
 });

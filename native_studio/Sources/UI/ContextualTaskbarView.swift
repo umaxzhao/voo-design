@@ -257,7 +257,19 @@ public final class ContextualTaskbarView: NSView {
     public var onAIRemoveBackground: (() -> Void)?
     public var onAIRewrite: (() -> Void)?
 
+    private struct ButtonState: Equatable {
+        let mode: ContextualTaskbarMode
+        let isLocked: Bool
+        let isVisible: Bool
+        let isImage: Bool
+        let hasGroup: Bool
+    }
     private let stackView = NSStackView()
+    private var requestedState = ButtonState(
+        mode: .singleNode, isLocked: false,
+        isVisible: true, isImage: false, hasGroup: false)
+    private var renderedState: ButtonState?
+    private var presentationUpdateScheduled = false
 
     public override init(frame frameRect: NSRect = .zero) {
         super.init(frame: NSRect(x: 0, y: 0, width: 340, height: 34))
@@ -292,6 +304,7 @@ public final class ContextualTaskbarView: NSView {
         ])
 
         buildButtons(for: .singleNode)
+        renderedState = requestedState
     }
 
     public func update(selectedNodes: [VOONode], isPathEditing: Bool = false) {
@@ -304,17 +317,39 @@ public final class ContextualTaskbarView: NSView {
             newMode = .singleNode
         }
 
-        let isLocked = selectedNodes.first?.style.locked ?? false
-        let isVisible = selectedNodes.first?.style.visible ?? true
-        let hasGroup = selectedNodes.contains(where: { $0.kind == .group })
-        let nodeKind = selectedNodes.first?.kind
-
-        buildButtons(for: newMode, isLocked: isLocked, isVisible: isVisible, hasGroup: hasGroup, nodeKind: nodeKind)
+        // Position, identity and unrelated style changes do not alter the buttons.
+        let next = ButtonState(
+            mode: newMode,
+            isLocked: newMode == .singleNode && selectedNodes.first?.style.locked == true,
+            isVisible: newMode != .singleNode || selectedNodes.first?.style.visible != false,
+            isImage: newMode == .singleNode && selectedNodes.first?.kind == .image,
+            hasGroup: newMode == .multiSelection && selectedNodes.contains { $0.kind == .group })
+        guard requestedState != next else { return }
+        requestedState = next
+        currentMode = next.mode
+        guard !presentationUpdateScheduled else { return }
+        presentationUpdateScheduled = true
+        // CanvasStageView calls this method from layout. NSStackView structure
+        // may only change after that AppKit layout pass has returned.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.presentationUpdateScheduled = false
+            let state = self.requestedState
+            guard self.renderedState != state else { return }
+            self.buildButtons(
+                for: state.mode, isLocked: state.isLocked,
+                isVisible: state.isVisible, hasGroup: state.hasGroup,
+                nodeKind: state.isImage ? .image : nil)
+            self.renderedState = state
+        }
     }
 
     private func buildButtons(for mode: ContextualTaskbarMode, isLocked: Bool = false, isVisible: Bool = true, hasGroup: Bool = false, nodeKind: NodeKind? = nil) {
         currentMode = mode
-        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for view in stackView.arrangedSubviews {
+            stackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
 
         switch mode {
         case .singleNode:
@@ -325,8 +360,9 @@ public final class ContextualTaskbarView: NSView {
             addPathEditingButtons()
         }
 
+        invalidateIntrinsicContentSize()
         needsLayout = true
-        layoutSubtreeIfNeeded()
+        superview?.needsLayout = true
     }
 
     private func addSingleNodeButtons(isLocked: Bool, isVisible: Bool, nodeKind: NodeKind? = nil) {

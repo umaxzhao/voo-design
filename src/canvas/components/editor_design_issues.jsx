@@ -1,0 +1,120 @@
+import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import { lintDesign } from "../agent/design_quality/lint.js";
+import { useI18n } from "../use_i18n.js";
+import { IconAlertTriangle, IconChevronDown, IconChevronRight } from "../icons.jsx";
+
+const ISSUE_COPY = {
+  overflow: "overflow",
+  offGrid: "offGrid",
+  purpleGradient: "purpleGradient",
+  overlap: "overlap",
+  misalignment: "misalignment",
+  identicalCards: "identicalCards",
+  centerStackedHero: "centerStackedHero",
+  noFocal: "noFocal",
+  contrast: "contrast",
+  radii: "radii",
+  decorativeLines: "decorativeLines",
+  evenTemplateSpacing: "evenTemplateSpacing",
+  flatHierarchy: "flatHierarchy",
+};
+
+export function getLocalizedIssueCopy(issue, t) {
+  if (issue.rule === "typeScale") {
+    const size = issue.message.match(/^Font size (\d+)px/)?.[1];
+    const recommendation = issue.fix.match(/Use (\d+)px/)?.[1];
+    const variant = size ? "typeScaleSize" : "typeScaleDense";
+    return {
+      message: t(`editor.designIssues.message.${variant}`, size ? { size } : undefined),
+      fix: t(`editor.designIssues.fix.${variant}`, recommendation ? { size: recommendation } : undefined),
+    };
+  }
+  if (issue.rule === "contrast") {
+    const [, ratio, required] = issue.message.match(/Text contrast ([\d.]+) is below ([\d.]+):1\./) ?? [];
+    return {
+      message: t("editor.designIssues.message.contrast", { ratio: ratio ?? "—", required: required ?? "—" }),
+      fix: t("editor.designIssues.fix.contrast"),
+    };
+  }
+  const key = ISSUE_COPY[issue.rule];
+  if (!key) return {
+    message: t("editor.designIssues.message.generic"),
+    fix: t("editor.designIssues.fix.generic"),
+  };
+  return {
+    message: t(`editor.designIssues.message.${key}`),
+    fix: t(`editor.designIssues.fix.${key}`),
+  };
+}
+
+export default function EditorDesignIssues({ objects, engine }) {
+  const { t } = useI18n();
+  const [issues, setIssues] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    engine?.setDesignIssues?.(issues ?? []);
+    return () => engine?.setDesignIssues?.([]);
+  }, [engine, issues]);
+
+  useEffect(() => {
+    setIssues(null);
+    setOpen(false);
+  }, [objects]);
+
+  function inspect() {
+    const result = lintDesign({ nodes: objects });
+    setIssues(result.issues);
+    setOpen(true);
+  }
+
+  return <section className="mb-2">
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={inspect}
+        aria-label={t("editor.designIssues.run")}
+        title={t("editor.designIssues.run")}
+        className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-left text-[10px] font-mono text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-200"
+      >
+        <IconAlertTriangle size={13} />
+        <span>{t("editor.designIssues.run")}</span>
+        {issues ? <span className="ml-auto tabular-nums">{issues.length}</span> : null}
+      </button>
+      {issues ? <button
+        type="button"
+        onClick={() => setOpen(value => !value)}
+        aria-expanded={open}
+        aria-label={t(open ? "editor.designIssues.collapse" : "editor.designIssues.expand")}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200"
+      >
+        {open ? <IconChevronDown size={13} /> : <IconChevronRight size={13} />}
+      </button> : null}
+    </div>
+    {open && issues ? <div className="mt-1 max-h-48 space-y-1 overflow-y-auto">
+      {issues.length === 0 ? <p className="px-2 py-2 text-[10px] text-neutral-500">{t("editor.designIssues.clean")}</p> : issues.map((issue) => {
+        const copy = getLocalizedIssueCopy(issue, t);
+        return <article
+          key={`${issue.rule}-${issue.nodeIds.join("-")}-${issue.message}`}
+          className="rounded-lg bg-white/[0.035] px-2 py-1.5"
+        >
+          <p className="text-[10px] leading-relaxed text-neutral-300">{copy.message}</p>
+          <p className="mt-0.5 text-[9px] text-neutral-500">{copy.fix}</p>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {issue.nodeIds.map(id => <button
+              key={id}
+              type="button"
+              onClick={() => engine?.selectExactly?.([id])}
+              className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[9px] text-[#a7ffd4] hover:bg-white/[0.1]"
+            >{objects.find(node => node.id === id)?.name || t("editor.designIssues.selectLayer")}</button>)}
+          </div>
+        </article>;
+      })}</div> : null}
+  </section>;
+}
+
+EditorDesignIssues.propTypes = {
+  objects: PropTypes.arrayOf(PropTypes.object).isRequired,
+  engine: PropTypes.object,
+};

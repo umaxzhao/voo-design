@@ -9,8 +9,8 @@
 }
 
 .voo-browser-drawer {
-  width: min(46vw, 720px);
-  min-width: 360px;
+  width: var(--browser-drawer-width, min(46vw, 720px));
+  min-width: 320px;
 }
 
 .browser-load-track {

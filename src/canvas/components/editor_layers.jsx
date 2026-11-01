@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import EditorLayersResize from "./editor_layers_resize.jsx";
 import EditorLayersHeader from "./editor_layers_header.jsx";
 import EditorLayersAssets from "./editor_layers_assets.jsx";
 import EditorLayersControls from "./editor_layers_controls.jsx";
@@ -5,6 +7,7 @@ import EditorLayersTree from "./editor_layers_tree.jsx";
 import EditorLayersFooter from "./editor_layers_footer.jsx";
 import EditorLayersPopovers from "./editor_layers_popovers.jsx";
 import EditorLayerContextMenu from "./editor_layer_context_menu.jsx";
+import EditorDesignIssues from "./editor_design_issues.jsx";
 import useEditorLayersController from "./use_editor_layers_controller.js";
 import { editorLayersPropTypes } from "./editor_layers_contract.js";
 import { LAYERS_PANEL_MAX_HEIGHT_CLASS } from "./editor_panel_clearance.js";
@@ -149,15 +152,17 @@ export default function EditorLayers({
     initialSearch
   };
   const model = useEditorLayersController(props);
+  const panelRef = useRef(null);
   const sideClass = swapSide ? "right-4" : "left-4";
   const {
     t,
     panelTab
   } = model;
   return <aside
+    ref={panelRef}
     data-testid="editor-layers-panel"
     aria-label={t(panelTab === "assets" ? "editor.assets" : "editor.layers")}
-    className={`absolute ${sideClass} top-1/2 z-30 flex ${LAYERS_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 flex-col rounded-3xl border border-white/10 bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`}
+    className={`editor-layers-resizable absolute ${sideClass} top-1/2 z-30 flex ${LAYERS_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 flex-col rounded-3xl border border-white/10 bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`}
     style={bottomInset > 0 ? {
       top: `calc(50% - ${bottomInset / 2}px)`,
       maxHeight: `calc(100% - ${bottomInset + 80}px)`
@@ -166,6 +171,8 @@ export default function EditorLayers({
     <EditorLayersHeader
       model={model}
     />
+    <EditorLayersResize panelRef={panelRef} swapped={swapSide} t={t} />
+    {panelTab === "layers" ? <EditorDesignIssues objects={objects} engine={assetEngine} /> : null}
     {panelTab === "assets" ? <EditorLayersAssets
       model={model}
     /> : <>

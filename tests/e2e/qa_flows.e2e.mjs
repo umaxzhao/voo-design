@@ -1,6 +1,9 @@
 // Real-app pointer checks. Usage: node tests/e2e/qa_flows.e2e.mjs
 // Starts its own Vite server; needs `playwright` and Chromium installed.
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
@@ -10,6 +13,7 @@ import { startCliBridgeServer } from "../../electron/cli_bridge_server.js";
 import { TOOL } from "../../src/canvas/editor/tool_ids.js";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
+const screenshotDirectory = await mkdtemp(join(tmpdir(), "voo-qa-flows-"));
 const port = await new Promise((resolve, reject) => {
   const server = createServer();
   server.on("error", reject);
@@ -60,8 +64,10 @@ try {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
   await page.goto(url);
-  await page.getByTitle(/返回画布|Back to canvas/).click();
-  await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
+  await page.getByRole("button", { name: /^(新建|New)$/ }).click();
+  await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 90000 });
+  await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')
+    ?.getAttribute("data-open-guard") === "off", null, { timeout: 90000 });
   await page.waitForTimeout(800);
   const canvas = page.locator("canvas").first();
   await canvas.waitFor({ state: "visible" });
@@ -101,7 +107,7 @@ try {
   // Default creation stays visible; user-selected black remains represented in thumbs.
   const fills = await page.evaluate((ids) => window.__vooEditor.getDocument().nodes.filter(n => ids.includes(n.id)).map(n => n.fill), rectIds);
   assert.deepEqual(fills, ["#D4D4D4", "#D4D4D4"]);
-  await page.screenshot({ path: "/workspace/tmp/qa2-01-shape-default-fill.png" });
+  await page.screenshot({ path: join(screenshotDirectory, "01-shape-default-fill.png") });
 
   // Observe DOM commits as well as animation frames: a delayed effect-only
   // draft reset can otherwise escape a final-value assertion.
@@ -129,31 +135,32 @@ try {
   });
   assert.ok(samples.some(s => s.id === rectIds[1]));
   assert.deepEqual(samples.filter(s => s.actual !== s.expected), [], "X must match the selected layer at every observed DOM commit/frame");
-  await page.screenshot({ path: "/workspace/tmp/qa2-03-layer-x-after-switch.png" });
+  await page.screenshot({ path: join(screenshotDirectory, "03-layer-x-after-switch.png") });
 
   const imageId = await page.evaluate(async () => {
     const canvas = document.createElement("canvas"); canvas.width = 120; canvas.height = 100;
     const ctx = canvas.getContext("2d"); ctx.fillStyle = "#a7ffd4"; ctx.fillRect(0, 0, 120, 100);
-    const blob = await new Promise(resolve => canvas.toBlob(resolve));
-    await window.__vooEditor.insertImage(new File([blob], "qa-filter.png", { type: "image/png" }));
-    return window.__vooEditor.getSelectedIds()[0];
+    const image = await window.__vooEditor.insertImage(canvas.toDataURL(), { x: 120, y: 120 });
+    return image?.id;
   });
-  await page.evaluate((id) => {
+  assert.ok(imageId, "Image insertion must return a selected, editable node");
+  await page.evaluate(async (id) => {
     const engine = window.__vooEditor;
-    const doc = engine.getDocument();
-    engine.setDoc({ ...doc, nodes: doc.nodes.map(n => n.id === id ? { ...n, adjustments: { ...n.adjustments, liveFilters: [{ id: "qa-filter", kind: "blur", enabled: true, opacity: 1, params: { value: 100 } }] } } : n) });
+    const { createLiveFilterEntry } = await import("/src/canvas/editor/live_filter_stack.js");
+    engine.selectExactly([id]);
+    engine.updateNode(id, { adjustments: { liveFilters: [createLiveFilterEntry("blur", { value: 100 })] } });
   }, imageId);
-  const filters = page.getByTestId("editor-live-filter-section");
-  await filters.waitFor({ state: "visible" });
-  if (await filters.locator('input[type="range"]').count() === 0) await filters.locator("button").first().click();
-  const sliders = filters.locator('input[type="range"]');
-  await sliders.first().waitFor({ state: "visible" });
-  assert.equal(await sliders.count(), 2);
-  for (const slider of await sliders.all()) {
-    await slider.scrollIntoViewIfNeeded();
-    await slider.hover();
+  const filters = page.getByTestId("effects-filter-stack");
+  await filters.waitFor({ state: "visible", timeout: 5000 });
+  const valueFields = filters.locator('input[type="number"]');
+  if (await valueFields.count() === 0) await filters.locator("button").first().click();
+  await valueFields.first().waitFor({ state: "visible", timeout: 5000 });
+  assert.equal(await valueFields.count(), 2);
+  for (const field of await valueFields.all()) {
+    await field.scrollIntoViewIfNeeded();
+    await field.hover();
     await page.waitForTimeout(150);
-    const geometry = await slider.evaluate(el => {
+    const geometry = await field.evaluate(el => {
       const r = el.getBoundingClientRect();
       const clips = [];
       for (let p = el.parentElement; p; p = p.parentElement) {
@@ -163,14 +170,13 @@ try {
           clips.push({ left: b.left, right: b.right });
         }
       }
-      // Native 12px thumb is centered 6px inside each endpoint, then scales 1.25.
-      return { width: r.width, left: r.left - 1.5, right: r.right + 1.5, clips, value: el.value };
+      return { width: r.width, left: r.left, right: r.right, clips, value: el.value };
     });
     assert.equal(geometry.value, "100");
-    assert.ok(geometry.width > 30, "Slider track must have usable width");
-    for (const clip of geometry.clips) assert.ok(geometry.left >= clip.left && geometry.right <= clip.right, "Scaled thumb must stay inside clipping ancestors");
+    assert.ok(geometry.width > 30, "Numeric filter field must have usable width");
+    for (const clip of geometry.clips) assert.ok(geometry.left >= clip.left && geometry.right <= clip.right, "Filter field must stay inside clipping ancestors");
   }
-  await page.screenshot({ path: "/workspace/tmp/qa2-02-live-filter-sliders.png" });
+  await page.screenshot({ path: join(screenshotDirectory, "02-live-filter-fields.png") });
   const accept = await page.getByTestId("editor-media-file-input").getAttribute("accept");
   for (const token of ["image/*", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".psd", "audio/*", "video/*", ".glb", ".obj"]) assert.ok(accept.split(",").includes(token));
 
@@ -178,7 +184,7 @@ try {
   const beforeImport = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
   await page.getByTestId("editor-media-file-input").setInputFiles({ name: "qa-picker.svg", mimeType: "image/svg+xml", buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#a7ffd4"/></svg>') });
   await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length > count, beforeImport);
-  await page.screenshot({ path: "/workspace/tmp/qa2-04-file-picker-accept.png" });
+  await page.screenshot({ path: join(screenshotDirectory, "04-file-picker-accept.png") });
 
   await page.evaluate((tool) => window.__vooEditor.setTool(tool), TOOL.GRADIENT);
   await drag(cx - 165, cy - 65, cx - 75, cy + 5);
@@ -197,6 +203,7 @@ try {
   try {
     await browser?.close();
     await bridge.close();
+    await rm(screenshotDirectory, { recursive: true, force: true });
   } finally {
     // Kill the entire npx/Vite process group, including the spawned Vite child.
     const killVite = (signal) => {

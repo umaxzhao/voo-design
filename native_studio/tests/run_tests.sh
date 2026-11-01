@@ -10,6 +10,7 @@ mkdir -p "$BUILD_DIR"
 
 TEST_FILES=(
   "$DIR/TestHarness.swift"
+  "$DIR/BitmapSampling.swift"
   "$DIR/Tier1_FeatureCoverageTests.swift"
   "$DIR/Tier2_BoundaryCornerTests.swift"
   "$DIR/Tier3_CrossFeatureTests.swift"
@@ -19,6 +20,19 @@ TEST_FILES=(
   "$DIR/M1_ToolFlyoutContextualTaskbarTests.swift"
   "$DIR/M2_InspectorStudioTests.swift"
   "$DIR/WorkspaceManagerTests.swift"
+  "$DIR/WorkspaceWatcherRegression.swift"
+  "$DIR/InspectorBehaviourTests.swift"
+  "$DIR/IslandAnchorTests.swift"
+  "$DIR/PortableParityTests.swift"
+  "$DIR/NativeWorkflowParityTests.swift"
+  "$DIR/NativePaintParityTests.swift"
+  "$DIR/NativeEffectsImportRegression.swift"
+  "$DIR/NativeInspectorVisualTests.swift"
+  "$DIR/NativeTitleBarDetailTests.swift"
+  "$DIR/NativeToolMenuParityTests.swift"
+  "$DIR/NativeToolRailResponsiveTests.swift"
+  "$DIR/NativeViewAidParityTests.swift"
+  "$DIR/NativeTextWidthTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )
@@ -65,7 +79,7 @@ fi
 echo "=== 正在编译 VOO Design Native Studio E2E 测试套件 ==="
 mkdir -p "$BUILD_DIR/ModuleCache"
 swiftc \
-  -O \
+  "${VOO_NATIVE_OPTIMIZATION:--Osize}" \
   -module-cache-path "$BUILD_DIR/ModuleCache" \
   -target arm64-apple-macosx14.0 \
   -sdk $(xcrun --show-sdk-path) \

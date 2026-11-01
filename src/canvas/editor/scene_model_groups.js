@@ -208,6 +208,8 @@ export function createGroupNode({
   height,
   parentId = null,
   autoLayout = null,
+  section = false,
+  name = undefined,
 }) {
   return {
     ...getBaseDefaults(),
@@ -218,6 +220,8 @@ export function createGroupNode({
     width,
     height,
     parentId,
+    ...(section ? { section: true } : {}),
+    ...(typeof name === "string" && name.trim() ? { name: name.trim() } : {}),
     ...(autoLayout ? { autoLayout } : {}),
   };
 }

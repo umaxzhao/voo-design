@@ -163,9 +163,10 @@ export function duplicateNode(doc, id, offset = 0) {
 export function nodeAtPoint(
   doc,
   point,
-  { includeLocked = false, reject = null, spatialIndex = null, zoom = 1 } = {},
+  { includeLocked = false, reject = null, spatialIndex = null, zoom = 1, all = false } = {},
 ) {
-  if (!doc?.nodes || doc.nodes.length === 0) return null;
+  if (!doc?.nodes || doc.nodes.length === 0) return all ? [] : null;
+  const hits = [];
 
   const index = spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex;
   let candidateNodes = null;
@@ -182,7 +183,7 @@ export function nodeAtPoint(
         });
 
     const metadata = hitTestMetadata(doc.nodes);
-    if (candidates.length === 0 && !metadata.hasFillInstance) return null;
+    if (candidates.length === 0 && !metadata.hasFillInstance) return all ? [] : null;
     candidateNodes = orderedCandidates(doc.nodes, candidates, metadata.fills);
   }
 
@@ -221,7 +222,8 @@ export function nodeAtPoint(
         local.y >= node.y &&
         local.y <= node.y + node.height
       ) {
-        return node;
+        if (!all) return node;
+        hits.push(node);
       }
       continue;
     }
@@ -281,10 +283,11 @@ export function nodeAtPoint(
       // The pixel-level veto: paint layers are mostly transparent, so their
       // transparent texels must let the click fall through to nodes below.
       if (reject?.(node, point)) continue;
-      return node;
+      if (!all) return node;
+      hits.push(node);
     }
   }
-  return null;
+  return all ? hits : null;
 }
 
 /**

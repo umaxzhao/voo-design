@@ -279,6 +279,24 @@ Grouped into focused pull request batches of at most 5 files per batch:
   4. `src/locales/zh-CN.json` / `src/locales/en-US.json` (Register corresponding localized dictionary keys)
 - **Objective:** Complete 100% i18n coverage across all properties panel controls per Spec `WB-02` criterion 3.
 
+## Welcome import and image references — 2026-10-31
+
+- Capability: `workspace.import-references`; suites: `welcome-import-references`, related `browser-drawer`, `pending-integration` and `ui-home-settings`.
+- Both desktop import cards and the compact welcome menu use the browser panel command. Screenshot selection appends a reference, preserves the brief and focuses the composer; it never creates a document or starts generation by itself.
+- Welcome and editor Agent composers share picker/clipboard attachment processing. Image-only submit uses localized recreation guidance. Images are passed as model visual references and remain outside canvas artwork; retries retain the request's references.
+- Regression: `welcome-import-references` uses a real Chromium clipboard image and text paste, verifies preview/removal and deferred creation, and intercepts the editor Agent HTTP request to assert a PNG data URL. No external model is called. `prompt-attachments.test.js` covers concurrent limits, duplicate clipboard representations, failed files, reset/unmount and ordinary text paste.
+- Precise release revision and execution: `/private/tmp/voo-welcome-import-release.json`; targeted browser log: `/private/tmp/voo-welcome-reference-clean.log`. Existing baseline failures remain separate; inspect receipts before claiming release success.
+- Remaining contexts: physical OS screenshot clipboard variants, signed Electron installers, other operating systems and live model quality. Document undo/save are unaffected by attaching references; generated result history remains owned by the existing Agent operation.
+
+## Layers panel width — 2026-10-31
+
+- Capability: `layers.panel-width`; core browser suite: `layers-panel-width`; related suites: `editor-layers-composition` and `ui-responsive-editor`.
+- A narrow separator on the layers panel edge adjusts its width without changing the canvas document, selection or undo history. The edge switches inward when panels swap sides. The shared width operation clamps to 200–560px and the actual space before the opposite inspector/history panel.
+- Pointer release and keyboard adjustments persist one local chrome preference. Escape, pointer cancellation, capture loss and blur roll back an active drag; double-click restores 256px. Narrow/mobile layouts retain their existing automatic widths and hide the separator; desktop width is restored when space returns.
+- Keyboard ownership: an additional selected-layer scenario initially moved the artwork by 1px; the separator now uses the existing floating-surface shortcut boundary, and the selected-layer scenario is retained in the browser suite. Initial evidence: `/private/tmp/voo-layer-width-selected.log`.
+- Reproduction: `/private/tmp/voo-layer-width-before.log` fails because the old panel has no edge handle. Browser assertions cover actual mouse drag, expanded long-name area, fixed opposite edge, left/right docking, Arrow/Home keyboard changes, limits, Escape, reset, refresh/new-document persistence, viewport transitions and serialized document invariance.
+- Evidence: `/private/tmp/voo-layer-width-clean.log`, `/private/tmp/voo-layers-width-release.json` (exact revision and executed steps), `/private/tmp/voo-layers-width-long-name.png`. Earlier dirty-workspace execution is not clean release evidence.
+- Remaining contexts: physical touch/stylus resizing, signed Electron builds, other operating systems, every inspector/history combination and large-tree performance. These are unverified; chrome preferences do not require artwork undo or export parity.
 
 ## Unified fill editor
 
@@ -390,9 +408,6 @@ remains separate and is not attributed to the final revision.
 
 ## Inspector control hierarchy
 
-The 6px radius recorded for that historical revision is superseded by the
-user-approved 12px large-radius follow-up below.
-
 Capability: `inspector.control-hierarchy`. Styling opts in only inside
 `editor-properties-panel`; shared field/dropdown markers have no effect in
 Layers, the welcome page, Agent or toolbar. Large panel radii remain unchanged.
@@ -413,20 +428,6 @@ capsule against the new geometry requirement. Targeted checks and screenshots:
 `tests/e2e/inspector-control-cases.mjs` runs inside the existing UI inspector suite.
 Clean fixed revision `7e6a77a3d0836b7eecceeefddf3be3f94afb11c0`: all 91 steps, 87 browser suites, 4637 unit passes/4 skips. Report `/private/tmp/voo-inspector-controls-release-integrated.json`. Earlier Figma cold-reopen sampling ran before the imported document was ready (empty nodes and open guard on); the fixture now waits for the actual scene while retaining exact pixel assertions. This does not claim an application import fix. Browser concurrency alone was reduced to 2. Production revision `7e6a77a3d0836b7eecceeefddf3be3f94afb11c0` separately matches the build and passes actual Chinese Frame/typography controls and undo; evidence `/private/tmp/voo-inspector-controls-production-result.log` and `/private/tmp/voo-inspector-controls-deployment-proof.json`. Distinct integrated revisions do not inherit a historical complete run.
 
-## Exclusive Browser and Agent panels — 2026-10-31
-
-- Capability: `platform.side-panel-exclusivity`; shared operation: `sidePanelVisibility` / `createEditorPanelActions`; ownership: platform. Existing `browser-drawer` suite retains the real UI scenario.
-- Opening Browser atomically closes Agent; opening Agent through either setter alias, legacy dispatch or queued generation atomically closes Browser. Closing a panel does not reopen its sibling or clear pending request content. This changes chrome state only, with no document/history mutation.
-- Reproduction: `editor-panel-actions.test.js` initially failed six assertions (`/private/tmp/voo-panel-exclusion-before.log`). The retained tests verify one subscriber publication, every public opening path, queue preservation and close behavior.
-- Real Chromium checks open Agent with its button, switch to Browser with the title-bar button, request Agent through its public event, and switch back. Desktop remains side-by-side; narrow Browser opens as a right-hand overlay, never a bottom pane. Menu, Escape and close assertions remain. Color sampling waits for both existing transitions to finish before checking exact colors.
-- Exact verified revision and release result: `/private/tmp/voo-panel-exclusion-release.json`; targeted units: `/private/tmp/voo-panel-exclusion-targeted.log`; browser: `/private/tmp/voo-panel-exclusion-browser.log`.
-- Local placement repair: the original checkout had moved BrowserDrawer out of the horizontal workspace into the root column. Its browser placement, workspace attributes and public panel actions were safely updated in place, preserving the other draft changes. The right-overlay regression first failed against the former narrow-screen bottom layout (`/private/tmp/voo-browser-right-before.log`).
-- The original checkout could not be globally synchronized: remote synchronization there was blocked by numerous untracked paths already present upstream. Implementation and verification use an isolated checkout based on current GitHub main. Native installers, physical touch and live model/service execution remain unverified; functional coverage stays partial.
-
-Final right-dock validation: clean unchanged source `04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c` passed all 90 registered release steps, including 86 browser suites and 4604 unit assertions (4 skipped). Exact receipt: `/private/tmp/voo-browser-right-release.json`. Desktop and 390px right-overlay geometry, both exclusion directions, and the original workspace placement repair were verified; physical-device/native scopes remain unverified. Deployment evidence is recorded separately in `/private/tmp/voo-panel-exclusion-deployment.json`.
-
-Current-main integration was verified separately on `47471c9d15d44dbfe957a9c7813a6d39915c183e`: build, design lint, all 4637 unit assertions (4 skipped), and browser-drawer / titlebar-file-actions / ui-home-settings passed. The earlier 90-step report remains tied to 04aa32b and is not inherited by remote changes. Critical Browser/App/panel-action source files are byte-identical to that validated revision. The obsolete branch-only test-path runner error is retained in the integration receipt and initial log, then corrected to the registered home suite. Evidence: `/private/tmp/voo-browser-right-integration.json`.
-
 ## Inspector large-radius follow-up
 
 Existing capability `inspector.control-hierarchy`: the user chose the original
@@ -438,7 +439,6 @@ Baseline `/private/tmp/voo-inspector-radius-before.log` reproduces 6px versus
 12px. The existing inspector control browser helper verifies every control
 category, actual commit/cancel, dropdown keyboard/focus, rotation/layout undo,
 and 16 viewport/theme/locale contexts. Final revision `b965942e22bcfb408015acdba58f49d8d7c3cd8c`: all 91 release checks including 87 browser suites, 4637 unit passes/4 skips. Evidence `/private/tmp/voo-inspector-radius-release.json`. Production resources match the build; actual Chinese Frame and text controls, keyboard and undo pass without errors (`/private/tmp/voo-inspector-radius-production-result.log`). Physical devices and all advanced dialogs remain unverified.
-
 
 <a id="claude-checklist-closeout"></a>
 ## Claude checklist closeout — 2026-11-01

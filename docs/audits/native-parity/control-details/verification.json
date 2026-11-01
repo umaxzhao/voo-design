@@ -1,0 +1,140 @@
+{
+  "sourceRevision": "97b6bee3d4a9ac039f3268dbfbbee4a99d6d343e",
+  "baseRevision": "a8b8892",
+  "execution": {
+    "nativeAssertions": {
+      "passed": 465,
+      "failed": 0,
+      "optimization": "-Onone"
+    },
+    "modulePlanning": {
+      "passed": 11,
+      "failed": 0
+    },
+    "registration": {
+      "modules": 12,
+      "features": 88,
+      "browserSuites": 89,
+      "additionalChecks": 21
+    },
+    "productionBuild": "passed",
+    "adHocSignature": "passed",
+    "lint": {
+      "newFiles": "strict passed",
+      "differential": "zero additional diagnostics",
+      "legacyBaseline": 1280,
+      "legacyCurrent": 1204,
+      "legacyFullLint": "failed"
+    }
+  },
+  "binary": {
+    "bytes": 5235248,
+    "sha256": "b9e45ac3edadce185016642dce1b64071be809731dda401be40bd31e11baa73c",
+    "textSectionSha256": "cf9449fb2bac132f1e889681e9195bcb2bf77014eff050754b9b337137f63d6a",
+    "qaTextSectionMatchesProduction": true,
+    "sourceFingerprintsUnchangedDuringChecks": true
+  },
+  "reference": {
+    "fixtureSha256": "86ac56094149c165edba0fb7daff9b3f876d3916ca7f33c7fc9d0cc9cf074626",
+    "source": "local Electron and existing local source; not a release certification",
+    "window": "1920x990"
+  },
+  "realUI": [
+    {
+      "context": "Number text layer",
+      "result": "weight 半粗, alignment right, line height 125%, effects Add enabled"
+    },
+    {
+      "context": "effects: null",
+      "result": "Add Gaussian Blur using menu keyboard -> effect row and Undo enabled; one Command-Z removes row and disables Undo"
+    },
+    {
+      "context": "Shapes menu",
+      "result": "select Ellipse -> active family label and white highlight match actual Ellipse 1 created by drag; one Command-Z removes it"
+    },
+    {
+      "context": "final fixture",
+      "result": "restored Move tool and Number selection; original fixture bytes unchanged"
+    },
+    {
+      "context": "startup",
+      "result": "final app loaded the isolated fixture and responded to UI actions; main-thread sample no longer contains WorkspaceManager.init/open; QA LSEnvironment pins isolation across automation relaunches"
+    }
+  ],
+  "functionalCoverage": "partial",
+  "remaining": [
+    "Full UI 1:1 not certified: text width modes, advanced typography and section collapse remain incomplete",
+    "Other tool-family menus and unsupported effect types remain incomplete",
+    "Native overflow/effect insertion menus still use platform menu chrome; no pixel-equality certification",
+    "Bottom eye remains coupled to rulers; independent guide visibility is a known remaining gap",
+    "Light theme, narrow windows, full multiselection/prototype, IME and VoiceOver remain unverified",
+    "Default O_EVTONLY watcher events in GUI are not certified by the injected blocking regression; actual startup responsiveness and main-thread sample were checked",
+    "Custom panel screenshot from the automation bridge was malformed, so no final menu pixel-equivalence claim"
+  ],
+  "rawEvidence": {
+    "tests-final.txt": {
+      "path": "/tmp/voo-native-polish/tests-final.txt",
+      "sha256": "a574c20ccaa1541459ed839e1101e9e5bfee29925ea00d0d75d3b50d90a10b4c"
+    },
+    "build-final.txt": {
+      "path": "/tmp/voo-native-polish/build-final.txt",
+      "sha256": "40ca17a53d94ddc8711a039fe39a348f3ce26103aed3140f21cbf4ba577ab3d7"
+    },
+    "catalog.txt": {
+      "path": "/tmp/voo-native-polish/catalog.txt",
+      "sha256": "b3f135d13e3468d7e4e75001c2c046f38a352e166be76b47f7493f50c01f5276"
+    },
+    "lint-final.json": {
+      "path": "/tmp/voo-native-polish/lint-final.json",
+      "sha256": "e9b211061f6d66c2211b1f82ef56d163ac2fd719fb92de49dbb1149f3d649296"
+    },
+    "source-fingerprint.json": {
+      "path": "/tmp/voo-native-polish/source-fingerprint.json",
+      "sha256": "f83d2236a949c4e7b433465c8d2737c8204e584338b37d8562ba1110d1559a93"
+    },
+    "native-final-ax.txt": {
+      "path": "/tmp/voo-native-polish/native-final-ax.txt",
+      "sha256": "e1a8f7efd4fb46b13dcbab8669603d2cbb7c6e7919a15030f12cad876b27743d"
+    },
+    "app-sample.txt": {
+      "path": "/tmp/voo-native-polish/app-sample.txt",
+      "sha256": "4b6caf7f2ac75963353b10e2080cc894478fb5e4306b4e5e7bc89e2fe6c5a1d0"
+    },
+    "app-sample-after.txt": {
+      "path": "/tmp/voo-native-polish/app-sample-after.txt",
+      "sha256": "6684e27ab8426348f175f69c36bff41dd17b1de6c62ef71b38a41b9509524a59"
+    },
+    "startup-before.json": {
+      "path": "/tmp/voo-native-polish/startup-before.json",
+      "sha256": "ced387ca1a7c7d70dc307155e66f8a0f83f9cfc8eb97bbc669ef396d1adf909b"
+    },
+    "text-model-before.json": {
+      "path": "/tmp/voo-native-polish/text-model-before.json",
+      "sha256": "11f4367b8626a66d21300c44fb4a0b844e6d1bd6f33bd0e850e3ee712bb0b7da"
+    },
+    "text-model-after.json": {
+      "path": "/tmp/voo-native-polish/text-model-after.json",
+      "sha256": "0a8384726ddc790d47c8972cb78f1daa1b78a9c76b6e544c807285364d23b540"
+    },
+    "null-effects-before.json": {
+      "path": "/tmp/voo-native-polish/null-effects-before.json",
+      "sha256": "8074d33866cfcede92cb2daff47f2c72f6b4573bf52bca6fa5eafcc487906d1a"
+    },
+    "null-effects-after.json": {
+      "path": "/tmp/voo-native-polish/null-effects-after.json",
+      "sha256": "69de4b75a43846850ece5a9d0e0ca9ccebd2d1d2f0ac5af9cd5e996cce4710f0"
+    }
+  },
+  "archivedEvidenceSha256": {
+    "electron-tools-before.jpg": "4fabefbee6d069c655362314dfab156bb8999b91611a49f89782f157f45cbdc1",
+    "electron-before.jpg": "1d77c62a28e7c2d003707fd50fcf25626055649b7d34f5c5db1094a4bf62185a",
+    "native-tools-before.jpg": "8c3d0f80b5468599a28d450796541f0fcd1a5e56f4fa8f8413c7ad42963de2d0",
+    "native-final-effect.jpg": "98a7ba779e77bf15c49317068963496d8971f09366b71515c9b7af824fca5f18",
+    "native-before.jpg": "5f9c13102f128ebbfb579b0285745047e8c2c812bde74519b747684a62c2069e",
+    "native-text-before.jpg": "e79e344921205e9b33db81fbc6ed417425a9470516f596509d7ba258ec1eeeba",
+    "native-final-ellipse.jpg": "55955de2b77e6de342b2a989cd7fa5265141a1f5364fe7aa40846e0c83f1ae33",
+    "native-final-text.jpg": "53401f923da2754928682f37daa726d6e45210d1e4ec220dd4120593d173e074",
+    "native-final-inspector.png": "da0b4ef9c0fea7117150a70e9fc680973d43f78ff4ef7c343272805b55550634",
+    "electron-text-before.jpg": "ea896b914b4eccada3e4787521bce7e2027b4306c2cfe85b7720487b93d70fa6"
+  }
+}

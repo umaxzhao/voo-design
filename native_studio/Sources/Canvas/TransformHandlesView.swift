@@ -42,6 +42,7 @@ public enum TransformHandleType: Int, CaseIterable, Sendable, Equatable {
 // MARK: - Transform Handles View (8-Point Bounding Box & Rotation Stalk)
 
 public class TransformHandlesView: NSView {
+    public override var isFlipped: Bool { true }
     public var targetRect: CGRect = .zero {
         didSet {
             if oldValue != targetRect {
@@ -187,7 +188,7 @@ public class TransformHandlesView: NSView {
         map[.bottomCenter] = CGPoint(x: rect.midX, y: rect.maxY)
         map[.bottomLeft] = CGPoint(x: rect.minX, y: rect.maxY)
         map[.middleLeft] = CGPoint(x: rect.minX, y: rect.midY)
-        map[.rotatePin] = CGPoint(x: rect.midX, y: rect.maxY + ThemeTokens.rotateStalkOffset)
+        map[.rotatePin] = CGPoint(x: rect.midX, y: rect.minY - ThemeTokens.rotateStalkOffset)
         return map
     }
 
@@ -234,7 +235,7 @@ public class TransformHandlesView: NSView {
         let stalkOffset = ThemeTokens.rotateStalkOffset / zoom
         // Document space shares the view's y-up convention, so the rotation pin
         // sits above the visual top edge (maxY) of the selection.
-        map[.rotatePin] = CGPoint(x: rect.midX, y: rect.maxY + stalkOffset)
+        map[.rotatePin] = CGPoint(x: rect.midX, y: rect.minY - stalkOffset)
         return map
     }
 
@@ -322,7 +323,7 @@ public class TransformHandlesView: NSView {
 
         // 2. Rotation stalk: from the visual top-edge centre to the pin (the
         // handle map is y-up, so `.bottomCenter` is the visual top centre).
-        if let topCenter = points[.bottomCenter], let pin = points[.rotatePin] {
+        if let topCenter = points[.topCenter], let pin = points[.rotatePin] {
             ctx.setStrokeColor(ringColor.cgColor)
             ctx.setLineWidth(1.0)
             ctx.strokeLineSegments(between: [topCenter, pin])

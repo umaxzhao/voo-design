@@ -52,14 +52,9 @@ public class AnchorGridView: NSView {
         super.draw(dirtyRect)
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        // Grid border & lines
-        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.20).cgColor)
-        ctx.setLineWidth(1.0)
-        let rect = bounds.insetBy(dx: 2, dy: 2)
-        ctx.stroke(rect)
-
-        let stepX = rect.width / 2.0
-        let stepY = rect.height / 2.0
+        // Electron uses an inset nine-dot selector without a connecting frame.
+        let columnWidth = max(bounds.width - 16, 0) / 3
+        let rowHeight: CGFloat = 14
 
         // Draw dots
         let anchors: [[TransformAnchor3x3]] = [
@@ -70,12 +65,14 @@ public class AnchorGridView: NSView {
 
         for (rowIdx, row) in anchors.enumerated() {
             for (colIdx, anchor) in row.enumerated() {
-                let pt = CGPoint(x: rect.minX + CGFloat(colIdx) * stepX, y: rect.maxY - CGFloat(rowIdx) * stepY)
+                let pt = CGPoint(
+                    x: bounds.minX + 8 + (CGFloat(colIdx) + 0.5) * columnWidth,
+                    y: bounds.midY + CGFloat(1 - rowIdx) * rowHeight)
                 if anchor == activeAnchor {
-                    ctx.setFillColor(NSColor(red: 0.70, green: 1.00, blue: 0.84, alpha: 1.0).cgColor) // Mint #b2ffd6
-                    ctx.fillEllipse(in: CGRect(x: pt.x - 3.5, y: pt.y - 3.5, width: 7, height: 7))
+                    ctx.setFillColor(NSColor(hex: "#a7ffd4").cgColor)
+                    ctx.fillEllipse(in: CGRect(x: pt.x - 3, y: pt.y - 3, width: 6, height: 6))
                 } else {
-                    ctx.setFillColor(NSColor(red: 0.45, green: 0.45, blue: 0.45, alpha: 1.0).cgColor) // #737373
+                    ctx.setFillColor(NSColor(hex: "#525252").cgColor)
                     ctx.fillEllipse(in: CGRect(x: pt.x - 2.0, y: pt.y - 2.0, width: 4, height: 4))
                 }
             }
@@ -84,11 +81,10 @@ public class AnchorGridView: NSView {
 
     public override func mouseDown(with event: NSEvent) {
         let pt = convert(event.locationInWindow, from: nil)
-        let rect = bounds.insetBy(dx: 2, dy: 2)
-        guard rect.contains(pt) else { return }
-
-        let col = min(max(Int(round((pt.x - rect.minX) / (rect.width / 2.0))), 0), 2)
-        let row = min(max(Int(round((rect.maxY - pt.y) / (rect.height / 2.0))), 0), 2)
+        guard bounds.contains(pt) else { return }
+        let columnWidth = max(bounds.width - 16, 1) / 3
+        let col = min(max(Int(floor((pt.x - bounds.minX - 8) / columnWidth)), 0), 2)
+        let row = min(max(Int(round((bounds.midY - pt.y) / 14)) + 1, 0), 2)
 
         let anchors: [[TransformAnchor3x3]] = [
             [.nw, .n, .ne],

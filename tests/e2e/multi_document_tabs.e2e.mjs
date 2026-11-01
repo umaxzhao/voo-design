@@ -31,7 +31,9 @@ await withEditorBrowser(async ({ page }) => {
   const a = await page.evaluate(() => ({ nodes: window.__vooEditor.serialise().nodes, viewport: window.__vooEditor.getViewport() }));
   const tabs = page.getByRole('tablist').first();
   page.on('dialog', dialog => dialog.accept());
-  await tabs.getByRole('button', { name: /Add project|添加项目/ }).click();
+  // The creation entry sits beside the scrolling tab strip, not inside it, so
+  // a long project list can never push it off the bar.
+  await page.locator('.canvas-tab-bar-desktop').getByRole('button', { name: /Add project|添加项目/ }).click();
   await page.waitForTimeout(1800);
   if (before) {
     assert.equal(await tabs.getByRole('tab').count(), 1);

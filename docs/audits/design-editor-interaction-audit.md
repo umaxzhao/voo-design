@@ -1,15 +1,22 @@
 # Design editor interaction audit
+
 审查日期：2026-10-26。审查对象：当前本地设计编辑器，不是静态截图。
+
 ## 方法与边界
+
 使用 `design:design-critique` 检查操作与面板的一致性，使用 `webapp-testing`
 的“观察 → 操作 → 验证”流程执行页面测试，使用 `engineering:code-review`
 追踪渲染、历史和持久化路径。浏览器操作使用当前环境要求的 CUA 接口。
+
 结论分为“页面复现”“代码确认”“回归测试”。代码确认不等于已经完成所有浏览器、
 格式和异常条件的实测。本次覆盖桌面 1280×720 和窄屏 390×844；未执行真实手机触屏、
 软键盘、长时间压力测试、所有媒体格式及断网/存储满额测试。
+
 审查期间共享工作区有并行的面板与智能体配置改动。本轮保留这些改动，提交只包含
 本轮的图片绘制、多 Frame 恢复、回归测试和本报告。
+
 ## 本轮已修复
+
 | ID | 问题与证据 | 修复与验收 |
 | --- | --- | --- |
 | F01 | 页面复现：导入 WebP 后图层缩略图正常，画布只有选框；控制台 `Workspace Skia draw failed / Failed to fetch`。图片缓存中的已解码资源与 GPU 再次获取 URL 是两条路径。 | 图片使用已有 Canvas2D 合成器直接绘制已解码资源，避免再次获取临时 URL。实测导入后可见，Frame 底色正常。 |
@@ -17,10 +24,14 @@
 | F03 | 代码确认：兼容内容必须订阅引擎绘制事件，否则 React 未更新时会再次出现“选框移动、内容不动”，资源解码完成也可能不刷新。 | 内容层每次从实时文档获取节点；测试覆盖实时移动、节点撤销删除、订阅释放。页面验证图片拖动、撤销、尺寸输入、隐藏与显示。 |
 | F04 | 页面复现：项目有两个 Frame，重开后仅显示一个，页码仍为 2/2。加载路径把 `editingNodeIds` 设为仅包含当前页。 | 恢复所有保存的 Frame，当前焦点独立保留；页面检查两个 Frame 均存在，测试检查页序与焦点。 |
 | F19 | 页面复现：新建文字时输入框能显示，按 Escape 结束编辑后文字消失。代码确认 GPU font manager 在未注册字体时返回空段落，当前 host 没有字体注册调用。 | 文字与图片一样使用现有浏览器字体合成路径，避免编辑测量与最终画面使用两套字体。加入文字路由回归；GPU 字体加载与排版一致性仍需独立完善。 |
+
 主要实现：`workspace-artwork-routing.js`、`editor_artwork_fallback.jsx`、
 `use_skia_page.js`、`editor_page.jsx`、`design_store.js`。
+
 ## 待修复：数据可靠性优先
+
 ### F05 · P0 · 自动保存没有覆盖所有项目
+
 - 证据：页面测试导入并移动图片后，刷新重开测试项目，图片未恢复。
 - 代码确认：`use_draft_autosave.js` 对存在 `filePath` 的项目取消调度；
   `writeDraftSnapshot` 同样跳过；`findDraftEntry` 只匹配无路径且同名的最近条目。
@@ -28,13 +39,17 @@
 - 修复方向：区分“写入工作区文件”和“恢复草稿”，所有项目变更都进入可等待的持久化队列；
   用稳定项目 ID 匹配恢复记录。不能只延长等待时间或删除脏标记。
 - 验收：新项目、浏览器工作区、本地授权目录、已有路径项目均在修改后重开恢复一致。
+
 ### F06 · P0 · 关闭前没有可靠刷新最后一笔修改
+
 - 代码确认：草稿调度延迟 1500ms，卸载清理只 `cancel()`；标签关闭直接进入
   `closeDocument`，没有等待这条调度队列完成。
 - 影响：即使其他自动保存条件满足，修改后立即关闭仍有丢失窗口。
 - 修复方向：事务与项目绑定；关闭、切换和退出先 flush，失败保留项目并给出重试。
 - 验收：输入最后一个字符后立即关闭、重新打开，最后一笔仍在；写入失败时不丢弃内存状态。
+
 ### F07 · P1 · Frame 位置、整体背景与对象历史没有统一
+
 - 代码确认：`setEditorArtboardLayout`、`moveEditorArtboard` 直接更新 store，
   没有生成引擎历史；位置修改不统一设置 `isDirty`。
 - 自动草稿 revision 只包含 `engineVersion` 与工作区颜色，独立的 Frame 位移未纳入。
@@ -186,7 +201,6 @@ self-overlapping multi-contour imports, cold project reopen and render/export
 pixel comparisons are not certified by this targeted scenario. Bend/cut tools
 retain their own segment projections; this change restricts anchor insertion.
 
-
 ## Browser drawer visibility — 2026-10-31
 
 Capability: `platform.browser-drawer`. The local browser feature from `ae4c11e`
@@ -216,188 +230,18 @@ Remaining contexts: third-party iframe embedding policies, authenticated sites,
 all DOM extraction/remote-navigation combinations, touch resizing, Windows/Linux
 native webview composition, and signed packaging are not certified here.
 
+## Modifier-drag path bending — 2026-10-31
 
-## Stroke paint row — 2026-11-01
+Capability: `vectors.modifier-bend`. While editing a pen path in Select or Pen,
+holding Cmd (macOS) or Ctrl (other platforms) and dragging a segment edge uses
+the existing Bend operation. It reshapes the segment handles without inserting
+an anchor; ordinary clicks and anchor drags retain their existing behavior.
 
-- Capability: `inspector.control-hierarchy`; reuse the existing inspector source/unit/browser ownership.
-- Remove the separate paint-type button from the primary stroke row, matching Fill. The existing swatch still owns solid/gradient editing; opacity, visibility, width and alignment stay available. No document operation or dependency changes.
-- Reproduction: `stroke-row-icon-before.log` records both solid/gradient cases failing the new menu-absence assertion. `opacity_icon_blend_bg.test.jsx` retains those assertions; `inspector-control-cases.mjs` clicks the actual stroke swatch, switches to Gradient, checks the node, closes with Escape, checks focus and undoes once.
-- Clean `62a41ee32c335951df862e5c20079b72e0299ce0` passed all 91 release steps, 87 core browser suites and 4691 units (4 skipped); GitHub CI passed. Reports: `/private/tmp/voo-license-regression/stroke-row-icon-release.json` and `stroke-row-icon-ci.json`. PR #74 merged as `d0658e0` with the identical source tree. The la2 deployment passed canonical entry/83 loaded asset SHA-256 checks, actual swatch gradient editing, Escape focus and keyboard undo with no page errors (`stroke-row-icon-production-proof.json`). Local application received only this component patch; its bytes match the verified source (`stroke-row-icon-primary-proof.json`). Backup: `/srv/voo-run/editor-backups/62a41ee32c335951df862e5c20079b72e0299ce0-20261031T203350Z`.
-- Coverage is limited to registered Chromium scenarios. Signed desktop installers, physical touch/IME and every stroke combination are not certified. This visual removal needs no persistence migration.
-
-
-## Circular color swatches — 2026-11-01
-
-- Capability: `inspector.control-hierarchy` / `inspector.unified-fill`. Presets, document colors, primary/extra fill and stroke, effects/shape colors, inspect preview, tool foreground/background, taskbar chips, gradient stops, mesh points and design-system palette chips use circles. Existing selection/variable/background chips were already circular. Native color inputs share circular clipping (including their browser swatch pseudo-elements) and square sizing; hidden full-area inputs keep their original hit area. Spectrum surfaces, gradient tracks, design thumbnails and cover images retain their distinct purpose.
-- Before: `/private/tmp/voo-license-regression/circular-swatches-before.log` records actual 20x20px picker presets with 6px radii failing the circle assertion. Regression: `inspector-control-cases.mjs` checks computed width/height/radius for actual presets, fill/stroke, gradient stops and mesh points, plus individual undo and Escape focus. Unit coverage includes a user document color and preset chips, with existing design-system tests retained.
-- Targeted 32 units and the complete `ui-inspector-interaction` browser suite passed. Clean `92feeaa82ef28dbe97cfcc324707ea3920a706fd` passed all 91 release steps, 87 core browser suites and 4692 units (4 skipped), plus GitHub CI. PR #75 merged as `455cb16` with the identical tree. Reports under `/private/tmp/voo-license-regression/`: `circular-swatches-release.json`, `circular-swatches-ci.json`, `circular-swatches-main-tree-proof.json`. All 13 patched local source files match the verified files; other drafts are preserved (`circular-swatches-primary-proof.json`). The la2 deployment matched canonical entry/83 loaded resources; actual document-color pick/undo, 19 preset/document chips, fill/stroke, gradient/mesh, mobile and nine native token inputs passed circle checks with no page errors (`circular-swatches-production-proof.json`). Screenshots: `circular-swatches-production-{picker,mobile,native}.png`. Backup: `/srv/voo-run/editor-backups/92feeaa82ef28dbe97cfcc324707ea3920a706fd-20261031T205226Z`. The preview script initially raced the mobile media-query transition; it now waits for the actual mobile toggle before clicking. This was an external acceptance script timing issue; product assertions were retained.
-- Scope remains partial: Chromium representative interactions and existing responsive/theme/locale tests do not certify every color entry, native OS picker dialog, Firefox/WebKit, physical touch or signed Electron installers. This is presentation only; no document schema, color values or mutation API changes.
-
-
-## Brand loading feedback — 2026-11-01
-
-- Capability: `platform.loading`. The real cold editor fallback and document-opening overlay use a rotating canonical VOO mark above a neutral thin progress bar. Entry labels stay accessible without visible copy; existing AI/shared/image phase labels and optional cancellation remain available. The unchanged brand SVG moved to a dependency-light component; the title bar retains its public re-export, avoiding a loading-to-title-bar import cycle.
-- No percentage is invented: missing/nonfinite progress is indeterminate; finite values are clamped and reflected in `aria-valuenow` and scale. Reduce Motion stops logo/travel animation while keeping the progress segment visible. CSS transform animations add no timers or dependencies.
-- Reproduction: `/private/tmp/voo-license-regression/loading-brand-before.log` / `.png` retain the old purple ring failing the brand assertion. `editor-loading.e2e.mjs` holds the actual editor module, checks layout, real rotation, unknown-progress semantics, 320px dark/light and reduced motion, then releases the same document and checks real drawing, engine continuity, undo/redo and deferred PDF export. An initial external interception cleanup race was corrected before retaining the real visual failure.
-- Targeted 23 unit assertions and the complete loading browser suite pass. Impeccable detector returns no findings; design lint, module inventory and diff whitespace checks pass. Clean `44e07147f7b7f29cc876284ab3900fee76a13e1a` passed the complete 91-step gate (87 core browser suites, 4704 units passed / 4 skipped) and GitHub CI. The first run failed the fixture cache-directory removal assertion; `loading-brand-release-initial.json` / `.log` retain it, and `loading-brand-startup-recheck.log` plus the complete same-revision `loading-brand-release.json` record subsequent passes without assertion/source changes or stitched results. PR #76 merged as `005f8e2` with the identical tree (`loading-brand-main-tree-proof.json`). The local application received only this patch, verified by reverse-apply check; four complete source files match, while title-bar drafts outside the patch are preserved (`loading-brand-primary-proof.json`). The la2 deployment matched the canonical entry and 83 loaded resources; held real editor chunk, rotation/reduced motion/mobile, actual pointer rectangle/red pixel and undo/redo passed with no page errors (`loading-brand-production-proof.json`). Screenshots: `loading-brand-production-{desktop,mobile}.png`; backup `/srv/voo-run/editor-backups/44e07147f7b7f29cc876284ab3900fee76a13e1a-20261031T211205Z`.
-- Coverage remains partial: these are Chromium/browser state and geometry checks, not signed Electron installers, physical mobile devices, all assistive technologies or measured rendering FPS. Actual file/model/server failure paths remain the responsibility of their existing suites; this change does not certify every loading caller.
-
-
-## Canonical share links — 2026-11-01
-
-- Capability: `platform.native-collaboration`. Shared room URLs always use the configured public `VOO_RUN_ORIGIN` (`https://voo.run`), independent of local, LAN, preview, desktop or extension origin. Retain the legacy origin argument position for callers but ignore its value. Edit/view query semantics and fragment-only room secrets are preserved.
-- The published `/r/<id>` route returned HTTP 404, while `/editor/?r=<id>` returned 200 (`canonical-share-{legacy,editor}-route-headers.txt`); generated links therefore use the direct editor entry. Retain legacy path/query parsing for pasted invitations. Local query-parser drafts are preserved. The early `/r/` implementation verifier was stopped and is not release evidence (`canonical-share-r-route-incomplete.log`).
-- Local/preview hosts must rendezvous with public recipients on the same signaling service, so the default also uses the shared hosted endpoint. Explicit `__VOO_SIGNALING_URL__` overrides remain supported for isolated development. No permission, room lifetime, document mutation or authentication changes.
-- Reproduction: `/private/tmp/voo-license-regression/canonical-share-before.log` retains seven failed assertions from the old origin-dependent behavior. Regression covers nine origins, both permissions, detected and legacy-argument paths, preserved secrets and explicit signaling overrides. The real loopback share popover is clicked through Copy/View only/Copy; displayed and clipboard payloads must match, IDs/secrets must remain stable, and the attempted signaling URL must be hosted. Config/socket/clipboard are isolated in the browser test; no public room or real clipboard is used.
-- Targeted 72 units and the complete `ui-global-interaction` browser suite pass. Clean `56ef64fb36f9c327bd5ea58830aca42b027a1b64` passed all 91 release steps, 87 core browser suites and 4713 units (4 skipped), plus GitHub CI. PR #77 merged as `9f37259` with the identical tree (`canonical-share-main-tree-proof.json`). Reports: `canonical-share-release.json` / `canonical-share-ci.json`. Local generation/parsing across 18 origin/permission cases and default signaling pass; local query-parser drafts remain (`canonical-share-primary-proof.json`). The la2 deployment matched the entry and 85 loaded assets; real host copy/edit/view, recipient HTTP 200/build/read-only mode, guest reshare preserving the exact invitation, unchanged host document and no page errors pass (`canonical-share-production-proof.json`). Screenshots: `canonical-share-production-{host,guest}.png`. The receipt initially closed sessions before both deferred socket imports were observed; it now awaits the two connection events before teardown, retaining the initial log without changing product assertions. A separate public socket handshake accepts localhost Origin without sending JOIN (`canonical-share-signaling-handshake.json`). Backup: `/srv/voo-run/editor-backups/56ef64fb36f9c327bd5ea58830aca42b027a1b64-20261031T213510Z`.
-- Coverage remains partial: a simulated socket establishes endpoint choice and link behavior, not real multi-user P2P delivery, TURN/NAT traversal, hosted availability or signed desktop installers. Those require their own acceptance evidence.
-
-
-## Duplicated Frame dragging — 2026-11-01
-
-- Capabilities: `selection.transforms`, `selection.frame-title-selection`, `selection.cancel`, `layers.duplicate-delete-lock`. On the shipped FORM example, a selected copied Frame's content drag instead moved Quarter arch; its title consumed pointerdown without starting a move. The edge already moved the complete subtree. Evidence: `/private/tmp/voo-license-regression/duplicate-frame-probe.log` / `duplicate-frame-{body,edge,title}-before.png`; the retained new assertion fails `[0,0]` versus `[160,80]` in `duplicate-frame-drag-before.log`.
-- Extract the existing move startup into `move-gesture-start.js`, keeping one move/Alt-copy/history transaction. A press on a selected Frame descendant defers child selection: dragging moves the Frame/subtree, while a plain release selects the original hit. Ctrl/Meta still deep-drags the child. Title pointer presses select the Frame and reuse the same stage controller and real pointer capture, with lock and read-only checks and teardown of the added starter method.
-- `duplicate-frame-drag-checks.mjs` exercises actual Layers selection plus the Duplicate shortcut and internal copy/paste on FORM; body/title/edge movement shifts every copied descendant, leaves all original nodes fixed and undoes/redoes once. Added body/title Escape, pointercancel and blur restore geometry/selection/history, root locks reject title moves, and deep child drag/click remain independent. Its captured session restores the preexisting history so these extra scenarios do not hit the history-cap limit in later tests; no old assertion was weakened.
-- The initial full gate caught a legacy navigation scenario that selected the Frame then expected a direct child drag. Its intent remains covered by an explicit plain child click first, with a new selected-child/no-history assertion; all original geometry/pixel/undo assertions remain unchanged. Direct Frame dragging is independently covered by the new scenarios. `duplicate-frame-release-initial.json` / `.log` retain that mismatch.
-- Targeted 39 units and complete `frame-alt-duplicate`, `frame-label-selection` and `frame-child-pointer` suites pass. Clean `c67a950c4f0456fcf627f46306fa19c48ebe3d8e` passed all 91 release steps, 87 core browser suites and 4713 units (4 skipped), plus GitHub CI (`duplicate-frame-release.json` / `duplicate-frame-ci.json`). The independent-child navigation scenario also passes with its original position/pixel/undo assertions retained. Primary application sources pass 16 isolated real interactions while preserving the preexisting pen Ctrl/Meta draft (`duplicate-frame-primary-proof.json` / `duplicate-frame-primary-browser.log`). PR #78 merged as `f854d27` with the identical tree (`duplicate-frame-main-tree-proof.json`). The la2 deployment matched the canonical entry and 82 loaded resources; actual Layers selection, Duplicate shortcut, body/title mouse drag of all 13 copied FORM nodes, unchanged originals, sampled color and one-step undo/redo pass with no page errors (`duplicate-frame-production-proof.json`). Screenshots: `duplicate-frame-production-{body,title}.png`; backup `/srv/voo-run/editor-backups/c67a950c4f0456fcf627f46306fa19c48ebe3d8e-20261031T221546Z`.
-- Coverage remains partial: registered Chromium mouse paths and tested zooms do not certify physical touch/stylus, every animation/warp context, all locked-descendant combinations or signed desktop installers. The original Frame and editable children remain separate nodes; no document schema or export-format change.
-
-
-## Multi-Frame layer operation audit — 2026-11-01
-
-- Capabilities: `selection.transforms`, `selection.frame-title-selection`, `selection.cancel`, `layers.duplicate-delete-lock`. Baseline `c67a950c4f0456fcf627f46306fa19c48ebe3d8e` passed the 32 registered Layers and related browser suites (`/private/tmp/voo-license-regression/layer-operations-audit.log`). This is a targeted execution record, not a new release certificate or exhaustive coverage.
-- Actual Layers clicks with Cmd/Ctrl multiselect exposed two gaps: dragging a selected Frame's content selected/moved only its child, while its title dropped the second Frame and moved only the first. Edge drag correctly moved both complete subtrees. Actual geometry and selected IDs: `layer-multiframe-proof.json`; screenshots `layer-multiframe-{body,title,edge}.png`. The retained new browser regression fails `[0,0]` against `[60,40]` on old code (`multiframe-regression-before.log`).
-- Adding locked-descendant coverage exposed a third defect: a multi-Frame drag with a locked child moved only the Frame roots, shearing content. This intermediate failing regression is retained as `multiframe-regression-after.log`. The independent single-Frame lock probes had passed and did not certify this multi-selection context (`layer-lock-probe.log`).
-- Resolve the nearest explicitly selected Frame ancestor independently of selection order/primary. Title presses and clicks preserve an already-selected Frame's multi-selection. Reuse the existing pointer move transaction; Ctrl/Meta still directly targets children, plain click still enters a child without history. Refuse an entire expanded move set containing any full/position lock, including clipping followers, rather than degrading it to just roots. No document/schema, export, rendering or new control changes.
-- Regression ownership: `multiframe-drag-checks.mjs` runs inside registered `frame-alt-duplicate`. Its 16 actual Chromium mouse scenarios cover two layer selection orders × body/title/edge, body/title × Escape/pointercancel/blur, full/position locked descendant, Ctrl/Meta child drag and plain child click. Assert all four nodes' geometry/ownership, unique/acyclic hierarchy, two actual color samples, retained selection, one complete scene undo/redo, and cancellation without history. Capture/restore the original document session. Three unit cases cover Frame locks and a locked clipping follower in `reparent-moved-roots.test.js`.
-- Targeted 42 units, all 16 new isolated interactions and complete registered `frame-alt-duplicate` suite pass (`multiframe-units.log`, `multiframe-regression-fixed.log`, `multiframe-targeted-browser-final.log`). Clean `5cd112efcd7597d36680eea3c9b8eba66a50d7b5` passed all 91 release steps, 87 core browser suites and 4716 units (4 skipped), plus GitHub CI run 41256893117 (`multiframe-release.json`, `multiframe-ci.json`). PR #79 merged as `f7f782c` with the identical tree (`multiframe-main-tree-proof.json`). Only three source patches were applied to the local application; exact file hashes and 16 isolated mouse interactions pass while other drafts remain (`multiframe-primary-proof.json`, `multiframe-primary-browser.log`). The la2 deployment matched the canonical entry and 82 loaded script/style resources. Six real production multi-selection cases pass: body/title/edge complete subtree movement and color samples with one-step undo/redo; full/position locked child refusal; Escape cancellation with unchanged document/history/selection. No page errors (`multiframe-production-proof.json`). Screenshots `multiframe-production-{body,title,edge,locked,lockPosition,cancel}.png`; backup `/srv/voo-run/editor-backups/5cd112efcd7597d36680eea3c9b8eba66a50d7b5-20261101T003214Z`. Raw receipts are under `/private/tmp/voo-license-regression/`.
-- The first combined browser run reached the existing 50-entry history cap (`multiframe-targeted-browser.log`); the new scenarios now run after the preceding FORM audit restores its original session. Each audit retains its own capture/restore boundary; no history or scene assertion is weakened.
-- Scope remains partial: synthetic fixtures do not certify every locked ancestry/layout/mask combination, every deep selection modifier, physical touch/stylus or signed Electron installers. The previous release's FORM duplication, cold save/reopen, hierarchy, group/ungroup, ordering, deletion and visibility evidence remains tied to its actual revision; passing old suites did not discover the new multi-Frame contexts.
-
-
-## Relative layer order audit — 2026-11-01
-
-- Capabilities: `layers.nesting`, `layers.container-boundaries`, `selection.shortcuts`. Baseline `c666a886f3a934cea14db462e012138c8d119e5c` has three reproduced defects: actual Layers mask-base/follower multiselect plus `]` moves the same stack unit twice (green appears above the yellow layer); a locked Frame's selected child still responds to the relative-order shortcut (red replaces blue); public `reorderNode` moves a Frame header alone and leaves its child outside the contiguous subtree. Raw state and actual pixel probes: `/private/tmp/voo-license-regression/layer-order-before-proof.json`, `layer-order-before.log`. The new browser regression fails expected `[one,base,clip,two]` vs actual `[one,two,base,clip]` on old code (`layer-order-regression-before.log`).
-- Normalize selected clipping chains to their base before ancestor filtering and stack-order traversal. Each unit moves once regardless of click order. Moving and adjacent blocks honor full ancestor locks. The single-node relative API delegates to the same batch operation, retaining subtree/clip references and one history boundary. Position locks are not redefined as ordering locks. No new UI, dependencies, document schema or export changes.
-- Ownership: `layer-order-contracts.test.js` adds 12 cases; `layer-order-contract-checks.mjs` runs inside registered `editor-layers-composition`. Ten browser contexts: mask forward/backward × both click orders; locked Group/Frame ancestor × forward/backward; single-node Frame relative API × forward/backward. Tree selection and shortcuts use actual UI; locked ordinary Group children use public exact selection, and single-node API checks are explicitly engine calls rather than claimed pointer/Agent tests. Assert complete node order and unchanged per-node geometry/references, two exact visible colors as applicable, selected IDs, valid hierarchy, one complete undo/redo or no history for locked refusals. Capture/restore the fixture session.
-- Targeted 34 units and all ten new browser contexts pass (`layer-order-units.log`, `layer-order-regression-after.log`). Complete layer composition and Loading suites also pass against current main. Final clean `00b3f982120efac466e3c24f18beccc19f6b5243` completes all 105 release steps in one run: 101 core browser suites, 4825 unit passes / 4 skipped, design/module/build checks, and same-head GitHub CI run 41301142997. `layer-order-release.json` / `.log` and `layer-order-ci.json` are the current evidence; older successful, failed and interrupted reports remain separate, not stitched.
-- Coverage remains partial. Absolute indexed reorder (`reorderNodeTo`), drag-to-index, move-to-root/into-Group, extreme front/back commands, all clipping chains/ancestor mixes, cold reopen specifically after each relative reorder, physical devices and signed installers are not certified by these ten contexts. Existing full-gate suites retain their own recorded assertions; this audit does not equate their execution with exhaustive functional coverage.
-
-- The first full gate on `b4a076652d5f46013c444a9bf3f3375359397a08` passed all units but failed the existing Loading 20px breathing-room assertion (`layer-order-release-initial.json` / `.log`). Deterministic pause at 45° reproduces an actual 14.0589px gap (`loading-gap-regression-before.log`): rotating the 48px brand enlarges its bounds, reducing the 24px flow gap. Increase the shared flow gap to 32px, retaining the original 20px visible requirement; add eight evenly spaced animation phases with all original rotation/reduced-motion/mobile/drawing/history assertions intact. This is an additional `platform.loading` product defect, not a weakened assertion or an inherited pass. The initial worktree dependency-startup failure is separately retained as `loading-gap-worktree-dependency.log` and is not defect evidence.
-
-- Clean `7056abef00556ee0b53612eb6ef49c68279b75cd` subsequently passed the complete 91-step gate at two-browser concurrency: all 87 core browser suites and 4728 units (4 skipped), plus CI run 41262363765 (`layer-order-release-preintegration.json` / `.log`). The prior busy-host `new_document` startup timeout is retained in `layer-order-release-contention.json` / `.log`; the complete destructive-Boolean suite passed unchanged before the successful full run (`layer-order-startup-recheck.log`). No assertion/timeout was relaxed and no partial runs were stitched.
-- Before publishing, main advanced to `89c124f` with separately verified interface/checklist work and 99 registered core browser suites. Integrate that work without reverting product changes or dropping checks. Resolve Loading-test overlap by retaining both the eight rotating viewport-bound checks and main's independent untransformed layout-gap check. Quality progress retains both task records; only blank lines are compacted to the file-size limit. The integrated 103-step release must pass before merge/deployment; the older 91-step success is not its certificate.
-- Clean `6605aa859c6ac429b39f07eb6bf4bdab6c70ddfa` completed 103/103 steps in one fresh run: 99 core browser suites, 4729 units passed / 4 skipped, and CI run 41263346237. Preserve that exact result as `layer-order-release-prezoom.json` / `.log`. At the final publication guard, main had advanced to `732b1b9` with already-published zoom optimization and its extra core suite. Integrate those changes rather than deploy an older runtime over them. Shared audit/progress records are retained; the final 104-step gate is pending, and neither prior complete version certifies it.
-
-- User interruption ended the `43f0c6d` run before a complete result; its saved partial report is not a 104-step pass. On resume, stop a newly started old-baseline run once current main is found at `8c270d0` with additional published toolbar, desktop release, layer/history and layout/effect work. Preserve all of that source and every registered check; only the progress-document conflict needs resolution. The final catalog now requires 105 steps / 101 core browser suites. Earlier successful 91/103-step reports remain bound to their own commits. GitHub CLI authentication expired; the existing connected GitHub account is the repository owner with explicit admin/push permission, so publication can continue through the connector without reading or requesting a token.
-
-- Final publication evidence for `00b3f98`: only the three task-source patches were applied to the primary application; complete file hashes match and its ten isolated ordering contexts plus complete Loading/eight-angle/layout-gap suite pass (`layer-order-primary-proof.json` and related logs). Other local drafts remain; this does not certify the whole dirty application or a signed installer. The validated build is deployed to la2 and canonical `https://voo.run/editor/`: entry plus all 82 loaded script/style resources match SHA-256, six actual ordering cases pass with unchanged node fields/selection, actual color samples and one-step undo/redo, eight rotating Loading phases retain at least 20px (minimum representative 22.0589px), with no page errors (`layer-order-production-proof.json`). Screenshots: `layer-order-production-{loading,mask-1,mask--1,locked-frame-1,locked-frame--1,single-frame-api-1,single-frame-api--1}.png`. Rollback backup `/srv/voo-run/editor-backups/00b3f982120efac466e3c24f18beccc19f6b5243-20261101T112646Z`. PR #80 carries only this task's changes relative to current main. The final receipt commit changes documentation only; runtime/test parity is recorded separately in `layer-order-main-tree-proof.json`. No existing user document, paid provider, real collaboration room or native Release artifact was modified.
-
-## Canvas zoom efficiency — 2026-11-01
-
-Capability: `canvas.zoom-preview`, related `canvas.camera`,
-`compositing.frame-clips`, image/font/matte lifecycle and selection hit testing.
-The user prioritizes reducing real zoom stalls toward Figma's interaction
-quality; no equivalent Figma execution has been measured or claimed.
-
-- Reproduction: generated 600-layer free workspace, actual Ctrl-wheel input.
-  A single zoom redraws the invisible measurement surface four times
-  (`/tmp/voo-zoom-red-browser.log`). Source `c85224c` production build on the
-  unchanged Desktop `test.fig` records six Ctrl-wheel waits with median
-  1,222 ms, using the live engine zoom and artboard origin rather than the
-  stale initial `window.__vooStore` snapshot. CPU samples show repeated painting.
-- Free non-mixed pages stop painting their detached measurement surface.
-  Explicit readback temporarily paints it and flushes the visible preview.
-  Standalone/mixed rendering and export retain their authoritative paths.
-- One bounded artwork picture per surface reuses covered camera changes;
-  missing coverage, edits, resource changes, resize or DPR changes force exact
-  painting. After 160 ms quiet the latest viewport is repainted exactly.
-  Overscan is warmed separately, capped at 32 MiB retained per surface.
-  Its center copies authoritative pixels, never approximated settled content.
-  Video refuses a reusable stamp. Disposal cancels refinement and frees buffers.
-- Stamps include immutable document identity, font epoch, adjustment bypass,
-  actual decoded/paint bitmap identities and texture versions, and live mattes
-  even before a persisted mask ID exists. The initial missing-matte regression
-  is retained in `/tmp/voo-zoom-matte-red.log`; its correction is independently
-  checked. Frame label topology reuses immutable ancestry across camera ticks.
-- Hit regions cache world-space clipped bounds and omit only descendants
-  already contained by a contributing ancestor rectangle. Positive camera
-  transforms preserve that union and eight CSS-pixel padding. Overflow,
-  negative coordinates, hidden/clipped branches, cycles and inter-page gaps
-  retain their semantics. Shared-camera UI publication waits for settle while
-  active DOM text/region editing keeps immediate notifications.
-- Registered `canvas-zoom-preview` uses real Ctrl-wheel, verifies no invisible
-  painting or layer-tree rasterization during covered motion, exact settled
-  RGBA versus direct painting, synchronous sample flush, immutable document
-  through camera gestures, style invalidation and one-step undo/redo.
-  `frame-surface-camera` retains real DPR2 screenshot pixels, negative media,
-  direct selection, neighbouring-page focus and resize. Unit checks cover
-  bitmap/font/matte versions, memory limits, fractional DPR1.25, timer cleanup,
-  viewport notification ownership and exact hit-region unions.
-- Interim private production-build trials on the same file progress from
-  1,222 ms to 166 ms, 117 ms and 83 ms median Ctrl-wheel waits; final trial
-  settles exact content after about 230 ms. Three stable isolated first-page
-  renders at 1000x800/zoom .024 compare with zero changed pixels. These are
-  six-event shared-machine waits including automation plus two rAFs, not GPU
-  FPS or universal speedups. Fixed committed-source and production receipts
-  are recorded after the complete gate; no interim result certifies later code.
-- Evidence: `/tmp/voo-zoom-performance/`, `/tmp/voo-zoom-*.log`. Original fixture
-  stays private and read-only. Full readable-scale property fidelity, every
-  effect/driver/animation combination, signed Electron, native trackpad/stylus
-  and physical frame presentation remain unverified. `native_studio` excluded.
-
-
-The first complete attempt on `d3bec48` passes 4,729 units (four skipped) but
-stops at the new zoom suite with one additional rasterization during its
-sequential wheel/RAF loop. `/tmp/voo-zoom-release.json` / `.log` preserve the
-incomplete run; it is not release evidence. Quiet work now waits for a cancelable
-animation frame so queued input can supersede it. A deterministic unit cancels
-an already elapsed quiet timer before its exact frame. The browser case waits
-for font readiness, queues the actual wheel burst without automation-created
-idle gaps, and retains the strict zero-extra-raster and exact-RGBA assertions.
-Targeted repeats pass; a fresh fixed-revision full gate is required below.
-
-The second frozen run (`6ababe5`) passes 4,730 units (four skipped), including
-the strict zoom suite, but stops at step 69: the layout fixture's default 30s
-engine-readiness timeout expires before any business assertion. Its unchanged
-isolated rerun passes all layout/history assertions. Host load was about 52.
-`voo-zoom-final-release.json` preserves the incomplete 70-result attempt.
-A real engine-module request held for 35s reproduces the same setup failure
-(`voo-zoom-workspace-delay-red.log`). Workspace setup now gets its own bounded
-90s phase, matching welcome setup; business/pixel assertions keep their original
-timeouts. The startup suite retains this real delayed-import/create/pixel/undo
-scenario. Application source remains identical to `6ababe5`; a fresh full gate
-is required. No historical or isolated pass completes either failed report.
-
-Final acceptance: `cf9e00d48905752fe14fb79ff16bd1280fb0c2bd` completes
-104/104 steps in one fresh run: 100 core browser suites, 4,731 unit passes,
-four skips, build/design/module checks. `voo-zoom-integrated-release.json`
-and `.log` retain the exact revision and all results. The delayed real engine
-import, creation, actual red pixel and single undo pass. Neither failed run is
-stitched into this result. Eleven additional checks remain explicitly not-run.
-
-Production-build control is the merged main parent `db4a184`; only eight
-zoom-related application files differ. The same unchanged 241.86MiB file has
-17,499 first-page layers. Run order is baseline, optimized, baseline again:
-six real Ctrl-wheel waits per run have medians 1,713.5 / 82.5 / 1,808ms.
-The optimized sample is reused for reverse comparison, not a second run.
-Recorded initial one-minute host loads are 71.79 / 51.43 / 39.36; the reverse
-baseline is slower despite its lower load. Shared-host waits include automation
-and two rAFs, are overview-only, and do not establish hardware FPS or Figma parity.
-The script's remaining exact-refinement wait is 237ms after profiling/camera
-readback. Three stable isolated 1000x800 renders at zoom .024 have zero pixel
-or channel differences. Real cameras change, document identity stays fixed,
-and both control/optimized runs have no page errors. Original file SHA-256 is
-`ddf80a00291c5c79ebc30c9b71c7c4180a74ca80311a170ed16f2aeed006b2c2`.
-
-The fixed build is pushed and deployed to la2. Canonical HTML plus eight direct
-or critical assets match bytes/SHA-256; production native-Figma fixture pixels,
-mask cache, constraints/history and actual zoom preview/exact-RGBA/readback/
-edit/undo/redo pass with no page errors. `voo-zoom-deployment-proof.json`,
-`voo-zoom-production-fidelity.json` and `voo-zoom-published-tree-proof.json`
-bind production and subsequent documentation-only merges to the verified code.
-Private evidence is in the visualization directory `canvas-zoom-optimization/`;
-no commercial design/file is committed or uploaded to production for testing.
+Evidence: `tests/e2e/pen-midpoint-insertion.e2e.mjs` uses Chromium pointer and
+keyboard events to verify Ctrl-drag changes the curve handles, preserves anchor
+count, and undoes/redoes as one document operation. The same suite retains
+midpoint insertion checks. This does not certify OS-level Cmd interception,
+physical stylus/touch input or pixel/export parity.
 
 ## Error recovery visual integration — 2026-11-02
 

@@ -40,8 +40,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = WindowController()
         self.windowController = controller
 
-        if ProcessInfo.processInfo.environment["VOO_EMPTY_DOCUMENT"] != "1" {
+        // Start on a blank "Design 1" (web parity) so launching never builds and
+        // then discards demo artwork. The demo scene stays available for snapshot
+        // automation through VOO_DEMO_PROJECT=1.
+        if ProcessInfo.processInfo.environment["VOO_DEMO_PROJECT"] == "1" {
             controller.loadDemoProject()
+        } else {
+            controller.newDocument(nil)
         }
 
         // By default, open the Welcome Dashboard (工作台) first, matching VOO Design!
@@ -51,11 +56,22 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.mainContentView.isWelcomeOpen = true
         }
 
+        // Crash recovery: a local draft newer than the file it mirrors is restored
+        // silently (the Settings → Appearance toggle controls the whole feature).
+        if ProcessInfo.processInfo.environment["VOO_SKIP_DRAFT_RESTORE"] != "1" {
+            controller.restoreDraftIfAvailable()
+        }
+
         NSLog("[VOO Design Native] controller.window = %@", String(describing: controller.window))
         controller.showWindow(nil)
         if let window = controller.window {
             window.makeKeyAndOrderFront(nil)
             window.layoutIfNeeded()
+        }
+
+        // Exercise the normal file operation in deterministic rendering audits.
+        if let path = ProcessInfo.processInfo.environment["VOO_SNAPSHOT_DOCUMENT"] {
+            controller.openDocumentFromURL(URL(fileURLWithPath: path))
         }
 
         if ProcessInfo.processInfo.environment["VOO_HEADLESS"] != "1" {
@@ -126,6 +142,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApp.terminate(nil)
             }
         }
+    }
+
+    public func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply
+    {
+        (windowController?.confirmDocumentReplacement() ?? true) ? .terminateNow : .terminateCancel
     }
 
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

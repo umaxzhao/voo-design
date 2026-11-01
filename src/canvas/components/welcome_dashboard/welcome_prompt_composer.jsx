@@ -56,10 +56,7 @@ export function WelcomePromptComposer({
   const panelRef = useRef(null);
   const settingsTriggerRef = useRef(null);
   const activePreset = AI_GEN_TYPES.find(preset => preset.id === activePill) ?? AI_GEN_TYPES[0];
-  const currentSize = size ?? {
-    width: activePreset.width,
-    height: activePreset.height
-  };
+  const currentSize = size;
   useEffect(() => {
     if (!advancedOpen) return undefined;
     const onPointerDown = event => {
@@ -110,8 +107,8 @@ export function WelcomePromptComposer({
       }} placeholder={t(activePreset.placeholder ?? "welcome.prompt.placeholder")} rows={4} aria-label={t(activePreset.placeholder ?? "welcome.prompt.placeholder")} className="min-h-24 w-full resize-y bg-transparent text-[12px] leading-6 text-neutral-100 placeholder-neutral-400 focus:outline-none" />
 
       {attachments?.length > 0 && <ul className="mt-1 flex flex-wrap gap-1.5" aria-label={t("welcome.prompt.attachments")}>
-        {attachments.map(attachment => <li key={`${attachment.kind}:${attachment.name}`} className="flex max-w-48 items-center gap-1 rounded-lg bg-white/[0.06] px-2 py-1 text-[11px] text-neutral-300">
-          {attachment.kind === "image" && attachment.dataUrl ? <img src={attachment.dataUrl} alt="" className="size-4 rounded-lg object-cover" /> : <span className="size-4 rounded-lg bg-white/10" aria-hidden="true" />}
+        {attachments.map(attachment => <li key={attachment.id ?? `${attachment.kind}:${attachment.name}`} className="flex max-w-48 items-center gap-1 rounded-lg bg-white/[0.06] px-2 py-1 text-[11px] text-neutral-300">
+          {attachment.kind === "image" && attachment.dataUrl ? <img src={attachment.dataUrl} alt="" className="size-10 rounded-lg object-cover" /> : <span className="size-4 rounded-lg bg-white/10" aria-hidden="true" />}
           <span className="truncate">{attachment.name}</span>
           <button type="button" onClick={() => onRemoveAttachment?.(attachment)} aria-label={t("welcome.prompt.removeAttachment")} className="text-neutral-500 transition-colors hover:text-white">
             <X size={11} />
