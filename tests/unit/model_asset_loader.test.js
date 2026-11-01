@@ -144,6 +144,7 @@ describe("model_asset_loader (Offline & Local Bundle & Browser Caching)", () => 
     expect(loaded).toEqual(modelBytes);
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(mockCache.put).toHaveBeenCalled();
+    expect(mockCache.put).toHaveBeenCalledTimes(1);
 
     // 3. Now it should be cached
     const isCachedAfter = await isModelAssetCached({
@@ -273,4 +274,32 @@ describe("model_asset_loader (Offline & Local Bundle & Browser Caching)", () => 
     expect(await isModelAssetCached({ filename: "test.onnx" })).toBe(true);
     expect(pulls).toBe(1); expect(cancel).toHaveBeenCalledOnce();
   });
+  it("does not start a network request after cancellation", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    globalThis.fetch = vi.fn();
+    await expect(loadModelAssetBytes({ filename: "cancelled.onnx", signal: controller.signal }))
+      .rejects.toMatchObject({ name: "AbortError" });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("cancels a pending local fetch without starting the remote fallback", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    globalThis.caches = undefined;
+    const controller = new AbortController();
+    let started;
+    const requestStarted = new Promise(resolve => { started = resolve; });
+    globalThis.fetch = vi.fn((_url, { signal }) => {
+      started();
+      return new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(signal.reason), { once: true }));
+    });
+    const request = loadModelAssetBytes({ filename: "cancelled.onnx", signal: controller.signal,
+      fallbackUrl: "https://models.test/cancelled.onnx" });
+    await requestStarted;
+    const rejected = expect(request).rejects.toMatchObject({ name: "AbortError" });
+    controller.abort();
+    await rejected;
+    expect(globalThis.fetch).toHaveBeenCalledOnce();
+  });
+
 });

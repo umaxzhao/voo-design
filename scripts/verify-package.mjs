@@ -39,7 +39,7 @@ export function verifyPackage(appDir) {
     'electron/main.cjs', 'electron/preload.cjs', 'dist/index.html',
     'dist/canvaskit.js', 'dist/canvaskit.wasm', 'dist/EULA.md',
     'dist/LICENSE', 'dist/THIRD_PARTY_NOTICES.json', 'dist/NOTICE', 'NOTICE',
-    ...['wasm', 'mjs', 'jsep.wasm', 'jsep.mjs'].map(ext => `dist/ort/ort-wasm-simd-threaded.${ext}`),
+    ...['wasm', 'mjs', 'jsep.wasm', 'jsep.mjs', 'asyncify.wasm', 'asyncify.mjs'].map(ext => `dist/ort/ort-wasm-simd-threaded.${ext}`),
     ...['inter', 'zcool-kuaile', 'intel-one-mono-regular'].map(font => `dist/fonts/${font}.woff2`),
   ];
   for (const file of required) {

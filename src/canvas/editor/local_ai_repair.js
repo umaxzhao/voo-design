@@ -9,7 +9,7 @@
 
 import { MODEL_BASE_URL } from "../../shared/app_endpoints.js";
 import { isLocalAiRepairSupported } from "./ai_capabilities.js";
-import { loadOrtRuntime } from "./ort_runtime.js";
+import { createAiRepairWorkerClient } from "./ai-repair-worker-client.js";
 import { AI_REPAIR_MODEL_CACHE } from "./model_cache_names.js";
 import {
   loadModelAssetBytes,
@@ -47,7 +47,7 @@ export const AI_REPAIR_MODELS = [
 export const AI_REPAIR_MODEL = AI_REPAIR_MODELS[1];
 
 export function preferredAiRepairModel() {
-  const hasWebGpu = typeof navigator === "object" && Boolean(navigator.gpu);
+  const hasWebGpu = typeof navigator === "object" && Boolean(navigator.gpu) && !failedModels.has("lama-512-fp16");
   return (
     AI_REPAIR_MODELS.find(
       (model) => model.backend === (hasWebGpu ? "webgpu" : "wasm"),
@@ -55,33 +55,41 @@ export function preferredAiRepairModel() {
   );
 }
 
-let sessionPromise = null;
-let activeBackend = null;
-let loadedModelId = null;
+const workerClient = createAiRepairWorkerClient();
+const failedModels = new Set();
+let adapterProbe = null;
 
-const refusedProviders = new Set();
-
-function availableProviders(model) {
-  const all =
-    model.backend === "webgpu" &&
-    typeof navigator === "object" &&
-    navigator.gpu
-      ? ["webgpu", "wasm"]
-      : ["wasm"];
-  const usable = all.filter((name) => !refusedProviders.has(name));
-  return usable.length > 0 ? usable : all;
+/** An exposed WebGPU API does not prove the browser can supply an adapter. */
+export async function prepareAiRepairModel() {
+  if (!adapterProbe) adapterProbe = (async () => {
+    if (typeof navigator !== "object" || !navigator.gpu?.requestAdapter) {
+      failedModels.add("lama-512-fp16");
+      return;
+    }
+    let timer;
+    try {
+      const adapter = await Promise.race([
+        navigator.gpu.requestAdapter(),
+        new Promise(resolve => { timer = setTimeout(() => resolve(null), 1500); }),
+      ]);
+      if (!adapter?.features?.has("shader-f16")) failedModels.add("lama-512-fp16");
+    } catch (error) {
+      console.warn("AI Repair GPU probe failed; using the compatible model", error);
+      failedModels.add("lama-512-fp16");
+    } finally { clearTimeout(timer); }
+  })();
+  await adapterProbe;
+  return preferredAiRepairModel();
 }
 
 export { isLocalAiRepairSupported };
 
 export function describeLocalAiRepairBackend() {
-  return activeBackend;
+  return workerClient.backend();
 }
 
 export function releaseLocalAiRepair() {
-  sessionPromise = null;
-  activeBackend = null;
-  loadedModelId = null;
+  workerClient.release();
 }
 
 /** Whether the optional AI Repair weights are already available offline. */
@@ -97,15 +105,15 @@ export async function isAiRepairModelCached(model = preferredAiRepairModel()) {
 /** Downloads and caches the optional model before the user starts editing. */
 export async function downloadAiRepairModel({
   model = preferredAiRepairModel(),
-  onProgress,
+  onProgress, signal,
 } = {}) {
-  await modelBytes(model, onProgress);
+  await modelBytes(model, onProgress, signal);
   return true;
 }
 
 /** Removes the locally cached model and releases any live inference session. */
 export async function deleteAiRepairModel(model = preferredAiRepairModel()) {
-  if (loadedModelId === model.id) releaseLocalAiRepair();
+  releaseLocalAiRepair();
   const filename = model.filename || (model.url ? model.url.split("/").pop() : "lama_512_int8.onnx");
   return await deleteModelAsset({
     filename,
@@ -114,44 +122,14 @@ export async function deleteAiRepairModel(model = preferredAiRepairModel()) {
   });
 }
 
-async function modelBytes(model, onProgress) {
+async function modelBytes(model, onProgress, signal) {
   const filename = model.filename || (model.url ? model.url.split("/").pop() : "lama_512_int8.onnx");
   return await loadModelAssetBytes({
     filename,
     fallbackUrl: model.url,
     cacheName: MODEL_CACHE,
-    onProgress,
+    onProgress, signal,
   });
-}
-
-async function getSession(model, onProgress) {
-  if (sessionPromise && loadedModelId === model.id) return sessionPromise;
-  if (sessionPromise) releaseLocalAiRepair();
-  loadedModelId = model.id;
-  sessionPromise = (async () => {
-    const ort = await loadOrtRuntime(onProgress);
-    const bytes = await modelBytes(model, onProgress);
-    const providers = availableProviders(model);
-    let lastError = null;
-    for (const provider of providers) {
-      try {
-        const session = await ort.InferenceSession.create(bytes, {
-          executionProviders: [provider],
-          graphOptimizationLevel: "all",
-        });
-        activeBackend = provider;
-        return { ort, session };
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw lastError ?? new Error("aiRepairNoBackend");
-  })().catch((error) => {
-    sessionPromise = null;
-    loadedModelId = null;
-    throw error;
-  });
-  return sessionPromise;
 }
 
 function maskBounds(data, width, height) {
@@ -215,13 +193,6 @@ export function createAiRepairInput(image, mask) {
   return values;
 }
 
-function hasFiniteModelOutput(output) {
-  return (
-    output.length === 3 * INPUT_SIZE * INPUT_SIZE &&
-    output.every(Number.isFinite)
-  );
-}
-
 function patchImage(output, mask) {
   const plane = INPUT_SIZE * INPUT_SIZE;
   const result = new ImageData(INPUT_SIZE, INPUT_SIZE);
@@ -249,7 +220,7 @@ function patchImage(output, mask) {
 export async function inpaintWithLocalAi(
   sourceCanvas,
   maskCanvas,
-  { onProgress } = {},
+  { onProgress, signal } = {},
 ) {
   if (!isLocalAiRepairSupported()) throw new Error("aiRepairUnsupported");
   const width = sourceCanvas.width;
@@ -299,36 +270,21 @@ export async function inpaintWithLocalAi(
   const image = inputContext.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data;
   const mask = maskInputContext.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data;
 
-  onProgress?.({ phase: "running" });
-  const { ort, session } = await getSession(
-    preferredAiRepairModel(),
-    onProgress,
-  );
-  const tensor = new ort.Tensor("float32", createAiRepairInput(image, mask), [
-    1,
-    4,
-    INPUT_SIZE,
-    INPUT_SIZE,
-  ]);
-  let output;
+  signal?.throwIfAborted();
+  const model = await prepareAiRepairModel();
+  const input = createAiRepairInput(image, mask);
+  const bytes = workerClient.hasModel(model.id) ? undefined : await modelBytes(model, onProgress, signal);
+  signal?.throwIfAborted();
+  let repaired;
   try {
-    output = await session.run({ [session.inputNames[0]]: tensor });
+    repaired = await workerClient.run({
+      model, bytes, input, wasmPaths: new URL("ort/", document.baseURI).href,
+    }, { signal, onProgress });
   } catch (error) {
-    if (activeBackend && !refusedProviders.has(activeBackend)) {
-      console.warn(
-        `aiRepair: ${activeBackend} failed inference, retrying with next provider`,
-        error,
-      );
-      refusedProviders.add(activeBackend);
-      releaseLocalAiRepair();
-      return inpaintWithLocalAi(sourceCanvas, maskCanvas, { onProgress });
-    }
+    if (error.name !== "AbortError" && model.backend === "webgpu") failedModels.add(model.id);
     throw error;
   }
-  const repaired = output[session.outputNames[0]]?.data;
-  if (!repaired || !hasFiniteModelOutput(repaired)) {
-    throw new Error("aiRepairInvalidOutput");
-  }
+  signal?.throwIfAborted();
 
   const patchCanvas = canvas(INPUT_SIZE, INPUT_SIZE);
   const patchContext = patchCanvas.getContext("2d");

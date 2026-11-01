@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     host: true,
   },
+  // Discover the lazy inference-worker dependency before an editing session starts.
+  optimizeDeps: { include: ["onnxruntime-web/webgpu"] },
   build: {
     outDir: "dist",
     copyPublicDir: false,
