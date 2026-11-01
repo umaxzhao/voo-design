@@ -22,7 +22,19 @@ function updateModels(cliId, entries) {
       throw new Error("cli.modelCapabilitiesUnavailable");
     if (entry.hidden) continue;
     const id = `${cliId}:${entry.id}`;
-    models.set(id, { id, label: entry.label?.trim() || entry.id });
+    const model = { id, label: entry.label?.trim() || entry.id };
+    if (
+      cliId === "codex" &&
+      Array.isArray(entry.supportedReasoningEfforts) &&
+      entry.supportedReasoningEfforts.every((effort) => typeof effort === "string")
+    ) {
+      model.supportedReasoningEfforts = [...entry.supportedReasoningEfforts];
+      if (
+        typeof entry.defaultReasoningEffort === "string" &&
+        model.supportedReasoningEfforts.includes(entry.defaultReasoningEffort)
+      ) model.defaultReasoningEffort = entry.defaultReasoningEffort;
+    }
+    models.set(id, model);
   }
   discovered.set(cliId, latestModelVersions([...models.values()]));
   revision += 1;
