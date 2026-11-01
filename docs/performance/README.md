@@ -356,6 +356,37 @@ separate pending work. No controls, dependencies or file format are added.
   Existing crop/cover/rotation/overflow/mask pixels, variables, constraints,
   undo/redo and cold portable reopening retain their original assertions.
 
-Candidate checks and source-bound release measurements are recorded below
-when the full fixed-revision gate finishes; targeted passes do not certify
-all browser/native contexts. `native_studio` stays excluded.
+Fixed `ac9f18e635286848c08a0271cb25bca21e03ee94` completes a fresh
+105/105 release steps: 101 core browser suites, 4,752 unit passes/four skips,
+build/design/module checks; eleven additional checks remain not-run.
+`voo-layer-import-release.json` binds every result to that clean revision.
+
+Same-file production control `84130c8` versus `ac9f18e`, M4 Pro/Chromium 156,
+1440x1000/DPR1: eight real layer-label clicks have median waits 113.5→56.5ms.
+The panel renders 16 times in each run; the new tree builds zero times during
+those selections. Twelve pan moves measure 157→150ms and six Ctrl-wheel
+steps 84→66ms. Interactive loading is 10.133→9.657s; do not call this a large
+cold-load gain. Initial one-minute host loads are 7.76/7.26. These are shared
+host/automation plus two-rAF waits, not GPU FPS or universal speedups.
+
+Unconsumed node messages fall from 72 (56,422 nodes) to zero. Both results
+retain 56,422 mapped layers and 478 assets/247,642,346 transferred asset bytes.
+The original file hash remains `ddf80a00291c5c79ebc30c9b71c7c4180a74ca80311a170ed16f2aeed006b2c2`.
+Stable isolated 1000x800/zoom .024 artwork has zero pixel/channel differences;
+real selection/camera operations retain document identity and no page errors.
+
+Node probes retain equal row/item signatures for empty/matching/missing
+queries. Missing search is 199→51ms and a warm selection-model hit about .012ms.
+The uncached empty rebuild sample is 54→71ms, so no generic first-build gain
+is claimed; raw samples remain retained. These CPU probes are not UI latency.
+
+The fixed candidate is deployed and production-generated native Figma pixels,
+mask/variable/constraint/history checks, both worker subscription modes, actual
+selection with zero model builds, and zoom/exact-readback/undo pass. Eight
+entry/critical assets match the verified build. Direct main push was rejected
+by newly required PR/build rules; deployment had started before its result
+was confirmed. Preserve that ordering and finish required CI/PR synchronization;
+source/main and final deployment receipts are recorded independently.
+Private `layer-import-optimization/` retains gate, benchmark, production and
+GitHub evidence. `native_studio`, signed installers, physical input, all fonts/
+pages/effects and Figma parity remain outside this acceptance.
