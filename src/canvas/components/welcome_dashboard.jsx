@@ -1,5 +1,6 @@
+import { SCREENSHOT_ACCEPT, openWelcomeBrowser } from "./welcome_home_actions.js";
+import { usePromptAttachments } from "./use_prompt_attachments.js";
 import { useWelcomeActionReadiness } from "./welcome_dashboard/use_welcome_action_readiness.js";
-import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelcomeScreenshot } from "./welcome_home_actions.js";
 import React, { useEffect, useState, useRef } from "react";
 import { Search, Trash2, X } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
@@ -12,7 +13,6 @@ import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import {
   DEFAULT_DESIGN_SYSTEM_ID,
   DEFAULT_STYLE_ID,
-  MAX_REFERENCE_IMAGES,
   designSystemOptions,
   sizeOptions,
   styleOptions,
@@ -62,16 +62,15 @@ export default function WelcomeDashboard() {
   const [styleId, setStyleId] = useState(DEFAULT_STYLE_ID);
   const [designSystemId, setDesignSystemId] = useState(DEFAULT_DESIGN_SYSTEM_ID);
   const [size, setSize] = useState({ width: AI_GEN_TYPES[0].width, height: AI_GEN_TYPES[0].height });
-  const [attachments, setAttachments] = useState([]);
+  const references = usePromptAttachments(t);
+  const { attachments, attachmentError, addFiles: handleAttachmentsSelected } = references;
   const [candidates, setCandidates] = useState(1);
-  const [attachmentError, setAttachmentError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [configNotice, setConfigNotice] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState(null);
 
   const fileInputRef = useRef(null);
-  const htmlInputRef = useRef(null);
   const screenshotInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
   const menuRef = useRef(null);
@@ -124,7 +123,7 @@ export default function WelcomeDashboard() {
       } else if (action === "open-file" || action === "import-figma") {
         fileInputRef.current?.click();
       } else if (action === "import-browser") {
-        htmlInputRef.current?.click();
+        openWelcomeBrowser();
       } else if (action === "recreate-screenshot") {
         screenshotInputRef.current?.click();
       } else if (action === "sort") {
@@ -177,24 +176,11 @@ export default function WelcomeDashboard() {
 
   const openAgentSettings = openAgentModelSettings;
 
-  const handleAttachmentsSelected = async (fileList) => {
-    if (attachments.length >= MAX_REFERENCE_IMAGES) {
-      setAttachmentError(t("welcome.prompt.attachmentLimit", { n: MAX_REFERENCE_IMAGES }));
-      return;
-    }
-    const { readAttachmentFiles } = await import("./welcome_dashboard/generation_intent.js");
-    const { attachments: added, errors } = await readAttachmentFiles(fileList, {
-      limit: Math.max(1, MAX_REFERENCE_IMAGES - attachments.length),
-    });
-    if (added.length) setAttachments((current) => [...current, ...added].slice(0, MAX_REFERENCE_IMAGES));
-    setAttachmentError(errors.length ? errors.join("; ") : "");
-  };
-
   const handlePromptSubmit = async (event) => {
     event?.preventDefault();
-    if (submitting) return;
+    if (submitting || references.isReading) return;
     const activePreset = AI_GEN_TYPES.find((item) => item.id === activePill) || AI_GEN_TYPES[0];
-    const userPrompt = promptText.trim();
+    const userPrompt = promptText.trim() || (attachments.some(item => item.kind === "image") ? t("welcome.prompt.recreatePrompt") : "");
     const docLabel = userPrompt ? userPrompt.slice(0, 24) : t(activePreset.label);
 
     setSubmitting(true);
@@ -237,7 +223,7 @@ export default function WelcomeDashboard() {
       if (intent) {
         useDesignStore.getState().setPendingGeneration(intent);
         setPromptText("");
-        setAttachments([]);
+        references.clearAttachments();
       }
     } finally {
       setSubmitting(false);
@@ -312,6 +298,9 @@ export default function WelcomeDashboard() {
           setIsDragOver(false);
         }
       }}
+      onPaste={(event) => {
+        if (event.target.closest(".prompt-composer textarea")) return references.onPaste(event);
+      }}
       onDrop={handleDrop}
     >
       {/* Hidden file input for file selection */}
@@ -327,23 +316,12 @@ export default function WelcomeDashboard() {
         }}
       />
 
-      <input ref={htmlInputRef} type="file" accept={HTML_IMPORT_ACCEPT} className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (!file) return;
-          try { await importWelcomeHtml(file, useDesignStore.getState()); }
-          catch (error) { console.error("[VOO] HTML import failed:", error); }
-        }} />
       <input ref={screenshotInputRef} type="file" accept={SCREENSHOT_ACCEPT} className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (!file) return;
-          try {
-            setPromptText("");
-            await recreateWelcomeScreenshot(file, { createDesign: handleCreateNew, getStore: useDesignStore.getState });
-          } catch (error) { console.error("[VOO] Screenshot import failed:", error); }
+        onChange={async (event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.target.value = "";
+          await handleAttachmentsSelected(files);
+          screenshotInputRef.current?.closest(".welcome-dashboard")?.querySelector(".prompt-composer textarea")?.focus();
         }} />
 
       <input
@@ -353,7 +331,7 @@ export default function WelcomeDashboard() {
         accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.voo,.pen,.fig,.svg"
         className="hidden"
         onChange={async (event) => {
-          const files = event.target.files;
+          const files = Array.from(event.target.files ?? []);
           event.target.value = "";
           if (files?.length) await handleAttachmentsSelected(files);
         }}
@@ -429,9 +407,9 @@ export default function WelcomeDashboard() {
               attachments={attachments}
               onAddAttachments={() => attachmentInputRef.current?.click()}
               onRemoveAttachment={(target) =>
-                setAttachments((current) => current.filter((item) => item !== target))
+                references.removeAttachment(target)
               }
-              submitting={submitting}
+              submitting={submitting || references.isReading}
               configNeeded={Boolean(configNotice)}
               onOpenSettings={openAgentSettings}
               onSubmit={handlePromptSubmit}
@@ -501,7 +479,7 @@ export default function WelcomeDashboard() {
 
               <button
                 type="button"
-                onClick={() => htmlInputRef.current?.click()}
+                onClick={openWelcomeBrowser}
                 className="flex min-w-0 items-center justify-center gap-2.5 rounded-2xl bg-neutral-800/70 hover:bg-neutral-700/70 p-4 text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
               >
                 <svg className="size-4 text-neutral-400 group-hover:text-neutral-200 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

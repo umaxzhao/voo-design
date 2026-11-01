@@ -1,0 +1,34 @@
+@media (min-width: 769px) {
+  [data-testid="design-editor"]:not(.editor-narrow) .editor-layers-resizable {
+    width: var(--editor-layers-width, 16rem);
+  }
+}
+.editor-layers-resize {
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  right: -0.25rem;
+  z-index: 1;
+  width: 0.5rem;
+  cursor: col-resize;
+  touch-action: none;
+  border-radius: 0.25rem;
+  outline-offset: 0.125rem;
+}
+.editor-layers-resize[data-side="left"] {
+  left: -0.25rem;
+  right: auto;
+}
+.editor-layers-resize:hover,
+.editor-layers-resize:focus-visible {
+  background: rgb(178 255 214 / 45%);
+}
+.editor-layers-resize[hidden],
+.editor-narrow .editor-layers-resize {
+  display: none;
+}
+@media (max-width: 768px) {
+  .editor-layers-resize {
+    display: none;
+  }
+}

@@ -23,10 +23,17 @@ public protocol InspectorDelegate: AnyObject {
     func inspectorDidChangeNodeStrokeStyle(id: String, strokeCap: String?, strokeJoin: String?, strokeMiterLimit: CGFloat?, strokeDash: [CGFloat]?, strokeAlign: String?)
     func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat)
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat)
+    func inspectorTextBoxInteractionChanged(active: Bool)
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?)
     func inspectorDidChangeEffects(id: String, effects: LayerEffects)
+    func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation)
+    func inspectorPaintInteractionChanged(active: Bool)
+    func inspectorDidRequestFlip(horizontal: Bool)
     func inspectorDidToggleVisibility(id: String, visible: Bool)
     func inspectorDidToggleLock(id: String, locked: Bool)
+    /// Figma-style constraints changed for a layer:
+    /// `horizontal` = left|center|right|scale, `vertical` = top|middle|bottom|scale.
+    func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String)
 }
 
 public extension InspectorDelegate {
@@ -39,10 +46,15 @@ public extension InspectorDelegate {
     func inspectorDidChangeNodeStrokeStyle(id: String, strokeCap: String?, strokeJoin: String?, strokeMiterLimit: CGFloat?, strokeDash: [CGFloat]?, strokeAlign: String?) {}
     func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat) {}
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat) {}
+    func inspectorTextBoxInteractionChanged(active: Bool) {}
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?) {}
     func inspectorDidChangeEffects(id: String, effects: LayerEffects) {}
+    func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation) {}
+    func inspectorPaintInteractionChanged(active: Bool) {}
+    func inspectorDidRequestFlip(horizontal: Bool) {}
     func inspectorDidToggleVisibility(id: String, visible: Bool) {}
     func inspectorDidToggleLock(id: String, locked: Bool) {}
+    func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String) {}
 }
 
 // MARK: - Right Floating Properties Card Shell
@@ -132,6 +144,9 @@ public class InspectorView: NSView {
     public private(set) var arePropertiesVisible: Bool = true
     /// Web-parity PROPERTIES card content (visible, functional inspector).
     public let propertiesPanel = PropertiesPanelView()
+    let canvasPropertiesPanel = NativeCanvasPropertiesView(frame: .zero)
+    public var onCanvasBackgroundChange: ((String) -> Void)?
+    private var hasCanvasDocument = false
     /// Scroll container that keeps the native-only TRANSFORM / APPEARANCE sections
     /// reachable below the 368pt-tall web-sized card fold.
     public let propertiesScrollView = PropertiesScrollView()
@@ -149,6 +164,9 @@ public class InspectorView: NSView {
     private var propertiesBlendMode = "source-over"
     private var propertiesX: CGFloat = 0
     private var propertiesY: CGFloat = 0
+    private var normalDockConstraints: [NSLayoutConstraint] = []
+    private var swappedDockConstraints: [NSLayoutConstraint] = []
+    public private(set) var panelsAreSwapped = false
     private var propertiesWidth: CGFloat = 0
     private var propertiesHeight: CGFloat = 0
     private var propertiesRotation: CGFloat = 0
@@ -160,6 +178,8 @@ public class InspectorView: NSView {
     private var propertiesLineHeight: CGFloat = 1.2
     private var propertiesLetterSpacing: CGFloat = 0
     private var panelHeightConstraint: NSLayoutConstraint?
+    private var cardHeightConstraint: NSLayoutConstraint?
+    private var layersHeightConstraint: NSLayoutConstraint?
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -208,6 +228,11 @@ public class InspectorView: NSView {
         propertiesScrollView.wantsLayer = true
         propertiesScrollView.layer?.cornerRadius = 0
         propertiesScrollView.layer?.masksToBounds = true
+        // The CLIP view is what actually clips a scroll document; without a layer
+        // mask on it, layer-backed drawing (and the snapshot harness) paints the
+        // document outside the card.
+        propertiesScrollView.contentView.wantsLayer = true
+        propertiesScrollView.contentView.layer?.masksToBounds = true
         propertiesCard.addSubview(propertiesScrollView)
 
         propertiesScrollView.documentView = propertiesPanel
@@ -232,25 +257,57 @@ public class InspectorView: NSView {
         appearancePanel.isHidden = true
         propertiesCard.addSubview(transformPanel)
         propertiesCard.addSubview(appearancePanel)
+        canvasPropertiesPanel.translatesAutoresizingMaskIntoConstraints = false
+        canvasPropertiesPanel.isHidden = true
+        canvasPropertiesPanel.onBackgroundChange = { [weak self] color in
+            self?.onCanvasBackgroundChange?(color)
+        }
+        propertiesCard.addSubview(canvasPropertiesPanel)
+        NSLayoutConstraint.activate([
+            canvasPropertiesPanel.topAnchor.constraint(equalTo: propertiesCard.topAnchor),
+            canvasPropertiesPanel.leadingAnchor.constraint(equalTo: propertiesCard.leadingAnchor),
+            canvasPropertiesPanel.trailingAnchor.constraint(equalTo: propertiesCard.trailingAnchor),
+            canvasPropertiesPanel.bottomAnchor.constraint(equalTo: propertiesCard.bottomAnchor),
+        ])
+
+        // The web inspector is content-driven (~704pt for a shape at 1440x900):
+        // the card height follows the panel's measured content height, capped by
+        // the space available so the card always stays inside the editor shell.
+        let cardHeight = propertiesCard.heightAnchor.constraint(equalToConstant: 368)
+        cardHeightConstraint = cardHeight
 
         // Layout Constraints:
         // Layers Panel: Floating on the left
         // Properties Card: Floating on the right
+        normalDockConstraints = [
+            layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+        ]
+        swappedDockConstraints = [
+            layersPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            propertiesCard.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+        ]
+        NSLayoutConstraint.activate(normalDockConstraints)
+        layersPanel.onSortTapped = { [weak self] in self?.swapPanels() }
+        propertiesPanel.onSwapPanels = { [weak self] in self?.swapPanels() }
+        propertiesPanel.onPresentationChange = { [weak self] in self?.needsLayout = true }
+        layersPanel.onPresentationChange = { [weak self] in self?.needsLayout = true }
+        let layersHeight = layersPanel.heightAnchor.constraint(
+            equalToConstant: layersPanel.preferredCardHeight)
+        layersHeightConstraint = layersHeight
         NSLayoutConstraint.activate([
             // Left Floating Card (web: md:w-64 = 256, p12, rounded-3xl, centred).
-            // 244pt = header(50) + pills(28) + 8 + three 32pt rows + 2*4 spacing
-            // + footer gap(8+10) + 24pt toolbar + 12pt card padding.
-            layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            // The layer card grows with expanded rows, then scrolls at the
+            // same viewport clearance cap as the Electron layer card.
             layersPanel.centerYAnchor.constraint(equalTo: centerYAnchor),
             layersPanel.widthAnchor.constraint(equalToConstant: 256),
-            layersPanel.heightAnchor.constraint(equalToConstant: 244),
+            layersHeight,
 
             // Right Floating Card (web: md:w-72 = 288, p12, rounded-3xl, centred;
             // the fixed 368pt visible height scrolls to the rest of the sections).
-            propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             propertiesCard.centerYAnchor.constraint(equalTo: centerYAnchor),
             propertiesCard.widthAnchor.constraint(equalToConstant: 288),
-            propertiesCard.heightAnchor.constraint(equalToConstant: 368),
+            cardHeight,
 
             // Scroll box = the card's padded content box: full width (the panel
             // carries the 12pt side padding itself) but stopped 12pt above the
@@ -413,9 +470,30 @@ public class InspectorView: NSView {
         propertiesPanel.onStrokeDashChange = { [weak self] dash in self?.forwardPropertiesStrokeStyle(strokeDash: dash) }
         propertiesPanel.onStrokeAlignChange = { [weak self] align in self?.forwardPropertiesStrokeStyle(strokeAlign: align) }
 
+        propertiesPanel.onBoxWidthChange = { [weak self] _ in
+            self?.forwardPropertiesTextDecoration()
+        }
+        propertiesPanel.onBoxWidthInteraction = { [weak self] in
+            self?.delegate?.inspectorTextBoxInteractionChanged(active: $0)
+        }
         propertiesPanel.onItalicChange = { [weak self] it in self?.forwardPropertiesTextDecoration(italic: it) }
         propertiesPanel.onUnderlineChange = { [weak self] un in self?.forwardPropertiesTextDecoration(underline: un) }
 
+        propertiesPanel.onConstraintsChange = { [weak self] horizontal, vertical in
+            guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeConstraints(id: id, horizontal: horizontal, vertical: vertical)
+        }
+
+        propertiesPanel.onPaintMutation = { [weak self] mutation in
+            guard let self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidMutatePaint(id: id, mutation: mutation)
+        }
+        propertiesPanel.onFlipRequest = { [weak self] horizontal in
+            self?.delegate?.inspectorDidRequestFlip(horizontal: horizontal)
+        }
+        propertiesPanel.onPaintInteraction = { [weak self] active in
+            self?.delegate?.inspectorPaintInteractionChanged(active: active)
+        }
         propertiesPanel.onEffectsChange = { [weak self] effects in
             guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
             self.delegate?.inspectorDidChangeEffects(id: id, effects: effects)
@@ -488,6 +566,11 @@ public class InspectorView: NSView {
     /// legacy panels in sync for backward compatibility / test coverage).
     public func configureProperties(with node: VOONode?) {
         propertiesPanel.configure(with: node)
+        // Every selection change resets the inspector to its first section (web
+        // keeps the card at the top); AppKit otherwise keeps the previous scroll
+        // offset and the card can look like it opens mid-section.
+        propertiesScrollView.contentView.scroll(to: .zero)
+        propertiesScrollView.reflectScrolledClipView(propertiesScrollView.contentView)
         transformPanel.configure(with: node)
         appearancePanel.configure(with: node)
         panelHeightConstraint?.constant = propertiesPanel.contentHeight
@@ -531,12 +614,75 @@ public class InspectorView: NSView {
         }
     }
 
-    /// The web inspector only floats the right properties card while something is
-    /// selected; the layers card stays visible at all times.
+    public func configureCanvas(document: VOODocument) {
+        hasCanvasDocument = true
+        canvasPropertiesPanel.configure(document: document)
+        layersPanel.canvasBackgroundColor = document.workspaceBackgroundColor
+        setPropertiesVisible(arePropertiesVisible)
+    }
+
+    /// An empty selection displays the canvas properties in the same card.
     public func setPropertiesVisible(_ visible: Bool) {
-        guard arePropertiesVisible != visible else { return }
         arePropertiesVisible = visible
-        propertiesCard.isHidden = !visible
+        propertiesCard.isHidden = !visible && !hasCanvasDocument
+        propertiesScrollView.isHidden = !visible
+        canvasPropertiesPanel.isHidden = visible || !hasCanvasDocument
+        needsLayout = true
+    }
+
+    public func swapPanels() {
+        panelsAreSwapped.toggle()
+        NSLayoutConstraint.deactivate(
+            panelsAreSwapped ? normalDockConstraints : swappedDockConstraints)
+        NSLayoutConstraint.activate(
+            panelsAreSwapped ? swappedDockConstraints : normalDockConstraints)
+        needsLayout = true
+    }
+
+    public override func layout() {
+        super.layout()
+        syncPropertiesCardHeight()
+        syncLayersCardHeight()
+    }
+
+    private func syncLayersCardHeight() {
+        guard bounds.height > 0 else { return }
+        let cap = max(198, min(bounds.height * 0.75, bounds.height - 144))
+        let wanted = min(layersPanel.preferredCardHeight, cap)
+        if let constraint = layersHeightConstraint, abs(constraint.constant - wanted) > 0.5 {
+            constraint.constant = wanted
+            needsLayout = true
+        }
+    }
+
+    /// Card height = measured content height + the card's 12pt bottom inset, capped
+    /// by the available shell height (the scroll view then scrolls the overflow).
+    private func syncPropertiesCardHeight() {
+        guard bounds.height > 0 else { return }
+        let content =
+            arePropertiesVisible
+            ? max(propertiesPanel.contentHeight, 240)
+            : NativeCanvasPropertiesView.preferredContentHeight - 12
+        // Web DOCKED_PANEL_MAX_HEIGHT_CLASS reserves 9rem (144pt) around the
+        // centred card so it clears the bottom controls at every window height.
+        let maxAvailable = max(240, bounds.height - 144)
+        let wanted = min(content + 12, maxAvailable)
+        if let constraint = cardHeightConstraint, abs(constraint.constant - wanted) > 0.5 {
+            constraint.constant = wanted
+            // Apply outside the current layout pass, then re-anchor the document to
+            // its first section so the card never opens scrolled mid-panel.
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.needsLayout = true
+                self.layoutSubtreeIfNeeded()
+                self.propertiesScrollView.contentView.scroll(to: .zero)
+                self.propertiesScrollView.reflectScrolledClipView(self.propertiesScrollView.contentView)
+            }
+        }
+        if let constraint = panelHeightConstraint, abs(constraint.constant - content) > 0.5 {
+            constraint.constant = content
+            propertiesPanel.needsLayout = true
+        }
     }
 
     public override func hitTest(_ point: NSPoint) -> NSView? {

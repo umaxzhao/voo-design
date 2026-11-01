@@ -203,4 +203,6 @@ export default {
   "welcome.prompt.designSystemOverridesStyle": "色彩与字体由所选设计系统决定",
   "welcome.menu.sortAndView": "排序与视图",
   "welcome.menu.import": "导入与打开",
+  "welcome.prompt.recreatePrompt": "请根据附上的参考图片还原为可编辑设计，匹配布局、字体、颜色和间距。",
+  "welcome.prompt.attachmentReadError": "无法添加附件，请使用不超过 10 MB 的 PNG、JPG、WebP 或 GIF 图片。",
 };

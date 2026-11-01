@@ -1,6 +1,6 @@
 # VOO Design Native
 
-A **1:1 native macOS replication of [VOO Design](../README.md)** — a vector & raster design
+A **native macOS port of [VOO Design](../README.md), with incomplete parity** — a vector & raster design
 editor — built without Electron, Chromium, WebAssembly or any third-party dependency:
 **Swift 6 + AppKit + CoreGraphics + Metal**, packaged as a self-contained `.app` of ~5 MB.
 
@@ -26,6 +26,10 @@ native_studio/
 └── TEST_READY.md                      # Test-suite publication / acceptance gate
 ```
 
+> Current acceptance: **not at 1:1 parity**. The 2026-11-01 audit records data-loss,
+> rendering and interaction failures despite passing registered tests. See
+> [the current audit and evidence](INTERACTION_PARITY.md). A visible surface is not a completed workflow.
+
 ## Build & run
 
 ```bash
@@ -42,7 +46,7 @@ Packaging gates enforced by `build.sh`:
 | `.app` bundle | ≤ 35 MB | **~7.3 MB** (includes the bundled OFL faces) |
 | Cold launch (window ready) | < 0.2 s target | **~0.15 s** |
 
-## What is replicated
+## Implemented surfaces (coverage varies)
 
 | VOO Design (web/Electron) | Native studio |
 | :--- | :--- |

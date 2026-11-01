@@ -6,6 +6,7 @@ import { externalMcpTools } from "../agent/external_mcp_tools.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import AgentPanelView from "./agent-panel/agent_panel_view.jsx";
+import { usePromptAttachments } from "./use_prompt_attachments.js";
 import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
@@ -41,6 +42,8 @@ export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
 /** Chat panel beside the editor frame: text in, canvas changes out, saved history. */
 export default function CanvasAgentPanel({ onClose }) {
   const { t } = useI18n();
+  const references = usePromptAttachments(t);
+  const { attachments, clearAttachments } = references;
   const [sessions, setSessions] = useState(() => loadStoredSessions());
   // Bootstrap once without an effect that calls changing session handlers.
   const initialSessionRef = useRef(null);
@@ -92,6 +95,7 @@ export default function CanvasAgentPanel({ onClose }) {
   };
   const openSession = (session) => {
     if (turnRef.current) return;
+    clearAttachments();
     setCancelled(false);
     setLastRequest(null);
     setActiveId(session.id);
@@ -103,6 +107,7 @@ export default function CanvasAgentPanel({ onClose }) {
   };
   const startNewSession = () => {
     if (turnRef.current) return;
+    clearAttachments();
     const session = createEmptySession();
     setCancelled(false);
     setLastRequest(null);
@@ -164,10 +169,11 @@ export default function CanvasAgentPanel({ onClose }) {
     });
   };
   const send = useCallback(
-    async (overrideText, contextAttachment, recoveryRequest, generationIntent) => {
+    async (overrideText, contextAttachment, recoveryRequest, generationIntent, imageAttachments) => {
       const targetContext = contextAttachment !== undefined ? contextAttachment : activeContext;
-      const text = (overrideText ?? input).trim();
-      if (!text || busy || turnRef.current) return;
+      const images = generationIntent?.attachments ?? imageAttachments ?? (overrideText === undefined ? attachments : []);
+      const text = (overrideText ?? input).trim() || (images.length ? t("welcome.prompt.recreatePrompt") : "");
+      if (!text || busy || turnRef.current || (overrideText === undefined && references.isReading)) return;
       const model = generationIntent?.modelId || selectedModel || getSetting(AGENT_SETTING.MODEL);
       if (generationIntent?.modelId && generationIntent.modelId !== selectedModel) {
         setSetting(AGENT_SETTING.MODEL, generationIntent.modelId);
@@ -177,10 +183,11 @@ export default function CanvasAgentPanel({ onClose }) {
       turnRef.current = controller;
       useDesignStore.setState({ agentGenerating: true });
       setInput("");
+      if (overrideText === undefined) clearAttachments();
       setError(null);
       setConfigError(false);
       setCancelled(false);
-      setLastRequest(recoveryRequest ?? { text, context: targetContext, generation: generationIntent ?? null });
+      setLastRequest(recoveryRequest ?? { text, context: targetContext, generation: generationIntent ?? null, attachments: images });
       setBusy(true);
       setStreamingText("");
       setCandidates([]);
@@ -200,11 +207,13 @@ export default function CanvasAgentPanel({ onClose }) {
         let promptWithContext = text;
         if (generationIntent) {
           promptWithContext = `${generationContextText(generationIntent)}\n${text}`;
-          const referenceNote = referenceImageContext(generationIntent.attachments);
+          const referenceNote = referenceImageContext(images);
           if (referenceNote) promptWithContext += `\n${referenceNote}`;
           controller.signal.throwIfAborted();
         } else {
           promptWithContext = promptWithSelection(text, targetContext);
+          const referenceNote = referenceImageContext(images);
+          if (referenceNote) promptWithContext += `\n${referenceNote}`;
         }
         const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
         const external = await abortable(() => externalMcpTools(), controller.signal);
@@ -218,7 +227,7 @@ export default function CanvasAgentPanel({ onClose }) {
           sceneKind: generationIntent?.kind ?? null,
           designSystem: generationIntent?.designSystemContract ?? null,
           frame: generationIntent?.frame ?? null,
-          visualReferences: generationIntent?.attachments
+          visualReferences: images
             ?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
             .map((attachment) => ({ name: attachment.name, dataUrl: attachment.dataUrl })) ?? [],
           variantCount,
@@ -287,7 +296,7 @@ export default function CanvasAgentPanel({ onClose }) {
         setDirections([]);
       }
     },
-    [busy, input, activeId, activeContext, selectedModel, t],
+    [busy, input, activeId, activeContext, selectedModel, t, attachments, clearAttachments, references.isReading],
   );
   const keepCandidate = useCallback(async (candidate) => {
     const others = candidates
@@ -350,7 +359,7 @@ export default function CanvasAgentPanel({ onClose }) {
     send();
   };
   const onKeyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing) {
       event.preventDefault();
       send();
     }
@@ -366,7 +375,7 @@ export default function CanvasAgentPanel({ onClose }) {
     isEmpty, setInput, transcript, directions, directionChoice, busy,
     pipelineProgress, streamingText, candidates, keepCandidate,
     activeContext, setActiveContext, cancelled, lastRequest, send,
-    error, configError, onSubmit, input, onKeyDown, turnRef
+    error, configError, onSubmit, input, onKeyDown, turnRef, references
   }} />;
 }
 CanvasAgentPanel.propTypes = { onClose: PropTypes.func };

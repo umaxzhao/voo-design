@@ -201,7 +201,12 @@ public final class CurveConversionEngine {
 // MARK: - Canvas Stage View (High Performance Interactive Studio Viewport)
 
 public class CanvasStageView: NSView {
+    public override var isFlipped: Bool { true }
     // Document State
+    /// Last-known rect of every frame, used by `applyConstraints(frameId:)` to
+    /// compute the resize delta of a frame after a host-driven resize.
+    private var constraintFrameRects: [String: CGRect] = [:]
+
     public var document: VOODocument = VOODocument() {
         didSet {
             cancelCreation()
@@ -211,6 +216,10 @@ public class CanvasStageView: NSView {
             let survivingIds = selectedNodeIds.intersection(validIds)
             if survivingIds != selectedNodeIds {
                 selectedNodeIds = survivingIds
+            }
+            for node in document.nodes where node.kind == .frame && constraintFrameRects[node.id] == nil {
+                constraintFrameRects[node.id] = CGRect(x: node.x, y: node.y,
+                                                       width: node.width, height: node.height)
             }
             validatePathEditingTarget()
             handlePaintDocumentChangeIfNeeded()
@@ -357,6 +366,8 @@ public class CanvasStageView: NSView {
     public private(set) var isPainting: Bool = false
 
     /// Brush ink colour (hex). Default mint, mirrors the VOO editor accent.
+    public var brushOpacity: CGFloat = 1
+    public var shapeCreationStyle = LayerStyle(fill: "#D4D4D4", stroke: "#FFFFFF", strokeWidth: 1)
     public var brushColorHex: String = "#b2ffd6"
     /// Brush dab diameter in document points.
     public var brushDiameter: CGFloat = 24
@@ -438,6 +449,8 @@ public class CanvasStageView: NSView {
     /// True while the node tool is editing the anchors of a selected path.
     public var isPathEditing: Bool { pathEditingNodeId != nil }
 
+    public var showGuides: Bool = true { didSet { needsDisplay = true } }
+
     public var showRulers: Bool = false {
         didSet {
             horizontalRuler.isHidden = !showRulers
@@ -464,6 +477,8 @@ public class CanvasStageView: NSView {
 
     // Interactive Drag Tracking
     private var isPanningWithSpace: Bool = false
+    private var isPanningFreeStage: Bool = false
+    private var isPanningWithMiddleMouse: Bool = false
     private var isSpaceKeyDown: Bool = false
     private var panDragStartMouse: CGPoint = .zero
     private var panDragStartOffset: CGPoint = .zero
@@ -613,9 +628,8 @@ public class CanvasStageView: NSView {
             transformHandles.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -thickness)
         ])
 
-        // Add Floating Contextual Taskbar
+        // The retired legacy bar stays detached; the root island owns selection actions.
         contextualTaskbar.isHidden = true
-        addSubview(contextualTaskbar)
 
         // Add Floating Bottom Tools Pill
         bottomToolsPill.translatesAutoresizingMaskIntoConstraints = false
@@ -866,7 +880,6 @@ public class CanvasStageView: NSView {
     private static let frameLabelTopOffset: CGFloat = 20.0
     private static let frameLabelIconSize: CGFloat = 12.0
     private static let frameLabelIconGap: CGFloat = 6.0
-    private static let frameLabelChevronSize: CGFloat = 10.0
 
     /// Node whose text is currently being edited in the inline overlay. The web
     /// editor hides the edited layer while its textarea is up, otherwise the
@@ -936,8 +949,10 @@ public class CanvasStageView: NSView {
     }
 
     /// Draws a frame title label exactly like the web editor: 12px grid glyph,
-    /// 6px gap, 11px mono text at 20 screen-px above the frame's top edge, plus a
-    /// small chevron. `active` frames use the mint title colour, others neutral-400.
+    /// 6px gap, 11px mono text at 20 screen-px above the frame's top edge.
+    /// `active` frames use the mint title colour, others neutral-400. The
+    /// current web frame label has no chevron after the name (only the page pill
+    /// in the bottom-left does).
     private func drawFrameLabel(_ title: String, frameRect: CGRect, active: Bool, in ctx: CGContext) {
         let safeZoom = max(zoom, 0.0001)
         var text = title
@@ -951,7 +966,20 @@ public class CanvasStageView: NSView {
         var ascent: CGFloat = 0
         var descent: CGFloat = 0
         var leading: CGFloat = 0
-        let textWidth = CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, &leading))
+        _ = CTLineGetTypographicBounds(line, &ascent, &descent, &leading)
+
+        if isFlipped {
+            let labelY = frameRect.minY - Self.frameLabelTopOffset / safeZoom
+            let iconSize = Self.frameLabelIconSize / safeZoom
+            let iconRect = CGRect(x: frameRect.minX, y: labelY, width: iconSize, height: iconSize)
+            VooIconFactory.drawFrame(in: iconRect, color: color, strokeWidth: 1.5)
+            attributed.draw(
+                at: CGPoint(
+                    x: frameRect.minX + (Self.frameLabelIconSize + Self.frameLabelIconGap)
+                        / safeZoom,
+                    y: labelY))
+            return
+        }
 
         // CSS half-leading: leading is split above and below the ascent/descent box.
         let lineHeight = Self.frameLabelLineHeight / safeZoom
@@ -970,15 +998,6 @@ public class CanvasStageView: NSView {
         ctx.textPosition = CGPoint(x: textX, y: baseline)
         CTLineDraw(line, ctx)
         ctx.restoreGState()
-
-        let chevronSize = Self.frameLabelChevronSize / safeZoom
-        let chevronRect = CGRect(
-            x: textX + textWidth + 4.0 / safeZoom,
-            y: iconCenter - chevronSize / 2.0,
-            width: chevronSize,
-            height: chevronSize
-        )
-        VooIconFactory.drawChevronDown(in: chevronRect, color: color, strokeWidth: 1.5)
     }
 
     /// 1px screen-space frame outline: mint for the focused/selected frame,
@@ -996,12 +1015,80 @@ public class CanvasStageView: NSView {
         ctx.stroke(CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY))
     }
 
+    /// Stage dot grid (always on in the web editor's free-page stage, independent
+    /// of `showGrid`, which is the layout-grid toggle):
+    /// `radial-gradient(rgba(255,255,255,0.14) 1.2px, transparent 1.2px)`,
+    /// `backgroundSize: 20 * zoom`, `backgroundPosition: panX, panY`.
+    ///
+    /// The tile origin is the camera pan (phase), and the CSS gradient places the
+    /// dot at the tile centre, so dot centres sit at `phase + step/2 + k*step`.
+    /// The dot radius stays 1.2 SCREEN px; only the pitch scales with the zoom.
+    private func drawStageDotGrid(in ctx: CGContext) {
+        let step = ThemeTokens.dotGridSpacing * zoom
+        // Extreme zoom-out would make the pitch sub-pixel and the dot pass
+        // arbitrarily large; the pattern is not discernible there, so skip it.
+        guard step >= 3.0 else { return }
+
+        let clipRect: CGRect
+        if showRulers {
+            let thickness = ThemeTokens.rulerTrackThickness
+            clipRect = CGRect(
+                x: thickness,
+                y: 0,
+                width: max(0, bounds.width - thickness),
+                height: max(0, bounds.height - thickness)
+            )
+        } else {
+            clipRect = bounds
+        }
+        guard clipRect.width > 0, clipRect.height > 0 else { return }
+
+        let phaseX = Self.positiveRemainder(panOffset.x, step)
+        let phaseY = Self.positiveRemainder(panOffset.y, step)
+        let radius = ThemeTokens.dotGridRadius
+        let dotDiameter = radius * 2.0
+
+        let path = CGMutablePath()
+        var x = phaseX + step / 2.0
+        while x - radius < clipRect.maxX {
+            var y = phaseY + step / 2.0
+            while y - radius < clipRect.maxY {
+                if x + radius > clipRect.minX, y + radius > clipRect.minY {
+                    path.addEllipse(in: CGRect(x: x - radius, y: y - radius, width: dotDiameter, height: dotDiameter))
+                }
+                y += step
+            }
+            x += step
+        }
+        guard !path.isEmpty else { return }
+
+        ctx.saveGState()
+        ctx.clip(to: clipRect)
+        ctx.setFillColor(NSColor(white: 1.0, alpha: ThemeTokens.dotGridAlpha).cgColor)
+        ctx.addPath(path)
+        ctx.fillPath()
+        ctx.restoreGState()
+    }
+
+    /// Positive remainder (`0 <= result < modulus`), used to phase the dot tile
+    /// from a negative camera pan without mirroring the pattern.
+    private static func positiveRemainder(_ value: CGFloat, _ modulus: CGFloat) -> CGFloat {
+        guard modulus > 0 else { return 0 }
+        let remainder = value.truncatingRemainder(dividingBy: modulus)
+        return remainder < 0 ? remainder + modulus : remainder
+    }
+
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        // 1. Stage Background (web editor workspace ground #1c1c1c)
-        ctx.setFillColor(ThemeTokens.colorStageStudio.cgColor)
+        // 1. Stage Background (web editor workspace ground #525252)
+        let workspaceColor = document.workspaceBackgroundColor
+        if workspaceColor == "transparent" { ctx.clear(bounds) }
+        ctx.setFillColor((NSColor(hexString: workspaceColor) ?? .clear).cgColor)
         ctx.fill(bounds)
+
+        // The web workspace renderer covers the decorative DOM dot grid.
+        // Keep the explicit document layout grid separate from this background.
 
         let rulerOffset = showRulers ? ThemeTokens.rulerTrackThickness : 0.0
         let originX = rulerOffset + panOffset.x
@@ -1061,14 +1148,15 @@ public class CanvasStageView: NSView {
             ctx.fillPath()
         }
 
-        // 2.1 Frame labels. The page label is only drawn when no frame node owns
-        // the canvas, otherwise that node draws its own "Design 1" label.
+        // 2.1 Frame labels. Default is muted grey (web `text-neutral-400`); mint
+        // only when that frame is focused/selected. The page label is only drawn
+        // when no frame node owns the canvas, otherwise that node draws its own.
         if hasPage {
             if pageFrameNode == nil {
-                drawFrameLabel(document.title, frameRect: pageRect, active: true, in: ctx)
+                drawFrameLabel(document.title, frameRect: pageRect, active: false, in: ctx)
             }
             for frameNode in document.nodes where frameNode.kind == .frame && frameNode.style.visible {
-                let active = selectedNodeIds.contains(frameNode.id) || frameNode.id == pageFrameNode?.id
+                let active = selectedNodeIds.contains(frameNode.id)
                 drawFrameLabel(
                     frameNode.name,
                     frameRect: Self.docRect(of: frameNode),
@@ -1078,7 +1166,8 @@ public class CanvasStageView: NSView {
             }
         }
 
-        // 2.2 Canvas chrome: W×H readout (gestures only) + add-canvas button.
+        // 2.2 Canvas chrome: W×H readout (gestures only); the add-canvas circle
+        // only appears on multi-page documents (see drawCanvasChrome).
         if hasPage {
             drawCanvasChrome(pageRect: pageRect, canvas: canvas, in: ctx)
         }
@@ -1105,7 +1194,11 @@ public class CanvasStageView: NSView {
             let canvas = document.canvas
             ctx.saveGState()
             ctx.interpolationQuality = .high
-            ctx.draw(paintImage, in: CGRect(x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height))
+            ctx.saveGState()
+            ctx.translateBy(x: canvas.x, y: canvas.y + canvas.height)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.draw(paintImage, in: CGRect(x: 0, y: 0, width: canvas.width, height: canvas.height))
+            ctx.restoreGState()
             ctx.restoreGState()
         }
 
@@ -1126,9 +1219,8 @@ public class CanvasStageView: NSView {
             ctx.restoreGState()
         }
 
-        // 4. Persistent ruler guide lines (web: mint #a7ffd4 at 45% idle) only
-        // when rulers are active.
-        if showRulers, let guides = document.guides {
+        // 4. Guide visibility is independent of ruler tracks (Electron parity).
+        if showGuides, let guides = document.guides {
             ctx.setStrokeColor(NSColor(hex: ThemeTokens.accentMint).withAlphaComponent(0.45).cgColor)
             ctx.setLineWidth(1.0 / zoom)
             for g in guides {
@@ -1246,8 +1338,9 @@ public class CanvasStageView: NSView {
     }
 
     /// Canvas chrome that floats outside the page: the W×H readout (only during
-    /// a live transform/creation gesture in the web editor) and the add-canvas
-    /// circle (36px, 48px right of the page, #2a2a2a/80 ground, white/80 plus).
+    /// a live transform/creation gesture in the web editor) and, for multi-page
+    /// documents only, the add-canvas circle (36px, 48px right of the page,
+    /// #2a2a2a/80 ground, white/80 plus).
     private func drawCanvasChrome(pageRect: CGRect, canvas: CanvasFrame, in ctx: CGContext) {
         let safeZoom = max(zoom, 0.0001)
 
@@ -1279,21 +1372,30 @@ public class CanvasStageView: NSView {
             )
         }
 
-        let addBtnRect = CGRect(
-            x: pageRect.maxX + 48.0 / safeZoom,
-            y: pageRect.midY - 18.0 / safeZoom,
-            width: 36.0 / safeZoom,
-            height: 36.0 / safeZoom
-        )
-        ctx.setFillColor(NSColor(red: 0.165, green: 0.165, blue: 0.165, alpha: 0.80).cgColor)
-        ctx.fillEllipse(in: addBtnRect)
-        let plusRect = CGRect(
-            x: addBtnRect.midX - 9.0 / safeZoom,
-            y: addBtnRect.midY - 9.0 / safeZoom,
-            width: 18.0 / safeZoom,
-            height: 18.0 / safeZoom
-        )
-        VooIconFactory.drawPlus(in: plusRect, color: NSColor(white: 0.80, alpha: 1.0), strokeWidth: 1.5)
+        // Add-canvas affordance: the web editor only renders the "+" circle
+        // beside the last artboard on a multi-page/free canvas. The native
+        // editor is single-page, so the code path stays but is hidden unless the
+        // document actually carries more than one visible frame.
+        let visibleFrameCount = document.nodes.reduce(0) { count, node in
+            count + ((node.kind == .frame && node.style.visible) ? 1 : 0)
+        }
+        if visibleFrameCount > 1 {
+            let addBtnRect = CGRect(
+                x: pageRect.maxX + 48.0 / safeZoom,
+                y: pageRect.midY - 18.0 / safeZoom,
+                width: 36.0 / safeZoom,
+                height: 36.0 / safeZoom
+            )
+            ctx.setFillColor(NSColor(red: 0.165, green: 0.165, blue: 0.165, alpha: 0.80).cgColor)
+            ctx.fillEllipse(in: addBtnRect)
+            let plusRect = CGRect(
+                x: addBtnRect.midX - 9.0 / safeZoom,
+                y: addBtnRect.midY - 9.0 / safeZoom,
+                width: 18.0 / safeZoom,
+                height: 18.0 / safeZoom
+            )
+            VooIconFactory.drawPlus(in: plusRect, color: NSColor(white: 0.80, alpha: 1.0), strokeWidth: 1.5)
+        }
     }
 
     /// Draws one node after applying its container clips: the enclosing frame
@@ -1588,7 +1690,8 @@ public class CanvasStageView: NSView {
     public static func drawStroke(for node: VOONode, path: CGPath, in rect: CGRect, ctx: CGContext) {
         guard node.style.strokeWidth > 0, let strokeColor = NSColor(hexString: node.style.stroke) else { return }
         let strokeAlpha = node.style.strokeOpacity ?? 1.0
-        ctx.setStrokeColor(strokeColor.withAlphaComponent(strokeAlpha).cgColor)
+        ctx.setStrokeColor(
+            strokeColor.withAlphaComponent(strokeColor.alphaComponent * strokeAlpha).cgColor)
         applyStrokeStyle(style: node.style, to: ctx)
 
         let align = node.style.strokeAlign ?? "center"
@@ -1623,7 +1726,7 @@ public class CanvasStageView: NSView {
         let paddedRect = rect.insetBy(dx: -pad, dy: -pad)
         guard paddedRect.width > 0, paddedRect.height > 0 else { return }
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
         guard let offscreen = CGContext(
             data: nil,
@@ -1655,7 +1758,9 @@ public class CanvasStageView: NSView {
         }
     }
 
-    private func drawNodeContents(_ node: VOONode, in ctx: CGContext, rect: CGRect) {
+    private func drawNodeContents(
+        _ node: VOONode, in ctx: CGContext, rect: CGRect, paintOpacity: CGFloat = 1
+    ) {
         let path = Self.shapePath(for: node, in: rect)
 
         // Drop shadow
@@ -1673,14 +1778,8 @@ public class CanvasStageView: NSView {
         // them); frames keep their fill but their outline is stage chrome.
         let isPureContainer = node.kind == .group
         if !isPureContainer, node.kind != .text, node.kind != .image {
-            if let gradient = Self.parseGradient(from: node.style.fill) {
-                Self.drawGradientFill(parsed: gradient, in: rect, path: path, ctx: ctx)
-            } else if let fillColor = NSColor(hexString: node.style.fill) {
-                let fillAlpha = node.style.fillOpacity ?? 1.0
-                ctx.setFillColor(fillColor.withAlphaComponent(fillAlpha).cgColor)
-                ctx.addPath(path)
-                ctx.fillPath()
-            }
+            NativePaintRenderer.fills(
+                node, path: path, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Inner shadow
@@ -1708,28 +1807,13 @@ public class CanvasStageView: NSView {
         // Stroke. Frames use the stage's 1px outline (selected mint / idle
         // white-10) instead of a model stroke, and groups have no paint at all.
         if !isPureContainer, node.kind != .text, node.kind != .image, node.kind != .frame {
-            Self.drawStroke(for: node, path: path, in: rect, ctx: ctx)
+            NativePaintRenderer.strokes(
+                node, path: path, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Text rendering if text node
-        if node.kind == .text, let text = node.text {
-            let fontSize = node.fontSize ?? 16.0
-            let color = NSColor(hexString: node.style.fill) ?? NSColor.white
-            let attrs = TextStyleResolver.resolvedAttributes(for: node, color: color, size: fontSize)
-            // Web paints the text stroke underneath the fill; AppKit's negative
-            // strokeWidth percentage is stroke-only, same paint order.
-            let hasStroke = node.style.strokeWidth > 0 && !node.style.stroke.isEmpty &&
-                node.style.stroke.lowercased() != "none" &&
-                node.style.stroke != "transparent"
-            if hasStroke, let strokeColor = NSColor(hexString: node.style.stroke) {
-                var strokeAttrs = attrs
-                strokeAttrs[.strokeColor] = strokeColor.withAlphaComponent(node.style.strokeOpacity ?? 1.0)
-                strokeAttrs[.strokeWidth] = -(node.style.strokeWidth / max(fontSize, 1.0)) * 100.0
-                NSAttributedString(string: text, attributes: strokeAttrs)
-                    .draw(with: rect, options: [.usesLineFragmentOrigin])
-            }
-            NSAttributedString(string: text, attributes: attrs)
-                .draw(with: rect, options: [.usesLineFragmentOrigin])
+        if node.kind == .text {
+            NativePaintRenderer.text(node, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Image rendering for image nodes
@@ -1775,7 +1859,7 @@ public class CanvasStageView: NSView {
         if let gBlur = node.effects?.gaussianBlur, gBlur.enabled, gBlur.radius > 0 {
             renderNodeWithGaussianBlur(node: node, in: ctx, rect: rect, blurRadius: gBlur.radius)
         } else {
-            drawNodeContents(node, in: ctx, rect: rect)
+            drawNodeContents(node, in: ctx, rect: rect, paintOpacity: effectiveOpacity(for: node))
         }
 
         ctx.restoreGState()
@@ -1840,6 +1924,12 @@ public class CanvasStageView: NSView {
             height: document.nodes[idx].height
         )
 
+        if document.nodes[idx].kind == .frame {
+            // Snapshot before the mutation so `applyConstraints(frameId:)` can compute
+            // the resize delta later (pure bookkeeping: the drag path is unchanged).
+            constraintFrameRects[document.nodes[idx].id] = previousRect
+        }
+
         document.nodes[idx].x = newRect.origin.x
         document.nodes[idx].y = newRect.origin.y
         document.nodes[idx].width = newRect.size.width
@@ -1866,6 +1956,138 @@ public class CanvasStageView: NSView {
         }
 
         onNodeTransformed?(document.nodes[idx])
+        needsDisplay = true
+    }
+
+    /// Applies the child constraints of a resized frame.
+    ///
+    /// Callable from the host (`MainContentView`) after a frame resize; the default
+    /// handle-drag path does not call it, so existing transform behaviour/tests are
+    /// untouched. `previousFrame` is the frame rect before the resize; when omitted,
+    /// the snapshot recorded by the last handle drag is used.
+    public func applyConstraints(frameId: String, previousFrame: CGRect? = nil) {
+        guard let frameIndex = document.nodes.firstIndex(where: { $0.id == frameId }),
+              document.nodes[frameIndex].kind == .frame else { return }
+        let frame = document.nodes[frameIndex]
+        let newRect = CGRect(x: frame.x, y: frame.y, width: frame.width, height: frame.height)
+        let oldRect = previousFrame ?? constraintFrameRects[frameId] ?? newRect
+        constraintFrameRects[frameId] = newRect
+        guard oldRect.width > 0.0001, oldRect.height > 0.0001 else { return }
+        let sizeChanged = abs(newRect.width - oldRect.width) > 0.0001
+            || abs(newRect.height - oldRect.height) > 0.0001
+        let originChanged = abs(newRect.minX - oldRect.minX) > 0.0001
+            || abs(newRect.minY - oldRect.minY) > 0.0001
+        guard sizeChanged || originChanged else { return }
+
+        let scaleX = newRect.width / oldRect.width
+        let scaleY = newRect.height / oldRect.height
+        let childIndices = document.nodes.indices.filter { document.nodes[$0].parentId == frameId }
+        guard !childIndices.isEmpty else { return }
+
+        let rotationDeg = frame.rotation
+        let isRotated = abs(rotationDeg.truncatingRemainder(dividingBy: 360.0)) > 0.001
+        let rad = rotationDeg * .pi / 180.0
+        let cosA = cos(rad)
+        let sinA = sin(rad)
+
+        var doc = document
+        var resizedNestedFrames: [String] = []
+
+        for index in childIndices {
+            var child = doc.nodes[index]
+            let constraints = child.constraints ?? NodeConstraints()
+            let childWidth = max(child.width, 0.001)
+            let childHeight = max(child.height, 0.001)
+
+            if !isRotated {
+                // Fast path for standard unrotated frames
+                switch constraints.horizontal {
+                case "right":
+                    child.x = newRect.maxX - (oldRect.maxX - child.x)
+                case "center":
+                    let relativeCentre = (child.x + childWidth / 2 - oldRect.midX) / oldRect.width
+                    child.x = newRect.midX + relativeCentre * newRect.width - childWidth / 2
+                case "scale":
+                    let relative = (child.x - oldRect.minX) / oldRect.width
+                    child.x = newRect.minX + relative * newRect.width
+                    child.width = max(child.width * scaleX, 0.001)
+                    if child.kind == .frame { resizedNestedFrames.append(child.id) }
+                default: // left
+                    child.x = newRect.minX + (child.x - oldRect.minX)
+                }
+
+                switch constraints.vertical {
+                case "bottom":
+                    child.y = newRect.maxY - (oldRect.maxY - child.y)
+                case "middle":
+                    let relativeCentre = (child.y + childHeight / 2 - oldRect.midY) / oldRect.height
+                    child.y = newRect.midY + relativeCentre * newRect.height - childHeight / 2
+                case "scale":
+                    let relative = (child.y - oldRect.minY) / oldRect.height
+                    child.y = newRect.minY + relative * newRect.height
+                    child.height = max(child.height * scaleY, 0.001)
+                    if child.kind == .frame && !resizedNestedFrames.contains(child.id) {
+                        resizedNestedFrames.append(child.id)
+                    }
+                default: // top
+                    child.y = newRect.minY + (child.y - oldRect.minY)
+                }
+            } else {
+                // Rotated frame: transform child origin into frame's local unrotated coordinate space
+                let dx = child.x - oldRect.minX
+                let dy = child.y - oldRect.minY
+                let localX = dx * cosA + dy * sinA
+                let localY = -dx * sinA + dy * cosA
+
+                var newLocalX = localX
+                var newLocalY = localY
+
+                switch constraints.horizontal {
+                case "right":
+                    newLocalX = newRect.width - (oldRect.width - localX)
+                case "center":
+                    let relativeCentre = (localX + childWidth / 2 - oldRect.width / 2) / oldRect.width
+                    newLocalX = newRect.width / 2 + relativeCentre * newRect.width - childWidth / 2
+                case "scale":
+                    let relative = localX / oldRect.width
+                    newLocalX = relative * newRect.width
+                    child.width = max(child.width * scaleX, 0.001)
+                    if child.kind == .frame { resizedNestedFrames.append(child.id) }
+                default: // left
+                    newLocalX = localX
+                }
+
+                switch constraints.vertical {
+                case "bottom":
+                    newLocalY = newRect.height - (oldRect.height - localY)
+                case "middle":
+                    let relativeCentre = (localY + childHeight / 2 - oldRect.height / 2) / oldRect.height
+                    newLocalY = newRect.height / 2 + relativeCentre * newRect.height - childHeight / 2
+                case "scale":
+                    let relative = localY / oldRect.height
+                    newLocalY = relative * newRect.height
+                    child.height = max(child.height * scaleY, 0.001)
+                    if child.kind == .frame && !resizedNestedFrames.contains(child.id) {
+                        resizedNestedFrames.append(child.id)
+                    }
+                default: // top
+                    newLocalY = localY
+                }
+
+                // Transform back to canvas space using new frame origin
+                child.x = newRect.minX + newLocalX * cosA - newLocalY * sinA
+                child.y = newRect.minY + newLocalX * sinA + newLocalY * cosA
+            }
+
+            doc.nodes[index] = child
+        }
+        document = doc
+
+        // Recursively apply constraints to any nested frames that were resized via scale
+        for nestedId in resizedNestedFrames {
+            applyConstraints(frameId: nestedId)
+        }
+
         needsDisplay = true
     }
 
@@ -2058,7 +2280,7 @@ public class CanvasStageView: NSView {
                     if isSnapped { break }
                 }
             }
-            if !isSnapped, let userGuides = document.guides {
+            if !isSnapped, showGuides, let userGuides = document.guides {
                 for g in userGuides where g.axis == "v" {
                     if abs(candidate.x - g.position) <= docThreshold {
                         snapped.x = g.position
@@ -2099,7 +2321,7 @@ public class CanvasStageView: NSView {
                     if isSnapped { break }
                 }
             }
-            if !isSnapped, let userGuides = document.guides {
+            if !isSnapped, showGuides, let userGuides = document.guides {
                 for g in userGuides where g.axis == "h" {
                     if abs(candidate.y - g.position) <= docThreshold {
                         snapped.y = g.position
@@ -2374,7 +2596,23 @@ public class CanvasStageView: NSView {
                 }
             }
         } else {
-            // Marquee selection start
+            // Check if the click is on empty stage background outside all artboards
+            let canvas = document.canvas
+            let pageRect = CGRect(x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height)
+            let isOverArtboard = pageRect.contains(docPt) || document.nodes.contains {
+                $0.kind == .frame && $0.style.visible && CGRect(x: $0.x, y: $0.y, width: $0.width, height: $0.height).contains(docPt)
+            }
+            if !isOverArtboard && !event.modifierFlags.contains(.shift) {
+                // Free-stage background panning (web `useEditorCanvasGestures` parity)
+                selectedNodeIds.removeAll()
+                isPanningFreeStage = true
+                panDragStartMouse = loc
+                panDragStartOffset = panOffset
+                NSCursor.closedHand.set()
+                return
+            }
+
+            // Marquee selection start (dragging inside an artboard or holding Shift)
             if !event.modifierFlags.contains(.shift) {
                 selectedNodeIds.removeAll()
             }
@@ -2413,11 +2651,13 @@ public class CanvasStageView: NSView {
             return
         }
 
-        // 1. Spacebar Panning
-        if isPanningWithSpace {
+        // 1. Spacebar & Free-Stage Panning
+        if isPanningWithSpace || isPanningFreeStage {
             let dx = loc.x - panDragStartMouse.x
             let dy = loc.y - panDragStartMouse.y
             panOffset = CGPoint(x: panDragStartOffset.x + dx, y: panDragStartOffset.y + dy)
+            onViewportChanged?()
+            needsDisplay = true
             return
         }
 
@@ -2578,6 +2818,12 @@ public class CanvasStageView: NSView {
             isPanningWithSpace = false
             updateCursorForTool()
         }
+        if isPanningFreeStage {
+            isPanningFreeStage = false
+            updateCursorForTool()
+            needsDisplay = true
+            return
+        }
         if isPanningWithHand {
             isPanningWithHand = false
             updateCursorForTool()
@@ -2659,6 +2905,43 @@ public class CanvasStageView: NSView {
             }
         }
         return provider(docPt)
+    }
+
+    // MARK: - Middle Mouse Button Panning
+
+    public override func otherMouseDown(with event: NSEvent) {
+        if event.buttonNumber == 2 {
+            let loc = convert(event.locationInWindow, from: nil)
+            isPanningWithMiddleMouse = true
+            panDragStartMouse = loc
+            panDragStartOffset = panOffset
+            NSCursor.closedHand.set()
+        } else {
+            super.otherMouseDown(with: event)
+        }
+    }
+
+    public override func otherMouseDragged(with event: NSEvent) {
+        if isPanningWithMiddleMouse {
+            let loc = convert(event.locationInWindow, from: nil)
+            let dx = loc.x - panDragStartMouse.x
+            let dy = loc.y - panDragStartMouse.y
+            panOffset = CGPoint(x: panDragStartOffset.x + dx, y: panDragStartOffset.y + dy)
+            onViewportChanged?()
+            needsDisplay = true
+        } else {
+            super.otherMouseDragged(with: event)
+        }
+    }
+
+    public override func otherMouseUp(with event: NSEvent) {
+        if isPanningWithMiddleMouse {
+            isPanningWithMiddleMouse = false
+            updateCursorForTool()
+            needsDisplay = true
+        } else {
+            super.otherMouseUp(with: event)
+        }
     }
 
     // MARK: - Trackpad Scroll & Pinch Zoom
@@ -3306,7 +3589,11 @@ public class CanvasStageView: NSView {
         if let source = node.src, let image = Self.decodedImage(for: source) {
             ctx.saveGState()
             ctx.clip(to: rect)
-            ctx.draw(image, in: rect)
+            ctx.saveGState()
+            ctx.translateBy(x: rect.minX, y: rect.maxY)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.draw(image, in: CGRect(origin: .zero, size: rect.size))
+            ctx.restoreGState()
             ctx.restoreGState()
         } else {
             drawImagePlaceholder(in: ctx, rect: rect)
@@ -3378,6 +3665,7 @@ public class CanvasStageView: NSView {
         if isPainting {
             cancelPaintStroke(restore: true)
         }
+        let wasSame = (paintNodeId == id) && (paintBitmap != nil)
         paintNodeId = id
 
         guard let dataURL, !dataURL.isEmpty else {
@@ -3389,6 +3677,13 @@ public class CanvasStageView: NSView {
             paintLayerDocumentId = nil
             paintStrokeBackup = nil
             lastPaintDocPoint = nil
+            needsDisplay = true
+            return
+        }
+
+        // If paintBitmap already has the current pixels, keep them!
+        if wasSame && paintBitmap != nil {
+            paintCGImage = nil
             needsDisplay = true
             return
         }
@@ -3406,6 +3701,7 @@ public class CanvasStageView: NSView {
                 in: CGRect(x: 0, y: 0, width: CGFloat(bitmap.pixelsWide), height: CGFloat(bitmap.pixelsHigh))
             )
             context.restoreGState()
+            context.flush()
             paintCGImage = nil
         }
         paintLayerDocumentId = document.id
@@ -3587,7 +3883,7 @@ public class CanvasStageView: NSView {
             context.setBlendMode(.normal)
             let color = NSColor(hexString: brushColorHex) ?? ThemeTokens.colorMint
             let resolved = color.usingColorSpace(.sRGB) ?? color
-            context.setFillColor(resolved.cgColor)
+            context.setFillColor(resolved.withAlphaComponent(brushOpacity).cgColor)
         }
         context.fillEllipse(in: CGRect(
             x: center.x - radius,
@@ -3596,6 +3892,7 @@ public class CanvasStageView: NSView {
             height: radius * 2.0
         ))
         context.restoreGState()
+        context.flush()
 
         paintCGImage = nil
     }
@@ -3795,7 +4092,7 @@ public class CanvasStageView: NSView {
                         y: rect.origin.y,
                         width: rect.width,
                         height: rect.height,
-                        style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                        style: shapeCreationStyle
                     )
                 } else {
                     node = VOONode(
@@ -3805,7 +4102,7 @@ public class CanvasStageView: NSView {
                         y: rect.origin.y,
                         width: rect.width,
                         height: rect.height,
-                        style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                        style: shapeCreationStyle
                     )
                 }
             case .ellipse:
@@ -3816,7 +4113,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                    style: shapeCreationStyle
                 )
             case .polygon:
                 let pts = ShapeGenerators.regularPolygonPoints(in: rect, sides: 6)
@@ -3830,7 +4127,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal"),
+                    style: shapeCreationStyle,
                     points: anchors
                 )
             case .star:
@@ -3845,7 +4142,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal"),
+                    style: shapeCreationStyle,
                     points: anchors
                 )
             case .line:
@@ -4095,6 +4392,7 @@ public class CanvasStageView: NSView {
 /// Bezier handle knobs connected by mint lines. The overlay is never
 /// hit-tested; `CanvasStageView` drives all anchor/handle gestures.
 public final class PathEditingOverlayView: NSView {
+    public override var isFlipped: Bool { true }
     public var zoom: CGFloat = 1.0 {
         didSet { if oldValue != zoom { needsDisplay = true } }
     }
@@ -4227,6 +4525,7 @@ public final class PathEditingOverlayView: NSView {
 /// (mint stroke, anchor dots and symmetric handle projections).
 /// It is never hit-tested, so all gestures continue to reach `CanvasStageView`.
 public final class CanvasCreationPreviewView: NSView {
+    public override var isFlipped: Bool { true }
     public var zoom: CGFloat = 1.0 {
         didSet { if oldValue != zoom { needsDisplay = true } }
     }

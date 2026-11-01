@@ -1,0 +1,277 @@
+{
+  "recordedAt": "2026-11-01T01:19:22.164931+00:00",
+  "sourceRevision": "d5720aac5669970c2b311def4e9f6cb8ac6c38dc",
+  "sourceTree": "0fa7c2bef5562bdfe91e20c138979b5f64b64cf5",
+  "testTree": "b40aafa7a8415e77f5b11fcadaea10cb9c55b2e6",
+  "buildScriptBlob": "41a118ecf096c979afd67709fc27b6bcae13fbd9",
+  "nativeSourceAndTestsUnmodifiedAfterChecks": true,
+  "execution": {
+    "integrated": {
+      "status": "passed",
+      "testCases": 412,
+      "optimization": "-Onone",
+      "includesLegacyReferenceSupport": true
+    },
+    "catalog": {
+      "status": "passed",
+      "testCases": 11
+    },
+    "registration": {
+      "modules": 12,
+      "features": 84,
+      "browserSuites": 89,
+      "additionalChecks": 21,
+      "registration": "valid",
+      "functionalCoverage": "partial"
+    },
+    "production": {
+      "status": "passed",
+      "optimization": "-Osize",
+      "target": "arm64-apple-macosx14.0",
+      "signing": "ad-hoc",
+      "binaryBytes": 5082720,
+      "binarySha256": "3cbaa6adc53114eb10ae434deee8c4b3cc68d979e257315e21d7362c4a53cd60"
+    },
+    "lint": {
+      "revision": "d5720aac5669970c2b311def4e9f6cb8ac6c38dc",
+      "scope": "New files strict lint; existing-file diagnostic counts compared by file, rule and message",
+      "baselineDiagnostics": 3346,
+      "currentLegacyFileDiagnostics": 3163,
+      "newDiagnosticCounts": [],
+      "newFiles": [
+        {
+          "path": "native_studio/Sources/Engine/export-markup.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/boolean-models.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/document-codable.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/effect-models.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/geometry-models.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/legacy-value-decoders.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/node-codable.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/paint-models.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/pen-anchor.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/portable-json.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/Models/portable-paint-sync.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/UI/document-lifecycle.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/UI/layer-search.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/UI/native-brush-settings.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/UI/native-copy.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/UI/native-inspect-code.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/UI/native-status-banner.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/Sources/UI/new-document.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/tests/NativeWorkflowParityTests.swift",
+          "exitCode": 0
+        },
+        {
+          "path": "native_studio/tests/PortableParityTests.swift",
+          "exitCode": 0
+        }
+      ],
+      "differentialExecution": "passed",
+      "fullLegacyLint": "failed"
+    }
+  },
+  "ui": {
+    "revision": "d5720aac5669970c2b311def4e9f6cb8ac6c38dc",
+    "mode": "Isolated workspace with VOO_USER_DATA_DIR and VOO_DOCUMENTS_ROOT; fresh app process",
+    "verified": [
+      "cold file load fits at 86 percent",
+      "FORM orientation, frame background and path positions",
+      "search keeps matching child and ancestor",
+      "CSS/Tailwind Code panel, no Design backgrounds",
+      "brush settings exposes native sliders and colour well",
+      "new-document confirmation, Cancel retains temporary duplicate and enabled Undo",
+      "temporary duplicate undone; repository example unchanged"
+    ],
+    "notCertified": [
+      "default Documents directory watcher",
+      "true 960-point settled window: earlier requested 960 produced a 1000-point bitmap",
+      "all font metrics and visual states",
+      "networked Agent generation, auth and paid services"
+    ]
+  },
+  "coverage": {
+    "overall": "partial",
+    "verdict": "Not 1:1; see INTERACTION_PARITY.md for per-difference status",
+    "remaining": [
+      "multi-page scene lifecycle",
+      "multi-paint editing/rendering",
+      "web effects mutation merge",
+      "imports and account login",
+      "model discovery and attachments",
+      "global theme and locale",
+      "full inspector/toolbar parity",
+      "collaboration and asset workflows",
+      "IME, all exports and masks, performance, distribution signing"
+    ]
+  },
+  "preview": {
+    "type": "local macOS app",
+    "path": "/Volumes/TD/Projects/voo-native-parity/native_studio/build/VOO Design Native.app",
+    "webEditorDeployment": "not-run",
+    "reason": "Native .app is not served by deploy-editor.sh; unrelated web changes on this branch were not deployed."
+  },
+  "evidence": [
+    {
+      "path": "docs/audits/native-parity/repair/brush-final-ax.txt",
+      "sha256": "1d1f18dc00ea4db36a6d332df62c9e5baf075721a5e00784310806c03d1cbfb8"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/brush-final.png",
+      "sha256": "3a5615467bddf2d7df4762482ec4cfd2a1898b37d5a2e9c0f162efa07ba11e14"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/cancel-final-ax.txt",
+      "sha256": "dfd5f7c02f44f588a12c7b7777155b4d93eb5387db801e60880405fea77247bd"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/catalog-tests-final.txt",
+      "sha256": "3fe911aeb373c36f52fb61f23c4451cef3b5b574c2e628eb69505d75bee0ed09"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/catalog-tests.txt",
+      "sha256": "525c96b229e8391038c2e257588fda4980e6a64f120b12d2a39a837de740361a"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/code-before-cleanup-b740009.png",
+      "sha256": "463fdca97904aad076c404eda624e5c2f0486de8a65633a608962d4a42b0b7ab"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/code-final-ax.txt",
+      "sha256": "04b8fb5cbbd538119020da04ed7163b6dd1901777f224c8389b7bb58414cdd8d"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/code-final.png",
+      "sha256": "f3a7797cf949772affd04c0ba17613b562d48fde23d136f715c888beae83e68c"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/engine-findings-b740009.json",
+      "sha256": "1ae07ee4602956acd7fbc62c5000e0ccf9df753de3ec182fbe538ea2ee8eb269"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/form-appkit-b740009.png",
+      "sha256": "f3f46346a0164b94bb1522d9657ac87fe1cc1e59fa3238fb6cc5955ce9ca84ca"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/form-final-ax.txt",
+      "sha256": "34641b8401cdcde496a2e8c47bfe314cac9f775f22e35049587c2d5fbefd31fb"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/form-final.png",
+      "sha256": "8c25fe66bf219ea762d7ded8a876098b7ebd9f4898b0ae0bf01de4d5a893ea29"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/form-ui-b740009.png",
+      "sha256": "aeced70dcdfd55ebbaec5040bc89a9b45987c6fa1a1df3c346648f684ebb329e"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/gradient-stroke-before.txt",
+      "sha256": "b185b5320e768cb4b9918ed57987be3d47dd2ab99d4e31c3d4456ca96790f596"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/lint-differential.json",
+      "sha256": "9bce50465a0bf9d43ee74b35e09d5154502a0eef58ec95e71c124bb943397211"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/lint-final.json",
+      "sha256": "ece4640572491fe181abc3bae4223b8df6c755b9313a116c85888f2667214a76"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/model-check.txt",
+      "sha256": "507bbbbc2d891f0ddd248262acf1d5479a3f8fbbdc462ec4781c0cee58f6cf4c"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/native-tests-final.txt",
+      "sha256": "c4adccf9d62580fc6d8acbbe13325e8d70611e9e9c695f1392223c4c23756655"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/paint-after.txt",
+      "sha256": "13d0d99112e481c6b67a959e12d34dafaac244802bbcfa5edff85a381d58f02a"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/paint-before.txt",
+      "sha256": "47e439dce597eeb31d9bb69ee5e0a46ca8dd72fbc93f00f8b96ab67d16db1d4a"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/panels-swapped-b740009.png",
+      "sha256": "bfba580ea50abeca5822a86c8aee0c25dc1c1cfbdd910cde6d2c2b98b5422cf9"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/production-build-final.txt",
+      "sha256": "3ba9f0c26ec89e191a77b5146475e90af4fb9fac965cf426d2c0714fd91ebc9a"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/registration-final.json",
+      "sha256": "b9017c86b8dce9d18cd94bea6c3e662e639e05da62f641b3d7b5e0615d27e461"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/registration.json",
+      "sha256": "b9017c86b8dce9d18cd94bea6c3e662e639e05da62f641b3d7b5e0615d27e461"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/ui-launch-final.txt",
+      "sha256": "fdc5d07c4cf953d461ecf8e0b2c11c04f24ff7db65b1fa29f94f0b052f2b86cc"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/unsaved-confirm-b740009.png",
+      "sha256": "499fe219bab4704f0c67109fb397ce1cecd0dfff1fbd38e6a78cd82da7daf76e"
+    },
+    {
+      "path": "docs/audits/native-parity/repair/unsaved-final.png",
+      "sha256": "86214ed8a580c905b950d0c5421ed3a11301735920460871a87d2f965991c20d"
+    }
+  ]
+}

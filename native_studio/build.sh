@@ -37,10 +37,12 @@ SDK_PATH="$(xcrun --show-sdk-path)"
 echo "--> Using macOS SDK: $SDK_PATH"
 
 # 4. Compile Mach-O 64-bit arm64 Binary via swiftc
-echo "--> Compiling with swiftc (-O, arm64-apple-macosx14.0)..."
+echo "--> Compiling with swiftc (-Osize, whole-module, arm64-apple-macosx14.0)..."
 mkdir -p "$BUILD_DIR/ModuleCache"
 swiftc \
-  -O \
+  -Osize \
+  -whole-module-optimization \
+  -Xlinker -dead_strip \
   -module-cache-path "$BUILD_DIR/ModuleCache" \
   -target arm64-apple-macosx14.0 \
   -sdk "$SDK_PATH" \
@@ -84,10 +86,12 @@ if [ -d "$DIR/Resources/Onboarding" ]; then
   cp -r "$DIR/Resources/Onboarding" "$RESOURCES_DIR/Onboarding"
 fi
 
-# Bundled UI typeface (Intel One Mono, OFL) — the same mono face the web editor
-# declares in src/index.css, so advance widths/tracking match the browser build.
+# Bundled OFL typefaces: Intel One Mono (editor chrome, the web's `--font-mono`),
+# Inter (web default text face) and the remaining text faces the web build ships
+# (Archivo Black, Bitter, Caveat, Playfair Display, ZCOOL KuaiLe) + their licenses.
+# Copied wholesale; VooMonoTypeface.registerBundledFonts() registers every .ttf.
 if [ -d "$DIR/Resources/Fonts" ]; then
-  echo "--> Copying bundled fonts (Intel One Mono)..."
+  echo "--> Copying bundled fonts (Intel One Mono, Inter, Archivo Black, Bitter, Caveat, Playfair Display, ZCOOL KuaiLe)..."
   cp -r "$DIR/Resources/Fonts" "$RESOURCES_DIR/Fonts"
 fi
 

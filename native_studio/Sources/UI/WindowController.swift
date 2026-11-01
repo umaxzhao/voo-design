@@ -18,8 +18,18 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public let mainContentView: MainContentView
     public weak var delegate: StudioDelegate?
     public var commandManager = CommandManager()
+    var savedDocumentSnapshot: VOODocument?
+    var nativeTextBoxEditing = false
+    var nativeTextBoxEditCommand: NativeTextBoxWidthCommand?
+    var nativeTextBoxPreviousRedo: [StudioCommand]?
+    var nativePaintEditIds: Set<String>?
+    var nativePaintEditCommand: NativePaintCommand?
+    var nativePaintPreviousRedo: [StudioCommand]?
+    public var documentReplacementDecision: (() -> Bool)?
+    public var agentRequestDispatcher: ((String) -> Void)?
     public var currentFileURL: URL?
     public let textEditingOverlay = TextEditingOverlay()
+    let nativeStatusBanner = NativeStatusBanner()
     private var keyEventMonitor: Any?
     private var keyUpEventMonitor: Any?
 
@@ -48,6 +58,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         actualWindow.backgroundColor = ThemeTokens.colorPanel
         actualWindow.acceptsMouseMovedEvents = true
         actualWindow.minSize = NSSize(width: 960, height: 600)
+        // The web canvas and raster exports compose CSS colours in sRGB.
+        actualWindow.colorSpace = .sRGB
         if window == nil {
             actualWindow.center()
         }
@@ -65,16 +77,30 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         self.studioWindow = actualWindow
         self.mainContentView = view
         super.init(window: actualWindow)
+        actualWindow.delegate = self
 
         // 4. Wire Delegates & Setup Event Monitoring
         view.titleBar.delegate = self
         view.toolRail.delegate = self
+        view.toolRail.onBrushSettingsRequested = { [weak view] button in
+            guard let view else { return }
+            NativeBrushSettings.shared.show(relativeTo: button, stage: view.canvasStageView)
+        }
         view.inspector.delegate = self
+        view.inspector.configureCanvas(document: view.canvasStageView.document)
+        view.inspector.onCanvasBackgroundChange = { [weak self] color in
+            self?.applyCanvasBackground(color)
+        }
+        view.inspector.layersPanel.onSelectCanvasBackground = { [weak self] in
+            self?.mainContentView.canvasStageView.clearSelection()
+        }
 
         // Wire CanvasStageView Events
         view.canvasStageView.onSelectionChanged = { [weak self] selectedIds in
             guard let self = self else { return }
             let nodes = self.mainContentView.canvasStageView.document.nodes
+            self.mainContentView.inspector.configureCanvas(
+                document: self.mainContentView.canvasStageView.document)
             self.mainContentView.inspector.layersPanel.configure(with: nodes, selectedId: selectedIds.first)
             if let firstId = selectedIds.first, let node = nodes.first(where: { $0.id == firstId }) {
                 self.mainContentView.inspector.configureProperties(with: node)
@@ -120,19 +146,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self?.openDocument(nil)
         }
         view.welcomeDashboard.onNewFile = { [weak self] in
-            self?.newDocument(nil)
-            self?.mainContentView.isWelcomeOpen = false
-            self?.syncChromeState()
+            guard let self, self.requestNewDocument() else { return }
+            self.mainContentView.isWelcomeOpen = false
+            self.syncChromeState()
         }
         view.welcomeDashboard.onPromptSubmit = { [weak self] prompt in
-            guard let self = self else { return }
-            self.mainContentView.isWelcomeOpen = false
-            self.newDocument(nil)
-            if !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                self.setAgentPanelOpen(true)
-                self.mainContentView.agentPanel.addUserMessage(prompt)
-                self.mainContentView.agentPanel.addAgentMessage("正在为「\(prompt)」准备工作区与画板。你可以在左侧 LAYERS 面板中继续调整，或直接告诉我要生成的布局。")
-            }
+            self?.submitWelcomePrompt(prompt)
         }
         view.welcomeDashboard.onImportAction = { kind in
             let alert = NSAlert()
@@ -175,6 +194,18 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             _ = WorkspaceManager.shared.rescan()
             self.refreshWorkspaceFiles()
             self.showChromeToast("工作区已重新扫描")
+        }
+        // Dashboard "Settings" floating button + "Configure provider" (web parity).
+        view.welcomeDashboard.onOpenSettings = { [weak self] in
+            self?.mainContentView.showSettings(tab: "general")
+        }
+        // The web title bar opens an embedded browser drawer; native has no drawer yet.
+        view.titleBar.onBrowserTapped = { [weak self] in
+            self?.showChromeToast("内嵌浏览器抽屉在原生版本尚未接入")
+        }
+        // Live collaboration button (web parity)
+        view.titleBar.onCollabTapped = { [weak self] in
+            self?.showChromeToast(NativeCopy.text(.collaborationUnavailable))
         }
         view.welcomeDashboard.onEmptyTrash = { [weak self] in
             guard let self = self else { return }
@@ -295,10 +326,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self?.mainContentView.agentPanel.newConversation()
         }
         view.agentPanel.onSend = { [weak self] text in
-            self?.handleAgentPrompt(text)
+            self?.dispatchAgentPrompt(text)
         }
         view.agentPanel.onSuggestion = { [weak self] text in
-            self?.handleAgentPrompt(text)
+            self?.dispatchAgentPrompt(text)
         }
         view.pageSwitcher.onTap = { [weak self] in
             self?.showPageSwitcherMenu()
@@ -321,13 +352,28 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         view.bottomZoomBar.onGridToggle = { [weak self] enabled in
             self?.mainContentView.canvasStageView.showGrid = enabled
         }
+        view.bottomZoomBar.onZoomFit = { [weak self] in
+            self?.mainContentView.canvasStageView.zoomFit()
+        }
+        view.bottomZoomBar.onClearGuides = { [weak self] in self?.clearGuidesAction(nil) }
         view.bottomZoomBar.onVisibilityToggle = { [weak self] enabled in
+            self?.setGuidesVisible(enabled)
+        }
+        view.bottomZoomBar.onToggleRulers = { [weak self] enabled in
+            self?.setRulersVisible(enabled)
+        }
+        view.bottomZoomBar.onSnapToggle = { [weak self] enabled in
             self?.mainContentView.canvasStageView.isSnappingEnabled = enabled
+        }
+        view.addArtboardButton.onAddArtboard = { [weak self] in
+            guard let self = self else { return }
+            self.newPageAction(nil)
+            self.showChromeToast("已新建画板")
         }
         view.islandBar.onAskAI = { [weak self] prompt in
             self?.setAgentPanelOpen(true)
             if !prompt.isEmpty {
-                self?.handleAgentPrompt(prompt)
+                self?.dispatchAgentPrompt(prompt)
             }
         }
         view.islandBar.onQuickAction = { [weak self] action in
@@ -350,10 +396,28 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 self.deleteAction(nil)
             case .copy:
                 self.duplicateAction(nil)
-            case .flipHorizontal, .flipVertical:
-                self.showChromeToast("翻转选区 (Flip selection)")
             case .lock:
-                self.showChromeToast("选区已锁定 (Selection locked)")
+                self.toggleLockAction(nil)
+            case .eye:
+                self.toggleVisibilityAction(nil)
+            case .alignLeftH:
+                self.performAlign("left")
+            case .alignCenterH:
+                self.performAlign("center")
+            case .distributeH:
+                self.performDistribute(horizontal: true)
+            case .arrowUp:
+                self.moveSelectionInLayerOrder(forward: true)
+            case .arrowDown:
+                self.moveSelectionInLayerOrder(forward: false)
+            case .fillSwatch:
+                self.presentSelectionColourPanel(isStroke: false)
+            case .strokeSwatch:
+                self.presentSelectionColourPanel(isStroke: true)
+            case .flipHorizontal:
+                self.flipHorizontalAction(nil)
+            case .flipVertical:
+                self.flipVerticalAction(nil)
             default:
                 break
             }
@@ -543,16 +607,28 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         // and stays in sync with ⇧R / the zoom bar (web parity).
         view.settingsDrawer.onToggleRulers = { [weak self] show in
             guard let self = self else { return }
-            self.mainContentView.canvasStageView.showRulers = show
-            self.mainContentView.canvasStageView.needsDisplay = true
-            self.mainContentView.updateIslandBarPosition()
+            self.setRulersVisible(show)
         }
+        view.settingsDrawer.onToggleLightInterface = { [weak self] isLight in
+            guard let self = self else { return }
+            ThemeManager.shared.currentMode = isLight ? .light : .dark
+            self.applyTheme(ThemeManager.shared.currentMode)
+        }
+        view.settingsDrawer.onAgentChange = { [weak self] _ in
+            self?.syncAgentModelLabel()
+        }
+        syncAgentModelLabel()
+
+        // Apply saved theme mode (default dark)
+        applyTheme(ThemeManager.shared.currentMode)
 
         // Rulers stay hidden unless the persisted preference says otherwise (web default off).
         view.canvasStageView.showRulers = UserDefaults.standard.bool(
             forKey: SettingsDrawerView.showRulersDefaultsKey
         )
 
+        view.canvasStageView.showGuides = NativeViewAidPreferences.guidesVisible
+        view.bottomZoomBar.setVisibilityEnabled(view.canvasStageView.showGuides)
         setupKeyMonitoring()
     }
 
@@ -633,16 +709,36 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             return false
         }
 
-        // 1. Guard against system modifier keys (⌘, ⌃, ⌥)
-        let relevantModifiers = event.modifierFlags.intersection([.command, .control, .option])
-        guard relevantModifiers.isEmpty else { return false }
-
-        // 2. Guard against active text editing in first responder
+        // Guard against active text editing in first responder
         if let responder = studioWindow.firstResponder {
             if responder is NSText || responder is NSTextView || responder is NSTextField {
                 return false
             }
         }
+
+        if handleViewAidShortcut(event) { return true }
+
+        // Command shortcuts (web / Figma parity): ⌘\ and ⌘J for Agent panel, ⌘] / ⌘[ for front / back
+        if event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.shift) && !event.modifierFlags.contains(.option) {
+            if let chars = event.charactersIgnoringModifiers, let first = chars.first {
+                if first == "j" || first == "J" || first == "\\" {
+                    toggleAgentPanel()
+                    return true
+                }
+                if first == "]" {
+                    bringToFrontAction(nil)
+                    return true
+                }
+                if first == "[" {
+                    sendToBackAction(nil)
+                    return true
+                }
+            }
+        }
+
+        // 1. Guard against system modifier keys (⌘, ⌃, ⌥)
+        let relevantModifiers = event.modifierFlags.intersection([.command, .control, .option])
+        guard relevantModifiers.isEmpty else { return false }
 
         // 3. Extract character
         guard let chars = event.charactersIgnoringModifiers, let first = chars.first else {
@@ -660,6 +756,16 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 deleteAction(nil)
                 return true
             }
+        }
+
+        // 5.4 Layer order shortcuts (Figma / VOO web parity): [ = send backward, ] = bring forward
+        if first == "]" {
+            bringForwardAction(nil)
+            return true
+        }
+        if first == "[" {
+            sendBackwardAction(nil)
+            return true
         }
 
         // 5.5 R / O shape tool switching (Figma / VOO web parity)
@@ -748,13 +854,13 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         delegate?.didRequestRedo()
     }
     public func titleBarDidRequestExport(_ titleBar: AppTitleBar) {
-        saveDocument(nil)
+        exportDocument(nil)
     }
     public func titleBarDidClickZoom(_ titleBar: AppTitleBar) {
         mainContentView.canvasStageView.zoomActual()
     }
     public func titleBarDidRequestNewProject(_ titleBar: AppTitleBar) {
-        newDocument(nil)
+        guard requestNewDocument() else { return }
         mainContentView.isWelcomeOpen = false
         setAgentPanelOpen(false)
     }
@@ -785,11 +891,19 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public func toggleSnappingAction(_ sender: Any?) {
         let stage = mainContentView.canvasStageView
         stage.isSnappingEnabled.toggle()
-        mainContentView.bottomZoomBar.setVisibilityEnabled(stage.isSnappingEnabled)
+        mainContentView.bottomZoomBar.setSnapToGridEnabled(stage.isSnappingEnabled)
         showChromeToast(stage.isSnappingEnabled ? "磁性吸附已开启" : "磁性吸附已关闭")
     }
 
     // MARK: - InspectorDelegate (properties card + layers interactions)
+
+    public func inspectorDidRequestFlip(horizontal: Bool) {
+        if horizontal {
+            flipHorizontalAction(nil)
+        } else {
+            flipVerticalAction(nil)
+        }
+    }
 
     public func inspectorDidSelectNode(id: String) {
         mainContentView.canvasStageView.selectNode(id: id)
@@ -803,6 +917,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         // Geometry: undoable transform command.
         let cmd = TransformNodeCommand(nodeId: id, x: x, y: y, width: width, height: height, rotation: rotation)
         _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
+        if oldNode.kind == .frame, oldNode.width != width || oldNode.height != height {
+            mainContentView.canvasStageView.applyConstraints(
+                frameId: id,
+                previousFrame: CGRect(x: oldNode.x, y: oldNode.y, width: oldNode.width, height: oldNode.height)
+            )
+        }
 
         // Corner radius: keep it on the node (rounded rect) and record through a
         // lightweight style-preserving command so undo restores it too.
@@ -830,6 +950,27 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         refreshAfterDocumentMutation()
     }
 
+    public func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String) {
+        guard let index = mainContentView.canvasStageView.document.nodes.firstIndex(where: { $0.id == id }) else { return }
+        let previous = mainContentView.canvasStageView.document.nodes[index].constraints
+        let updated = NodeConstraints(horizontal: horizontal, vertical: vertical)
+        let cmd = BasicCommand(
+            name: "修改约束",
+            execute: { doc in
+                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
+                doc.nodes[i].constraints = updated
+                return true
+            },
+            undo: { doc in
+                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
+                doc.nodes[i].constraints = previous
+                return true
+            }
+        )
+        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
+        refreshAfterDocumentMutation()
+    }
+
     public func inspectorDidChangeNodeStyle(id: String, fill: String, stroke: String, strokeWidth: CGFloat, opacity: CGFloat, blendMode: String) {
         guard let idx = mainContentView.canvasStageView.document.nodes.firstIndex(where: { $0.id == id }) else { return }
         let old = mainContentView.canvasStageView.document.nodes[idx].style
@@ -847,58 +988,29 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     public func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String,
                                                  lineHeight: CGFloat, letterSpacing: CGFloat) {
-        guard let node = mainContentView.canvasStageView.document.nodes.first(where: { $0.id == id }) else { return }
-        let oldWeight = node.fontWeight
-        let oldAlign = node.textAlign
-        let oldLineHeight = node.lineHeight
-        let oldSpacing = node.letterSpacing
-        guard oldWeight != fontWeight || oldAlign != textAlign ||
-              oldLineHeight != lineHeight || oldSpacing != letterSpacing else { return }
-        let cmd = BasicCommand(
-            name: "修改文本格式",
-            execute: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontWeight = fontWeight
-                doc.nodes[i].textAlign = textAlign
-                doc.nodes[i].lineHeight = lineHeight
-                doc.nodes[i].letterSpacing = letterSpacing
-                return true
-            },
-            undo: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontWeight = oldWeight
-                doc.nodes[i].textAlign = oldAlign
-                doc.nodes[i].lineHeight = oldLineHeight
-                doc.nodes[i].letterSpacing = oldSpacing
-                return true
-            }
-        )
-        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-        refreshAfterDocumentMutation()
+        let stage = mainContentView.canvasStageView
+        guard let old = stage.document.nodes.first(where: { $0.id == id }) else { return }
+        var next = old
+        next.fontWeight = fontWeight
+        next.textAlign = textAlign
+        next.lineHeight = lineHeight
+        next.letterSpacing = letterSpacing
+        NativeTextBoxLayout.resizeToContent(&next)
+        let command = NativeTextBoxWidthCommand(oldNode: old, newNode: next)
+        guard !command.isNoOp else { return }
+        if commandManager.execute(command, on: &stage.document) { refreshAfterDocumentMutation() }
     }
 
     public func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat) {
-        guard let node = mainContentView.canvasStageView.document.nodes.first(where: { $0.id == id }) else { return }
-        let oldFamily = node.fontFamily
-        let oldSize = node.fontSize
-        guard oldFamily != fontFamily || oldSize != fontSize else { return }
-        let cmd = BasicCommand(
-            name: "修改字体",
-            execute: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontFamily = fontFamily
-                doc.nodes[i].fontSize = fontSize
-                return true
-            },
-            undo: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontFamily = oldFamily
-                doc.nodes[i].fontSize = oldSize
-                return true
-            }
-        )
-        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-        refreshAfterDocumentMutation()
+        let stage = mainContentView.canvasStageView
+        guard let old = stage.document.nodes.first(where: { $0.id == id }) else { return }
+        var next = old
+        next.fontFamily = fontFamily
+        next.fontSize = fontSize
+        NativeTextBoxLayout.resizeToContent(&next)
+        let command = NativeTextBoxWidthCommand(oldNode: old, newNode: next)
+        guard !command.isNoOp else { return }
+        if commandManager.execute(command, on: &stage.document) { refreshAfterDocumentMutation() }
     }
 
     public func inspectorDidToggleVisibility(id: String, visible: Bool) {
@@ -933,6 +1045,17 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public func activateAccessoryTool(_ accessory: ToolRailAccessory) {
         let stage = mainContentView.canvasStageView
         switch accessory {
+        case .fill:
+            guard !stage.selectedNodeIds.isEmpty else {
+                showChromeToast(NativeRailFeedback.text(.selectFillTarget))
+                return
+            }
+            showChromeToast(NativeRailFeedback.text(.selectionFill))
+            presentSelectionColourPanel(isStroke: false)
+        case .healing:
+            showChromeToast(NativeRailFeedback.text(.healingUnavailable))
+        case .crop:
+            showChromeToast(NativeRailFeedback.text(.cropUnavailable))
         case .hand:
             let enable = !stage.panModeEnabled
             stage.panModeEnabled = enable
@@ -944,6 +1067,13 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 mainContentView.toolRail.updateSelection()
                 showChromeToast("抓手工具：拖拽平移画布")
             }
+        case .marquee:
+            stage.panModeEnabled = false
+            stage.selectionStyle = .marquee
+            mainContentView.toolRail.state.selectTool(.move)
+            stage.activeTool = .move
+            mainContentView.toolRail.updateSelection()
+            mainContentView.toolRail.setAccessoryActive(.marquee)
         case .lasso:
             stage.panModeEnabled = false
             stage.selectionStyle = .lasso
@@ -976,44 +1106,23 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     // MARK: - StudioMenuActions Implementation
 
-    public func newDocument(_ sender: Any?) {
-        var doc = VOODocument()
-        doc.title = "Design 1"
-        doc.canvas = CanvasFrame(x: 0, y: 0, width: 1200, height: 800, backgroundColor: "#171717")
-        let artboard = VOONode(
-            id: "design_1",
-            kind: .frame,
-            name: "Design 1",
-            x: 0,
-            y: 0,
-            width: 1200,
-            height: 800,
-            // Web `promoteFixedPageToFrame`: frame stroke stays null and the outline
-            // seen on screen is the 1px selection border drawn by the stage.
-            style: LayerStyle(fill: "#171717", stroke: "none", strokeWidth: 1.0)
-        )
-        doc.nodes = [artboard]
-        mainContentView.canvasStageView.document = doc
+    /// Restores a newer local recovery copy after a crash (silent when disabled).
+    public func restoreDraftIfAvailable() {
+        guard let draft = DraftAutosave.shared.recoverableDrafts().first,
+              let document = DraftAutosave.shared.loadDraft(draft) else { return }
+        mainContentView.canvasStageView.document = document
         mainContentView.canvasStageView.clearSelection()
         commandManager.clear()
-        currentFileURL = nil
-        mainContentView.titleBar.setDocumentTitle("Design 1")
-        mainContentView.inspector.layersPanel.configure(with: doc.nodes, selectedId: nil)
+        currentFileURL = draft.originalFileURL
+        mainContentView.titleBar.setDocumentTitle(document.title)
+        mainContentView.inspector.layersPanel.configure(with: document.nodes, selectedId: nil)
         mainContentView.inspector.setPropertiesVisible(false)
-        mainContentView.canvasStageView.setPaintNode(id: nil, dataURL: nil)
-        // Match the web "Design 1" empty document: 1200x800 artboard at 58%.
-        let stage = mainContentView.canvasStageView
-        let targetZoom: CGFloat = 0.58
-        stage.zoom = targetZoom
-        let availW = max(0, stage.bounds.width - 80)
-        let availH = max(0, stage.bounds.height - 80)
-        stage.panOffset = CGPoint(
-            x: (availW - doc.canvas.width * targetZoom) / 2.0 + 40.0,
-            y: (availH - doc.canvas.height * targetZoom) / 2.0 + 40.0
-        )
         syncChromeState()
-        DispatchQueue.main.async { [weak self] in self?.focusCanvas() }
+        DraftAutosave.shared.discard(draft)
+        showChromeToast("已恢复上次未保存的草稿")
     }
+
+    public func newDocument(_ sender: Any?) { _ = requestNewDocument() }
 
     public func openDocument(_ sender: Any?) {
         DocumentIO.shared.promptOpenDocument(window: studioWindow) { [weak self] result in
@@ -1059,12 +1168,18 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public func openDocumentFromURL(_ url: URL) {
         do {
             let doc = try DocumentIO.shared.loadDocument(from: url)
+            guard confirmDocumentReplacement() else { return }
+            mainContentView.isWelcomeOpen = false
             mainContentView.canvasStageView.document = doc
+            savedDocumentSnapshot = doc
+            mainContentView.inspector.layersPanel.searchQuery = ""
             mainContentView.canvasStageView.clearSelection()
             commandManager.clear()
             currentFileURL = url
             mainContentView.titleBar.setDocumentTitle((url.lastPathComponent as NSString).deletingPathExtension)
             mainContentView.inspector.layersPanel.configure(with: doc.nodes, selectedId: nil)
+            // The editor was hidden on Welcome; fit only after its viewport exists.
+            mainContentView.layoutSubtreeIfNeeded()
             mainContentView.canvasStageView.zoomToFit()
             refreshPaintLayerFromDocument()
             focusCanvas()
@@ -1079,6 +1194,15 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         if let url = currentFileURL {
             do {
                 try DocumentIO.shared.saveDocument(mainContentView.canvasStageView.document, to: url)
+                savedDocumentSnapshot = mainContentView.canvasStageView.document
+                syncChromeState()
+                // The work is on disk now, so the recovery copy is no longer needed.
+                DraftAutosave.shared.flush(document: mainContentView.canvasStageView.document,
+                                           currentFileURL: currentFileURL)
+                if let draft = DraftAutosave.shared.recoverableDrafts().first,
+                   draft.originalFileURL?.standardizedFileURL == url.standardizedFileURL {
+                    DraftAutosave.shared.discard(draft)
+                }
             } catch {
                 let alert = NSAlert(error: error)
                 alert.runModal()
@@ -1097,7 +1221,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 do {
                     try DocumentIO.shared.saveDocument(self.mainContentView.canvasStageView.document, to: url)
                     self.currentFileURL = url
-                    self.mainContentView.titleBar.setDocumentTitle((url.lastPathComponent as NSString).deletingPathExtension)
+                    self.savedDocumentSnapshot = self.mainContentView.canvasStageView.document
+                    self.syncChromeState()
+                    self.mainContentView.titleBar.setDocumentTitle(
+                        (url.lastPathComponent as NSString).deletingPathExtension)
                 } catch {
                     let alert = NSAlert(error: error)
                     alert.runModal()
@@ -1731,10 +1858,25 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         let nodes = mainContentView.canvasStageView.document.nodes.filter { selectedIds.contains($0.id) }
         guard !nodes.isEmpty else { return }
 
-        let minX = nodes.map { $0.x }.min() ?? 0
-        let maxX = nodes.map { $0.x + $0.width }.max() ?? 0
-        let minY = nodes.map { $0.y }.min() ?? 0
-        let maxY = nodes.map { $0.y + $0.height }.max() ?? 0
+        // Web `align_layers`: a single layer aligns inside its container (parent
+        // frame, else the page canvas); a multi-selection aligns to its own bounds.
+        let container: CGRect?
+        if nodes.count == 1, let node = nodes.first {
+            let all = mainContentView.canvasStageView.document.nodes
+            if let parentId = node.parentId, let parent = all.first(where: { $0.id == parentId }) {
+                container = CGRect(x: parent.x, y: parent.y, width: parent.width, height: parent.height)
+            } else {
+                let canvas = mainContentView.canvasStageView.document.canvas
+                container = CGRect(x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height)
+            }
+        } else {
+            container = nil
+        }
+
+        let minX = container?.minX ?? nodes.map { $0.x }.min() ?? 0
+        let maxX = container?.maxX ?? nodes.map { $0.x + $0.width }.max() ?? 0
+        let minY = container?.minY ?? nodes.map { $0.y }.min() ?? 0
+        let maxY = container?.maxY ?? nodes.map { $0.y + $0.height }.max() ?? 0
         let midX = (minX + maxX) / 2.0
         let midY = (minY + maxY) / 2.0
 
@@ -1887,16 +2029,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     }
 
     public func toggleRulersAction(_ sender: Any?) {
-        mainContentView.canvasStageView.showRulers.toggle()
-        // Persist + let the Settings drawer stay in sync (web `voo.editor.showRulers`).
-        UserDefaults.standard.set(
-            mainContentView.canvasStageView.showRulers,
-            forKey: SettingsDrawerView.showRulersDefaultsKey
-        )
-        mainContentView.updateIslandBarPosition()
+        setRulersVisible(!mainContentView.canvasStageView.showRulers)
     }
 
-    private func refreshAfterDocumentMutation() {
+    func refreshAfterDocumentMutation() {
+        mainContentView.inspector.configureCanvas(
+            document: mainContentView.canvasStageView.document)
         let nodes = mainContentView.canvasStageView.document.nodes
         let selectedIds = mainContentView.canvasStageView.selectedNodeIds
         mainContentView.inspector.layersPanel.configure(with: nodes, selectedId: selectedIds.first)
@@ -1909,6 +2047,11 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         }
         mainContentView.canvasStageView.needsDisplay = true
         syncChromeState()
+        // Local recovery copy (Settings → Appearance → Auto-save edit drafts).
+        DraftAutosave.shared.scheduleAutosave(
+            document: mainContentView.canvasStageView.document,
+            currentFileURL: currentFileURL
+        )
     }
 
     // MARK: - NSMenuItemValidation
@@ -2228,6 +2371,16 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     private func recordHandleCommit(nodeId: String, beforeRect: CGRect, beforeRotation: CGFloat,
                                     afterRect: CGRect, afterRotation: CGFloat) {
+        let isFrame = mainContentView.canvasStageView.document.nodes.first { $0.id == nodeId }?.kind == .frame
+        let sizeChanged = beforeRect.size != afterRect.size
+        defer {
+            // A frame resize re-pins its children according to their constraints
+            // (web "Constraints" behaviour); ordinary layers keep their geometry.
+            if isFrame && sizeChanged {
+                mainContentView.canvasStageView.applyConstraints(frameId: nodeId, previousFrame: beforeRect)
+                refreshAfterDocumentMutation()
+            }
+        }
         let cmd = BasicCommand(
             name: "变换图层",
             execute: { doc in
@@ -2478,10 +2631,21 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             menu.addItem(copyCode)
 
             menu.addItem(NSMenuItem.separator())
-            let front = NSMenuItem(title: "置顶 (Bring to Front)", action: #selector(bringForwardAction(_:)), keyEquivalent: "")
+            let forward = NSMenuItem(title: "上移一层 (Bring Forward)", action: #selector(bringForwardAction(_:)), keyEquivalent: "]")
+            forward.target = self
+            menu.addItem(forward)
+
+            let backward = NSMenuItem(title: "下移一层 (Send Backward)", action: #selector(sendBackwardAction(_:)), keyEquivalent: "[")
+            backward.target = self
+            menu.addItem(backward)
+
+            let front = NSMenuItem(title: "置顶 (Bring to Front)", action: #selector(bringToFrontAction(_:)), keyEquivalent: "]")
+            front.keyEquivalentModifierMask = [.command]
             front.target = self
             menu.addItem(front)
-            let back = NSMenuItem(title: "置底 (Send to Back)", action: #selector(sendBackwardAction(_:)), keyEquivalent: "")
+
+            let back = NSMenuItem(title: "置底 (Send to Back)", action: #selector(sendToBackAction(_:)), keyEquivalent: "[")
+            back.keyEquivalentModifierMask = [.command]
             back.target = self
             menu.addItem(back)
         } else {
@@ -2509,11 +2673,19 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         performDistribute(horizontal: key == "distributeH")
     }
 
-    @objc private func bringForwardAction(_ sender: Any?) {
+    @objc public func bringForwardAction(_ sender: Any?) {
+        moveSelectionInLayerOrder(forward: true)
+    }
+
+    @objc public func sendBackwardAction(_ sender: Any?) {
+        moveSelectionInLayerOrder(forward: false)
+    }
+
+    @objc public func bringToFrontAction(_ sender: Any?) {
         reorderSelection(toFront: true)
     }
 
-    @objc private func sendBackwardAction(_ sender: Any?) {
+    @objc public func sendToBackAction(_ sender: Any?) {
         reorderSelection(toFront: false)
     }
 
@@ -2615,16 +2787,16 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         let nodes = mainContentView.canvasStageView.document.nodes.filter { selection.contains($0.id) }
         setAgentPanelOpen(true)
         if nodes.isEmpty {
-            handleAgentPrompt("在画布上生成一套现代风格的 UI 界面卡片组件")
+            dispatchAgentPrompt("在画布上生成一套现代风格的 UI 界面卡片组件")
         } else if nodes.count == 1, let node = nodes.first {
             if node.kind == .text {
                 let currentText = node.text ?? node.name
-                handleAgentPrompt("为当前选中的文本「\(currentText)」生成 3 个更具吸引力的文案变体")
+                dispatchAgentPrompt("为当前选中的文本「\(currentText)」生成 3 个更具吸引力的文案变体")
             } else {
-                handleAgentPrompt("优化当前选中的「\(node.name)」样式与圆角布局，增强视觉层次")
+                dispatchAgentPrompt("优化当前选中的「\(node.name)」样式与圆角布局，增强视觉层次")
             }
         } else {
-            handleAgentPrompt("将当前选中的 \(nodes.count) 个图层进行整齐自适应排版与对齐")
+            dispatchAgentPrompt("将当前选中的 \(nodes.count) 个图层进行整齐自适应排版与对齐")
         }
     }
 
@@ -2634,24 +2806,30 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     private func commitPaintStroke(nodeId: String?, dataURL: String) {
         let document = mainContentView.canvasStageView.document
-        if let nodeId = nodeId,
-           let index = document.nodes.firstIndex(where: { $0.id == nodeId }) {
+        var targetId = nodeId
+        if targetId == nil {
+            if let existing = document.nodes.first(where: { $0.name == Self.paintNodeName && $0.kind == .image }) {
+                targetId = existing.id
+            }
+        }
+        if let targetId = targetId,
+           let index = document.nodes.firstIndex(where: { $0.id == targetId }) {
             let previous = document.nodes[index].src
             let cmd = BasicCommand(
                 name: "画笔笔触",
                 execute: { doc in
-                    guard let i = doc.nodes.firstIndex(where: { $0.id == nodeId }) else { return false }
+                    guard let i = doc.nodes.firstIndex(where: { $0.id == targetId }) else { return false }
                     doc.nodes[i].src = dataURL
                     return true
                 },
                 undo: { doc in
-                    guard let i = doc.nodes.firstIndex(where: { $0.id == nodeId }) else { return false }
+                    guard let i = doc.nodes.firstIndex(where: { $0.id == targetId }) else { return false }
                     doc.nodes[i].src = previous
                     return true
                 }
             )
             _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-            mainContentView.canvasStageView.setPaintNode(id: nodeId, dataURL: dataURL)
+            mainContentView.canvasStageView.setPaintNode(id: targetId, dataURL: dataURL)
         } else {
             let canvas = document.canvas
             var node = VOONode(
@@ -2693,12 +2871,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         mainContentView.canvasStageView.needsDisplay = true
         refreshAfterDocumentMutation()
 
-        // The web shape / artboard tool returns to the select tool after a draw.
-        if node.kind == .rect || node.kind == .ellipse || node.kind == .frame {
-            mainContentView.canvasStageView.activeTool = .move
-            mainContentView.toolRail.state.selectTool(.move)
-            mainContentView.toolRail.updateSelection()
-        }
+        // Continuous creation keeps the active tool until an explicit tool switch.
+
     }
 
     private func createTextNodeFromCanvas(at point: CGPoint) {
@@ -2742,24 +2916,15 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     }
 
     private func commitTextEditing(_ text: String) {
-        guard let node = textEditingOverlay.editingNode else { return }
-        let newText = text
-        let cmd = BasicCommand(
-            name: "编辑文本",
-            execute: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == node.id }) else { return false }
-                doc.nodes[i].text = newText
-                doc.nodes[i].name = newText.isEmpty ? "Text" : String(newText.prefix(24))
-                return true
-            },
-            undo: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == node.id }) else { return false }
-                doc.nodes[i].text = node.text
-                doc.nodes[i].name = node.name
-                return true
-            }
-        )
-        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
+        guard let old = textEditingOverlay.editingNode else { return }
+        var next = old
+        next.text = text
+        next.name = text.isEmpty ? NativeCopy.text(.textKind) : String(text.prefix(24))
+        NativeTextBoxLayout.resizeToContent(&next)
+        let command = NativeTextBoxWidthCommand(oldNode: old, newNode: next)
+        if !command.isNoOp {
+            _ = commandManager.execute(command, on: &mainContentView.canvasStageView.document)
+        }
         textEditingOverlay.isHidden = true
         refreshAfterDocumentMutation()
     }
@@ -2876,6 +3041,70 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         refreshAfterDocumentMutation()
     }
 
+    /// Island bar ↑/↓: shifts every selected layer one step in the paint order
+    /// (web "move up / move down"), recorded as one undoable command per step.
+    private func moveSelectionInLayerOrder(forward: Bool) {
+        let stage = mainContentView.canvasStageView
+        let selected = stage.selectedNodeIds
+        guard !selected.isEmpty else { return }
+        let indices = stage.document.nodes.enumerated()
+            .filter { selected.contains($0.element.id) }
+            .map { $0.offset }
+        guard !indices.isEmpty else { return }
+        // Forward = toward the front of the list (painted last).
+        let ordered = forward ? indices.sorted(by: >) : indices.sorted()
+        for index in ordered {
+            let target = forward ? index + 1 : index - 1
+            guard target >= 0, target < stage.document.nodes.count else { continue }
+            let nodeId = stage.document.nodes[index].id
+            guard !selected.contains(stage.document.nodes[target].id) else { continue }
+            moveLayer(nodeId, to: target)
+        }
+        refreshAfterDocumentMutation()
+    }
+
+    /// Island bar colour swatches: applies a fill/stroke colour to the selection.
+    private func presentSelectionColourPanel(isStroke: Bool) {
+        let stage = mainContentView.canvasStageView
+        guard !stage.selectedNodeIds.isEmpty else { return }
+        let panel = NSColorPanel.shared
+        panel.setTarget(self)
+        panel.setAction(#selector(selectionColourPanelChanged(_:)))
+        colourPanelStrokeTarget = isStroke
+        panel.orderFront(nil)
+    }
+
+    @objc private func selectionColourPanelChanged(_ sender: NSColorPanel) {
+        let hex = sender.color.hexString
+        applyColourToSelection(hex, isStroke: colourPanelStrokeTarget)
+    }
+
+    private func applyColourToSelection(_ hex: String, isStroke: Bool) {
+        let stage = mainContentView.canvasStageView
+        let selected = stage.selectedNodeIds
+        guard !selected.isEmpty else { return }
+        let before: [String: LayerStyle] = stage.document.nodes
+            .filter { selected.contains($0.id) }
+            .reduce(into: [:]) { $0[$1.id] = $1.style }
+        let cmd = BasicCommand(
+            name: isStroke ? "修改描边颜色" : "修改填充颜色",
+            execute: { doc in
+                for index in doc.nodes.indices where selected.contains(doc.nodes[index].id) {
+                    if isStroke { doc.nodes[index].style.stroke = hex } else { doc.nodes[index].style.fill = hex }
+                }
+                return true
+            },
+            undo: { doc in
+                for index in doc.nodes.indices {
+                    if let style = before[doc.nodes[index].id] { doc.nodes[index].style = style }
+                }
+                return true
+            }
+        )
+        _ = commandManager.execute(cmd, on: &stage.document)
+        refreshAfterDocumentMutation()
+    }
+
     private func moveLayer(_ nodeId: String, to targetIndex: Int) {
         let nodes = mainContentView.canvasStageView.document.nodes
         guard let from = nodes.firstIndex(where: { $0.id == nodeId }) else { return }
@@ -2890,8 +3119,37 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     /// Shows / hides the AI agent panel and reflows the editor shell (web parity).
     public func setAgentPanelOpen(_ open: Bool) {
+        if open {
+            syncAgentModelLabel()
+        }
         mainContentView.setAgentPanelOpen(open)
         mainContentView.refreshChromeVisibility()
+    }
+
+    /// Syncs the composer model chip label ("Opus 5.5", "GPT-5", "Gemini 3.8", etc.) with the active agent provider.
+    public func syncAgentModelLabel() {
+        let raw = UserDefaults.standard.string(forKey: SettingsDrawerView.agentProviderDefaultsKey) ?? "claude"
+        let customModel = UserDefaults.standard.string(forKey: "voo.agent.model")
+        if let customModel, !customModel.isEmpty {
+            mainContentView.agentPanel.modelLabel = customModel
+            return
+        }
+        let friendly: String
+        switch raw.lowercased() {
+        case "claude":
+            friendly = "Opus 5.5"
+        case "codex", "openai":
+            friendly = "GPT-5"
+        case "antigravity", "agy":
+            friendly = "Gemini 3.8"
+        case "deepseekharness", "deepseek-harness", "dsh":
+            friendly = "DeepSeek V3"
+        case "opencode":
+            friendly = "OpenCode"
+        default:
+            friendly = "Opus 5.5"
+        }
+        mainContentView.agentPanel.modelLabel = friendly
     }
 
     public func toggleAgentPanel() {
@@ -2973,7 +3231,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     /// Routes the agent panel prompt to either a locally installed CLI or the
     /// native full-featured `AIAgentClient` multi-turn tool loop.
-    private func handleAgentPrompt(_ text: String) {
+    func runNativeAgentPrompt(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         mainContentView.agentPanel.addUserMessage(trimmed)
@@ -3062,6 +3320,9 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         }
     }
 
+    /// Which channel the shared NSColorPanel is currently editing.
+    private var colourPanelStrokeTarget: Bool = false
+
     private var activeCLIRunID: UUID?
 
     private var activeCLIAgent: LocalCLIAgent {
@@ -3106,8 +3367,22 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         self.mainContentView.agentPanel.addAgentMessage("收到：「\(prompt)」。\(detail)\n\(contextLine)")
     }
 
-    private func showChromeToast(_ message: String) {
-        NSSound.beep()
+    public func applyTheme(_ mode: ThemeManager.Mode) {
+        let isLight = mode == .light
+        studioWindow.backgroundColor = isLight ? NSColor(hex: "#f5f5f5") : ThemeTokens.colorPanel
+        mainContentView.editorShell.layer?.backgroundColor = isLight ? NSColor(hex: "#f5f5f5").cgColor : NSColor.black.cgColor
+        mainContentView.titleBar.needsDisplay = true
+        mainContentView.toolRail.needsDisplay = true
+        mainContentView.bottomZoomBar.needsDisplay = true
+        mainContentView.inspector.needsDisplay = true
+        mainContentView.welcomeDashboard.needsDisplay = true
+        mainContentView.settingsDrawer.needsDisplay = true
+        mainContentView.agentPanel.needsDisplay = true
+        mainContentView.canvasStageView.needsDisplay = true
+    }
+
+    func showChromeToast(_ message: String) {
+        nativeStatusBanner.show(message, in: mainContentView.editorShell)
         NSLog("[VOO Design Native] %@", message)
     }
 
@@ -3131,9 +3406,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 activeIndex = 0
                 activePageNodeId = frameNodes.first?.id
             }
+            // Web `page_switcher` labels the pill with the DOCUMENT name
+            // ("Design1 1/1"), not the frame name, which stays "Frame".
             let currentPage = frameNodes[activeIndex]
+            let pillName = doc.title.isEmpty ? currentPage.name : doc.title
             mainContentView.pageSwitcher.update(
-                pageName: currentPage.name,
+                pageName: pillName,
                 pageIndex: activeIndex + 1,
                 pageCount: frameNodes.count
             )
@@ -3253,11 +3531,19 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     /// Keeps every chrome surface in sync after document / dashboard transitions.
     public func syncChromeState() {
+        mainContentView.titleBar.setDocumentDirty(hasUnsavedChanges)
+        mainContentView.inspector.configureCanvas(
+            document: mainContentView.canvasStageView.document)
         mainContentView.bottomZoomBar.update(
             zoom: mainContentView.canvasStageView.zoom,
             canUndo: commandManager.canUndo,
             canRedo: commandManager.canRedo
         )
+        mainContentView.bottomZoomBar.setRulersEnabled(mainContentView.canvasStageView.showRulers)
+        mainContentView.bottomZoomBar.setVisibilityEnabled(
+            mainContentView.canvasStageView.showGuides)
+        mainContentView.bottomZoomBar.setGridEnabled(mainContentView.canvasStageView.showGrid)
+        mainContentView.bottomZoomBar.setSnapToGridEnabled(mainContentView.canvasStageView.isSnappingEnabled)
         let hasSelection = !mainContentView.canvasStageView.selectedNodeIds.isEmpty
         let nodes = mainContentView.canvasStageView.document.nodes
         let name = nodes.first(where: { $0.id == mainContentView.canvasStageView.selectedNodeIds.first })?.name
@@ -3299,9 +3585,6 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     public func openEditor(project: String) {
         mainContentView.isWelcomeOpen = false
-        let title = (project as NSString).lastPathComponent.replacingOccurrences(of: ".voo", with: "")
-        mainContentView.titleBar.setDocumentTitle(title)
-        mainContentView.canvasStageView.document.title = title
 
         let fileManager = FileManager.default
         let wsPath = WorkspaceManager.shared.currentWorkspacePath
@@ -3320,15 +3603,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             }
         }
         if !loaded {
-            // Web parity: a project that is no longer on disk opens the same blank
-            // "Design 1" document as the New action instead of fabricated demo art.
-            if project.contains("Web app") {
-                loadWebAppProject()
-            } else {
-                newDocument(nil)
-                mainContentView.isWelcomeOpen = false
-                showChromeToast("找不到工程文件，已新建空白文档")
-            }
+            showChromeToast(NativeCopy.text(.missingFile))
+            return
         }
         mainContentView.canvasStageView.zoomFit()
         syncChromeState()
@@ -3396,6 +3672,8 @@ public class MainContentView: NSView {
     public let pageSwitcher = PageSwitcherPillView()
     public let bottomZoomBar = StudioBottomZoomBar()
     public let aiButton = VooAIFloatingButton()
+    /// Small "add artboard" affordance above the page pill (web `editor_free_page`).
+    public let addArtboardButton = EditorAddArtboardButton()
     public let islandBar = ContextIslandBar()
     public let agentPanel = AgentPanelView()
     public let onboardingGuide = OnboardingGuideView()
@@ -3404,6 +3682,7 @@ public class MainContentView: NSView {
     public var sessionHasSelection: Bool = false
     private var editorTrailingToRoot: NSLayoutConstraint!
     private var editorTrailingToPanel: NSLayoutConstraint!
+    private var toolRailPlacement: NativeToolRailPlacement?
 
     public var isWelcomeOpen: Bool = true {
         didSet {
@@ -3448,6 +3727,11 @@ public class MainContentView: NSView {
         setupHierarchy()
     }
 
+    public override func layout() {
+        super.layout()
+        toolRailPlacement?.update()
+    }
+
     private func setupHierarchy() {
         setAccessibilityIdentifier("main_content_view")
         setAccessibilityRole(.group)
@@ -3477,7 +3761,7 @@ public class MainContentView: NSView {
         editorShell.addSubview(inspector)
 
         // 2.5 Bottom floating chrome (web parity): page pill, zoom bar, island bar, AI FAB
-        for chromeView in [pageSwitcher, bottomZoomBar, islandBar, aiButton] as [NSView] {
+        for chromeView in [pageSwitcher, bottomZoomBar, islandBar, aiButton, addArtboardButton] as [NSView] {
             chromeView.translatesAutoresizingMaskIntoConstraints = false
             editorShell.addSubview(chromeView)
         }
@@ -3511,24 +3795,27 @@ public class MainContentView: NSView {
         editorShell.addSubview(welcomeDashboard)
 
         // Layout Constraints
-        editorTrailingToRoot = editorShell.trailingAnchor.constraint(equalTo: trailingAnchor, constant: 0)
+        editorTrailingToRoot = editorShell.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
         editorTrailingToPanel = editorShell.trailingAnchor.constraint(equalTo: agentPanel.leadingAnchor, constant: 0)
         NSLayoutConstraint.activate([
-            // TitleBar: Top, Leading, Trailing, Height = 40
-            titleBar.topAnchor.constraint(equalTo: topAnchor),
-            titleBar.leadingAnchor.constraint(equalTo: leadingAnchor),
-            titleBar.trailingAnchor.constraint(equalTo: trailingAnchor),
+            // App frame inset: web `.app-root-frame` pads 4px around the title bar and
+            // the editor shell (`shell` border box sits at x4/y44 inside a 1440x900 window).
+            titleBar.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            titleBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+            titleBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
             titleBar.heightAnchor.constraint(equalToConstant: ThemeTokens.titleBarHeight),
 
-            // EditorShell Container: Inset below TitleBar with 14px corner radius and refined 1px mint border
+            // EditorShell Container: 2px mint border, 16 radius, 4px frame inset.
             editorShell.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 0),
-            editorShell.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 0),
+            editorShell.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
             editorTrailingToRoot,
-            editorShell.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 0),
+            editorShell.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
 
             // AI agent panel: right column outside the editor shell
-            agentPanel.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 0),
-            agentPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            // Web `aside`: panel content starts 12pt below the app content top and
+            // keeps a 16pt gutter on the right (measured 1440×900: y56..888, w364).
+            agentPanel.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 16),
+            agentPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             agentPanel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
             agentPanel.widthAnchor.constraint(equalToConstant: 364),
 
@@ -3543,6 +3830,12 @@ public class MainContentView: NSView {
             settingsDrawer.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor),
             settingsDrawer.trailingAnchor.constraint(equalTo: editorShell.trailingAnchor),
             settingsDrawer.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor),
+
+            // Bottom-left "add artboard" button sits just above the page pill
+            addArtboardButton.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor, constant: 14),
+            addArtboardButton.bottomAnchor.constraint(equalTo: pageSwitcher.topAnchor, constant: -8),
+            addArtboardButton.widthAnchor.constraint(equalToConstant: EditorAddArtboardButton.preferredSize),
+            addArtboardButton.heightAnchor.constraint(equalToConstant: EditorAddArtboardButton.preferredSize),
 
             // Bottom-left page switcher
             pageSwitcher.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor, constant: 16),
@@ -3580,11 +3873,11 @@ public class MainContentView: NSView {
             welcomeDashboard.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor),
 
             // ToolRail: Floating centered pill at top of editorShell (web `top-[14px]`,
-            // p-1.5 + 44px tool buttons => 56pt tall; 11 native tools + gaps => 536pt).
-            toolRail.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 14),
-            toolRail.centerXAnchor.constraint(equalTo: editorShell.centerXAnchor),
-            toolRail.widthAnchor.constraint(equalToConstant: 589),
-            toolRail.heightAnchor.constraint(equalToConstant: 56),
+            // Twelve 44pt tools, 4pt gaps, 6pt padding and the 1pt border).
+            toolRail.widthAnchor.constraint(lessThanOrEqualToConstant: ToolRailView.preferredWidth),
+            toolRail.widthAnchor.constraint(
+                lessThanOrEqualTo: editorShell.widthAnchor, constant: -16),
+            toolRail.heightAnchor.constraint(equalToConstant: ToolRailView.pillHeight),
 
             // ContextToolbar: Floating centered pill below ToolRail
             contextToolbar.topAnchor.constraint(equalTo: toolRail.bottomAnchor, constant: 8),
@@ -3593,12 +3886,18 @@ public class MainContentView: NSView {
             contextToolbar.heightAnchor.constraint(equalToConstant: 38),
 
             // Inspector Studio: Overlays canvas area inside editorShell
-            inspector.topAnchor.constraint(equalTo: editorShell.topAnchor),
-            inspector.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor),
-            inspector.trailingAnchor.constraint(equalTo: editorShell.trailingAnchor),
-            inspector.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor)
+            // The web canvas content starts inside the shell's 2pt border.
+            inspector.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 2),
+            inspector.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor, constant: 2),
+            inspector.trailingAnchor.constraint(equalTo: editorShell.trailingAnchor, constant: -2),
+            inspector.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor, constant: -2),
         ])
 
+        let preferredRailWidth = toolRail.widthAnchor.constraint(
+            equalToConstant: ToolRailView.preferredWidth)
+        preferredRailWidth.priority = .defaultHigh
+        preferredRailWidth.isActive = true
+        toolRailPlacement = NativeToolRailPlacement(rail: toolRail, shell: editorShell)
         updatePresentation()
     }
 
@@ -3617,78 +3916,13 @@ public class MainContentView: NSView {
     public func refreshChromeVisibility() {
         let dashboard = isWelcomeOpen
         pageSwitcher.isHidden = dashboard
+        addArtboardButton.isHidden = dashboard
         bottomZoomBar.isHidden = dashboard
         islandBar.isHidden = dashboard || !sessionHasSelection || isAgentPanelOpen
         aiButton.isHidden = dashboard || isAgentPanelOpen
         agentPanel.isHidden = !isAgentPanelOpen || dashboard
         needsLayout = true
         updateIslandBarPosition()
-    }
-
-    // MARK: - Island bar anchoring (web `use_contextual_taskbar_rect.js`)
-
-    /// Union of the selected nodes promoted to their outermost frame ancestor, in
-    /// document coordinates. Matches the web rule that nested selections anchor to
-    /// the board instead of the artwork.
-    private func islandAnchorDocRect() -> CGRect? {
-        let stage = canvasStageView
-        let nodes = stage.document.nodes
-        let selected = stage.selectedNodeIds.compactMap { id in nodes.first(where: { $0.id == id }) }
-        guard !selected.isEmpty else { return nil }
-
-        var anchors: [CGRect] = []
-        for node in selected {
-            var anchor = node
-            var guardCount = 0
-            while let parentId = anchor.parentId,
-                  let parent = nodes.first(where: { $0.id == parentId }),
-                  guardCount < 64 {
-                anchor = parent
-                guardCount += 1
-                if parent.kind == .frame { break }
-            }
-            anchors.append(CGRect(x: anchor.x, y: anchor.y, width: anchor.width, height: anchor.height))
-        }
-        guard var union = anchors.first else { return nil }
-        for rect in anchors.dropFirst() { union = union.union(rect) }
-        return union
-    }
-
-    /// Places the island bar 6pt below the selection's outer frame, centred on it,
-    /// flipping above when it would leave the stage, clamped 8pt inside the viewport.
-    public func updateIslandBarPosition() {
-        guard !islandBar.isHidden else { return }
-        guard let docRect = islandAnchorDocRect() else { return }
-        let stage = canvasStageView
-        let stageRect = stage.viewRect(from: docRect)
-        let size = islandBar.intrinsicContentSize
-        let barSize = CGSize(width: max(size.width, 120), height: ContextIslandBar.preferredHeight)
-        let bounds = stage.bounds
-        let gap: CGFloat = 6
-        let inset: CGFloat = 8
-
-        var x = stageRect.midX - barSize.width / 2
-        x = min(max(x, inset), max(bounds.width - barSize.width - inset, inset))
-
-        var y = stageRect.maxY + gap
-        if y + barSize.height > bounds.height - inset {
-            let above = stageRect.minY - gap - barSize.height
-            if above >= inset {
-                y = above
-            } else {
-                y = max(bounds.height - barSize.height - inset, inset)
-            }
-        }
-        y = min(max(y, inset), max(bounds.height - barSize.height - inset, inset))
-
-        // The stage view shares editorShell's coordinate space.
-        let stageOrigin = stage.frame.origin
-        islandBar.frame = CGRect(
-            x: stageOrigin.x + x,
-            y: stageOrigin.y + y,
-            width: barSize.width,
-            height: barSize.height
-        )
     }
 
     // MARK: - Agent panel & onboarding presentation

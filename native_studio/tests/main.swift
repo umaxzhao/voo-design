@@ -16,6 +16,19 @@ CanvasInteractionTests.registerTests()
 M1_ToolFlyoutContextualTaskbarTests.registerTests()
 M2_InspectorStudioTests.registerTests()
 WorkspaceManagerTests.registerTests()
+InspectorBehaviourTests.registerTests()
+IslandAnchorTests.registerTests()
+#if INTEGRATED
+    PortableParityTests.registerTests()
+    NativeWorkflowParityTests.registerTests()
+    NativePaintParityTests.registerTests()
+    NativeInspectorVisualTests.registerTests()
+    NativeTitleBarDetailTests.registerTests()
+    NativeToolMenuParityTests.registerTests()
+    NativeToolRailResponsiveTests.registerTests()
+    NativeViewAidParityTests.registerTests()
+    NativeTextWidthTests.registerTests()
+#endif
 // AIAgentTests.registerTests()
 
 let args = CommandLine.arguments

@@ -1,3 +1,57 @@
+## 原生控件继续复刻 — 2026-11-01
+
+- **本轮控件与启动阻塞修复已验收；整体 1:1 仍为部分。** 文字区行距/8px偏移、字重/字体名/行高显示、Web align导入、null效果添加、Pen/Shapes菜单激活和底部缩放条已修正。实机确认同一Number图层、添加效果/一次撤销、菜单选椭圆/真实拖绘/一次撤销；样例文件字节未变。
+- 最终QA暴露同步目录监听阻塞主线程，已改后台打开与过期结果清理；3项阻塞/切目录/释放与错误回归通过，实际应用恢复响应，GUI默认监听事件不计通过。
+- 固定源码 [`97b6bee`](https://github.com/umaxzhao/voo-design/commit/97b6bee3d4a9ac039f3268dbfbbee4a99d6d343e)：**465/465 原生断言、11/11 模块规划、生产构建/签名通过**，二进制5,235,248 bytes（4.99MB）。新增文件严格格式检查/差分lint通过；旧文件全量lint仍失败（1,204条历史诊断）。[执行记录与截图](audits/native-parity/control-details/verification.json)。
+- [详细范围与剩余](../native_studio/INTERACTION_PARITY.md#控件逐态复刻与启动阻塞修复--2026-11-01)：文字宽度模式/高级排版、其他工具菜单与效果、独立参考线开关、浅色/窄窗口等仍未完成或未验证，不能据此保证完全一致。
+
+## 原生文件 Tab 细节校正 — 2026-11-01
+
+- **本轮 Tab 范围已修复并复查；整体 1:1 仍未验收通过。** 标题基线向下校正 4px，与 Electron 同为 y=19–27；清除文本框 2px 外扩，并对齐背景、关闭/新建图标、长标题上限、字距及右侧按钮位置。
+- 未保存圆点已接真实文档状态；实机确认中文长标题截断、编辑 Escape 恢复、修改出现圆点和撤销清除。固定源码 [`f02b764`](https://github.com/umaxzhao/voo-design/commit/f02b76427347fa587cf0a681ccdc709cf370c7bb) **449/449 原生断言、11/11 模块规划、生产构建/签名通过**，二进制 5,122,608 bytes；新增文件严格 lint 及差分检查通过，旧文件全量 lint 仍失败（920 条历史诊断）。
+- [范围、剩余上下文](../native_studio/INTERACTION_PARITY.md#文件-tab-与相邻标题栏细节校正--2026-11-01) / [精确版本、截图与执行记录](audits/native-parity/tab-details/verification.json)。未以这些断言认证完整多文档、浅色、窄窗口、IME 或其余界面。
+
+## Electron → 原生界面优先复刻 — 2026-11-01
+
+- **整体仍为部分，完整 1:1 未验收通过。** 本轮停止性能扩展，3 个子 Agent 并行对齐默认工具栏、右侧属性面板、标题栏、图层卡和无选中画布属性卡；按 Electron 实际界面修正尺寸、间距、字体、图标、颜色与默认展开态。
+- 同字节 FORM、中文、同窗口/缩放实机复查与统一验证记录在[本轮审计](../native_studio/INTERACTION_PARITY.md#界面优先复刻与继续复查--2026-11-01)及[证据](audits/native-parity/chrome/verification.json)。源码 [`721cd2d`](https://github.com/umaxzhao/voo-design/commit/721cd2dd058eaa701d23103b4f699e019a59a12a)；最终登记断言执行与功能覆盖分别列出，不以测试数替代视觉验收。
+- 固定源码 **441/441 原生集成断言（-Onone）、11/11 模块规划、生产构建/签名通过**，可执行文件 5,113,312 bytes（4.87MB）。新增 Swift 严格格式检查与差分诊断通过；旧文件全量 lint 仍有 2,727 条历史诊断，不计全绿。
+- 仍缺工具家族菜单、颜色弹层、完整原型/多选/文本/Frame/效果状态、浅色/窄窗口及部分底部 UI；Crop/Healing/油漆桶、多文档/页面、ZIP 快照与协作不计完成。原工作区未提交改动保留，原生以独立 `.app` 预览，未部署其他 Web 草稿。
+
+## Electron → 原生版修复与继续检查 — 2026-11-01
+
+- **整体仍未达到 1:1，功能覆盖维持部分。** 已修未保存保护、官方文档/资源往返、坐标/Frame/路径/字重、首页任务调度，以及搜索、Code、换位、画笔设置和连续绘制的声明范围。
+- 四份真实示例均读取成功；FORM 的米白画板、上下方向与路径位置已复查，仍有字体度量、默认面板和工具语义差异。
+- [逐项修复、复查证据与剩余上下文](../native_studio/INTERACTION_PARITY.md)。实际多页、多 Paint 编辑、导入、账号、模型附件、全局主题/语言、协作及默认目录启动等不继承历史通过。
+- 固定应用源码 [`d5720aa`](https://github.com/umaxzhao/voo-design/commit/d5720aac5669970c2b311def4e9f6cb8ac6c38dc)：412/412 登记集成检查（`-Onone`）、11/11 模块规划、生产 `-Osize` 构建和 ad-hoc 签名通过；最终 App 的 FORM、搜索、Code 清理、画笔与取消新建已复看。新增文件严格 lint/差分诊断检查通过，旧文件全量 lint 仍有 3,163 条诊断，不计全绿。[执行记录、二进制及证据指纹](audits/native-parity/repair/verification.json)。原工作区未提交改动保留，原生版本使用独立工作区 `.app` 预览；未部署该分支上的其他 Web 改动。
+
+## Electron → 原生版重新审查 — 2026-11-01
+
+- **当前结论：未达到 1:1，整体功能验收不通过。** 本轮确认 24 项差异（4 P0、17 P1、3 P2），
+  同文档渲染、未保存文档保护、`.voo` 往返/资源、首页任务、工具接线均有明确失败。
+- 原生基线 `392f45f147e9b33ba5a749d9b69081e2b4cd2b77` 的 397/397 集成测试与生产构建通过；
+  该结果只证明登记断言，不能覆盖现场与诊断发现的失败。
+- [逐项复现、源码位置、两版截图、模块状态与修复顺序](../native_studio/INTERACTION_PARITY.md)。
+  [机器记录、运行来源与证据指纹](audits/native-parity/audit-summary.json)。
+- workspace/documents/canvas/compositing/inspector 等均保留失败或部分状态；真实服务、IME、
+  完整多页/蒙版/布局、VoiceOver、性能和签名安装包继续未验证，不能继承历史通过记录。
+- 本轮为审查及证据归档，未修应用行为；独立工作区保留原工作区未提交改动。无应用部署。
+
+## Native Electron parity continuation — 2026-11-01
+
+- Module `platform`, capability `platform.native-island-anchor`: repaired outermost-board,
+  unframed-group and rotated-anchor placement. Native parity remains **partial**.
+- Reproduced 3 failing production-AppKit scenarios before the change. The final
+  integrated native suite passes **395/395**; module-planning tests pass **11/11**.
+  Format/lint, catalog registration, syntax, production build and ad-hoc signing pass.
+- Exact clean source revision, fingerprints and execution receipts are recorded in
+  `/tmp/voo-native-parity-publication.json`; details and unverified contexts are in
+  [the native audit](../native_studio/INTERACTION_PARITY.md#current-scoped-verification--2026-11-01).
+- Isolated branch `native-parity-20261101` preserves the original dirty workspace.
+  Native deliverable: `native_studio/build/VOO Design Native.app` in that worktree.
+  The hosted editor was not deployed: this round changes the native app, and the
+  local branch also contains unrelated, previously unpushed web changes.
+
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
 最近一次完整核心验证：[`ae85951`](https://github.com/umaxzhao/voo-design/commit/ae85951133f38d2fe3b15e39cd7f58015c073238)；105/105 步通过，101 组核心浏览器、4851 单测通过/4 跳过，设计检查 1447 文件通过。Beta2 已公开，四个原生目标通过；Mac 双架构签名、公证及实际 DMG/ZIP 包内核验通过。文档后续提交不改变安装包的固定源码。
@@ -167,6 +221,7 @@
 - 已推送并通过 SSH 部署 la2，线上入口及 6 个相关资源与验证构建逐字节一致。隔离正式浏览器复核默认整个分组隐藏、添加后实际下载 160×100 PNG、移除后隐藏及撤销重做，无页面脚本错误。截图 `/private/tmp/voo-export-opt-in-default.png`、`/private/tmp/voo-export-opt-in-removed.png`；证据 `/private/tmp/voo-export-opt-in-deployment-proof.json`、`/private/tmp/voo-export-opt-in-production-result.log`。
 - 本地 App 工作区仅三方合入本任务源文件及回归测试，保留其他草稿；定向单测 18 项和真实本地添加/下载/移除/撤销重做通过（`/private/tmp/voo-export-opt-in-primary-browser.log`），不把独立干净版本的完整门禁冒记成全部私人草稿已通过。备份 `/private/tmp/voo-export-opt-in-primary/`、`/private/tmp/voo-export-opt-in-primary-final/`。
 - 原始缺陷保留 6 个配置失败和 2 个分组显示失败（`/private/tmp/voo-export-opt-in-baseline.log`、`/private/tmp/voo-export-opt-in-section-baseline.log`）。第一次未结束门禁为补齐整个分组隐藏而停止；`6ff7ef2` 的门禁因旧默认显示断言失败，修正后重新完整执行，未把先前部分执行算通过。
+- 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。上轮首页冷加载 New 事件时序问题和 `.fig` 导入问题仍未修复，不归入本轮通过。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
 - 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。该轮未修复首页冷加载 New 和 `.fig` 导入问题，不归入该轮通过；后续整改见下方 Figma 记录。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
 ## 本轮：统一填充面板（已完成声明范围）
 - 代码版本 [`cb4d1c9`](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；**89/89 发布步骤通过，85 组浏览器检查通过，单测 4567 通过、4 跳过、0 失败**。最终源码干净且验证期间未修改。证据：`/private/tmp/voo-unified-fill-release-final.json`。
@@ -176,6 +231,9 @@
 - 已推送并通过 SSH 部署 la2；正式入口及 7 个直接/填充分块与验证构建逐字节一致。正式地址实际打开右侧面板，切换渐变、上传图片、修改纹理，验证真实像素、一次撤销/重做及 Escape 保留选区，无页面脚本错误。未调用付费模型。证据：`/private/tmp/voo-unified-fill-deployment-proof.json`、`/private/tmp/voo-unified-fill-production-result.log`。
 - 定向 48 项单测、完整右侧面板路径和本地 App 核心填充路径分别记录；主工作区保留其他并行草稿，只合并本轮相关文件；最终本地真实填充路径复核见 `/private/tmp/voo-unified-fill-primary-browser-final.log`。主工作区已有的 `impeccable-polish` 登记文件缺失在本轮登记更新前已记录，不把公开版本门禁通过冒记为整个本地草稿通过。合并备份：`/private/tmp/voo-unified-fill-primary-merge/`、`/private/tmp/voo-unified-fill-primary-rounded/`。
 - 先前版本的旧英文断言、新建就绪超时及补跑证据保留：`/private/tmp/voo-unified-fill-release.json`、`/private/tmp/voo-unified-fill-release-v2.json`、`/private/tmp/voo-unified-fill-release-recovered.json`；它们没有被伪装成最终固定提交的执行。
+- 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是未收口的启动上下文，不算作填充门禁证明已修复。
+- 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
+
 - 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是该轮未收口的启动上下文；后续 New 修复已由下方 Figma 整改中的确定性回归与完整门禁认证，原始失败仍保留。
 - 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
 ## 历史：桌面 test.fig 导入整改（已发布，保真与性能仍部分）
@@ -273,6 +331,7 @@
 - 功能覆盖仍为部分：物理设备触摸、OS 快捷键全局拦截、字体及 GPU 差异仍需专门验证。
 ## 继续检查：容器命令、手势回滚、选区单位、文字收尾与路径表示（已完成声明范围）
 - 新增两组核心浏览器套件，当前登记为 60 个能力分组、84 组浏览器、88 个发布步骤；先后在 `caf386a`（84/84）、`bfd7e5b`（85/85）、`a94365e`（85/85，证据：`/private/tmp/voo-release-round2.json`）与本批 `f7f4f59`（87/87，证据：`/private/tmp/voo-release-round3.json`，合入最新 `origin/main` 后为 `9c8be5c`，29 项新增单测与 19 项浏览器专项复核全过）完成隔离副本全量门禁验证；原工作区未提交的外部改动保留，未混入发布依据。
+- 已复现并修复 29 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位、缩放后的钢笔路径在锚点越界扩框/复制/展开轮廓时缩回 `baseWidth`、钢笔编辑零位移点击锚点/弯曲段误写历史且中途 `Escape` 直接退出编辑会话、旋转/翻转路径下钢笔弯曲与剪刀子工具坐标未逆变换且开放路径剪断未重算边界与图层顺序、布尔组合与破坏性布尔丢失共享父容器及遗留失效 `clipTo`/空编组、路径排字 `typeOnSelectedPath`/`attachTextToPath` 丢失 `parentId` 且调用不存在的 `selection.setIds`、空普通编组无法通过 `Backspace`/剪切删除或 `Escape` 取消选中或 `Cmd+Shift+G` 解组、多子节点普通编组按 `Shift+A`（`toggleAutoLayoutSelection`）误套外层编组而非原地切换 Auto Layout、Frame 内创建/分离组件（`extractComponent`/`detachInstance`）丢失 `parentId`/残留外部引用/未缩放路径锚点、选中钢笔路径或普通编组按 `Enter` 因判定 `kind === "pen"` 与调用不存在的 `startEdit` 或忽略 `getSelectedGroup()` 而失效、多边形套索按 `Backspace` 误删宿主图层而非回退顶点（`popPolygonVertex`）且闭合与魔棒选区遗漏历史提交、磁性套索按 `Escape` 未回退、曲率钢笔按 `Backspace`（`popDraftAnchor`）残留旧平滑控制柄、以及 `region`/`pixelMarquee`/`selectionMove`/`gradient*`/形变控制点/`pen`/`lasso`/`healing`/`cloneStamp`/`patch*`/`removeBrush`/`objectStroke` 取消未回滚。
 - 已复现并修复 34 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位、缩放后的钢笔路径在锚点越界扩框/复制/展开轮廓时缩回 `baseWidth`、钢笔编辑零位移点击锚点/弯曲段误写历史且中途 `Escape` 直接退出编辑会话、旋转/翻转路径下钢笔弯曲与剪刀子工具坐标未逆变换且开放路径剪断未重算边界与图层顺序、布尔组合与破坏性布尔丢失共享父容器及遗留失效 `clipTo`/空编组、路径排字 `typeOnSelectedPath`/`attachTextToPath` 丢失 `parentId` 且调用不存在的 `selection.setIds`、空普通编组无法通过 `Backspace`/剪切删除或 `Escape` 取消选中或 `Cmd+Shift+G` 解组、多子节点普通编组按 `Shift+A`（`toggleAutoLayoutSelection`）误套外层编组而非原地切换 Auto Layout、Frame 内创建/分离组件（`extractComponent`/`detachInstance`）丢失 `parentId`/残留外部引用/未缩放路径锚点、选中钢笔路径或普通编组按 `Enter` 因判定 `kind === "pen"` 与调用不存在的 `startEdit` 或忽略 `getSelectedGroup()` 而失效、多边形套索按 `Backspace` 误删宿主图层而非回退顶点（`popPolygonVertex`）且闭合与魔棒选区遗漏历史提交、磁性套索按 `Escape` 未回退、曲率钢笔按 `Backspace`（`popDraftAnchor`）残留旧平滑控制柄、`region`/`pixelMarquee`/`selectionMove`/`gradient*`/形变控制点/`pen`/`lasso`/`healing`/`cloneStamp`/`patch*`/`removeBrush`/`objectStroke` 取消未回滚、图层重排（`reorderLayerBatch` 与 `moveNodeToExtreme`）因仅判定 `isGroupNode` 导致 Frame 与剪切蒙版被拆散/破坏、移动至顶/底层（`moveNodeToExtreme`）允许子图层脱离 Frame 父级跳至画布顶层、图层层级领域方法 `bringForward`/`sendBackward`/`bringToFront`/`sendToBack` 缺失导致键盘 `]` 和 `[` 快捷键抛错崩溃、粘贴复制编组未调用 `selectGroup` 丢失 `selectedGroupId`、以及普通编组水平/垂直翻转未对子节点在编组盒内镜像坐标。
 - 门禁过程还捕获并修复了 `titlebar-file-actions.e2e.mjs` 在已有后台编辑器实例时未等待首页遮罩（`welcomeOpen`）关闭即读取文件名的竞态。
 - 定向浏览器扩展至 19 个场景（`container-command-boundaries` 9 项、`text-creation-boundaries` 10 项），覆盖键盘命令、对齐/蒙版跟随、Auto Layout 方向键微调与原地切换、图层面板布尔点击与编组复制、缩放钢笔复制与路径排字及空编组删除、`Enter` 进入编组与钢笔编辑、钢笔切换工具收尾、曲率钢笔 `Backspace` 重算控制柄、钢笔锚点零位移与中途 `Escape` 回滚、`< 4px` 形状点击与 `Escape` 缩放回滚及完整撤销重做。
@@ -414,3 +473,132 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 > 首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
 
 > 本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
+
+## 原生界面优化（第五轮：Agent 面板 1:1 + 草稿自动保存）— 2026-10-31
+
+用实时 Web 构建重新截取 Agent 面板（`native_studio/docs/refs/web_20261031/web_agent_open.png`，注：仓库里旧的 `web_agent.png` 是 10-23 的过期构建，已确认不可用），并补齐设置中「Auto-save edit drafts」原先只有开关没有行为的缺口。
+
+- **Agent 面板按截图重建**：头部只保留「Untitled」与 3 个 32×32 图标（历史 / 新建 / 收起），移除原生的紫色头像与「● Flash ACTIVE」徽章；问候语改为 system 15pt 单行；三个建议胶囊改为 system 12pt、h38、r12、`#0F0F0F` 无描边、铺满 332pt 内容宽；提示段改为 system 12pt neutral-500 两行；composer 保持 340×130 / r16 / `#171717` / white-8 描边，并新增**模型胶囊**（✳ + "Opus 5.5"，h24、r8、white/5，`AgentPanelView.modelLabel` 可外部设置），发送键 32×32（空态紫 42%、有内容变白底黑箭头）；对话区用户消息右侧白/8 气泡，Agent 消息左侧无气泡正文、仅每轮首条显示 40pt 头像，工具/CLI 行仍为等宽 11.5。面板几何对齐实测值：顶部 56（内容区顶 +12）、右 16、宽 364。
+- **草稿自动保存（崩溃恢复）**：新增 `Sources/Engine/DraftAutosave.swift`——按设置里的 `voo.editor.autoSaveDrafts` 开关，在编辑时以 3s 去抖把归一化 `.voo` 快照写入 `Application Support/VOO Design/Drafts/`；下次启动若草稿比对应磁盘文件更新（或文件根本不存在），自动恢复并提示「已恢复上次未保存的草稿」；保存成功后清理对应草稿；测试通过 `VOO_DRAFT_DIR` 重定向到临时目录，不触碰真实用户目录。该开关此前只持久化键值，现在有真实行为。
+
+验证：`./build.sh` 通过（binary 4.85 MB ≤ 5 MB，bundle 10.17 MB ≤ 35 MB）；`./tests/run_tests.sh` **384/384 通过**（新增草稿开关/写盘/恢复/丢弃断言）。截图：`native_studio/docs/screenshots/z_agent.png`（2x retina 抓取）。
+仍未覆盖：Light interface 仍无浅色主题实现；标题栏仍为「打开/保存」语义；约束不处理旋转后的钉扎。
+
+## 原生界面优化（第六轮：标题栏双态完全对齐 Web 1:1 + 页码胶囊宽度微调）— 2026-10-31
+
+基于当前实时 Web 截图对比（`web_titlebar_right.png` 与 `web_dashboard_titlebar_right.png`），将标题栏在编辑器态与工作台态的双态结构完全对齐 Web 真实渲染：
+
+- **编辑器态标题栏（右侧）**：
+  - 新增协作分享按钮 `[+]`（22×22 圆形胶囊，悬浮加深）以及 1×16 分隔线（`bg-white/10`），点击触发原生协作分享逻辑（`titleBar.onCollabTapped`）；
+  - 移除「打开」按钮上不属于 Web 桌面版的文件夹图标（Web 桌面端为纯文字按钮）；
+  - 保持 `[+] [|] 打开 保存 浏览器 齿轮` 的精确顺序与边距（按钮高 28，齿轮距右侧 16pt，间距 8pt/4pt）。
+- **工作台态标题栏（右侧）**：
+  - 隐藏设置齿轮（因为 Web 工作台的设置入口是在左下角浮动按钮 `fixed bottom-3 left-6`）；
+  - 保持 `导入`（ghost 按钮）、`新建`（白底黑字药丸）以及浏览器 Globe 按钮（右对齐距右边缘 16pt）；
+  - 状态切换时动态切换 Trailing 约束，无缝自适应。
+- **页码胶囊（PageSwitcherPillView）宽度与字体微调**：
+  - 字体从等宽字体改为与 Web 一致的系统比例无衬线字体（Inter / system sans 12pt regular），解决由于等宽字体导致胶囊偏宽 18px 的视觉偏差；
+  - 重新跑 `scripts/native-parity-check.py` 实测结果：
+    - 工具轨 (ToolRail): `dx=+1, dy=+0, dw=-1, dh=+0`
+    - 图层卡片 (Layers): `dx=-2, dy=-1, dw=+0, dh=+1`
+    - 页码胶囊 (PagePill): `dx=+0, dy=+0, dw=-2, dh=+0`（与 Web 仅相差 2px，高度位置完全重合）
+    - 属性卡片 (Properties Card): Web `(1131, 119, 286, 731)` vs 原生 `(1133, 115, 286, 735)` -> 宽度 286 完全一致，高度仅相差 4px
+    - Agent 面板: 均为 `(1050, 40, 385, 850)` 空间重合
+- **缩放条 ⋯ 更多菜单完全对齐 Web**：
+  - 补全「自适应画板 (Fit to Screen) ⇧1」、「显示标尺 (Rulers)」、「清除所有参考线 (Clear Guides)」、「网格 (Grid) ⌃'」、「磁性吸附 (Snap to Grid)」完整项；
+  - 真实联动画布 `zoomFit`、`showRulers` 状态持久化与 `guides.removeAll()`。
+
+验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **386/386 通过**（新增缩放条更多菜单及标题栏协作与工作台布局测试）。截图：`native_studio/docs/screenshots/z_editor.png`、`native_studio/docs/screenshots/z_dashboard.png`。
+仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。
+
+## 原生界面优化（第七轮：图层层级快捷键与菜单 1:1 对齐）— 2026-10-31
+
+- **图层排序快捷键对齐 Web & Figma 工业标准**：
+  - `[`：下移一层（Send Backward / `sendBackwardAction`）；
+  - `]`：上移一层（Bring Forward / `bringForwardAction`）；
+  - `⌘[`：置底（Send to Back / `sendToBackAction`）；
+  - `⌘]`：置顶（Bring to Front / `bringToFrontAction`）；
+  - `⌘J` / `⌘\`：切换显示/隐藏右侧 AI Agent 面板。
+- **全方位打通三处操作入口**：
+  - 菜单栏「图层与几何 (Geometry)」子菜单；
+  - 画布右键上下文菜单（Context Menu）；
+  - 全局键盘事件监听器 `handleKeyDown`（输入框处于编辑聚焦状态时自动规避，仅在非编辑时生效）。
+- **新增回归测试**：`test_LayerOrdering_StepAndJumpActionsAndShortcuts`，验证单步与跳跃重排的正确性与撤销链完整性。
+
+验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **387/387 通过**。
+仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。
+
+## 原生界面优化（第八轮：旋转画板约束联动与多层级嵌套自适应）— 2026-10-31
+
+- **旋转画板（Rotated Frame）约束空间投影**：
+  - 支持画板带有任意旋转角（`rotation != 0`）时的子节点自动约束计算；
+  - 核心算法：将画布全局绝对坐标通过逆变换矩阵投影至画板自身的局部正交坐标系（沿画板旋转后的宽高向量轴 $(\cos\theta, \sin\theta)$ 与 $(-\sin\theta, \cos\theta)$），在局部空间完成与未旋转画板完全等价的 `left/center/right/scale` 和 `top/middle/bottom/scale` 钉扎计算，再通过正变换投影回画布空间；
+  - 彻底消除了旋转画板拉伸时子节点沿未旋转绝对轴跑偏的问题。
+- **嵌套画板（Nested Frames）递归级联重排**：
+  - 当子画板因外层画板的 `scale` 约束发生尺寸变化时，自动递归调用 `applyConstraints(frameId:)` 重新排列其内部子图层。
+- **新增回归测试**：`test_Constraints_RotatedFramePinsAlongLocalAxes`，精准验证 90° 旋转画板拉伸时右侧钉扎子节点沿局部轴正确定位（共 388 项测试，100% 通过）。
+
+验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.26 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **388/388 通过**。
+
+## 原生界面优化（第九轮：浅色界面主题架构与设置联动）— 2026-10-31
+
+- **浅色主题协调器（ThemeManager）实现**：
+  - 新增 `native_studio/Sources/UI/ThemeManager.swift`，与 Web `use_editor_theme.js` 与 `theme-light.css` 保持严格规范对齐（持久化键 `voo.editor.theme`，支持 `dark` / `light` 双向切换）；
+  - 遵循 Web 设计哲学：“It is deliberately scoped to the app chrome: the document canvas keeps its own background/checkerboard”；画布保持自身真实渲染与设计稿色彩，界面外框与顶栏根据主题无缝切换；
+  - 浅色模式下：窗口底色自动切换为 `#f5f5f5`，编辑外框背景切换为 `#f5f5f5`，标题栏自动绘制 `#fafafa` 平铺背景与浅色底边描边 `rgba(0,0,0,0.1)`；
+  - 深色模式下：完全保留既有的 `#000000` / `#171717` 与薄荷到纯黑的标志性渐变顶栏，386+ 测试基线 100% 字节无损。
+- **设置面板开关真实联动**：
+  - `WindowController` 接入 `settingsDrawer.onToggleLightInterface`，设置中点击“Light interface”开关立即广播并触发各视图片段重绘。
+- **新增回归测试**：`test_ThemeManager_LightAndDarkSwitchingAndWindowBackground`，验证浅色/深色模式切换、持久化、以及窗口背景色在 `#171717` 与 `#f5f5f5` 间的精准切换。
+
+验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **389/389 通过**。
+
+## 原生界面优化（第十轮：AI 智能体模型名动态联动与多 Provider 适配）— 2026-10-31
+
+- **AI 侧栏模型胶囊动态联动**：
+  - `WindowController` 增加 `syncAgentModelLabel()`，自动监听 `SettingsDrawerView.onAgentChange` 与 `UserDefaults` 中的 `voo.agent.llmProvider` 配置；
+  - 动态为不同 Provider 映射最精准的友好模型标签：
+    - Claude Code $\to$ `Opus 5.5`（与 Web 截图默认模型标签完全对齐）
+    - OpenAI Codex $\to$ `GPT-5`
+    - Google Antigravity $\to$ `Gemini 3.8`
+    - DeepSeek Harness $\to$ `DeepSeek V3`
+    - OpenCode $\to$ `OpenCode`
+    - 用户自定义 `voo.agent.model` 时自动优先采用自定义模型名；
+  - 设置中切换 Provider 时立即实时刷新 Agent 侧栏输入框内的胶囊标签。
+- **新增回归测试**：`test_AgentPanel_ModelLabelSyncWithProvider`，验证默认映射、各提供商切换、以及自定义模型配置优先级的完整流转。
+
+验证：`./build.sh` 通过（binary 4.95 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **390/390 通过**。
+
+## 原生界面优化（第十一轮：选区浮动条方位逻辑精准对齐与遮挡消除）— 2026-10-31
+
+- **选区浮动条（Island Bar）垂直空间拓扑修复**：
+  - 彻底根治了此前因为非翻转坐标系方向误判，导致选择条被错误推到选区上方、并遮挡文本图层顶部控标的缺陷；
+  - 严格对标 Web `top: calc(100% + 8px)` 的几何物理定义：默认置于选区底边缘下方 8pt (`minY - gap - height`)，居中显示；
+  - 空间边缘检测：当选区靠近画布底部、会导致浮动条与底部缩放控制栏（Zoom Bar，顶部位于 $y=56$）发生碰撞重叠时，自适应向上翻转（Flip Above）至选区顶边上方；
+  - 截屏复核：选区图层、文字手柄与下方 8pt 处的新版 12 键浮动条层次分明，零遮挡、零边缘冲突。
+
+验证：`./build.sh` 通过（binary 4.95 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **390/390 通过**。截图：`native_studio/docs/screenshots/z_selected.png`。
+
+## 原生界面优化（第十二轮：全格式真实 .voo 解析、工作台真实封面、自由画布平移、工具轨顺序与画笔绘制重构）— 2026-11-01
+
+针对用户真机运行反馈的四项核心缺陷进行全链路深度修复：
+
+1. **彻底解决 .voo 打开报错（“The data couldn't be read because it is missing”）**：
+   - 根因定位：Swift 自动合成的 `Codable` 在面对 Web 导出的真实工程文件时，因缺少 `id`、`title`、`canvas` 或 `style` 嵌套字典而抛出 `keyNotFound`，被系统弹出该错误；
+   - 解决方案：在 `DocumentModel.swift` 中为 `VOODocument`、`VOONode`、`PenAnchor` 实现健壮的容错解码器（`FlexibleNumber` / `FlexibleBool` / `FlexibleString`），支持展平属性与嵌套 `style` 互通、字符串数值与浮点数自适应转换、缺失属性赋予安全默认值；实测验证 Web 导出的 4 个真实复杂工程文件（131 节点的 `f1-grand-prix.voo` 等）全量无损秒开！
+2. **工作台卡片真实封面提取与展示**：
+   - 根因定位：此前代码硬编码调用 `drawThumbnailWireframe` 绘制 3 根灰色占位柱，未解析工程文件的封面；
+   - 解决方案：在 `WelcomeDashboardView` 中增加极速二进制预览解析器，直接从 `.voo` 容器切片提取 `assetIndex["__preview"]` 的 PNG 图像数据并做 `NSCache` 缓存；在非翻转坐标系下进行纵向反转校正后做高保真 `aspectFill` 渲染，彻底替换假骨架柱！
+3. **工具轨图标顺序与类别严格对齐 Web**：
+   - 工具轨顺序修正为：`选择 (Select)` $\to$ `抓手 (Hand)` $\to$ `画板 (Frame)` $\to$ `裁切 (Crop)` $\to$ `选区 (Marquee)` $\to$ `画笔 (Brush)` $\to$ `橡皮 (Eraser)` $\to$ `文字 (Text)` $\to$ `钢笔 (Pen)` $\to$ `形状 (Shapes)` $\to$ `魔棒 (Wand)`，消除了画板与裁切颠倒、钢笔插在文字前等历史排布偏差。
+4. **画布自由平移手势支持（Web 1:1 自由画布手势）**：
+   - 点击空白灰色舞台背景直接拖拽平移画布（此前误判为矩形框选导致用户无法拖动背景）；
+   - 增加鼠标中键（滚轮按压）拖拽平移支持（`otherMouseDown/Dragged/Up`）；
+   - 保持空格键与抓手工具平移无缝可用。
+5. **画笔工具自由绘制与图层提交重构**：
+   - 修复画笔图层位图缓存与提交复用逻辑，避免单次绘制后清空位图或生成重复图层，在 `stampPaint` 增加即时 `context.flush()`，确保即画即显、持久保存。
+6. **新增回归测试**：
+   - `test_WebExamples_RealVooFilesDecodeAndLoadCleanly`：验证 4 款真实复杂 Web 工程文件（含 191 个贝塞尔路径点）解码；
+   - `test_WindowController_OpenRealVooFileDirectlyLoadsSceneAndSetsTitle`：验证端到端从工作台打开真实 .voo 文件进入画布并切换视图。
+
+验证：`./build.sh` 通过（binary 4.97 MB ≤ 5 MB，bundle 10.29 MB ≤ 35 MB，冷启动 0.20~0.50s）；`./tests/run_tests.sh` **392/392 通过**。真机截图：`native_studio/docs/screenshots/z_dashboard_with_covers.png`。

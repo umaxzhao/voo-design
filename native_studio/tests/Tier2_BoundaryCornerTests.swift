@@ -457,9 +457,11 @@ public class Tier2_BoundaryCornerTests {
             try TestAssertions.assertEqual(rail.handleShortcutKey("B"), .brush)
         }
 
-        registry.register(tier: 2, feature: "F12-ToolRail", name: "test_F12_Boundary_ArtboardShortcutKeyA") {
+        registry.register(
+            tier: 2, feature: "F12-ToolRail", name: "test_F12_Boundary_ArtboardShortcutKeyF"
+        ) {
             let rail = ToolRailState()
-            try TestAssertions.assertEqual(rail.handleShortcutKey("a"), .artboard)
+            try TestAssertions.assertEqual(rail.handleShortcutKey("f"), .artboard)
         }
 
         // =====================================================================

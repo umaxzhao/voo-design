@@ -737,6 +737,7 @@ export default {
   "editor.view.clearGuides": "Clear guides",
   "editor.assets": "Assets",
   "editor.assets.empty": "No assets on this page",
+  "editor.layers.resizeWidth": "Resize layers panel",
   "editor.layers": "Layers",
   "editor.layer.expandGroup": "Expand group",
   "editor.layer.collapseGroup": "Collapse group",

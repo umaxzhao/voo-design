@@ -279,6 +279,24 @@ Grouped into focused pull request batches of at most 5 files per batch:
   4. `src/locales/zh-CN.json` / `src/locales/en-US.json` (Register corresponding localized dictionary keys)
 - **Objective:** Complete 100% i18n coverage across all properties panel controls per Spec `WB-02` criterion 3.
 
+## Welcome import and image references — 2026-10-31
+
+- Capability: `workspace.import-references`; suites: `welcome-import-references`, related `browser-drawer`, `pending-integration` and `ui-home-settings`.
+- Both desktop import cards and the compact welcome menu use the browser panel command. Screenshot selection appends a reference, preserves the brief and focuses the composer; it never creates a document or starts generation by itself.
+- Welcome and editor Agent composers share picker/clipboard attachment processing. Image-only submit uses localized recreation guidance. Images are passed as model visual references and remain outside canvas artwork; retries retain the request's references.
+- Regression: `welcome-import-references` uses a real Chromium clipboard image and text paste, verifies preview/removal and deferred creation, and intercepts the editor Agent HTTP request to assert a PNG data URL. No external model is called. `prompt-attachments.test.js` covers concurrent limits, duplicate clipboard representations, failed files, reset/unmount and ordinary text paste.
+- Precise release revision and execution: `/private/tmp/voo-welcome-import-release.json`; targeted browser log: `/private/tmp/voo-welcome-reference-clean.log`. Existing baseline failures remain separate; inspect receipts before claiming release success.
+- Remaining contexts: physical OS screenshot clipboard variants, signed Electron installers, other operating systems and live model quality. Document undo/save are unaffected by attaching references; generated result history remains owned by the existing Agent operation.
+
+## Layers panel width — 2026-10-31
+
+- Capability: `layers.panel-width`; core browser suite: `layers-panel-width`; related suites: `editor-layers-composition` and `ui-responsive-editor`.
+- A narrow separator on the layers panel edge adjusts its width without changing the canvas document, selection or undo history. The edge switches inward when panels swap sides. The shared width operation clamps to 200–560px and the actual space before the opposite inspector/history panel.
+- Pointer release and keyboard adjustments persist one local chrome preference. Escape, pointer cancellation, capture loss and blur roll back an active drag; double-click restores 256px. Narrow/mobile layouts retain their existing automatic widths and hide the separator; desktop width is restored when space returns.
+- Keyboard ownership: an additional selected-layer scenario initially moved the artwork by 1px; the separator now uses the existing floating-surface shortcut boundary, and the selected-layer scenario is retained in the browser suite. Initial evidence: `/private/tmp/voo-layer-width-selected.log`.
+- Reproduction: `/private/tmp/voo-layer-width-before.log` fails because the old panel has no edge handle. Browser assertions cover actual mouse drag, expanded long-name area, fixed opposite edge, left/right docking, Arrow/Home keyboard changes, limits, Escape, reset, refresh/new-document persistence, viewport transitions and serialized document invariance.
+- Evidence: `/private/tmp/voo-layer-width-clean.log`, `/private/tmp/voo-layers-width-release.json` (exact revision and executed steps), `/private/tmp/voo-layers-width-long-name.png`. Earlier dirty-workspace execution is not clean release evidence.
+- Remaining contexts: physical touch/stylus resizing, signed Electron builds, other operating systems, every inspector/history combination and large-tree performance. These are unverified; chrome preferences do not require artwork undo or export parity.
 
 ## Unified fill editor
 

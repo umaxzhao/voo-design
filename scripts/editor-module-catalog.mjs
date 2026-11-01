@@ -4,6 +4,9 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
+      "src/app_title_bar.jsx", "src/welcome_settings.css",
+      "src/canvas/components/use_prompt_attachments.js", "src/canvas/components/prompt_image_attachments.jsx",
+      "tests/unit/prompt-attachments.test.js",
       "tests/unit/collab_core.test.js", "tests/unit/webrtc_transport_coverage.test.js",
       "tests/unit/collab_session.test.js", "tests/unit/collab_share_secret.test.js",
       "src/App.jsx", "src/app_title_bar.jsx", "src/welcome_settings.css", "src/canvas/components/page_switcher.jsx",
@@ -13,10 +16,10 @@ export const EDITOR_MODULES = [
       "src/canvas/components/titlebar*",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.touch-file-open", "workspace.file-actions-ready","workspace.projects","workspace.cold-start-new","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
+    features: ["workspace.touch-file-open", "workspace.file-actions-ready", "workspace.projects", "workspace.cold-start-new", "workspace.covers", "workspace.assets", "workspace.templates", "workspace.settings-entry", "workspace.import-references"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
-      "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
+      "ui-home-settings", "welcome-import-references", "welcome-covers", "editor-resources", "editor-resources-built",
     ],
     remaining: ["Native OS picker behavior and physical touch devices require separate evidence."],
   },
@@ -105,6 +108,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/group-structure.js", "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",
       "src/canvas/editor/doc_ops_groups_helpers.js", "src/canvas/editor/reorder-layer-batch.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
+      "src/shared/settings.js", "tests/unit/editor_layers_width.test.js",
       "tests/unit/batch-layer-reorder.test.js", "tests/unit/layer-hierarchy-stack.test.js",
       "tests/unit/layer-order-contracts.test.js", "tests/e2e/layer-order-contract-checks.mjs",
       "tests/unit/container-command-boundaries.test.js", "tests/e2e/duplicate-frame-drag-checks.mjs",
@@ -112,9 +116,9 @@ export const EDITOR_MODULES = [
       "tests/unit/frame_fit_to_content.test.js", "tests/unit/reparent-moved-roots.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
-    features: ["layers.model-cache","layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
+    features: ["layers.model-cache", "layers.nesting", "layers.placement", "layers.reparent", "layers.duplicate-delete-lock", "layers.container-boundaries", "layers.panel-width"],
     suites: [
-      "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
+      "editor-layers-composition", "layers-panel-width", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
       "nested-placement", "nested-object-lifecycle", "container-command-boundaries",
     ],
     remaining: [
@@ -258,6 +262,9 @@ export const EDITOR_MODULES = [
     id: "platform",
     title: "Agent, runtime and platform integration",
     paths: [
+      "native_studio/Sources/*", "native_studio/tests/*", "native_studio/build.sh",
+      "native_studio/tests/NativeTitleBarDetailTests.swift", "native_studio/tests/NativeToolMenuParityTests.swift", "native_studio/tests/NativeToolRailResponsiveTests.swift", "native_studio/tests/NativeViewAidParityTests.swift", "native_studio/tests/NativeTextWidthTests.swift", "native_studio/tests/WorkspaceWatcherRegression.swift", "native_studio/tests/NativeEffectsImportRegression.swift", "native_studio/tests/NativeInspectorVisualTests.swift", "native_studio/tests/NativeWorkflowParityTests.swift",
+      "native_studio/Sources/UI/WindowController.swift", "native_studio/tests/main.swift", "native_studio/tests/run_tests.sh",
       "src/main.jsx",
       "tests/unit/collab_core.test.js", "tests/unit/webrtc_transport_coverage.test.js",
       "tests/unit/collab_session.test.js", "tests/unit/collab_share_secret.test.js",
@@ -286,7 +293,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
-      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.desktop-release", "platform.desktop-close", "platform.macos-signing",
+      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.desktop-release", "platform.desktop-close", "platform.macos-signing", "platform.native-view-aids", "platform.native-text-box", "platform.native-responsive-toolbar", "platform.native-workspace-watch", "platform.native-titlebar", "platform.native-chrome", "platform.native-paints", "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering", "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
