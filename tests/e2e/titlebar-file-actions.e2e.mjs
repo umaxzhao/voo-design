@@ -113,7 +113,8 @@ await withEditorBrowser(
     );
     const shareTrigger = bar.getByRole("button", { name: "Share", exact: true });
     await shareTrigger.click();
-    const shareDialog = bar.getByRole("dialog", { name: "Share", exact: true });
+    // Global popovers are portaled outside the title bar to stay above canvas.
+    const shareDialog = page.getByRole("dialog", { name: "Share", exact: true });
     await shareDialog.waitFor({ state: "visible" });
     const shareBounds = await shareDialog.boundingBox();
     assert.ok(shareBounds, "the share dialog should have a visible box");
