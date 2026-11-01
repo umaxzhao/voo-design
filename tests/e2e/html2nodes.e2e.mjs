@@ -18,7 +18,10 @@ const server = await startEditorBrowserServer();
 let browser;
 const report = [];
 try {
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  // Linux screenshots otherwise use LCD RGB subpixels, while an alpha Canvas2D
+  // uses grayscale antialiasing. Compare layout/paint in the same raster mode;
+  // keep the pixel threshold unchanged so real geometry/color regressions fail.
+  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-lcd-text'] });
   const page = await browser.newPage({ viewport: { width: 320, height: 200 }, deviceScaleFactor: 1 });
   await page.goto(`${server.origin}/tests/fixtures/html2nodes/flex.html`);
   for (const fixture of fixtures) {
