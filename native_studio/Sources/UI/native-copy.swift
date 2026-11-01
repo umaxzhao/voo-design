@@ -3,6 +3,13 @@ import Foundation
 /// Native UI copy uses the same persisted locale as the settings drawer.
 enum NativeCopy {
     enum Key: String {
+        case layersTab, assetsTab
+        case constraintLeft, constraintRight, constraintTop, constraintBottom, constraintCenter,
+            constraintScale, normalBlend
+        case designTab, prototypeTab, codeTab, prototypeUnavailable, addToLayer
+        case transformTitle, constraintsTitle, appearanceTitle, fillTitle, strokeTitle, effectsTitle
+        case horizontalTitle, verticalTitle, layerTitle, frameKind, textKind, groupKind, ellipseKind
+        case rectangleKind, pathKind, booleanKind, flipHorizontal, flipVertical
         case unsavedTitle, unsavedBody, save, cancel, discard, missingFile
         case collaborationUnavailable, brushSize, brushOpacity, brushColor
         case status, unsupportedImport, importTitle, searchLayers, noResults
@@ -18,6 +25,19 @@ enum NativeCopy {
         return (chinese ? zh : en)[key] ?? en[key]!
     }
     private static let en: [Key: String] = [
+        .layersTab: "Layers", .assetsTab: "Assets",
+        .constraintLeft: "Left", .constraintRight: "Right", .constraintTop: "Top",
+        .constraintBottom: "Bottom",
+        .constraintCenter: "Center", .constraintScale: "Scale", .normalBlend: "Normal",
+        .designTab: "Design", .prototypeTab: "Prototype", .codeTab: "Code",
+        .prototypeUnavailable: "Prototype interactions are not available in the native editor yet.",
+        .addToLayer: "+ Add", .transformTitle: "Transform", .constraintsTitle: "Constraints",
+        .appearanceTitle: "Appearance", .fillTitle: "Fill", .strokeTitle: "Stroke",
+        .effectsTitle: "Effects",
+        .horizontalTitle: "Horizontal", .verticalTitle: "Vertical", .layerTitle: "Layer",
+        .frameKind: "Frame", .textKind: "Text", .groupKind: "Group", .ellipseKind: "Ellipse",
+        .rectangleKind: "Rectangle", .pathKind: "Vector", .booleanKind: "Boolean",
+        .flipHorizontal: "Flip horizontally", .flipVertical: "Flip vertically",
         .addFill: "Add fill", .addStroke: "Add stroke",
         .editPaint: "Edit paint", .editEffects: "Edit effects",
         .paintEditFailed: "Paint edit failed: ",
@@ -39,6 +59,17 @@ enum NativeCopy {
         .unsupportedAccount: "Cloud sign-in is not available in the native editor yet.",
     ]
     private static let zh: [Key: String] = [
+        .layersTab: "图层", .assetsTab: "资源",
+        .constraintLeft: "左", .constraintRight: "右", .constraintTop: "上", .constraintBottom: "下",
+        .constraintCenter: "居中", .constraintScale: "缩放", .normalBlend: "正常",
+        .designTab: "设计", .prototypeTab: "原型", .codeTab: "代码",
+        .prototypeUnavailable: "原生编辑器暂未实现原型交互。",
+        .addToLayer: "+ 添加", .transformTitle: "变换", .constraintsTitle: "约束",
+        .appearanceTitle: "外观", .fillTitle: "填充", .strokeTitle: "描边", .effectsTitle: "效果",
+        .horizontalTitle: "水平", .verticalTitle: "垂直", .layerTitle: "图层",
+        .frameKind: "画框", .textKind: "文字", .groupKind: "组合", .ellipseKind: "椭圆",
+        .rectangleKind: "矩形", .pathKind: "矢量", .booleanKind: "布尔",
+        .flipHorizontal: "水平翻转", .flipVertical: "垂直翻转",
         .addFill: "添加填充", .addStroke: "添加描边",
         .editPaint: "编辑绘制层", .editEffects: "编辑效果", .paintEditFailed: "绘制层编辑失败：",
         .unsupportedEffects: "此效果格式已保留，暂不支持在这里编辑。", .addEffect: "添加效果",

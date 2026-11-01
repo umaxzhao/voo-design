@@ -160,6 +160,8 @@ public enum PropertiesGlyphFactory {
         case minus
         case plus
         case strokeAlign
+        case strokeInside, strokeCenter, strokeOutside, strokeWidth, cornerExpand, sliders, flipH,
+            flipV
         case strokeCap
         case strokeJoin
         case strokeDash
@@ -220,6 +222,12 @@ public enum PropertiesGlyphFactory {
             VooIconFactory.drawMinus(in: rect, color: color, strokeWidth: strokeWidth)
         case .plus:
             VooIconFactory.drawPlus(in: rect, color: color, strokeWidth: strokeWidth)
+        case .strokeInside, .strokeCenter, .strokeOutside, .strokeWidth, .cornerExpand, .sliders:
+            NativeInspectorGlyph.draw(kind, in: rect, color: color)
+        case .flipH:
+            VooIconFactory.draw(.flipH, in: rect, color: color, strokeWidth: strokeWidth)
+        case .flipV:
+            VooIconFactory.draw(.flipV, in: rect, color: color, strokeWidth: strokeWidth)
         case .strokeAlign:
             drawStrokeAlign(in: rect, color: color)
         case .strokeCap:
@@ -651,6 +659,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     public var suffix: String = "" {
         didSet { updateDisplay() }
     }
+    public var isBare = false { didSet { needsDisplay = true } }
     public var roundsToInteger: Bool = true
     public var minimumValue: CGFloat = -100_000
     public var maximumValue: CGFloat = 100_000
@@ -667,6 +676,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     public private(set) var value: CGFloat = 0
 
     private let labelField = NSTextField(labelWithString: "")
+    private let suffixField = NSTextField(labelWithString: "")
     private let valueField = NSTextField()
     private var isEditing = false
     private var isHovered = false
@@ -695,7 +705,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
 
         labelField.stringValue = labelText
         // Mono like the rest of the web card (`font-mono` on the aside).
-        labelField.font = ThemeFonts.mono(size: 9, weight: .medium)
+        labelField.font = ThemeFonts.mono(size: 11, weight: .regular)
         labelField.textColor = NSColor(hex: "8a8a8a")
         labelField.isBordered = false
         labelField.drawsBackground = false
@@ -704,7 +714,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         labelField.isHidden = labelText.isEmpty
         addSubview(labelField)
 
-        valueField.font = ThemeFonts.mono(size: 10, weight: .regular)
+        valueField.font = ThemeFonts.mono(size: 11, weight: .regular)
         valueField.textColor = NSColor(hex: "e5e5e5")
         valueField.isBordered = false
         valueField.drawsBackground = false
@@ -716,6 +726,10 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         valueField.target = self
         valueField.action = #selector(commitEditing)
         addSubview(valueField)
+        suffixField.font = ThemeFonts.mono(size: 10, weight: .regular)
+        suffixField.textColor = NSColor(hex: "a3a3a3")
+        suffixField.alignment = .right
+        addSubview(suffixField)
 
         updateDisplay()
     }
@@ -737,8 +751,11 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
 
     private func updateDisplay() {
         guard !isEditing else { return }
-        valueField.stringValue = formatted(value)
-        setAccessibilityValue(valueField.stringValue)
+        valueField.stringValue = PropertiesColorMath.formatNumber(value, integer: roundsToInteger)
+        suffixField.stringValue = suffix
+        suffixField.isHidden = suffix.isEmpty
+        needsLayout = true
+        setAccessibilityValue(formatted(value))
         invalidateIntrinsicContentSize()
     }
 
@@ -762,39 +779,44 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         if labelText.isEmpty || leadingGlyph != nil {
             labelSpace = 0
         } else {
-            labelSpace = labelText.count >= 2 ? 17 : 9
+            labelSpace = labelText.count >= 2 ? 19 : 11
         }
         // One baseline shared by the inline prefix and the value. Both fields
         // are sized to exactly their line height, so their text is top-aligned
         // inside the frame and the baseline math is exact (a plain "centre each
         // font box" placement left the small prefix ~1pt above the value).
-        let valueFont = ThemeFonts.mono(size: 10, weight: .regular)
+        let valueFont = ThemeFonts.mono(size: 11, weight: .regular)
         let valueLineHeight = ceil(valueFont.ascender - valueFont.descender)
         let valueY = round((bounds.height - valueLineHeight) / 2.0)
         let baselineFromBottom = valueY + valueLineHeight - valueFont.ascender
 
-        let labelFont = ThemeFonts.mono(size: 9, weight: .medium)
+        let labelFont = ThemeFonts.mono(size: 11, weight: .regular)
         let labelLineHeight = ceil(labelFont.ascender - labelFont.descender)
         let labelY = round(baselineFromBottom - labelLineHeight + labelFont.ascender)
 
-        labelField.frame = CGRect(x: 7 + glyphSpace, y: labelY,
-                                  width: max(labelSpace, 1), height: labelLineHeight)
+        labelField.frame = CGRect(
+            x: 10 + glyphSpace, y: labelY,
+            width: max(labelSpace, 1), height: labelLineHeight)
         labelField.isHidden = labelText.isEmpty || leadingGlyph != nil
-        let textX = 7 + glyphSpace + labelSpace + 2
+        let textX: CGFloat =
+            isBare && labelText.isEmpty && leadingGlyph == nil
+            ? 0 : 10 + glyphSpace + labelSpace + 4
         valueField.frame = CGRect(x: textX, y: valueY,
-                                  width: max(bounds.width - textX - 4, 8), height: valueLineHeight)
+            width: max(bounds.width - textX - (suffix.isEmpty ? 8 : (isBare ? 12 : 24)), 8),
+            height: valueLineHeight)
+        suffixField.frame = CGRect(
+            x: max(bounds.width - (isBare ? 10 : 25), 0), y: valueY, width: isBare ? 8 : 17,
+            height: valueLineHeight)
     }
 
     // MARK: Drawing
 
     public override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
-                                xRadius: 8, yRadius: 8)
-        (isHovered || isEditing ? NSColor(hex: "1f1f1f") : NSColor(hex: "171717")).setFill()
-        path.fill()
-        NSColor(white: 1.0, alpha: 0.05).setStroke()
-        path.lineWidth = 1
-        path.stroke()
+        if !isBare {
+            let path = NSBezierPath(roundedRect: bounds, xRadius: 12, yRadius: 12)
+            (isHovered || isEditing ? NSColor(hex: "303030") : NSColor(hex: "262626")).setFill()
+            path.fill()
+        }
 
         if let glyph = leadingGlyph {
             PropertiesGlyphFactory.draw(kind: glyph,
@@ -1113,6 +1135,7 @@ public final class PropertiesIconButton: NSButton {
     public var iconPadding: CGFloat = -1 { didSet { needsDisplay = true } }
     /// Draws a round white/8 hover wash (header icon buttons per UI spec p4 radius-full).
     public var showsHoverBackground: Bool = false
+    public var showsOutline: Bool = false
 
     private var isHovered = false
 
@@ -1135,6 +1158,13 @@ public final class PropertiesIconButton: NSButton {
     }
 
     public override func draw(_ dirtyRect: NSRect) {
+        if showsOutline {
+            let outline = NSBezierPath(
+                roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 12, yRadius: 12)
+            NSColor(white: 1, alpha: 0.12).setStroke()
+            outline.lineWidth = 1
+            outline.stroke()
+        }
         if isHovered {
             NSColor(white: 1.0, alpha: 0.08).setFill()
             if showsHoverBackground {
@@ -1195,7 +1225,8 @@ public final class PropertiesBlendModeButton: NSButton {
     }
 
     private var displayTitle: String {
-        items.first(where: { $0.value == selectedValue })?.title ?? placeholderTitle
+        if selectedValue == "source-over" { return NativeCopy.text(.normalBlend) }
+        return items.first(where: { $0.value == selectedValue })?.title ?? placeholderTitle
     }
 
     public init() {
@@ -1230,14 +1261,14 @@ public final class PropertiesBlendModeButton: NSButton {
 
     public override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
-                                xRadius: 8, yRadius: 8)
-        (isHovered ? NSColor(hex: "1f1f1f") : NSColor(hex: "171717")).setFill()
+            xRadius: 12, yRadius: 12)
+        (isHovered ? NSColor(hex: "262626") : NSColor(hex: "171717")).setFill()
         path.fill()
-        NSColor(white: 1.0, alpha: 0.05).setStroke()
+        NSColor(white: 1.0, alpha: 0.12).setStroke()
         path.lineWidth = 1
         path.stroke()
 
-        let font = ThemeFonts.mono(size: 10, weight: .medium)
+        let font = ThemeFonts.mono(size: 11, weight: .regular)
         let lineHeight = ceil(font.ascender - font.descender)
         let textRect = CGRect(x: 10, y: round((bounds.height - lineHeight) / 2),
                               width: max(bounds.width - 34, 10), height: lineHeight)
@@ -1561,6 +1592,12 @@ public final class PropertiesTypographyMenuButton: NSButton {
 // MARK: - Properties Segmented Control
 
 public final class PropertiesSegmentedControl: NSView {
+    public var isTabBar = false {
+        didSet {
+            layer?.cornerRadius = isTabBar ? 16 : 12
+            needsDisplay = true
+        }
+    }
     public struct Segment {
         public var title: String
         public var icon: PropertiesGlyphFactory.Kind?
@@ -1624,27 +1661,30 @@ public final class PropertiesSegmentedControl: NSView {
 
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        ctx.setFillColor(NSColor(hex: "1a1a1a").cgColor)
-        ctx.fill(bounds)
-
+        let inset: CGFloat = isTabBar ? 4 : 2
+        let radius: CGFloat = isTabBar ? 16 : 12
+        let track = CGPath(
+            roundedRect: bounds, cornerWidth: radius, cornerHeight: radius, transform: nil)
+        ctx.setFillColor(NSColor(hex: isTabBar ? "111111" : "171717").cgColor)
+        ctx.addPath(track)
+        ctx.fillPath()
         guard !segments.isEmpty else { return }
-        let segmentWidth = bounds.width / CGFloat(segments.count)
-
-        let selectedRect = CGRect(x: CGFloat(selectedIndex) * segmentWidth + 1,
-                                  y: 1,
-                                  width: segmentWidth - 2,
-                                  height: bounds.height - 2)
-        let selectedPath = CGPath(roundedRect: selectedRect, cornerWidth: 7, cornerHeight: 7, transform: nil)
-        ctx.setFillColor(NSColor(hex: "333333").cgColor)
+        let segmentWidth = (bounds.width - inset * 2) / CGFloat(segments.count)
+        let selectedRect = CGRect(
+            x: inset + CGFloat(selectedIndex) * segmentWidth,
+            y: inset, width: segmentWidth,
+            height: bounds.height - inset * 2)
+        let selectedPath = CGPath(
+            roundedRect: selectedRect, cornerWidth: isTabBar ? 12 : 10,
+            cornerHeight: isTabBar ? 12 : 10, transform: nil)
+        ctx.setFillColor(NSColor(hex: isTabBar ? "303030" : "404040").cgColor)
         ctx.addPath(selectedPath)
         ctx.fillPath()
 
-        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.1).cgColor)
-        ctx.setLineWidth(1)
-        ctx.stroke(bounds.insetBy(dx: 0.5, dy: 0.5))
-
         for (i, seg) in segments.enumerated() {
-            let segRect = CGRect(x: CGFloat(i) * segmentWidth, y: 0, width: segmentWidth, height: bounds.height)
+            let segRect = CGRect(
+                x: inset + CGFloat(i) * segmentWidth, y: 0, width: segmentWidth,
+                height: bounds.height)
             let isSelected = (i == selectedIndex)
             let textColor = isSelected ? NSColor.white : NSColor(hex: "a3a3a3")
 
@@ -1659,7 +1699,8 @@ public final class PropertiesSegmentedControl: NSView {
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.alignment = .center
                 let attrs: [NSAttributedString.Key: Any] = [
-                    .font: ThemeFonts.mono(size: 10, weight: isSelected ? .medium : .regular),
+                    .font: ThemeFonts.mono(
+                        size: 10, weight: isTabBar ? .regular : (isSelected ? .medium : .regular)),
                     .foregroundColor: textColor,
                     .paragraphStyle: paragraphStyle
                 ]
@@ -1907,7 +1948,7 @@ public final class PropertiesColorSwatchButton: NSButton {
 
     public override func draw(_ dirtyRect: NSRect) {
         let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
+        let path = NSBezierPath(ovalIn: rect)
         if showsNoneFace {
             NSColor(white: 0.16, alpha: 1).setFill()
             path.fill()
@@ -1944,6 +1985,7 @@ public final class PropertiesPanelView: NSView {
     public var onOpacityChange: ((CGFloat) -> Void)?
     public var onBlendModeChange: ((String) -> Void)?
     public var onCornerRadiusChange: ((CGFloat) -> Void)?
+    public var onFlipRequest: ((Bool) -> Void)?
     public var onGeometryChange: ((_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat, _ cr: CGFloat?) -> Void)?
     /// Text-layer typography (only surfaced for `NodeKind.text` selections).
     public var onFontFamilyChange: ((String) -> Void)?
@@ -2074,9 +2116,9 @@ public final class PropertiesPanelView: NSView {
     public let dashLengthPill = PropertiesNumberPill(label: "DL")
     public let dashGapPill = PropertiesNumberPill(label: "DG")
     public let strokeAlignControl = PropertiesSegmentedControl(segments: [
-        .init(title: "Center", value: "center"),
-        .init(title: "Inside", value: "inside"),
-        .init(title: "Outside", value: "outside")
+        .init(title: "Inside", icon: .strokeInside, value: "inside"),
+        .init(title: "Center", icon: .strokeCenter, value: "center"),
+        .init(title: "Outside", icon: .strokeOutside, value: "outside"),
     ])
     public let opacityPill = PropertiesNumberPill(label: "")
     public let blendButton = PropertiesBlendModeButton()
@@ -2105,12 +2147,19 @@ public final class PropertiesPanelView: NSView {
 
     // Header
     private let codePanel = NativeCodePanel(frame: .zero)
+    private let prototypeMessage = NSTextField(
+        wrappingLabelWithString: NativeCopy.text(.prototypeUnavailable))
+    private let addToLayerButton = NativeInspectorAddButton()
+    private let flipHorizontalButton = PropertiesIconButton(kind: .flipH, style: .plain)
+    private let flipVerticalButton = PropertiesIconButton(kind: .flipV, style: .plain)
+    private var dimensionSurfaceRect: CGRect = .zero
     private var designVisibility: [ObjectIdentifier: Bool] = [:]
     public var onSwapPanels: (() -> Void)?
     public var onPresentationChange: (() -> Void)?
     public let headerTabs = PropertiesSegmentedControl(segments: [
-        .init(title: "Design", value: "design"),
-        .init(title: "Code", value: "code")
+        .init(title: NativeCopy.text(.designTab), value: "design"),
+        .init(title: NativeCopy.text(.prototypeTab), value: "prototype"),
+        .init(title: NativeCopy.text(.codeTab), value: "code"),
     ])
     private let identityName = NSTextField(labelWithString: "")
     private let identityKind = NSTextField(labelWithString: "")
@@ -2123,7 +2172,7 @@ public final class PropertiesPanelView: NSView {
 
     // CONSTRAINTS
     private let constraintsLabel = NSTextField(labelWithString: "")
-    private let constraintsDiagramButton = PropertiesIconButton(kind: .constraints, style: .plain)
+    private let constraintsDiagramButton = NativeConstraintsDiagramView()
     private let hConstraintLabel = NSTextField(labelWithString: "")
     private let vConstraintLabel = NSTextField(labelWithString: "")
     public let hConstraintDropdown = PropertiesBlendModeButton()
@@ -2630,7 +2679,7 @@ public final class PropertiesPanelView: NSView {
         opacityPill.minimumValue = 0
         opacityPill.maximumValue = 100
         opacityPill.scrubUnitsPerPoint = 0.5
-        opacityPill.valueAlignment = .center
+        opacityPill.valueAlignment = .left
         opacityPill.suffix = "%"
         opacityPill.setAccessibilityIdentifier("Inspector.Properties.Opacity")
         opacityPill.setAccessibilityLabel("Opacity")
@@ -2756,17 +2805,26 @@ public final class PropertiesPanelView: NSView {
         headerTabs.setAccessibilityLabel("Design or code")
         codePanel.isHidden = true
         addSubview(codePanel)
-        headerTabs.onSelectionChanged = { [weak self] _, value in self?.setCodeMode(value == "code")
+        headerTabs.isTabBar = true
+        prototypeMessage.font = NSFont.systemFont(ofSize: 11)
+        prototypeMessage.textColor = NSColor(hex: "a3a3a3")
+        prototypeMessage.isHidden = true
+        addSubview(prototypeMessage)
+        addToLayerButton.title = NativeCopy.text(.addToLayer)
+        addToLayerButton.setAccessibilityIdentifier("Inspector.Properties.AddToLayer")
+        addToLayerButton.onClick = { [weak self] in self?.showLayerAddMenu() }
+        addSubview(addToLayerButton)
+        headerTabs.onSelectionChanged = { [weak self] _, value in
+            self?.setCodeMode(value != "design")
         }
         headerTabs.select(index: 0)
         addSubview(headerTabs)
 
-        applyAttributedLabel(identityName, text: "FILL", size: 11, weight: .semibold,
-                             color: NSColor.white, kern: 0.2)
+        applyMonoLabel(identityName, size: 10, color: NSColor(hex: "e5e5e5"))
         identityName.lineBreakMode = .byTruncatingTail
+        identityName.font = ThemeFonts.mono(size: 10, weight: .regular)
         addSubview(identityName)
-        applyAttributedLabel(identityKind, text: "RECTANGLE", size: 9, weight: .medium,
-                             color: NSColor(hex: "737373"), kern: 1.1)
+        applyMonoLabel(identityKind, size: 9, color: NSColor(hex: "737373"))
         addSubview(identityKind)
 
         selectOnlyButton.iconPadding = 3.5
@@ -2794,6 +2852,7 @@ public final class PropertiesPanelView: NSView {
         rotateCcwButton.action = #selector(didClickRotateCCW)
         transformContainer.addSubview(rotateCcwButton)
 
+        rotateCwButton.showsOutline = true
         rotateCwButton.iconPadding = 7
         rotateCwButton.iconColor = NSColor(hex: "a3a3a3")
         rotateCwButton.setAccessibilityIdentifier("Inspector.Properties.RotateCW")
@@ -2801,26 +2860,51 @@ public final class PropertiesPanelView: NSView {
         rotateCwButton.target = self
         rotateCwButton.action = #selector(didClickRotateCW)
         transformContainer.addSubview(rotateCwButton)
+        for (button, horizontal) in [(flipHorizontalButton, true), (flipVerticalButton, false)] {
+            button.showsOutline = true
+            button.iconPadding = 7
+            button.iconColor = NSColor(hex: "a3a3a3")
+            button.setAccessibilityIdentifier(
+                horizontal ? "Inspector.Properties.FlipH" : "Inspector.Properties.FlipV")
+            button.setAccessibilityLabel(
+                NativeCopy.text(horizontal ? .flipHorizontal : .flipVertical))
+            button.target = self
+            button.action = horizontal ? #selector(didClickFlipH) : #selector(didClickFlipV)
+            transformContainer.addSubview(button)
+        }
+        rPill.suffix = "°"
+        sPill.suffix = "°"
+        wPill.isBare = true
+        hPill.isBare = true
+        fillOpacityPill.isBare = true
+        strokeOpacityPill.isBare = true
+        strokeWidthPill.leadingGlyph = .strokeWidth
 
         // CONSTRAINTS -------------------------------------------------------
         applyAttributedLabel(constraintsLabel, text: "CONSTRAINTS", size: 9, weight: .medium,
                              color: NSColor(hex: "a3a3a3"), kern: 1.26)
         addSubview(constraintsLabel)
 
-        constraintsDiagramButton.iconPadding = 8
-        constraintsDiagramButton.iconColor = NSColor(hex: "a3a3a3")
-        constraintsDiagramButton.showsHoverBackground = true
+        constraintsDiagramButton.onPinChange = { [weak self] horizontal, vertical in
+            guard let self else { return }
+            if let horizontal { self.currentConstraintHorizontal = horizontal }
+            if let vertical { self.currentConstraintVertical = vertical }
+            self.hConstraintDropdown.select(value: self.currentConstraintHorizontal)
+            self.vConstraintDropdown.select(value: self.currentConstraintVertical)
+            self.onConstraintsChange?(
+                self.currentConstraintHorizontal, self.currentConstraintVertical)
+        }
         constraintsDiagramButton.setAccessibilityIdentifier("Inspector.Properties.ConstraintsDiagram")
         constraintsDiagramButton.setAccessibilityLabel("Constraints")
         addSubview(constraintsDiagramButton)
 
         applyAttributedLabel(hConstraintLabel, text: "HORIZONTAL", size: 9, weight: .medium,
                              color: NSColor(hex: "a3a3a3"), kern: 0.9)
-        hConstraintLabel.alignment = .right
+        hConstraintLabel.alignment = .left
         addSubview(hConstraintLabel)
         applyAttributedLabel(vConstraintLabel, text: "VERTICAL", size: 9, weight: .medium,
                              color: NSColor(hex: "a3a3a3"), kern: 0.9)
-        vConstraintLabel.alignment = .right
+        vConstraintLabel.alignment = .left
         addSubview(vConstraintLabel)
 
         hConstraintDropdown.setItems([("Left", "left"), ("Center", "center"),
@@ -2832,6 +2916,7 @@ public final class PropertiesPanelView: NSView {
         hConstraintDropdown.onValueChange = { [weak self] value in
             guard let self = self else { return }
             self.currentConstraintHorizontal = value
+            self.constraintsDiagramButton.horizontal = value
             self.hConstraintDropdown.select(value: value)
             self.onConstraintsChange?(self.currentConstraintHorizontal, self.currentConstraintVertical)
         }
@@ -2846,6 +2931,7 @@ public final class PropertiesPanelView: NSView {
         vConstraintDropdown.onValueChange = { [weak self] value in
             guard let self = self else { return }
             self.currentConstraintVertical = value
+            self.constraintsDiagramButton.vertical = value
             self.vConstraintDropdown.select(value: value)
             self.onConstraintsChange?(self.currentConstraintHorizontal, self.currentConstraintVertical)
         }
@@ -2856,7 +2942,7 @@ public final class PropertiesPanelView: NSView {
                              color: NSColor(hex: "a3a3a3"), kern: 1.26)
         addSubview(fillLabel)
 
-        fillAddButton.iconPadding = 4
+        fillAddButton.iconPadding = 6
         fillAddButton.iconColor = NSColor(hex: "a3a3a3")
         fillAddButton.setAccessibilityIdentifier("Inspector.Properties.FillAdd")
         fillAddButton.setAccessibilityLabel(NativeCopy.text(.addFill))
@@ -2892,7 +2978,7 @@ public final class PropertiesPanelView: NSView {
                              color: NSColor(hex: "a3a3a3"), kern: 1.26)
         addSubview(strokeLabel)
 
-        strokeAddButton.iconPadding = 4
+        strokeAddButton.iconPadding = 6
         strokeAddButton.iconColor = NSColor(hex: "a3a3a3")
         strokeAddButton.setAccessibilityIdentifier("Inspector.Properties.StrokeAdd")
         strokeAddButton.setAccessibilityLabel(NativeCopy.text(.addStroke))
@@ -2945,7 +3031,8 @@ public final class PropertiesPanelView: NSView {
         strokeJoinButton.action = #selector(didClickStrokeJoin)
         addSubview(strokeJoinButton)
 
-        strokeDashButton.iconPadding = 4
+        strokeDashButton.iconKind = .sliders
+        strokeDashButton.iconPadding = 7.5
         strokeDashButton.iconColor = NSColor(hex: "a3a3a3")
         strokeDashButton.setAccessibilityIdentifier("Inspector.Properties.StrokeDash")
         strokeDashButton.target = self
@@ -3082,7 +3169,7 @@ public final class PropertiesPanelView: NSView {
         currentCornerRadii = node.cornerRadii ?? CornerRadii(uniform: 0)
         isCornerRadiiLinked = currentCornerRadii.isUniform
         currentCornerRadius = currentCornerRadii.uniformRadius
-        crLinkButton.iconKind = isCornerRadiiLinked ? .link : .unlink
+        crLinkButton.iconKind = .cornerExpand
 
         xPill.setValue(currentX)
         yPill.setValue(currentY)
@@ -3223,20 +3310,23 @@ public final class PropertiesPanelView: NSView {
         innerShadowXPill.setValue(CGFloat(innerShadow?.offsetX ?? 0))
         innerShadowYPill.setValue(CGFloat(innerShadow?.offsetY ?? 0))
 
+        refreshInspectorCopy()
         showsShape = isShapeLike(node.kind)
         showsText = node.kind == .text
         showsFrameBlock = (node.kind == .frame)
         let constraints = node.constraints ?? NodeConstraints()
         currentConstraintHorizontal = constraints.horizontal
         currentConstraintVertical = constraints.vertical
+        constraintsDiagramButton.horizontal = constraints.horizontal
+        constraintsDiagramButton.vertical = constraints.vertical
         hConstraintDropdown.select(value: constraints.horizontal)
         vConstraintDropdown.select(value: constraints.vertical)
         updateIdentityRow(for: node)
         updatePaintRows()
         radiusPill.suffix = "px"
-        radiusPill.valueAlignment = .right
+        radiusPill.valueAlignment = .left
         applySectionVisibility()
-        if headerTabs.selectedIndex == 1 { setCodeMode(true) }
+        if headerTabs.selectedIndex != 0 { setCodeMode(true) }
         needsLayout = true
         layoutSubtreeIfNeeded()
         needsDisplay = true
@@ -3250,7 +3340,7 @@ public final class PropertiesPanelView: NSView {
         showsShape = false
         showsText = false
         showsFrameBlock = false
-        identityName.stringValue = "LAYER"
+        identityName.stringValue = NativeCopy.text(.layerTitle)
         identityKind.stringValue = "—"
         frameSizeValue.stringValue = ""
         frameHexField.stringValue = ""
@@ -3264,7 +3354,7 @@ public final class PropertiesPanelView: NSView {
         isAspectLocked = false
         isCornerRadiiLinked = true
         lockRatioButton.iconKind = .unlink
-        crLinkButton.iconKind = .link
+        crLinkButton.iconKind = .cornerExpand
         xPill.setValue(0); yPill.setValue(0); wPill.setValue(0); hPill.setValue(0)
         rPill.setValue(0); crPill.setValue(0); radiusPill.setValue(0)
         tlPill.setValue(0); trPill.setValue(0); brPill.setValue(0); blPill.setValue(0)
@@ -3358,17 +3448,17 @@ public final class PropertiesPanelView: NSView {
     /// Identity row: kind glyph + CAPS layer name + kind label.
     private func updateIdentityRow(for node: VOONode) {
         let name = node.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        identityName.stringValue = (name.isEmpty ? "LAYER" : name).uppercased()
+        identityName.stringValue = name.isEmpty ? NativeCopy.text(.layerTitle) : name
         let kind: String
         switch node.kind {
-        case .frame: kind = "FRAME"
-        case .text: kind = "TEXT"
-        case .group: kind = "GROUP"
-        case .ellipse: kind = "ELLIPSE"
-        case .rect: kind = "RECTANGLE"
-        case .path: kind = "PATH"
-        case .boolean: kind = "BOOLEAN"
-        default: kind = "LAYER"
+        case .frame: kind = NativeCopy.text(.frameKind)
+        case .text: kind = NativeCopy.text(.textKind)
+        case .group: kind = NativeCopy.text(.groupKind)
+        case .ellipse: kind = NativeCopy.text(.ellipseKind)
+        case .rect: kind = NativeCopy.text(.rectangleKind)
+        case .path: kind = NativeCopy.text(.pathKind)
+        case .boolean: kind = NativeCopy.text(.booleanKind)
+        default: kind = NativeCopy.text(.layerTitle)
         }
         identityKind.stringValue = kind
         switch node.kind {
@@ -3400,17 +3490,8 @@ public final class PropertiesPanelView: NSView {
         strokeRowHex.stringValue = stroke
         strokeOpacityPill.setValue(round((node?.style.strokeOpacity ?? 1) * 100))
         let fillPaint = node?.nativePaints(.fill).first
-        let hasFill =
-            fillPaint.map { paint in
-                PropertiesColorMath.isVisiblePaint(paint.value(.fill) ?? "transparent")
-                    || paint.properties["imageId"] != nil
-            } ?? false
-        fillAddButton.isHidden = hasFill
-        let hasStroke =
-            PropertiesColorMath.isVisiblePaint(
-                node?.nativePaints(.stroke).first?.value(.stroke) ?? "none")
-            && currentStrokeWidth > 0
-        strokeAddButton.isHidden = hasStroke
+        fillAddButton.isHidden = false
+        strokeAddButton.isHidden = false
         fillRowToggle.iconKind = fillPaint?.isVisible == false ? .eyeOff : .eye
         strokeRowToggle.iconKind =
             node?.portableProperties["strokeHidden"] == .bool(true) ? .eyeOff : .eye
@@ -3632,7 +3713,7 @@ public final class PropertiesPanelView: NSView {
 
     @objc private func didClickCornerRadiiLink() {
         isCornerRadiiLinked.toggle()
-        crLinkButton.iconKind = isCornerRadiiLinked ? .link : .unlink
+        crLinkButton.iconKind = .cornerExpand
         crPill.isHidden = !isCornerRadiiLinked
         tlPill.isHidden = isCornerRadiiLinked
         trPill.isHidden = isCornerRadiiLinked
@@ -4018,6 +4099,60 @@ public final class PropertiesPanelView: NSView {
 
     @objc private func didClickRotateCCW() { rotateSelection(by: -90) }
     @objc private func didClickRotateCW() { rotateSelection(by: 90) }
+    @objc private func didClickFlipH() { onFlipRequest?(true) }
+    @objc private func didClickFlipV() { onFlipRequest?(false) }
+
+    private func showLayerAddMenu() {
+        let menu = NSMenu()
+        for (key, action) in [
+            (NativeCopy.Key.addFill, #selector(didAddFill)), (.addStroke, #selector(didAddStroke)),
+        ] {
+            let item = NSMenuItem(title: NativeCopy.text(key), action: action, keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        }
+        let effects = NSMenuItem(title: NativeCopy.text(.addEffect), action: nil, keyEquivalent: "")
+        effects.submenu = makeEffectsMenu()
+        menu.addItem(effects)
+        menu.popUp(
+            positioning: nil, at: NSPoint(x: 0, y: addToLayerButton.bounds.maxY),
+            in: addToLayerButton)
+    }
+
+    private func refreshInspectorCopy() {
+        for (label, key) in [
+            (transformLabel, NativeCopy.Key.transformTitle),
+            (constraintsLabel, .constraintsTitle), (appearanceLabel, .appearanceTitle),
+            (textLabel, .textKind), (fillLabel, .fillTitle), (strokeLabel, .strokeTitle),
+            (effectsLabel, .effectsTitle),
+        ] {
+            label.attributedStringValue = NSAttributedString(
+                string: NativeCopy.text(key),
+                attributes: [
+                    .font: NSFont.systemFont(ofSize: 11, weight: .medium),
+                    .foregroundColor: NSColor(hex: "a3a3a3"),
+                ])
+        }
+        applyMonoLabel(hConstraintLabel, size: 10, color: NSColor(hex: "737373"))
+        applyMonoLabel(vConstraintLabel, size: 10, color: NSColor(hex: "737373"))
+        hConstraintLabel.stringValue = NativeCopy.text(.horizontalTitle)
+        vConstraintLabel.stringValue = NativeCopy.text(.verticalTitle)
+        hConstraintDropdown.setItems([
+            (NativeCopy.text(.constraintLeft), "left"),
+            (NativeCopy.text(.constraintCenter), "center"),
+            (NativeCopy.text(.constraintRight), "right"),
+            (NativeCopy.text(.constraintScale), "scale"),
+        ])
+        vConstraintDropdown.setItems([
+            (NativeCopy.text(.constraintTop), "top"),
+            (NativeCopy.text(.constraintCenter), "middle"),
+            (NativeCopy.text(.constraintBottom), "bottom"),
+            (NativeCopy.text(.constraintScale), "scale"),
+        ])
+        if blendButton.selectedValue == "source-over" {
+            blendButton.placeholderTitle = NativeCopy.text(.normalBlend)
+        }
+    }
 
     @objc private func didClickStrokeAlign() {
         presentStrokeMenu(options: [("Center", "center"), ("Inside", "inside"), ("Outside", "outside")],
@@ -4102,38 +4237,40 @@ public final class PropertiesPanelView: NSView {
 
     // MARK: Layout
 
-    /// Vertical rhythm of the rebuilt web inspector: 28pt fields, 9pt section
-    /// labels, 12pt above/below every 1px divider.
+    /// Current Electron inspector: 32pt fields, 16pt section labels, and 12pt section insets.
     private enum Row {
-        static let inset: CGFloat = 12
+        static let inset: CGFloat = 15
         static let gap: CGFloat = 8
-        static let rowH: CGFloat = 28
-        static let labelH: CGFloat = 11
-        static let sectionGap: CGFloat = 7
-        static let fieldRadius: CGFloat = 8
-        static let surfaceHex = "171717"
+        static let rowH: CGFloat = 32
+        static let labelH: CGFloat = 16
+        static let sectionGap: CGFloat = 12
+        static let fieldRadius: CGFloat = 12
+        static let surfaceHex = "262626"
     }
 
     private func setCodeMode(_ enabled: Bool) {
         if enabled {
-            if codePanel.isHidden {
+            if codePanel.isHidden && prototypeMessage.isHidden {
                 designVisibility = Dictionary(
                     uniqueKeysWithValues: subviews.map { (ObjectIdentifier($0), $0.isHidden) })
             }
-            for view in subviews where view !== headerTabs && view !== codePanel {
+            for view in subviews
+            where view !== headerTabs && view !== codePanel && view !== prototypeMessage {
                 view.isHidden = true
             }
-            codePanel.isHidden = false
+            prototypeMessage.isHidden = headerTabs.selectedIndex != 1
+            codePanel.isHidden = headerTabs.selectedIndex != 2
             if let node {
                 codePanel.code.string = NativeInspectCode.snippet(for: node)
             } else {
                 codePanel.code.string = NativeCopy.text(.codeEmpty)
             }
-        } else if !codePanel.isHidden {
+        } else if !codePanel.isHidden || !prototypeMessage.isHidden {
             for view in subviews {
                 view.isHidden = designVisibility[ObjectIdentifier(view)] ?? view.isHidden
             }
             codePanel.isHidden = true
+            prototypeMessage.isHidden = true
             applySectionVisibility()
         }
         needsLayout = true
@@ -4144,14 +4281,18 @@ public final class PropertiesPanelView: NSView {
 
     public override func layout() {
         super.layout()
-        if headerTabs.selectedIndex == 1 {
-            for view in subviews where view !== headerTabs && view !== codePanel {
+        if headerTabs.selectedIndex != 0 {
+            for view in subviews
+            where view !== headerTabs && view !== codePanel && view !== prototypeMessage {
                 view.isHidden = true
             }
-            codePanel.isHidden = false
-            headerTabs.frame = CGRect(x: 12, y: 12, width: max(bounds.width - 60, 0), height: 28)
+            codePanel.isHidden = headerTabs.selectedIndex != 2
+            prototypeMessage.isHidden = headerTabs.selectedIndex != 1
+            headerTabs.frame = CGRect(x: 12, y: 12, width: max(bounds.width - 64, 0), height: 40)
             codePanel.frame = CGRect(x: 12, y: 52, width: max(bounds.width - 24, 0), height: 400)
-            contentHeight = 464
+            prototypeMessage.frame = CGRect(
+                x: 16, y: 72, width: max(bounds.width - 32, 0), height: 60)
+            contentHeight = headerTabs.selectedIndex == 2 ? 464 : 156
             return
         }
 
@@ -4170,56 +4311,75 @@ public final class PropertiesPanelView: NSView {
         func closeSection(_ bottom: CGFloat) -> CGFloat {
             let dividerY = bottom + Row.sectionGap
             dividerYs.append(dividerY)
-            return dividerY + Row.sectionGap
+            // Web section rhythm: 12pt below content, then 7pt to the next header.
+            return dividerY + 7
         }
 
-        var y: CGFloat = 12
+        var y: CGFloat = 13
 
         // MARK: Header (Design | Code + settings)
-        headerTabs.frame = CGRect(x: inset, y: y, width: max(contentWidth - 36, 0), height: Row.rowH)
-        settingsButton.frame = CGRect(x: contentRight - 24, y: y + 2, width: 24, height: 24)
+        headerTabs.frame = CGRect(x: 13, y: y, width: max(width - 66, 0), height: 40)
+        settingsButton.frame = CGRect(x: width - 53, y: y, width: 40, height: 40)
+        settingsButton.iconPadding = 11.5
 
         // MARK: Layer identity row
-        let identityY = y + 28 + 12
-        identityGlyphRect = CGRect(x: inset, y: identityY + 2, width: 14, height: 14)
-        identityName.frame = CGRect(x: inset + 22, y: identityY - 1, width: 112, height: 17)
-        identityKind.frame = CGRect(x: inset + 140, y: identityY + 3,
-                                    width: max(contentRight - 20 - 8 - (inset + 140), 0), height: 12)
+        let identityY = y + 40 + 12
+        identityGlyphRect = CGRect(x: inset + 8, y: identityY + 2, width: 14, height: 14)
+        let nameWidth = min(
+            154,
+            ceil(
+                (identityName.stringValue as NSString).size(
+                    withAttributes: [.font: ThemeFonts.mono(size: 10, weight: .regular)]).width) + 8
+        )
+        identityName.frame = CGRect(x: inset + 24, y: identityY + 2, width: nameWidth, height: 16)
+        identityKind.frame = CGRect(
+            x: inset + 28 + nameWidth, y: identityY + 3,
+            width: max(contentWidth - nameWidth - 56, 0), height: 12)
         selectOnlyButton.frame = CGRect(x: contentRight - 20, y: identityY, width: 20, height: 20)
-        y = closeSection(identityY + 20)
+        y = identityY + 32
 
         // MARK: TRANSFORM
-        transformLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
-        let transformTop = y + Row.labelH + 6
+        transformLabel.frame = CGRect(x: inset + 2, y: y, width: 160, height: Row.labelH)
+        let transformTop = y + Row.labelH + 8
         anchorSurfaceRect = CGRect(x: inset, y: transformTop, width: 56, height: 56)
         anchorGrid.frame = anchorSurfaceRect
 
-        let colX: CGFloat = 56 + 12                       // column next to the anchor grid
+        let colX: CGFloat = 56 + 8  // column next to the anchor grid
         let colW = max(contentWidth - colX, 0)
         let halfW = (colW - Row.gap) / 2
-        let wWidth = halfW - 10
+        let wWidth = (colW - 24) / 2
         let hX = colX + wWidth + 24
         let hWidth = max(contentWidth - hX, 0)
 
         transformContainer.frame = CGRect(x: inset, y: transformTop,
-                                          width: contentWidth, height: 124)
+            width: contentWidth, height: 154)
         xPill.frame = CGRect(x: colX, y: 0, width: halfW, height: Row.rowH)
         yPill.frame = CGRect(x: colX + halfW + Row.gap, y: 0, width: halfW, height: Row.rowH)
 
-        wPill.frame = CGRect(x: colX, y: 32, width: wWidth, height: Row.rowH)
-        lockRatioButton.frame = CGRect(x: colX + wWidth + 4, y: 36, width: 16, height: 20)
-        hPill.frame = CGRect(x: hX, y: 32, width: hWidth, height: Row.rowH)
+        dimensionSurfaceRect = CGRect(
+            x: inset + colX, y: transformTop + 42, width: colW, height: Row.rowH)
+        wPill.frame = CGRect(x: colX, y: 42, width: wWidth, height: Row.rowH)
+        lockRatioButton.frame = CGRect(x: colX + wWidth + 4, y: 48, width: 16, height: 20)
+        hPill.frame = CGRect(x: hX, y: 42, width: hWidth, height: Row.rowH)
 
-        rPill.frame = CGRect(x: 0, y: 64, width: 96, height: Row.rowH)
-        sPill.frame = CGRect(x: 100, y: 64, width: 96, height: Row.rowH)
-        rotateCcwButton.frame = CGRect(x: 204, y: 64, width: 28, height: Row.rowH)
-        rotateCwButton.frame = CGRect(x: 236, y: 64, width: 28, height: Row.rowH)
+        let actionWidth: CGFloat = 28
+        let angleWidth = (contentWidth - 3 * actionWidth - 24) / 2
+        rPill.frame = CGRect(x: 0, y: 82, width: angleWidth, height: Row.rowH)
+        sPill.frame = CGRect(x: angleWidth + 8, y: 82, width: angleWidth, height: Row.rowH)
+        rotateCcwButton.isHidden = true
+        let actionsX = contentWidth - 3 * actionWidth - 8
+        rotateCwButton.frame = CGRect(x: actionsX, y: 82, width: actionWidth, height: Row.rowH)
+        flipHorizontalButton.frame = CGRect(
+            x: actionsX + 32, y: 82, width: actionWidth, height: Row.rowH)
+        flipVerticalButton.frame = CGRect(
+            x: actionsX + 64, y: 82, width: actionWidth, height: Row.rowH)
 
-        radiusPill.frame = CGRect(x: inset, y: transformTop + 96,
-                                  width: max(contentWidth - 28, 0), height: Row.rowH)
-        crLinkButton.frame = CGRect(x: contentWidth - 20, y: 100, width: 20, height: 20)
+        radiusPill.frame = CGRect(
+            x: inset, y: transformTop + 122,
+            width: max(contentWidth - 32, 0), height: Row.rowH)
+        crLinkButton.frame = CGRect(x: contentWidth - 24, y: 126, width: 24, height: 24)
 
-        var transformBottom = transformTop + 96 + Row.rowH
+        var transformBottom = transformTop + (showsShape ? 154 : 114)
         if isCornerRadiiLinked {
             crPill.isHidden = true
             tlPill.isHidden = true; trPill.isHidden = true; brPill.isHidden = true; blPill.isHidden = true
@@ -4240,21 +4400,24 @@ public final class PropertiesPanelView: NSView {
         y = closeSection(max(transformBottom, transformTop + 56))
 
         // MARK: CONSTRAINTS
-        constraintsLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
-        let constraintTop = y + Row.labelH + 6
-        diagramSurfaceRect = CGRect(x: inset, y: constraintTop, width: 56, height: 56)
+        constraintsLabel.frame = CGRect(x: inset + 2, y: y, width: 160, height: Row.labelH)
+        let constraintTop = y + Row.labelH + 8
+        diagramSurfaceRect = CGRect(x: inset, y: constraintTop + 6, width: 60, height: 60)
         constraintsDiagramButton.frame = diagramSurfaceRect
-        let ddX = colX + 82
+        let ddX = inset + 142
         let ddW = max(contentRight - ddX, 0)
-        hConstraintLabel.frame = CGRect(x: colX, y: constraintTop + 9, width: 78, height: 10)
+        hConstraintLabel.frame = CGRect(
+            x: inset + 72, y: constraintTop + 9, width: 62, height: 12)
         hConstraintDropdown.frame = CGRect(x: ddX, y: constraintTop, width: ddW, height: Row.rowH)
-        vConstraintLabel.frame = CGRect(x: colX, y: constraintTop + 45, width: 78, height: 10)
-        vConstraintDropdown.frame = CGRect(x: ddX, y: constraintTop + 36, width: ddW, height: Row.rowH)
-        y = closeSection(constraintTop + 64)
+        vConstraintLabel.frame = CGRect(
+            x: inset + 72, y: constraintTop + 49, width: 62, height: 12)
+        vConstraintDropdown.frame = CGRect(
+            x: ddX, y: constraintTop + 40, width: ddW, height: Row.rowH)
+        y = closeSection(constraintTop + 72)
 
         // MARK: APPEARANCE
-        appearanceLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
-        let appearanceTop = y + Row.labelH + 6
+        appearanceLabel.frame = CGRect(x: inset + 2, y: y, width: 160, height: Row.labelH)
+        let appearanceTop = y + Row.labelH + 8
         opacityPill.frame = CGRect(x: inset, y: appearanceTop, width: 124, height: Row.rowH)
         blendButton.frame = CGRect(x: inset + 132, y: appearanceTop,
                                    width: max(contentWidth - 132, 0), height: Row.rowH)
@@ -4297,23 +4460,23 @@ public final class PropertiesPanelView: NSView {
         }
 
         // MARK: FILL
-        fillLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
-        paintTypeButton.frame = CGRect(x: contentRight - 56, y: y - 5, width: 20, height: 20)
+        fillLabel.frame = CGRect(x: inset + 2, y: y, width: 160, height: Row.labelH)
+        paintTypeButton.isHidden = true
         fillAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
-        let fillTop = y + Row.labelH + 6
+        let fillTop = y + 24 + 8
         fillRowRect = CGRect(x: inset, y: fillTop, width: contentWidth, height: 32)
-        fillRowSwatch.frame = CGRect(x: inset + 8, y: fillTop + 6, width: 20, height: 20)
-        fillRowHex.frame = CGRect(x: inset + 36, y: fillTop + 9, width: 112, height: 16)
+        fillRowSwatch.frame = CGRect(x: inset + 10, y: fillTop + 6, width: 20, height: 20)
+        fillRowHex.frame = CGRect(x: inset + 40, y: fillTop + 9, width: 112, height: 16)
         fillOpacityPill.frame = CGRect(x: inset + 150, y: fillTop + 4, width: 44, height: 24)
-        fillRowToggle.frame = CGRect(x: inset + 202, y: fillTop + 6, width: 20, height: 20)
-        fillRowRemove.frame = CGRect(x: inset + 232, y: fillTop + 6, width: 20, height: 20)
+        fillRowToggle.frame = CGRect(x: inset + 200, y: fillTop + 6, width: 20, height: 20)
+        fillRowRemove.frame = CGRect(x: inset + 226, y: fillTop + 6, width: 20, height: 20)
         let primaryFill = node?.nativePaints(.fill).first
         let hasFill =
             primaryFill.map { paint in
                 PropertiesColorMath.isVisiblePaint(paint.value(.fill) ?? "transparent")
                     || paint.properties["imageId"] != nil
             } ?? false
-        fillAddButton.isHidden = hasFill
+        fillAddButton.isHidden = false
         for view in [fillRowSwatch, fillRowHex, fillOpacityPill, fillRowToggle, fillRowRemove]
             as [NSView]
         { view.isHidden = !hasFill }
@@ -4340,33 +4503,37 @@ public final class PropertiesPanelView: NSView {
         y = closeSection(fillBottom)
 
         // MARK: STROKE
-        strokeLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
+        strokeLabel.frame = CGRect(x: inset + 2, y: y, width: 160, height: Row.labelH)
         strokeAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
-        let strokeTop = y + Row.labelH + 6
+        let strokeTop = y + 24 + 8
         strokeRow1Rect = CGRect(x: inset, y: strokeTop, width: contentWidth, height: 32)
-        strokeRowSwatch.frame = CGRect(x: inset + 8, y: strokeTop + 6, width: 20, height: 20)
-        strokeRowHex.frame = CGRect(x: inset + 36, y: strokeTop + 9, width: 112, height: 16)
+        strokeRowSwatch.frame = CGRect(x: inset + 10, y: strokeTop + 6, width: 20, height: 20)
+        strokeRowHex.frame = CGRect(x: inset + 40, y: strokeTop + 9, width: 112, height: 16)
         strokeOpacityPill.frame = CGRect(x: inset + 150, y: strokeTop + 4, width: 44, height: 24)
-        strokeRowToggle.frame = CGRect(x: inset + 202, y: strokeTop + 6, width: 20, height: 20)
-        strokeRowRemove.frame = CGRect(x: inset + 232, y: strokeTop + 6, width: 20, height: 20)
+        strokeRowToggle.frame = CGRect(x: inset + 200, y: strokeTop + 6, width: 20, height: 20)
+        strokeRowRemove.frame = CGRect(x: inset + 226, y: strokeTop + 6, width: 20, height: 20)
 
-        let strokeRow2Top = strokeTop + 32 + 4
-        strokeRow2Rect = CGRect(x: inset, y: strokeRow2Top, width: contentWidth, height: Row.rowH)
-        strokeAlignButton.frame = CGRect(x: inset + 6, y: strokeRow2Top + 4, width: 20, height: 20)
-        strokeCapButton.frame = CGRect(x: inset + 32, y: strokeRow2Top + 4, width: 20, height: 20)
-        strokeJoinButton.frame = CGRect(x: inset + 58, y: strokeRow2Top + 4, width: 20, height: 20)
+        let strokeRow2Top = strokeTop + 32 + 8
+        strokeRow2Rect = .zero
+        strokeAlignControl.isHidden = false
+        strokeAlignControl.frame = CGRect(x: inset, y: strokeRow2Top, width: 84, height: Row.rowH)
+        strokeAlignButton.isHidden = true
+        strokeCapButton.isHidden = true
+        strokeJoinButton.isHidden = true
         strokeWidthPill.labelText = ""
-        strokeWidthPill.frame = CGRect(x: inset + 88, y: strokeRow2Top, width: 120, height: Row.rowH)
-        strokeDashButton.frame = CGRect(x: contentRight - 28, y: strokeRow2Top + 4, width: 20, height: 20)
+        strokeWidthPill.frame = CGRect(
+            x: inset + 90, y: strokeRow2Top, width: contentWidth - 128, height: Row.rowH)
+        strokeDashButton.frame = CGRect(
+            x: contentRight - 28, y: strokeRow2Top, width: 28, height: Row.rowH)
         let hasStroke =
             PropertiesColorMath.isVisiblePaint(
                 node?.nativePaints(.stroke).first?.value(.stroke) ?? "none")
-            && currentStrokeWidth > 0
+
         for view in [
             strokeRowSwatch, strokeRowHex, strokeOpacityPill, strokeRowToggle, strokeRowRemove,
-            strokeAlignButton, strokeCapButton, strokeJoinButton, strokeWidthPill, strokeDashButton,
+            strokeAlignControl, strokeWidthPill, strokeDashButton,
         ] as [NSView] { view.isHidden = !hasStroke }
-        strokeAddButton.isHidden = hasStroke
+        strokeAddButton.isHidden = false
         if !hasStroke {
             strokeRow1Rect = .zero
             strokeRow2Rect = .zero
@@ -4390,8 +4557,9 @@ public final class PropertiesPanelView: NSView {
         y = closeSection(strokeBottom)
 
         // MARK: EFFECTS
-        effectsLabel.frame = CGRect(x: 0, y: 0, width: 160, height: Row.labelH)
+        effectsLabel.frame = CGRect(x: 2, y: 0, width: 160, height: Row.labelH)
         effectsAddButton.frame = CGRect(x: contentWidth - 24, y: -8, width: 24, height: 24)
+        effectsAddButton.iconPadding = 6
         let supported = node?.portableProperties["effects"] == nil || node?.effects != nil
         effectsAddButton.isEnabled = supported
         effectsAddButton.toolTip = NativeCopy.text(supported ? .addEffect : .unsupportedEffects)
@@ -4399,7 +4567,12 @@ public final class PropertiesPanelView: NSView {
         effectsContainer.frame = CGRect(x: inset, y: y, width: contentWidth, height: effectHeight)
         y += effectHeight
 
-        contentHeight = y + 4
+        y += 31
+        dividerYs.append(y)
+        y += 12
+        addToLayerButton.frame = CGRect(x: inset, y: y, width: contentWidth, height: 28)
+        y += 28
+        contentHeight = y + 12
         needsDisplay = true
     }
 
@@ -4415,8 +4588,10 @@ public final class PropertiesPanelView: NSView {
         else { return }
 
         // Field surfaces for the read-only rows of the rebuilt inspector chrome.
-        let surfaces: [CGRect] = [fillRowRect, strokeRow1Rect, strokeRow2Rect,
-                                  frameSizeRowRect, frameColorRowRect]
+        let surfaces: [CGRect] = [
+            dimensionSurfaceRect, fillRowRect, strokeRow1Rect, strokeRow2Rect,
+            frameSizeRowRect, frameColorRowRect,
+        ]
         ctx.setFillColor(NSColor(hex: Row.surfaceHex).cgColor)
         for rect in surfaces where rect.height > 0 {
             ctx.addPath(CGPath(roundedRect: rect,
@@ -4426,9 +4601,9 @@ public final class PropertiesPanelView: NSView {
             ctx.fillPath()
         }
 
-        // White/6 surfaces behind the anchor grid and the constraints diagram.
-        ctx.setFillColor(NSColor(white: 1.0, alpha: 0.06).cgColor)
-        for rect in [anchorSurfaceRect, diagramSurfaceRect] where rect.height > 0 {
+        // The reference-point selector has the same filled surface as its fields.
+        ctx.setFillColor(NSColor(hex: "262626").cgColor)
+        for rect in [anchorSurfaceRect] where rect.height > 0 {
             ctx.addPath(CGPath(roundedRect: rect, cornerWidth: 10, cornerHeight: 10, transform: nil))
             ctx.fillPath()
         }
@@ -4437,7 +4612,7 @@ public final class PropertiesPanelView: NSView {
         ctx.setLineWidth(1)
         ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.06).cgColor)
         for row in [fillRowRect, strokeRow1Rect] where row.height > 0 {
-            for offset in [150.0, 198.0, 227.0] {
+            for offset in [150.0] {
                 let x = round(row.minX + offset) + 0.5
                 ctx.strokeLineSegments(between: [
                     CGPoint(x: x, y: row.minY + 5),

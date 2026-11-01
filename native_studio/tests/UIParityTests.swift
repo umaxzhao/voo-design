@@ -190,36 +190,56 @@ public class UIParityTests {
 
     private static func registerTitleBarTests(_ registry: TestRegistry) {
 
-        registry.register(tier: 1, feature: "UIParity-TitleBar", name: "test_UIParity_TitleBar_DefaultDocumentTitleField") {
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_DefaultDocumentTitleField"
+        ) {
             let bar = makeTitleBar()
-            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Untitled.voo", "Default tab title must be Untitled.voo")
+            try TestAssertions.assertEqual(
+                bar.docTitleField.stringValue, "Untitled.voo",
+                "Default tab title must be Untitled.voo")
             try TestAssertions.assertEqual(bar.state.documentTitle, "Untitled.voo")
-            try TestAssertions.assertEqual(bar.docTitleField.accessibilityIdentifier(), AccessibilityCatalog.docTitle)
-            try TestAssertions.assertEqual(bar.accessibilityIdentifier(), AccessibilityCatalog.titleBar)
+            try TestAssertions.assertEqual(
+                bar.docTitleField.accessibilityIdentifier(), AccessibilityCatalog.docTitle)
+            try TestAssertions.assertEqual(
+                bar.accessibilityIdentifier(), AccessibilityCatalog.titleBar)
             try TestAssertions.assertEqual(bar.accessibilityIdentifier(), "AppTitleBar")
-            try TestAssertions.assertTrue(bar.zoomIndicator.isHidden, "Legacy zoom badge stays hidden; bottom zoom bar owns zoom")
+            try TestAssertions.assertTrue(
+                bar.zoomIndicator.isHidden,
+                "Legacy zoom badge stays hidden; bottom zoom bar owns zoom")
         }
 
-        registry.register(tier: 1, feature: "UIParity-TitleBar", name: "test_UIParity_TitleBar_SetDocumentTitleSyncsStateAndDisplay") {
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_SetDocumentTitleSyncsStateAndDisplay"
+        ) {
             let bar = makeTitleBar()
             bar.setDocumentTitle("Landing.voo")
             try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Landing.voo")
             try TestAssertions.assertEqual(bar.state.documentTitle, "Landing.voo")
-            try TestAssertions.assertEqual(bar.state.displayTitle, "Landing", "The tab pill strips the .voo extension")
+            try TestAssertions.assertEqual(
+                bar.state.displayTitle, "Landing", "The tab pill strips the .voo extension")
             try TestAssertions.assertEqual(bar.state.formattedZoom, "100%")
         }
 
-        registry.register(tier: 1, feature: "UIParity-TitleBar", name: "test_UIParity_TitleBar_DashboardModeShowsUntitledAndHidesEditorActions") {
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_DashboardModeShowsUntitledAndHidesEditorActions"
+        ) {
             let bar = makeTitleBar()
             bar.setDocumentTitle("Moon.voo")
             try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Moon.voo")
-            try TestAssertions.assertFalse(bar.saveButton.isHidden)
+            try TestAssertions.assertFalse(bar.exportButton.isHidden)
             try TestAssertions.assertFalse(bar.openButton.isHidden)
 
             bar.isDashboardMode = true
-            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Untitled", "Dashboard tab shows a generic Untitled document")
-            try TestAssertions.assertEqual(bar.state.documentTitle, "Moon.voo", "Dashboard mode must not lose the loaded project title")
-            try TestAssertions.assertTrue(bar.saveButton.isHidden, "Save is editor-only")
+            try TestAssertions.assertEqual(
+                bar.docTitleField.stringValue, "Untitled",
+                "Dashboard tab shows a generic Untitled document")
+            try TestAssertions.assertEqual(
+                bar.state.documentTitle, "Moon.voo",
+                "Dashboard mode must not lose the loaded project title")
+            try TestAssertions.assertTrue(bar.exportButton.isHidden, "Export is editor-only")
             try TestAssertions.assertTrue(bar.openButton.isHidden, "Open is editor-only")
             // Web dashboard mode has no document tab pill (brand + "+" only).
             try TestAssertions.assertTrue(bar.tabCloseButton.isHidden)
@@ -230,58 +250,83 @@ public class UIParityTests {
             try TestAssertions.assertFalse(bar.browserButton.isHidden)
 
             bar.setDocumentTitle("NewProject.voo")
-            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Untitled", "Dashboard mode keeps showing Untitled after a title change")
+            try TestAssertions.assertEqual(
+                bar.docTitleField.stringValue, "Untitled",
+                "Dashboard mode keeps showing Untitled after a title change")
             try TestAssertions.assertEqual(bar.state.documentTitle, "NewProject.voo")
 
             bar.isDashboardMode = false
             try TestAssertions.assertEqual(bar.docTitleField.stringValue, "NewProject.voo")
-            try TestAssertions.assertFalse(bar.saveButton.isHidden)
+            try TestAssertions.assertFalse(bar.exportButton.isHidden)
             try TestAssertions.assertFalse(bar.openButton.isHidden)
         }
 
-        registry.register(tier: 1, feature: "UIParity-TitleBar", name: "test_UIParity_TitleBar_SaveOpenButtonTitlesAndIdentifiers") {
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_ImportExportButtonTitlesAndIdentifiers"
+        ) {
             let bar = makeTitleBar()
-            try TestAssertions.assertEqual(bar.saveButton.title, "保存")
-            try TestAssertions.assertEqual(bar.openButton.title, "打开")
-            try TestAssertions.assertTrue(bar.saveButton.isWhitePill, "Save is the white primary pill")
-            try TestAssertions.assertFalse(bar.openButton.isWhitePill, "Open is the ghost secondary button")
-            try TestAssertions.assertEqual(bar.saveButton.accessibilityIdentifier(), "title_bar_save_button")
-            try TestAssertions.assertEqual(bar.openButton.accessibilityIdentifier(), "title_bar_open_button")
+            try TestAssertions.assertEqual(
+                bar.exportButton.title, NativeTitleBarStyle.text(.exportDocument))
+            try TestAssertions.assertEqual(
+                bar.openButton.title, NativeTitleBarStyle.text(.importDocument))
+            try TestAssertions.assertTrue(
+                bar.exportButton.isWhitePill, "Export is the white primary pill")
+            try TestAssertions.assertFalse(
+                bar.openButton.isWhitePill, "Import is the ghost secondary button")
+            try TestAssertions.assertEqual(
+                bar.exportButton.accessibilityIdentifier(), AccessibilityCatalog.exportButton)
+            try TestAssertions.assertEqual(
+                bar.openButton.accessibilityIdentifier(), "title_bar_open_button")
         }
 
-        registry.register(tier: 1, feature: "UIParity-TitleBar", name: "test_UIParity_TitleBar_TabBarButtonsFireDelegateCallbacks") {
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_TabBarButtonsFireDelegateCallbacks"
+        ) {
             let bar = makeTitleBar()
             let delegate = UIParityTitleBarDelegate()
             bar.delegate = delegate
 
             bar.tabCloseButton.performClick(nil)
-            try TestAssertions.assertEqual(delegate.closeProjectCount, 1, "Tab X must request close project")
+            try TestAssertions.assertEqual(
+                delegate.closeProjectCount, 1, "Tab X must request close project")
 
             bar.tabPlusButton.performClick(nil)
-            try TestAssertions.assertEqual(delegate.newProjectCount, 1, "Tab + must request new project")
+            try TestAssertions.assertEqual(
+                delegate.newProjectCount, 1, "Tab + must request new project")
 
             bar.settingsButton.performClick(nil)
-            try TestAssertions.assertEqual(delegate.settingsCount, 1, "Settings bolt must request settings")
+            try TestAssertions.assertEqual(
+                delegate.settingsCount, 1, "Settings bolt must request settings")
 
-            try TestAssertions.assertEqual(delegate.newProjectCount + delegate.closeProjectCount + delegate.settingsCount, 3)
+            try TestAssertions.assertEqual(
+                delegate.newProjectCount + delegate.closeProjectCount + delegate.settingsCount, 3)
         }
 
-        registry.register(tier: 1, feature: "UIParity-TitleBar", name: "test_UIParity_TitleBar_BrandSaveAndOpenActions") {
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_BrandExportAndImportActions"
+        ) {
             let bar = makeTitleBar()
             let delegate = UIParityTitleBarDelegate()
             bar.delegate = delegate
             try TestAssertions.assertFalse(bar.state.exportTriggered)
 
             bar.brandLogoButton.performClick(nil)
-            try TestAssertions.assertEqual(delegate.dashboardToggleCount, 1, "Brand block toggles the dashboard")
+            try TestAssertions.assertEqual(
+                delegate.dashboardToggleCount, 1, "Brand block toggles the dashboard")
 
-            bar.saveButton.performClick(nil)
-            try TestAssertions.assertEqual(delegate.exportCount, 1, "Save fires the export callback")
+            bar.exportButton.performClick(nil)
+            try TestAssertions.assertEqual(
+                delegate.exportCount, 1, "Export fires the export callback")
             try TestAssertions.assertTrue(bar.state.exportTriggered)
 
             bar.openButton.performClick(nil)
-            try TestAssertions.assertEqual(delegate.openDocumentCount, 1, "Open requests the document picker")
-            try TestAssertions.assertEqual(delegate.dashboardToggleCount, 1, "Open no longer toggles the dashboard")
+            try TestAssertions.assertEqual(
+                delegate.openDocumentCount, 1, "Open requests the document picker")
+            try TestAssertions.assertEqual(
+                delegate.dashboardToggleCount, 1, "Open no longer toggles the dashboard")
 
             // The legacy undo/redo/export anchors stay wired for the old suites.
             bar.undoButton.performClick(nil)
@@ -290,17 +335,64 @@ public class UIParityTests {
             try TestAssertions.assertEqual(delegate.redoCount, 1)
         }
 
-        registry.register(tier: 1, feature: "UIParity-TitleBar", name: "test_UIParity_TitleBar_ControlAccessibilityIdentifiers") {
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_EditorClusterKeepsOneGuestShareAndFileActions"
+        ) {
             let bar = makeTitleBar()
-            try TestAssertions.assertEqual(bar.docTitleField.accessibilityIdentifier(), "AppTitleBar.DocTitle")
-            try TestAssertions.assertEqual(bar.tabCloseButton.accessibilityIdentifier(), "TitleBar.TabClose")
-            try TestAssertions.assertEqual(bar.tabPlusButton.accessibilityIdentifier(), "TitleBar.TabNew")
-            try TestAssertions.assertEqual(bar.settingsButton.accessibilityIdentifier(), "title_bar_settings_button")
-            try TestAssertions.assertEqual(bar.brandLogoButton.accessibilityIdentifier(), "title_bar_brand_logo")
-            try TestAssertions.assertEqual(bar.zoomIndicator.accessibilityIdentifier(), AccessibilityCatalog.zoomIndicator)
-            try TestAssertions.assertEqual(bar.undoButton.accessibilityIdentifier(), AccessibilityCatalog.undoButton)
-            try TestAssertions.assertEqual(bar.redoButton.accessibilityIdentifier(), AccessibilityCatalog.redoButton)
-            try TestAssertions.assertEqual(bar.exportButton.accessibilityIdentifier(), AccessibilityCatalog.exportButton)
+            try TestAssertions.assertTrue(
+                bar.saveButton.isHidden,
+                "Saving stays in the File menu rather than duplicating the export action")
+            try TestAssertions.assertEqual(
+                bar.collabButton.accessibilityLabel(),
+                NativeTitleBarStyle.text(.share))
+            try assertFrameSize(
+                bar.collabButton, width: 46, height: 28, "Guest share cluster", accuracy: 0.01)
+            try TestAssertions.assertApproxEqual(
+                bar.collabDivider.frame.minX - bar.collabButton.frame.maxX,
+                8, accuracy: 0.01)
+            try TestAssertions.assertApproxEqual(
+                bar.openButton.frame.minX - bar.collabDivider.frame.maxX,
+                8, accuracy: 0.01)
+            try TestAssertions.assertApproxEqual(
+                bar.exportButton.frame.minX - bar.openButton.frame.maxX,
+                8, accuracy: 0.01)
+            try TestAssertions.assertApproxEqual(
+                bar.browserButton.frame.minX - bar.exportButton.frame.maxX,
+                8, accuracy: 0.01)
+            try TestAssertions.assertApproxEqual(
+                bar.exportButton.font!.pointSize, 11, accuracy: 0.01)
+            try TestAssertions.assertApproxEqual(bar.openButton.font!.pointSize, 11, accuracy: 0.01)
+            var shareRequests = 0
+            bar.onCollabTapped = { shareRequests += 1 }
+            bar.collabButton.performClick(nil)
+            try TestAssertions.assertEqual(shareRequests, 1)
+            try renderSnapshot(size: bar.bounds.size, views: [bar])
+        }
+
+        registry.register(
+            tier: 1, feature: "UIParity-TitleBar",
+            name: "test_UIParity_TitleBar_ControlAccessibilityIdentifiers"
+        ) {
+            let bar = makeTitleBar()
+            try TestAssertions.assertEqual(
+                bar.docTitleField.accessibilityIdentifier(), "AppTitleBar.DocTitle")
+            try TestAssertions.assertEqual(
+                bar.tabCloseButton.accessibilityIdentifier(), "TitleBar.TabClose")
+            try TestAssertions.assertEqual(
+                bar.tabPlusButton.accessibilityIdentifier(), "TitleBar.TabNew")
+            try TestAssertions.assertEqual(
+                bar.settingsButton.accessibilityIdentifier(), "title_bar_settings_button")
+            try TestAssertions.assertEqual(
+                bar.brandLogoButton.accessibilityIdentifier(), "title_bar_brand_logo")
+            try TestAssertions.assertEqual(
+                bar.zoomIndicator.accessibilityIdentifier(), AccessibilityCatalog.zoomIndicator)
+            try TestAssertions.assertEqual(
+                bar.undoButton.accessibilityIdentifier(), AccessibilityCatalog.undoButton)
+            try TestAssertions.assertEqual(
+                bar.redoButton.accessibilityIdentifier(), AccessibilityCatalog.redoButton)
+            try TestAssertions.assertEqual(
+                bar.exportButton.accessibilityIdentifier(), AccessibilityCatalog.exportButton)
         }
     }
 
@@ -310,7 +402,10 @@ public class UIParityTests {
 
     private static func registerToolRailTests(_ registry: TestRegistry) {
 
-        registry.register(tier: 1, feature: "UIParity-ToolRail", name: "test_UIParity_ToolRail_EightCanonicalToolButtons") {
+        registry.register(
+            tier: 1, feature: "UIParity-ToolRail",
+            name: "test_UIParity_ToolRail_EightCanonicalToolButtons"
+        ) {
             let rail = ToolRailView()
             try TestAssertions.assertEqual(rail.toolButtons.count, 8)
             try TestAssertions.assertEqual(Set(rail.toolButtons.keys), Set(StudioToolType.allCases))
@@ -318,33 +413,80 @@ public class UIParityTests {
 
             for tool in StudioToolType.allCases {
                 guard let button = rail.toolButtons[tool] else {
-                    throw TestFailure(message: "Missing tool button for \(tool.rawValue)", file: #file, line: #line)
+                    throw TestFailure(
+                        message: "Missing tool button for \(tool.rawValue)", file: #file,
+                        line: #line)
                 }
-                try TestAssertions.assertEqual(button.accessibilityIdentifier(), tool.accessibilityIdentifier)
+                try TestAssertions.assertEqual(
+                    button.accessibilityIdentifier(), tool.accessibilityIdentifier)
                 try TestAssertions.assertEqual(button.toolType, tool)
                 try TestAssertions.assertNotNil(button.toolTip)
             }
             try TestAssertions.assertEqual(rail.accessibilityIdentifier(), "ToolRail")
-            try TestAssertions.assertTrue(rail.toolButtons[.move]?.isToolActive == true, "Active tool has the white circle treatment")
+            try TestAssertions.assertTrue(
+                rail.toolButtons[.move]?.isToolActive == true,
+                "Active tool has the white circle treatment")
         }
 
-        registry.register(tier: 1, feature: "UIParity-ToolRail", name: "test_UIParity_ToolRail_BrandAvatarFiresOnBrandAvatarTapped") {
+        registry.register(
+            tier: 1, feature: "UIParity-ToolRail",
+            name: "test_UIParity_ToolRail_DefaultFamiliesReplaceDuplicateAgentMedallion"
+        ) {
             let rail = ToolRailView()
-            var activations = 0
-            rail.onBrandAvatarTapped = { activations += 1 }
-
-            try TestAssertions.assertEqual(rail.brandAvatarButton.accessibilityIdentifier(), "ToolRail.BrandAvatar")
-            try TestAssertions.assertEqual(rail.brandAvatarButton.accessibilityLabel(), "VOO Assistant")
-
-            rail.brandAvatarButton.performClick(nil)
-            try TestAssertions.assertEqual(activations, 1, "VOO medallion opens the AI agent")
-
-            // The direct closure must stay wired to the button as well.
-            rail.brandAvatarButton.onClick?()
-            try TestAssertions.assertEqual(activations, 2)
+            rail.layoutSubtreeIfNeeded()
+            try TestAssertions.assertNil(
+                rail.brandAvatarButton.superview,
+                "The Agent already has its bottom-right FAB")
+            try TestAssertions.assertTrue(
+                rail.nodeToolButton.isHidden,
+                "Crop must not activate the node editor")
+            let expectedAccessories: [ToolRailAccessory] = [
+                .hand, .crop, .marquee, .fill, .healing,
+            ]
+            try TestAssertions.assertEqual(
+                Set(rail.accessoryButtons.keys), Set(expectedAccessories))
+            var selected: [ToolRailAccessory] = []
+            rail.onAccessoryAction = { selected.append($0) }
+            rail.cropButton?.performClick(nil)
+            rail.fillButton?.performClick(nil)
+            rail.healingButton?.performClick(nil)
+            try TestAssertions.assertEqual(selected, [.crop, .fill, .healing])
+            let orderedIDs = rail.subviews.sorted { $0.frame.minX < $1.frame.minX }
+                .compactMap { $0.accessibilityIdentifier() }
+            try TestAssertions.assertEqual(
+                orderedIDs,
+                [
+                    "ToolRail.Move", "ToolRail.Hand", "ToolRail.Artboard", "ToolRail.Crop",
+                    "ToolRail.Marquee", "ToolRail.Brush", "ToolRail.Eraser", "ToolRail.Text",
+                    "ToolRail.Pen", "ToolRail.Shapes", "ToolRail.Fill", "ToolRail.Healing",
+                ])
         }
 
-        registry.register(tier: 1, feature: "UIParity-ToolRail", name: "test_UIParity_ToolRail_ToolButtonSelectionUpdatesStateAndDelegate") {
+        registry.register(
+            tier: 1, feature: "UIParity-ToolRail",
+            name: "test_UIParity_ToolRail_HealingButtonDrawsMultilineSparklePath"
+        ) {
+            let button = ToolRailAccessoryButton(accessory: .healing)
+            let bitmap = try renderSnapshot(size: button.bounds.size, views: [button])
+            var visiblePixels = 0
+            for y in 0..<bitmap.pixelsHigh {
+                for x in 0..<bitmap.pixelsWide {
+                    if let color = bitmap.colorAt(x: x, y: y), color.alphaComponent > 0.1 {
+                        visiblePixels += 1
+                    }
+                }
+            }
+            try TestAssertions.assertTrue(
+                visiblePixels > 20,
+                "The actual healing button draws its bandage and multiline sparkle path")
+            button.isAccessoryActive = true
+            try renderSnapshot(size: button.bounds.size, views: [button])
+        }
+
+        registry.register(
+            tier: 1, feature: "UIParity-ToolRail",
+            name: "test_UIParity_ToolRail_ToolButtonSelectionUpdatesStateAndDelegate"
+        ) {
             let rail = ToolRailView()
             let delegate = UIParityStudioDelegate()
             rail.delegate = delegate
@@ -370,7 +512,10 @@ public class UIParityTests {
             try TestAssertions.assertNotNil(rail.artboardToolButton)
         }
 
-        registry.register(tier: 1, feature: "UIParity-ToolRail", name: "test_UIParity_ToolRail_ShortcutKeysUpdateActiveTool") {
+        registry.register(
+            tier: 1, feature: "UIParity-ToolRail",
+            name: "test_UIParity_ToolRail_ShortcutKeysUpdateActiveTool"
+        ) {
             let rail = ToolRailView()
             try TestAssertions.assertEqual(rail.state.handleShortcutKey("v"), .move)
             try TestAssertions.assertEqual(rail.state.activeTool, .move)
@@ -380,13 +525,15 @@ public class UIParityTests {
             try TestAssertions.assertEqual(rail.state.activeTool, .text)
             try TestAssertions.assertEqual(rail.state.handleShortcutKey("f"), .artboard)
             try TestAssertions.assertEqual(rail.state.activeTool, .artboard)
-            try TestAssertions.assertNil(rail.state.handleShortcutKey("z"), "Unknown shortcut is ignored")
+            try TestAssertions.assertNil(
+                rail.state.handleShortcutKey("z"), "Unknown shortcut is ignored")
 
             // Pen shortcut cycles its sub-tool mode.
             try TestAssertions.assertEqual(rail.state.handleShortcutKey("p"), .pen)
             let firstSubTool = rail.state.currentPenSubTool
             try TestAssertions.assertEqual(rail.state.handleShortcutKey("p"), .pen)
-            try TestAssertions.assertNotEqual(rail.state.currentPenSubTool, firstSubTool, "Repeated P cycles pen sub-tools")
+            try TestAssertions.assertNotEqual(
+                rail.state.currentPenSubTool, firstSubTool, "Repeated P cycles pen sub-tools")
         }
     }
 
@@ -1120,7 +1267,7 @@ public class UIParityTests {
             try TestAssertions.assertFalse(island.isHidden)
             try TestAssertions.assertEqual(agentPanel.messageCount, 2)
             try TestAssertions.assertTrue(inspector.arePropertiesVisible)
-            try TestAssertions.assertFalse(titleBar.saveButton.isHidden)
+            try TestAssertions.assertFalse(titleBar.exportButton.isHidden)
 
             // Everything must render into one offscreen frame without crashing.
             try renderSnapshot(size: canvas, views: [host])
@@ -1144,7 +1291,8 @@ public class UIParityTests {
             host.addSubview(titleBar)
             host.layoutSubtreeIfNeeded()
 
-            try TestAssertions.assertTrue(titleBar.saveButton.isHidden, "Dashboard chrome hides save")
+            try TestAssertions.assertTrue(
+                titleBar.exportButton.isHidden, "Dashboard chrome hides export")
             try TestAssertions.assertTrue(titleBar.openButton.isHidden, "Dashboard chrome hides open")
             try TestAssertions.assertEqual(titleBar.docTitleField.stringValue, "Untitled")
             try TestAssertions.assertEqual(titleBar.state.documentTitle, "Moon.voo")
@@ -2150,7 +2298,8 @@ public class UIParityTests {
             var selectedIds: [String] = []
             panel.onSelectNode = { selectedIds.append($0) }
 
-            panel.selectRowForContextMenu(1)
+            // The last painted sibling is displayed at the top of the layer tree.
+            panel.selectRowForContextMenu(0)
             try TestAssertions.assertEqual(panel.selectedNodeId, avatar.id)
             try TestAssertions.assertEqual(panel.selectedNode?.id, avatar.id)
             try TestAssertions.assertEqual(selectedIds, [avatar.id], "Context selection notifies the host once")
@@ -3130,13 +3279,15 @@ public class UIParityTests {
             try assertFrameSize(bar.tabCloseButton, width: 16, height: 16, "Tab close")
             try assertFrameSize(bar.tabPlusButton, width: 24, height: 24, "Tab plus")
             try assertFrameSize(bar.settingsButton, width: 28, height: 28, "Settings gear")
-            try TestAssertions.assertApproxEqual(bar.saveButton.frame.height, 28, accuracy: 1.5, "Save button height")
+            try TestAssertions.assertApproxEqual(
+                bar.exportButton.frame.height, 28, accuracy: 1.5, "Export button height")
             try TestAssertions.assertApproxEqual(bar.openButton.frame.height, 28, accuracy: 1.5, "Open button height")
 
             // Every chrome control is vertically centred in the 40pt bar.
             let midY = bar.bounds.midY
             for control in [bar.brandLogoButton, bar.tabCloseButton, bar.tabPlusButton,
-                            bar.settingsButton, bar.saveButton, bar.openButton] as [NSView] {
+                bar.settingsButton, bar.exportButton, bar.openButton,
+            ] as [NSView] {
                 try TestAssertions.assertApproxEqual(control.frame.midY, midY, accuracy: 1.5, "Control vertically centred")
             }
 
@@ -3155,40 +3306,57 @@ public class UIParityTests {
             )
         }
 
-        registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_ToolRail_ToolButtonSizes") {
+        registry.register(
+            tier: 1, feature: "UIParity-Spacing",
+            name: "test_UIParity_Spacing_ToolRail_ToolButtonSizes"
+        ) {
             let rail = ToolRailView()
             rail.layoutSubtreeIfNeeded()
-            // Web `editor_toolbar.jsx`: p-1.5 (6) + 11 entries × 44 + 10 gaps × 4 = 536,
-            // plus the trailing divider + 44pt VOO avatar run => 589; height 6+44+6 = 56.
-            try TestAssertions.assertApproxEqual(rail.frame.width, 589, accuracy: 1.5, "Default rail width is ~589")
-            try TestAssertions.assertApproxEqual(rail.frame.height, 56, accuracy: 1.5, "Rail height is 56")
+            // Web border + p-1.5 + twelve 44pt entries and eleven 4pt gaps.
+            try TestAssertions.assertApproxEqual(
+                rail.frame.width, 586, accuracy: 0.01, "Default rail width is 586")
+            try TestAssertions.assertApproxEqual(
+                rail.frame.height, 58, accuracy: 0.01, "Rail height is 58")
             try TestAssertions.assertEqual(rail.toolButtons.count, 8, "Eight canonical tools")
 
             for tool in StudioToolType.allCases {
                 guard let button = rail.toolButtons[tool] else {
-                    throw TestFailure(message: "Missing tool button \(tool.rawValue)", file: #file, line: #line)
+                    throw TestFailure(
+                        message: "Missing tool button \(tool.rawValue)", file: #file, line: #line)
                 }
                 try assertFrameSize(button, width: 44, height: 44, "Tool \(tool.rawValue)")
             }
         }
 
-        registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_ToolRail_AccessoryAndAvatarSizes") {
+        registry.register(
+            tier: 1, feature: "UIParity-Spacing",
+            name: "test_UIParity_Spacing_ToolRail_AccessorySizesAndGaps"
+        ) {
             let rail = ToolRailView()
             rail.layoutSubtreeIfNeeded()
 
-            try TestAssertions.assertEqual(rail.accessoryButtons.count, 3, "hand / lasso / wand accessories")
-            for accessory in ToolRailAccessory.allCases {
+            try TestAssertions.assertEqual(rail.accessoryButtons.count, 5)
+            for accessory in [ToolRailAccessory.hand, .crop, .marquee, .fill, .healing] {
                 guard let button = rail.accessoryButtons[accessory] else {
-                    throw TestFailure(message: "Missing accessory \(accessory.rawValue)", file: #file, line: #line)
+                    throw TestFailure(
+                        message: "Missing accessory \(accessory.rawValue)", file: #file, line: #line
+                    )
                 }
-                try assertFrameSize(button, width: 44, height: 44, "Accessory \(accessory.rawValue)")
+                try assertFrameSize(
+                    button, width: 44, height: 44, "Accessory \(accessory.rawValue)")
             }
-            try TestAssertions.assertNotNil(rail.handButton)
-            try TestAssertions.assertNotNil(rail.lassoButton)
-            try TestAssertions.assertNotNil(rail.wandButton)
-
-            // The brand/agent avatar is now a real rail item at the shared 44pt button size.
-            try assertFrameSize(rail.brandAvatarButton, width: 44, height: 44, "VOO brand avatar")
+            let entries = rail.subviews.sorted { $0.frame.minX < $1.frame.minX }
+            try TestAssertions.assertEqual(entries.count, 12)
+            try TestAssertions.assertApproxEqual(entries.first!.frame.minX, 7, accuracy: 0.01)
+            try TestAssertions.assertApproxEqual(entries.last!.frame.maxX, 579, accuracy: 0.01)
+            for index in 1..<entries.count {
+                try TestAssertions.assertApproxEqual(
+                    entries[index].frame.minX - entries[index - 1].frame.maxX,
+                    4, accuracy: 0.01, "Each tool keeps the web 4pt gap")
+            }
+            try TestAssertions.assertNil(
+                rail.wandButton,
+                "Magic wand belongs to the selection family, not the fill slot")
         }
     }
 
@@ -3272,8 +3440,10 @@ public class UIParityTests {
             let inspector = InspectorView(frame: NSRect(x: 0, y: 0, width: 1436, height: 857))
             inspector.layoutSubtreeIfNeeded()
 
-            // Web layers card: md:w-64 (256) with 3 rows at h32 need a 244pt list box.
-            try assertFrameSize(inspector.layersPanel, width: 256, height: 236, "UI_SPEC §4 layers card")
+            // The layer card has a fixed width and a content-driven height.
+            try assertFrameSize(
+                inspector.layersPanel, width: 256,
+                height: inspector.layersPanel.preferredCardHeight, "Content-sized layers card")
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.minX, 16, accuracy: 1.5, "Layers card leading margin")
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.midY, inspector.bounds.midY, accuracy: 1.5, "Layers card vertically centred")
 

@@ -297,7 +297,9 @@
                 pill.minimumValue = 0
                 pill.maximumValue = 100
                 pill.setValue(100)
-                let input = pill.subviews.compactMap { $0 as? NSTextField }.last!
+                let input = pill.subviews.compactMap { $0 as? NSTextField }.first {
+                    $0.delegate === pill
+                }!
                 var changes = 0
                 pill.onValueChanged = { _ in changes += 1 }
                 input.stringValue = "nan"

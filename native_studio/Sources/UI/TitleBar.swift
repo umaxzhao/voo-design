@@ -321,7 +321,7 @@ public final class TitleBarIconButton: NSButton {
         let side: CGFloat
         switch glyph {
         case .close: side = 16.0
-        case .collab: side = 22.0
+        case .collab: side = 46.0
         case .plus: side = 24.0
         case .settings, .browser: side = 28.0
         }
@@ -380,20 +380,7 @@ public final class TitleBarIconButton: NSButton {
             ctx.strokePath()
 
         case .collab:
-            // Web CollabAvatars: size-22 rounded-full bg-neutral-800 text-neutral-400
-            // transition-colors group-hover:bg-neutral-700 group-hover:text-white
-            let circle = bounds.insetBy(dx: 0.5, dy: 0.5)
-            ctx.setFillColor(NSColor(white: hovered ? 0.25 : 0.15, alpha: 1.0).cgColor)
-            ctx.fillEllipse(in: circle)
-            ctx.setStrokeColor(NSColor(white: hovered ? 1.0 : 0.65, alpha: 1.0).cgColor)
-            ctx.setLineWidth(1.6)
-            ctx.setLineCap(.round)
-            let cs: CGFloat = 4.2
-            ctx.move(to: CGPoint(x: center.x - cs, y: center.y))
-            ctx.addLine(to: CGPoint(x: center.x + cs, y: center.y))
-            ctx.move(to: CGPoint(x: center.x, y: center.y - cs))
-            ctx.addLine(to: CGPoint(x: center.x, y: center.y + cs))
-            ctx.strokePath()
+            NativeTitleBarStyle.drawGuestShare(in: bounds, hovered: hovered, context: ctx)
 
         case .plus:
             // Web: size-6 rounded-full bg-neutral-800/50, Plus icon 14.
@@ -604,30 +591,34 @@ public class AppTitleBar: NSView {
         }
         addSubview(zoomIndicator)
 
-        // 4. Save Button: "保存" (White Pill)
+        // Retained for compatibility; document saving lives in the File menu.
         saveButton.translatesAutoresizingMaskIntoConstraints = false
         saveButton.isWhitePill = true
-        saveButton.title = "保存"
+        saveButton.title = NativeCopy.text(.save)
+        saveButton.isHidden = true
         saveButton.target = self
         saveButton.action = #selector(handleSaveClicked)
         saveButton.setAccessibilityIdentifier("title_bar_save_button")
         addSubview(saveButton)
 
-        // 5. Open Button: "打开" (Web desktop has clean text-only "Import" / "打开")
+        // The ghost Import action shares the document-picker operation.
         openButton.translatesAutoresizingMaskIntoConstraints = false
         openButton.isWhitePill = false
-        openButton.title = "打开"
+        openButton.title = NativeTitleBarStyle.text(.importDocument)
+        openButton.font = NativeTitleBarStyle.actionFont
         openButton.leadingGlyph = nil
         openButton.target = self
         openButton.action = #selector(handleOpenClicked)
         openButton.setAccessibilityIdentifier("title_bar_open_button")
+        openButton.setAccessibilityLabel(NativeTitleBarStyle.text(.importDocument))
         addSubview(openButton)
 
         // 5b. Collab / Presence button & divider (editor mode only, web parity)
         collabButton.translatesAutoresizingMaskIntoConstraints = false
         collabButton.setAccessibilityIdentifier("title_bar_collab_button")
         collabButton.setAccessibilityRole(.button)
-        collabButton.setAccessibilityLabel("Live Collaboration")
+        collabButton.setAccessibilityLabel(NativeTitleBarStyle.text(.share))
+        collabButton.toolTip = NativeTitleBarStyle.text(.share)
         collabButton.onClick = { [weak self] in
             self?.onCollabTapped?()
         }
@@ -660,7 +651,8 @@ public class AppTitleBar: NSView {
         // 8. Dashboard-only Import (ghost) + New (white) actions.
         dashboardImportButton.translatesAutoresizingMaskIntoConstraints = false
         dashboardImportButton.isWhitePill = false
-        dashboardImportButton.title = "导入"
+        dashboardImportButton.title = NativeTitleBarStyle.text(.importDocument)
+        dashboardImportButton.font = NativeTitleBarStyle.actionFont
         dashboardImportButton.target = self
         dashboardImportButton.action = #selector(handleOpenClicked)
         dashboardImportButton.setAccessibilityIdentifier("title_bar_import_button")
@@ -671,7 +663,8 @@ public class AppTitleBar: NSView {
 
         dashboardNewButton.translatesAutoresizingMaskIntoConstraints = false
         dashboardNewButton.isWhitePill = true
-        dashboardNewButton.title = "新建"
+        dashboardNewButton.title = NativeTitleBarStyle.text(.newDocument)
+        dashboardNewButton.font = NativeTitleBarStyle.actionFont
         dashboardNewButton.target = self
         dashboardNewButton.action = #selector(handleDashboardNewClicked)
         dashboardNewButton.setAccessibilityIdentifier("title_bar_new_button")
@@ -700,12 +693,15 @@ public class AppTitleBar: NSView {
         addSubview(redoButton)
 
         exportButton.translatesAutoresizingMaskIntoConstraints = false
-        exportButton.title = "Export"
+        exportButton.title = NativeTitleBarStyle.text(.exportDocument)
+        exportButton.font = NativeTitleBarStyle.actionFont
+        exportButton.isWhitePill = true
         exportButton.target = self
         exportButton.action = #selector(handleExportClicked)
         exportButton.setAccessibilityIdentifier(AccessibilityCatalog.exportButton)
         exportButton.setAccessibilityRole(.button)
-        exportButton.isHidden = true
+        exportButton.setAccessibilityLabel(NativeTitleBarStyle.text(.exportDocument))
+        exportButton.isHidden = false
         addSubview(exportButton)
 
         // Live web metrics (capture web_20261031): brand 105x28 r8; tab pill h28
@@ -716,11 +712,16 @@ public class AppTitleBar: NSView {
         // The brand keeps the web's 105pt footprint so the tab pill lands at the
         // same offset from the brand (native SF is ~2.5pt wider than web Inter).
         let brandWidth: CGFloat = 105.0
-        let actionFont = ThemeFonts.system(size: 12, weight: .medium)
-        let saveTextWidth = ceil(("保存" as NSString).size(withAttributes: [.font: actionFont]).width)
-        let openTextWidth = ceil(("打开" as NSString).size(withAttributes: [.font: actionFont]).width)
-        let importTextWidth = ceil(("导入" as NSString).size(withAttributes: [.font: actionFont]).width)
-        let newTextWidth = ceil(("新建" as NSString).size(withAttributes: [.font: actionFont]).width)
+        let actionFont = NativeTitleBarStyle.actionFont
+        let exportTextWidth = ceil(
+            (exportButton.title as NSString).size(withAttributes: [.font: actionFont]).width)
+        let openTextWidth = ceil(
+            (openButton.title as NSString).size(withAttributes: [.font: actionFont]).width)
+        let importTextWidth = ceil(
+            (dashboardImportButton.title as NSString).size(withAttributes: [.font: actionFont])
+                .width)
+        let newTextWidth = ceil(
+            (dashboardNewButton.title as NSString).size(withAttributes: [.font: actionFont]).width)
         // Web: grey action `px-2.5` => 10, white primary action `px-3` => 12.
         let openHorizontalPadding: CGFloat = 10.0
         let saveHorizontalPadding: CGFloat = 12.0
@@ -772,12 +773,14 @@ public class AppTitleBar: NSView {
 
             // White primary action sits between the globe and the ghost action,
             // exactly like the web's Import (grey) / Export (white) order.
-            saveButton.trailingAnchor.constraint(equalTo: browserButton.leadingAnchor, constant: -8),
-            saveButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            saveButton.widthAnchor.constraint(equalToConstant: ceil(saveTextWidth + saveHorizontalPadding * 2)),
-            saveButton.heightAnchor.constraint(equalToConstant: 28),
+            exportButton.trailingAnchor.constraint(
+                equalTo: browserButton.leadingAnchor, constant: -8),
+            exportButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            exportButton.widthAnchor.constraint(
+                equalToConstant: ceil(exportTextWidth + saveHorizontalPadding * 2)),
+            exportButton.heightAnchor.constraint(equalToConstant: 28),
 
-            openButton.trailingAnchor.constraint(equalTo: saveButton.leadingAnchor, constant: -8),
+            openButton.trailingAnchor.constraint(equalTo: exportButton.leadingAnchor, constant: -8),
             openButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             openButton.widthAnchor.constraint(equalToConstant: ceil(openHorizontalPadding * 2 + openTextWidth)),
             openButton.heightAnchor.constraint(equalToConstant: 28),
@@ -789,8 +792,8 @@ public class AppTitleBar: NSView {
 
             collabButton.trailingAnchor.constraint(equalTo: collabDivider.leadingAnchor, constant: -8),
             collabButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            collabButton.widthAnchor.constraint(equalToConstant: 22),
-            collabButton.heightAnchor.constraint(equalToConstant: 22),
+            collabButton.widthAnchor.constraint(equalToConstant: 46),
+            collabButton.heightAnchor.constraint(equalToConstant: 28),
 
             // Dashboard-only pair sits left of browserButton (in dashboard mode,
             // browserButton is the rightmost control at trailing -16, matching web).
@@ -809,8 +812,10 @@ public class AppTitleBar: NSView {
             dashboardImportButton.heightAnchor.constraint(equalToConstant: 28),
 
             // Invisible anchors for compatibility tests
-            exportButton.trailingAnchor.constraint(equalTo: saveButton.leadingAnchor),
-            exportButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            saveButton.leadingAnchor.constraint(equalTo: exportButton.leadingAnchor),
+            saveButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            saveButton.widthAnchor.constraint(equalTo: exportButton.widthAnchor),
+            saveButton.heightAnchor.constraint(equalTo: exportButton.heightAnchor),
             redoButton.trailingAnchor.constraint(equalTo: exportButton.leadingAnchor),
             redoButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             undoButton.trailingAnchor.constraint(equalTo: redoButton.leadingAnchor),
@@ -868,7 +873,8 @@ public class AppTitleBar: NSView {
         // Live web dashboard title bar: brand + the round "+" (no document tab
         // pill), and Import (ghost) / New (white) / browser globe on the right.
         // Settings gear is hidden in dashboard mode (web settings is the bottom-left floating button).
-        saveButton.isHidden = isDashboardMode
+        saveButton.isHidden = true
+        exportButton.isHidden = isDashboardMode
         openButton.isHidden = isDashboardMode
         collabButton.isHidden = isDashboardMode
         collabDivider.isHidden = isDashboardMode

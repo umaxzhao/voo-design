@@ -1081,12 +1081,13 @@ public class CanvasStageView: NSView {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         // 1. Stage Background (web editor workspace ground #525252)
-        ctx.setFillColor(ThemeTokens.colorStageStudio.cgColor)
+        let workspaceColor = document.workspaceBackgroundColor
+        if workspaceColor == "transparent" { ctx.clear(bounds) }
+        ctx.setFillColor((NSColor(hexString: workspaceColor) ?? .clear).cgColor)
         ctx.fill(bounds)
 
-        // 1.1 Stage dot grid: always on in the web free-page stage, under the
-        // artboards. `showGrid` keeps its own meaning (layout grid lines).
-        drawStageDotGrid(in: ctx)
+        // The web workspace renderer covers the decorative DOM dot grid.
+        // Keep the explicit document layout grid separate from this background.
 
         let rulerOffset = showRulers ? ThemeTokens.rulerTrackThickness : 0.0
         let originX = rulerOffset + panOffset.x

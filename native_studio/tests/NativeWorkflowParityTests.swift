@@ -7,6 +7,106 @@
             let registry = TestRegistry.shared
             registry.register(
                 tier: 3, feature: "Native-Inspector",
+                name: "test_FormLayerCardShowsAllRowsAndCanvasBackgroundWithoutScrolling"
+            ) {
+                let root = URL(fileURLWithPath: #filePath)
+                    .deletingLastPathComponent().deletingLastPathComponent()
+                    .deletingLastPathComponent()
+                let document = try DocumentIO.shared.loadDocument(
+                    from: root.appendingPathComponent("docs/examples/form-poster.voo"))
+                try TestAssertions.assertEqual(document.nodes.count, 14)
+                let inspector = InspectorView(
+                    frame: CGRect(x: 0, y: 0, width: 1908, height: 944))
+                inspector.layersPanel.canvasBackgroundColor = document.workspaceBackgroundColor
+                inspector.layersPanel.configure(
+                    with: document.nodes, selectedId: document.nodes.last?.id)
+                for _ in 0..<3 { inspector.layoutSubtreeIfNeeded() }
+                let panel = inspector.layersPanel
+                try TestAssertions.assertEqual(
+                    panel.visibleNodes.first?.name, "FORM — Design Culture")
+                try TestAssertions.assertEqual(panel.visibleNodes.dropFirst().first?.name, "Number")
+                try TestAssertions.assertEqual(panel.visibleNodes.last?.name, "Frame")
+                try TestAssertions.assertEqual(panel.nodes, document.nodes)
+                try TestAssertions.assertApproxEqual(panel.frame.height, 676)
+                try TestAssertions.assertApproxEqual(panel.frame.midY, inspector.bounds.midY)
+                guard let table = descendants(panel).compactMap({ $0 as? LayersTableView }).first,
+                    let scroll = table.enclosingScrollView
+                else { throw TestFailure(message: "Layer tree missing", file: #file, line: #line) }
+                try TestAssertions.assertEqual(table.numberOfRows, 14)
+                try TestAssertions.assertApproxEqual(scroll.contentView.bounds.minY, 0)
+                for row in 0..<table.numberOfRows {
+                    try TestAssertions.assertTrue(
+                        scroll.contentView.bounds.contains(table.rect(ofRow: row)),
+                        "Every authored FORM row is fully visible: row=\(row), "
+                            + "rowRect=\(table.rect(ofRow: row)), clip=\(scroll.contentView.bounds), "
+                            + "table=\(table.frame), scroll=\(scroll.frame)")
+                }
+                guard
+                    let background = descendants(panel).first(where: {
+                        $0.accessibilityIdentifier() == "Layers.CanvasBackground"
+                    })
+                else {
+                    throw TestFailure(
+                        message: "Canvas background row missing", file: #file, line: #line)
+                }
+                try TestAssertions.assertFalse(background.isHidden)
+                panel.searchQuery = "Artwork field"
+                for _ in 0..<3 { inspector.layoutSubtreeIfNeeded() }
+                try TestAssertions.assertTrue(panel.frame.height < 676)
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
+                name: "test_InspectorFlipUsesTheSharedUndoableSelectionOperation"
+            ) {
+                let controller = WindowController()
+                let stage = controller.mainContentView.canvasStageView
+                let node = VOONode(
+                    id: "flip-target", kind: .path, x: 10, y: 20, width: 80, height: 60,
+                    points: [PenAnchor(x: 30, y: 40)])
+                stage.document.nodes = [node]
+                stage.selectedNodeIds = [node.id]
+                controller.mainContentView.inspector.propertiesPanel.onFlipRequest?(true)
+                try TestAssertions.assertApproxEqual(stage.document.nodes[0].points![0].x, 70)
+                try TestAssertions.assertEqual(controller.commandManager.undoStack.count, 1)
+                try TestAssertions.assertTrue(controller.commandManager.undo(on: &stage.document))
+                try TestAssertions.assertEqual(stage.document.nodes[0], node)
+                controller.mainContentView.inspector.propertiesPanel.onFlipRequest?(false)
+                try TestAssertions.assertApproxEqual(stage.document.nodes[0].points![0].y, 60)
+                try TestAssertions.assertEqual(controller.commandManager.undoStack.count, 1)
+                try TestAssertions.assertTrue(controller.commandManager.undo(on: &stage.document))
+                try TestAssertions.assertEqual(stage.document.nodes[0], node)
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
+                name: "test_UnavailableRailToolsPreserveArtworkAndCurrentTool"
+            ) {
+                let controller = WindowController()
+                let stage = controller.mainContentView.canvasStageView
+                stage.document.nodes = [VOONode(id: "untouched", kind: .rect)]
+                stage.selectedNodeIds = ["untouched"]
+                let before = stage.document
+                let tool = stage.activeTool
+                for accessory: ToolRailAccessory in [.crop, .healing] {
+                    controller.activateAccessoryTool(accessory)
+                    try TestAssertions.assertEqual(stage.document, before)
+                    try TestAssertions.assertEqual(stage.activeTool, tool)
+                    try TestAssertions.assertTrue(controller.commandManager.undoStack.isEmpty)
+                    try TestAssertions.assertFalse(controller.nativeStatusBanner.isHidden)
+                }
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
+                name: "test_DefaultSelectionRailUsesMarqueeAndRetainsLegacyLasso"
+            ) {
+                let controller = WindowController()
+                let stage = controller.mainContentView.canvasStageView
+                controller.activateAccessoryTool(.marquee)
+                try TestAssertions.assertTrue(stage.selectionStyle == .marquee)
+                controller.activateAccessoryTool(.lasso)
+                try TestAssertions.assertTrue(stage.selectionStyle == .lasso)
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
                 name: "test_DesignSelectionNotifiesHostAfterMeasuringConfiguredPaintRows"
             ) {
                 let panel = PropertiesPanelView(frame: CGRect(x: 0, y: 0, width: 288, height: 800))

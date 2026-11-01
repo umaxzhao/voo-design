@@ -41,6 +41,7 @@ echo "--> Compiling with swiftc (-Osize, arm64-apple-macosx14.0)..."
 mkdir -p "$BUILD_DIR/ModuleCache"
 swiftc \
   -Osize \
+  -Xlinker -dead_strip \
   -module-cache-path "$BUILD_DIR/ModuleCache" \
   -target arm64-apple-macosx14.0 \
   -sdk "$SDK_PATH" \

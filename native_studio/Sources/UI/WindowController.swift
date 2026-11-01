@@ -84,11 +84,20 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             NativeBrushSettings.shared.show(relativeTo: button, stage: view.canvasStageView)
         }
         view.inspector.delegate = self
+        view.inspector.configureCanvas(document: view.canvasStageView.document)
+        view.inspector.onCanvasBackgroundChange = { [weak self] color in
+            self?.applyCanvasBackground(color)
+        }
+        view.inspector.layersPanel.onSelectCanvasBackground = { [weak self] in
+            self?.mainContentView.canvasStageView.clearSelection()
+        }
 
         // Wire CanvasStageView Events
         view.canvasStageView.onSelectionChanged = { [weak self] selectedIds in
             guard let self = self else { return }
             let nodes = self.mainContentView.canvasStageView.document.nodes
+            self.mainContentView.inspector.configureCanvas(
+                document: self.mainContentView.canvasStageView.document)
             self.mainContentView.inspector.layersPanel.configure(with: nodes, selectedId: selectedIds.first)
             if let firstId = selectedIds.first, let node = nodes.first(where: { $0.id == firstId }) {
                 self.mainContentView.inspector.configureProperties(with: node)
@@ -417,8 +426,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 self.presentSelectionColourPanel(isStroke: false)
             case .strokeSwatch:
                 self.presentSelectionColourPanel(isStroke: true)
-            case .flipHorizontal, .flipVertical:
-                self.showChromeToast("翻转选区 (Flip selection)")
+            case .flipHorizontal:
+                self.flipHorizontalAction(nil)
+            case .flipVertical:
+                self.flipVerticalAction(nil)
             default:
                 break
             }
@@ -853,7 +864,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         delegate?.didRequestRedo()
     }
     public func titleBarDidRequestExport(_ titleBar: AppTitleBar) {
-        saveDocument(nil)
+        exportDocument(nil)
     }
     public func titleBarDidClickZoom(_ titleBar: AppTitleBar) {
         mainContentView.canvasStageView.zoomActual()
@@ -895,6 +906,14 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     }
 
     // MARK: - InspectorDelegate (properties card + layers interactions)
+
+    public func inspectorDidRequestFlip(horizontal: Bool) {
+        if horizontal {
+            flipHorizontalAction(nil)
+        } else {
+            flipVerticalAction(nil)
+        }
+    }
 
     public func inspectorDidSelectNode(id: String) {
         mainContentView.canvasStageView.selectNode(id: id)
@@ -1065,6 +1084,17 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public func activateAccessoryTool(_ accessory: ToolRailAccessory) {
         let stage = mainContentView.canvasStageView
         switch accessory {
+        case .fill:
+            guard !stage.selectedNodeIds.isEmpty else {
+                showChromeToast(NativeRailFeedback.text(.selectFillTarget))
+                return
+            }
+            showChromeToast(NativeRailFeedback.text(.selectionFill))
+            presentSelectionColourPanel(isStroke: false)
+        case .healing:
+            showChromeToast(NativeRailFeedback.text(.healingUnavailable))
+        case .crop:
+            showChromeToast(NativeRailFeedback.text(.cropUnavailable))
         case .hand:
             let enable = !stage.panModeEnabled
             stage.panModeEnabled = enable
@@ -1076,6 +1106,13 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 mainContentView.toolRail.updateSelection()
                 showChromeToast("抓手工具：拖拽平移画布")
             }
+        case .marquee:
+            stage.panModeEnabled = false
+            stage.selectionStyle = .marquee
+            mainContentView.toolRail.state.selectTool(.move)
+            stage.activeTool = .move
+            mainContentView.toolRail.updateSelection()
+            mainContentView.toolRail.setAccessoryActive(.marquee)
         case .lasso:
             stage.panModeEnabled = false
             stage.selectionStyle = .lasso
@@ -2039,6 +2076,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     }
 
     func refreshAfterDocumentMutation() {
+        mainContentView.inspector.configureCanvas(
+            document: mainContentView.canvasStageView.document)
         let nodes = mainContentView.canvasStageView.document.nodes
         let selectedIds = mainContentView.canvasStageView.selectedNodeIds
         mainContentView.inspector.layersPanel.configure(with: nodes, selectedId: selectedIds.first)
@@ -3544,6 +3583,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     /// Keeps every chrome surface in sync after document / dashboard transitions.
     public func syncChromeState() {
+        mainContentView.inspector.configureCanvas(
+            document: mainContentView.canvasStageView.document)
         mainContentView.bottomZoomBar.update(
             zoom: mainContentView.canvasStageView.zoom,
             canUndo: commandManager.canUndo,
@@ -3876,13 +3917,13 @@ public class MainContentView: NSView {
             welcomeDashboard.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor),
 
             // ToolRail: Floating centered pill at top of editorShell (web `top-[14px]`,
-            // p-1.5 + 44px tool buttons => 56pt tall; 11 native tools + gaps => 536pt).
-            toolRail.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 14),
+            // Twelve 44pt tools, 4pt gaps, 6pt padding and the 1pt border).
+            toolRail.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 16),
             toolRail.centerXAnchor.constraint(equalTo: editorShell.centerXAnchor),
-            toolRail.widthAnchor.constraint(lessThanOrEqualToConstant: 589),
+            toolRail.widthAnchor.constraint(lessThanOrEqualToConstant: ToolRailView.preferredWidth),
             toolRail.widthAnchor.constraint(
-                lessThanOrEqualTo: editorShell.widthAnchor, constant: -24),
-            toolRail.heightAnchor.constraint(equalToConstant: 56),
+                lessThanOrEqualTo: editorShell.widthAnchor, constant: -16),
+            toolRail.heightAnchor.constraint(equalToConstant: ToolRailView.pillHeight),
 
             // ContextToolbar: Floating centered pill below ToolRail
             contextToolbar.topAnchor.constraint(equalTo: toolRail.bottomAnchor, constant: 8),
@@ -3891,13 +3932,15 @@ public class MainContentView: NSView {
             contextToolbar.heightAnchor.constraint(equalToConstant: 38),
 
             // Inspector Studio: Overlays canvas area inside editorShell
-            inspector.topAnchor.constraint(equalTo: editorShell.topAnchor),
-            inspector.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor),
-            inspector.trailingAnchor.constraint(equalTo: editorShell.trailingAnchor),
-            inspector.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor)
+            // The web canvas content starts inside the shell's 2pt border.
+            inspector.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 2),
+            inspector.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor, constant: 2),
+            inspector.trailingAnchor.constraint(equalTo: editorShell.trailingAnchor, constant: -2),
+            inspector.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor, constant: -2),
         ])
 
-        let preferredRailWidth = toolRail.widthAnchor.constraint(equalToConstant: 589)
+        let preferredRailWidth = toolRail.widthAnchor.constraint(
+            equalToConstant: ToolRailView.preferredWidth)
         preferredRailWidth.priority = .defaultHigh
         preferredRailWidth.isActive = true
         updatePresentation()

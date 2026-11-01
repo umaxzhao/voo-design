@@ -166,10 +166,14 @@ public class CanvasInteractionTests {
             let rail = controller.mainContentView.toolRail
             rail.handButton?.performClick(nil)
             try TestAssertions.assertTrue(stage.panModeEnabled, "Hand tool enables pan mode")
-            rail.lassoButton?.performClick(nil)
-            try TestAssertions.assertEqual(stage.selectionStyle, .lasso, "Lasso sets selection style")
-            rail.wandButton?.performClick(nil)
-            try TestAssertions.assertEqual(stage.selectionStyle, .wand, "Magic wand sets selection style")
+                rail.marqueeButton?.performClick(nil)
+                try TestAssertions.assertEqual(
+                    stage.selectionStyle, .marquee,
+                    "Default selection family uses a rectangular marquee")
+                controller.activateAccessoryTool(.lasso)
+                try TestAssertions.assertEqual(stage.selectionStyle, .lasso, "Lasso sets selection style")
+                controller.activateAccessoryTool(.wand)
+                try TestAssertions.assertEqual(stage.selectionStyle, .wand, "Magic wand sets selection style")
             rail.moveToolButton.performClick(nil)
             try TestAssertions.assertEqual(stage.selectionStyle, .marquee, "Move tool resets selection style")
             try TestAssertions.assertFalse(stage.panModeEnabled)
