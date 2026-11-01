@@ -227,15 +227,20 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/*paint*", "src/canvas/editor/*raster*", "src/canvas/editor/*adjust*", "src/canvas/editor/*filter*",
       "src/canvas/editor/*crop*", "src/canvas/editor/*bitmap*", "src/canvas/editor/*matting*", "src/canvas/editor/*upscal*",
       "src/canvas/editor/*repair*", "src/canvas/raster/*",
+      "src/canvas/editor/model_asset_loader.js", "tests/unit/model_asset_loader.test.js",
+      "tests/unit/ai-repair-worker-client.test.js", "tests/unit/ai-repair-tool.test.js", "tests/unit/ai-repair-backend.test.js", "tests/unit/healing-tool-menu.test.jsx",
+      "scripts/deploy-editor.sh", "scripts/deploy-editor-runtime.sh", "scripts/nginx-editor-runtime.conf",
+      "scripts/verify-editor-runtime.mjs", "tests/unit/editor-runtime.test.js",
+      "src/canvas/components/ai_repair_download_dialog.jsx", "tests/unit/ai_repair_download_dialog.test.jsx",
     ],
     related: [
       "selection", "compositing", "documents", "inspector",
     ],
     features: [
-      "images.retouch", "images.pixel-selections", "images.adjustments", "images.local-models",
+      "images.retouch", "images.pixel-selections", "images.adjustments", "images.local-models", "images.ai-repair-responsiveness",
     ],
     suites: [
-      "drawing-retouch", "raster-loading", "image-action-loading", "image-interaction-boundaries", "image-adjustments-complete",
+      "healing-responsiveness", "drawing-retouch", "raster-loading", "image-action-loading", "image-interaction-boundaries", "image-adjustments-complete",
       "image-selections-warp", "image-toolbar-complete", "image-agent-complete", "image-inspector-core", "gl-spatial-parity", "generated-output",
       "image-export-formats",
     ],

@@ -221,7 +221,9 @@ export async function loadModelAssetBytes({
   fallbackUrl,
   cacheName = DEFAULT_MODEL_CACHE_NAME,
   onProgress,
+  signal,
 }) {
+  signal?.throwIfAborted();
   // 1. Native Electron direct disk loader (zero network, instant I/O)
   if (typeof window !== "undefined" && window.electronAPI?.loadModelBytes) {
     try {
@@ -274,22 +276,23 @@ export async function loadModelAssetBytes({
 
   // 4. On-demand download from local static asset URL
   try {
-    const response = await fetch(localUrl);
+    const response = await (signal ? fetch(localUrl, { signal }) : fetch(localUrl));
     if (response.ok) {
-      const bytes = await streamResponseAndCache(response, cacheKeys, cache, onProgress);
+      const bytes = await streamResponseAndCache(response, cacheKeys, cache, onProgress, signal);
       return bytes;
     }
-  } catch {
+  } catch (error) {
+    if (signal?.aborted) throw signal.reason;
     // Local fetch failed (e.g. not found or restricted), try remote fallback
   }
 
   // 5. Fallback to remote CDN if provided
   if (fallbackUrl) {
-    const response = await fetch(fallbackUrl);
+    const response = await (signal ? fetch(fallbackUrl, { signal }) : fetch(fallbackUrl));
     if (!response.ok) {
       throw new Error(`modelAssetFetchFailed:${response.status} for ${filename}`);
     }
-    return await streamResponseAndCache(response, cacheKeys, cache, onProgress);
+    return await streamResponseAndCache(response, cacheKeys, cache, onProgress, signal);
   }
 
   throw new Error(`modelAssetNotFound:${filename}`);
@@ -298,7 +301,8 @@ export async function loadModelAssetBytes({
 /**
  * Streams the response body with progress tracking and caches the result into Chrome.
  */
-async function streamResponseAndCache(response, cacheKeys, cache, onProgress) {
+async function streamResponseAndCache(response, cacheKeys, cache, onProgress, signal) {
+  signal?.throwIfAborted();
   if (isHtmlModelResponse(response)) {
     await response.body?.cancel?.();
     throw new Error("modelAssetInvalidResponse");
@@ -316,6 +320,7 @@ async function streamResponseAndCache(response, cacheKeys, cache, onProgress) {
     const chunks = [];
     let loaded = 0;
     for (;;) {
+      signal?.throwIfAborted();
       const { done, value } = await reader.read();
       if (done) break;
       chunks.push(value);
@@ -334,11 +339,14 @@ async function streamResponseAndCache(response, cacheKeys, cache, onProgress) {
     onProgress?.({ phase: "loaded", loaded: bytes.byteLength, total: bytes.byteLength, percent: 100 });
   }
 
-  // Persist into Chrome CacheStorage
+  signal?.throwIfAborted();
+  // Read historical aliases, but persist one canonical copy per storage tier.
+  // Duplicating a 110 MB model for every alias caused large renderer allocations.
+  const canonicalKeys = cacheKeys.slice(0, 1);
   if (cache) {
-    for (const key of cacheKeys) {
+    for (const key of canonicalKeys) {
       try {
-        const cachedResponse = new Response(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), {
+        const cachedResponse = new Response(bytes, {
           headers: {
             "Content-Type": "application/octet-stream",
             "Content-Length": String(bytes.byteLength),
@@ -352,7 +360,8 @@ async function streamResponseAndCache(response, cacheKeys, cache, onProgress) {
   }
 
   // Persist into Chrome IndexedDB
-  for (const key of cacheKeys) {
+  for (const key of canonicalKeys) {
+    signal?.throwIfAborted();
     try {
       await putIndexedDbModel(key, bytes);
     } catch (err) {

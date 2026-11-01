@@ -8,6 +8,10 @@ await withEditorBrowser(async ({
   page,
   tool
 }) => {
+  const repairWarnings = [];
+  page.on("console", message => {
+    if (message.text().startsWith("AI Repair inference failed")) repairWarnings.push(message.text());
+  });
   const audit = imageAudit(page, "network");
   const requested = process.env.VOO_NETWORK_CASES?.split(",").filter(Boolean);
   const record = (id, run) => !requested?.length || requested.includes(id) ? audit.record(id, run) : Promise.resolve();
@@ -153,6 +157,13 @@ await withEditorBrowser(async ({
         return result;
       };
     });
+    await page.evaluate(() => {
+      window.__aiRepairHeartbeat = { maxGap: 0, count: 0, last: performance.now() };
+      window.__aiRepairTimer = setInterval(() => {
+        const beat = window.__aiRepairHeartbeat, now = performance.now();
+        beat.maxGap = Math.max(beat.maxGap, now - beat.last); beat.last = now; beat.count++;
+      }, 16);
+    });
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("button", {
       name: "Download",
@@ -163,7 +174,7 @@ await withEditorBrowser(async ({
     await page.waitForFunction(({
       id,
       previous
-    }) => window.__vooEditor.getNode(id)?.imageId !== previous, {
+    }) => Boolean(window.__vooEditor && (window.__vooEditor.getNode(id)?.imageId !== previous || window.__vooEditor.getAiRepairDownload()?.phase === "runFailed")), {
       id: node.id,
       previous
     }, {
@@ -173,12 +184,21 @@ await withEditorBrowser(async ({
         phase: window.__vooEditor.getAiRepairDownload()?.phase
       }))}`);
     });
+    const phase = await page.evaluate(() => window.__vooEditor?.getAiRepairDownload()?.phase);
+    assert.notEqual(phase, "runFailed", `The actual model must finish inference: ${repairWarnings.join("\n")}`);
+    const heartbeat = await page.evaluate(() => {
+      clearInterval(window.__aiRepairTimer);
+      return window.__aiRepairHeartbeat;
+    });
+    assert.ok(heartbeat.count > 3 && heartbeat.maxGap < 250, JSON.stringify(heartbeat));
     assert.notDeepEqual(await audit.pixels(node.id), before);
     await tool("undo");
     assert.deepEqual(await audit.pixels(node.id), before);
     return {
       realPointer: true,
       actualWeights: true,
+      heartbeat,
+      backend: await page.evaluate(async () => (await import("/src/canvas/editor/local_ai_repair.js")).describeLocalAiRepairBackend()),
       pixels: true,
       undo: true
     };

@@ -12,6 +12,40 @@
 
 ## 当前结论
 
+**AI 修补的线上失败与已复现卡顿已修复，真实线上模型路径复验通过。**
+主线交付：[PR #91](https://github.com/umaxzhao/voo-design/pull/91)；本轮不创建桌面标签或 Release。
+
+- 推理移到独立 Worker，缓存命中也显示运行状态，下载/运行均可取消；
+  取消、删除源图层或关闭编辑器后不写回迟到结果。工具主按钮保留当前模式，
+  GPU 适配器不可用时选择真实 INT8 模型。
+- 本地实际模型通过后，线上实际操作仍失败，证据确认服务器把 `.mjs` 与
+  `.wasm` 返回为通用二进制类型。已补 `/editor/ort/` 范围的 nginx MIME
+  配置与回滚备份；发布 HTML 之前强制检查六个运行时资源和缺失模块 404。
+- 固定应用源码 [`1585dee4`](https://github.com/umaxzhao/voo-design/commit/1585dee4641c01c599c2e6bd6080a8d0290be77c)
+  完整门禁 **120/120**：116 组核心浏览器、4927 单测通过/4 跳过、
+  602 文件通过/3 跳过、1477 文件设计检查和构建通过。源码在验证期间未变。
+- 部署守卫提交 [`4d873b31`](https://github.com/umaxzhao/voo-design/commit/4d873b31096fe8c075f61ee2a4effa91aa2b06eb)
+  不改变上述应用源码；新增五项运行时交付断言后，全量单测 **4932 通过/4 跳过**，
+  603 文件通过/3 跳过，设计、模块登记、shell 语法和格式检查通过。
+- `ssh la2` 已更新 [网页预览](https://voo.run/editor/)。线上真实 LaMa INT8/WASM
+  修补改变像素，一次撤销精确还原；推理中 Esc 约 **81ms** 关闭弹窗，
+  Worker 约 **2098ms** 退出，无迟到写回。取消后再次画一笔能完成真实推理并撤销。
+  推理期间主线程心跳最长间隔 **39.2ms**；正式 HTML 与 84 条已加载资源响应
+  （含 Worker、ORT JS/WASM）与验收构建逐字节一致，零页面异常。
+- 证据：`/private/tmp/voo-ai-repair-integrated-release.{json,log}`、
+  `/private/tmp/voo-ai-repair-runtime-units.log`、
+  `/private/tmp/voo-ai-repair-production-proof.{json,log}`、
+  `/private/tmp/voo-ai-repair-runtime-{before.log,after.json}`。
+  线上失败保留在 `/private/tmp/voo-ai-repair-production-diagnostic.log` 和
+  `/private/tmp/voo-ai-repair-production-diagnostic-failed.json`。
+- 目录现为 117 组能力、116 组核心浏览器和 9 组独立检查。受控 Worker
+  夹具只证明取消/响应/源归属，不冒充真实模型推理；独立网络检查只追加了
+  AI 修补这一项的真实证据，其他网络/付费服务不继承通过。
+- GPU 硬件、签名安装包、其他浏览器及低端设备大图预处理/编码仍未认证。
+  普通 Patch 的 2048px 同步求解约 867ms 主线程间隔是独立遗留，不记为已修复。
+
+此前整合记录如下。
+
 **原始分支/草稿整合的固定源码门禁通过，预览已更新核验；主线交付见 PR #88，功能覆盖仍为部分。**
 18 个原始分歧分支、21 个工作树的头提交及 4 份草稿快照全部进入整合历史。
 合并冲突曾覆盖已通过的行为，已保留失败并恢复，不能以 Git 祖先关系代替功能验收。本轮不创建标签、草稿 Release 或公开版本。
