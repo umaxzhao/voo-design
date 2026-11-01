@@ -239,6 +239,7 @@ export default function AppTitleBar() {
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
                     handleNewOrExport();

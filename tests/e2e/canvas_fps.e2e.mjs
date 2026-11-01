@@ -2,6 +2,7 @@
 //
 // Usage: `node tests/e2e/canvas_fps.e2e.mjs` (or `npm run test:e2e:fps`).
 // VOO_FPS_NODES=1000,5000,20000 selects sizes; VOO_FPS_MS=2000 sets each sample.
+// VOO_FPS_COMPLEX_SCENE=1 mixes imported PNGs, effects and nested Frames.
 // VOO_FPS_SCENARIOS=zoom,drag isolates interactions for profiling.
 // VOO_FPS_PROFILE=/tmp/canvas.cpuprofile captures a Chrome CPU profile.
 // VOO_FPS_SCREENSHOT_DIR=/tmp/canvas-fps saves settled full-page PNGs.
@@ -27,6 +28,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const RESULTS_PATH = process.env.VOO_FPS_RESULTS_PATH || path.join(tmpdir(), "voo-canvas-fps-results.json");
 const NODE_COUNTS = (process.env.VOO_FPS_NODES || "1000,5000,20000").split(",").map(Number);
+const COMPLEX_SCENE = process.env.VOO_FPS_COMPLEX_SCENE === "1";
 if (NODE_COUNTS.some(n => !Number.isInteger(n) || n < 1)) throw new Error("Invalid VOO_FPS_NODES");
 const SCENARIOS = (process.env.VOO_FPS_SCENARIOS || "pan,zoom,drag").split(",");
 if (SCENARIOS.some(s => !["pan", "zoom", "drag"].includes(s))) throw new Error("Invalid VOO_FPS_SCENARIOS");
@@ -182,18 +184,66 @@ try {
   const cpuProfiles = [];
   const results = [];
   for (const nodeCount of (process.env.VOO_FPS_PIXELS_ONLY === "1" ? [] : NODE_COUNTS)) {
-    await page.evaluate(async (nodeCount) => {
-      const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    await page.evaluate(async ({ nodeCount, complexScene }) => {
+      const { createRectNode, createImageNode, createGroupNode } = await import("/src/canvas/editor/scene_model.js");
       const editor = window.__vooEditor;
       const columns = Math.ceil(Math.sqrt(nodeCount));
-      const nodes = Array.from({ length: nodeCount }, (_, i) => createRectNode({
-        x: (i % columns) * 24, y: Math.floor(i / columns) * 24,
-        width: 18, height: 18, fill: i % 2 ? "#3366ff" : "#ff6633",
-      }));
+      const nodes = [];
+      const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pS8AAAAASUVORK5CYII=";
+      const parentFor = new Map();
+      if (complexScene) {
+        for (let start = 0; start < nodeCount; start += 256) {
+          const frame = createGroupNode({
+            x: (start % columns) * 24,
+            y: Math.floor(start / columns) * 24,
+            width: Math.min(256, nodeCount - start) * 24,
+            height: 120,
+            name: `Performance frame ${Math.floor(start / 256) + 1}`,
+          });
+          frame.isFrame = true;
+          frame.fill = "#17191b";
+          nodes.push(frame);
+          const end = Math.min(nodeCount, start + 256);
+          for (let innerStart = start; innerStart < end; innerStart += 64) {
+            const inner = createGroupNode({
+              x: (innerStart % columns) * 24,
+              y: Math.floor(innerStart / columns) * 24,
+              width: Math.min(64, end - innerStart) * 24,
+              height: 120,
+              parentId: frame.id,
+            });
+            inner.isFrame = true;
+            inner.fill = "#202326";
+            nodes.push(inner);
+            for (let index = innerStart; index < Math.min(end, innerStart + 64); index += 1) {
+              parentFor.set(index, inner.id);
+            }
+          }
+        }
+      }
+      for (let i = 0; i < nodeCount; i += 1) {
+        const geometry = {
+          x: (i % columns) * 24,
+          y: Math.floor(i / columns) * 24,
+          width: 18,
+          height: 18,
+          fill: i % 2 ? "#3366ff" : "#ff6633",
+          ...(parentFor.has(i) ? { parentId: parentFor.get(i) } : {}),
+        };
+        if (complexScene && i % 32 === 0) {
+          nodes.push(createImageNode({ ...geometry, imageId: `fps-image-${i}`, src: png }));
+        } else {
+          const node = createRectNode(geometry);
+          if (complexScene && i % 5 === 0) {
+            node.effects = { shadow: { enabled: true, color: "#000000", blur: 6, offsetX: 2, offsetY: 3, opacity: 45 } };
+          }
+          nodes.push(node);
+        }
+      }
       editor.setDoc({ ...editor.getDocument(), width: columns * 24,
         height: Math.ceil(nodeCount / columns) * 24, nodes }, { commit: false });
       editor.zoomToFit();
-    }, nodeCount);
+    }, { nodeCount, complexScene: COMPLEX_SCENE });
     if (SCREENSHOT_DIR) {
       await page.waitForTimeout(1000);
       await page.screenshot({ path: path.join(SCREENSHOT_DIR, `fps-${nodeCount}-settled.png`), fullPage: true });
@@ -249,7 +299,9 @@ try {
             .sort((a,b) => b.area - a.area).slice(0, 12), tileLayerActive: !!document.querySelector("[data-canvas-tile-layer]") } : {}), avgFps: +(frames.length * 1000 / total).toFixed(2),
           p95FrameMs: +sorted[Math.ceil(sorted.length * .95) - 1].toFixed(2),
           updateMs: +(timings.reduce((a,b) => a+b, 0) / timings.length).toFixed(2),
-          frames: frames.length, durationMs: Math.round(total), nodeCount: editor.getDocument().nodes.length };
+          frames: frames.length, durationMs: Math.round(total),
+          nodeCount: editor.getDocument().nodes.filter(item => item.kind !== "group").length,
+          sceneNodeCount: editor.getDocument().nodes.length };
       }, { scenario, sampleMs: SAMPLE_MS, details: !!process.env.VOO_FPS_DETAILS });
       if (process.env.VOO_FPS_TRACE) {
         const complete = new Promise(resolve => profiler.once("Tracing.tracingComplete", resolve));
@@ -274,7 +326,7 @@ try {
       if (result.nodeCount !== nodeCount || !Number.isFinite(result.avgFps)) {
         throw new Error(`Invalid ${nodeCount}-node ${scenario} measurement`);
       }
-      results.push({ scenario, ...result });
+      results.push({ scenario, scene: COMPLEX_SCENE ? "mixed-assets" : "rectangles", ...result });
       log(results.at(-1));
       if (SCREENSHOT_DIR && (scenario === "zoom" || scenario === "drag")) {
         await page.waitForTimeout(400);

@@ -1,0 +1,69 @@
+{
+  "date": "2026-11-01",
+  "sourceRevision": "392f45f147e9b33ba5a749d9b69081e2b4cd2b77",
+  "verdict": "parity-failed",
+  "issueCounts": {
+    "P0": 4,
+    "P1": 17,
+    "P2": 3,
+    "total": 24
+  },
+  "runtime": {
+    "nativeUI": "Existing original-workspace app; exact executable fingerprint is recorded, not attributed to the clean worktree build. Its source provenance is not independently certified.",
+    "nativeExecutableSHA256": "a8e260c30d6abebe9be41e888144c152952d3047b9d342de122a296eaa200cda",
+    "electronUI": "Existing Electron app loading localhost:5173; Vite process cwd is the original dirty workspace. This is a live reference, not a clean release certification."
+  },
+  "execution": {
+    "nativeIntegratedTests": {
+      "passed": 397,
+      "failed": 0,
+      "log": "/tmp/voo-native-parity-audit/full-tests.log"
+    },
+    "productionBuild": {
+      "passed": true,
+      "binaryBytes": 5216704,
+      "bundleKB": 10544,
+      "log": "/tmp/voo-native-audit-build.log"
+    },
+    "parityDiagnostics": "Known failing scenarios; not counted as registered test passes."
+  },
+  "coverage": "partial",
+  "unverified": [
+    "Physical VoiceOver traversal",
+    "Signed distribution installer",
+    "Live paid generation/model authentication",
+    "Full multi-document/cross-platform matrix",
+    "Exhaustive text IME, image formats, nested masks, effects, auto-layout and performance"
+  ],
+  "artifacts": {
+    "binary-image-render.png": "cef16e8765191e9833da9e1f72aa4e7d8b9c7a4c7b745260a4f7c638cd75a039",
+    "decode-probes.json": "ced94db891fe8f4ce05f87bf85002c2af9b511a92431e9e372e268ab3ed0069b",
+    "electron-form.png": "4b42b2ec173977625be2f779a92c6a73f274abcc2321ebae3a3a0c8e5ab66b1d",
+    "electron-inspector.png": "568bbfc447a2c3dacd263794dfd00a723c9aa11d7df91145fd98829a348b0b08",
+    "engine-findings.json": "d51f64913417f48dfb1e2dd4e765976794405f59349921f984834373a0e268af",
+    "engine-probe.swift.txt": "b5d1cc713b333ac287cd02728ebe031cb297348d6b1350728acd58a5c70a5329",
+    "example-summary.json": "b900e1237468c81e5bee2a25767fd79a676a785d7ab59e13034d026d6f1d1462",
+    "form-official-json-envelope-out.json": "a361359c27c32a004e6a09b83f15aaf70a470933741903c0e7a1d16ebbd9e29c",
+    "form-official-json-envelope.json": "16268fa8c8b8d33f0fdc293b7287876eb5ddc62d0995cd0e6ca21f0504dd7822",
+    "gradient-export.png": "0b1e1a75c9705d4005da3074b03614c670e52383729b48e66cac77772be18092",
+    "gradient-stage.png": "274e1ce3b625ab112ab7466bc30ae96e361577ab4af7b5c03fd0b67d8967085d",
+    "model-probe.swift.txt": "ddc8ef9ae56e2bf1434eee93d8221bc4670bc6d13335914e88c72cf5d8a8dac2",
+    "native-after-picker.png": "39db509ffc52ee7683de2029f51c4863ad584737ce08c0fd6c6fab8cbf76fc6a",
+    "native-assets.png": "1927810f9b4424f822be8187a71a69ce4a5e4ec76d49d970428436708c2a3114",
+    "native-browser-import.png": "cd593fb6809c3af039061b6e1a74fae68bafbc5fef862192576d155341818e66",
+    "native-brush-options.png": "27b3f0a88a899e81f5f3f715c1da88e6a50f7c3b17f5255b9c5569a5303646b5",
+    "native-code-tab.png": "f6b035f565c1f46bf448a6a32d4bf065323c6b2058f50697efb4c3191134f736",
+    "native-figma-import.png": "9b0715014d502d87274cc837fd569e34bc1b308208ab1170d7d7a8822a264dfb",
+    "native-form.png": "28dfa967fcd3d5919ccd3c870df08eb7d839a60d9cb0f3acfc710040359ced00",
+    "native-frame-tool.png": "33ada7e59791ddc2f0841e5e9dda0735196dc16062304bbb52753cfa86b67bf5",
+    "native-gradient.png": "846921b910f5bc5586c38e53971741db3bcab07ff1c44bb262a18beafd4dcaff",
+    "native-home-prompt.png": "b07d6730f88be988e88b3d5327876fa179785de06789cb3540e548793b32303b",
+    "native-inspector.png": "289f03fabe4a1db53a8c0bcbb96a8e6e825b9494d5c2ee5273518e8cfcb061a4",
+    "native-layer-search.png": "02f49aa3999456c157c61950a3acc4f4fc66fe45592bf00926ee061d0adf39a1",
+    "native-narrow-agent.png": "61fcb5e4c7abf88f22c94b00442df61ce895006f1a73f39bf378b4976a80908c",
+    "native-new-discards.png": "3ae735da836d23b7245692b1ea3f84698db0b290852067198a2b775dc961657d",
+    "native-screenshot-import.png": "eb9b930709b3295e5be142a4d204a7a685a999871a63982c02f24b802ebeb58e",
+    "native-settings.png": "95a95a5d80f16c1bf356522bcce5c47a54c2a0dbd53d0bed25dd311547ef59dd",
+    "roundtrip-findings.json": "94b9ca4ddfa1f59ba6cc6be5a4b43954bb141c1f81cf6a2316d2b75c9d917fe9"
+  }
+}

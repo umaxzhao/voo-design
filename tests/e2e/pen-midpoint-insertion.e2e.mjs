@@ -55,6 +55,26 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
       };
     }, point);
   const before = await snapshot();
+  const curvePoint = await client({ x: 200, y: 200 });
+  await page.keyboard.down("Control");
+  await page.mouse.move(curvePoint.x, curvePoint.y);
+  await page.mouse.down();
+  await page.mouse.move(curvePoint.x, curvePoint.y + 24, { steps: 8 });
+  await page.mouse.up();
+  await page.keyboard.up("Control");
+  const bent = await snapshot();
+  assert.equal(bent[0].points.length, 2, "Bending must not insert an anchor");
+  assert.notDeepEqual(
+    bent[0].points,
+    before[0].points,
+    "Modifier-dragging the curve edge reshapes its handles",
+  );
+  await tool("undo");
+  assert.deepEqual(await snapshot(), before, "One undo restores the curve");
+  await tool("redo");
+  assert.deepEqual(await snapshot(), bent, "Redo restores the bent curve");
+  await tool("undo");
+
   const quarter = await client({ x: 131.25, y: 170 });
   await page.mouse.move(quarter.x, quarter.y);
   assert.equal(

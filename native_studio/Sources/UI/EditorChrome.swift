@@ -36,6 +36,10 @@ public enum EditorChromeAccessibility {
     public static let zoomBarZoomIn = "Editor.ZoomBar.ZoomIn"
     public static let zoomBarZoomOut = "Editor.ZoomBar.ZoomOut"
     public static let zoomBarZoomReset = "Editor.ZoomBar.ZoomReset"
+    public static let zoomBarMore = "Editor.ZoomBar.More"
+
+    // Bottom-left artboard control
+    public static let addArtboard = "Editor.AddArtboard"
 
     // AI floating button
     public static let aiAssistantButton = "Editor.AIAssistantButton"
@@ -56,6 +60,22 @@ public enum EditorChromeAccessibility {
     public static let islandActionVectorize = "Editor.IslandBar.Action.Vectorize"
     public static let islandActionBoolean = "Editor.IslandBar.Action.Boolean"
     public static let islandActionStyleTransfer = "Editor.IslandBar.Action.StyleTransfer"
+
+    // Selection island — current web layout (web_agent_panel.png)
+    /// Circular fill-colour swatch (solid white disc).
+    public static let islandFill = "Editor.IslandBar.Fill"
+    /// Circular stroke-colour swatch (white ring).
+    public static let islandStroke = "Editor.IslandBar.Stroke"
+    /// Align horizontal centres (line + inward triangles).
+    public static let islandAlignCenterH = "Editor.IslandBar.AlignCenterH"
+    /// Distribute horizontally (vertical rail + inward triangles).
+    public static let islandDistributeH = "Editor.IslandBar.DistributeH"
+    /// Align left (left rail + bars).
+    public static let islandAlignLeftH = "Editor.IslandBar.AlignLeftH"
+    public static let islandMoveUp = "Editor.IslandBar.MoveUp"
+    public static let islandMoveDown = "Editor.IslandBar.MoveDown"
+    /// Eye / visibility toggle (replaces the old component diamond).
+    public static let islandVisibility = "Editor.IslandBar.Visibility"
 }
 
 // MARK: - Chrome Glyphs
@@ -75,6 +95,11 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
     case magnet
     case plus
     case minus
+    /// Web bar visibility toggle (Lucide `eye`).
+    case eye
+    case eyeOff
+    /// Web bar overflow menu trigger (Lucide `more-horizontal`).
+    case more
 
     // Selection island (drawn light on dark chrome)
     case marquee
@@ -85,6 +110,20 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
     case lock
     case trash
     case diamond
+
+    // Current web island layout (web_agent_panel.png): align / distribute,
+    // vertical move and the two colour swatches.
+    /// Align horizontal centres: centre line with inward triangles.
+    case alignCenterH
+    /// Distribute horizontally: vertical rail with inward triangles.
+    case distributeH
+    /// Align left: left rail with two bars.
+    case alignLeftH
+    case arrowDown
+    /// Solid circular fill swatch (drawn as a filled disc).
+    case fillSwatch
+    /// Hollow circular stroke swatch (drawn as a ring).
+    case strokeSwatch
 
     // AI island
     case sparkle
@@ -110,6 +149,19 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
             VooIconFactory.drawPlus(in: rect, color: color, strokeWidth: strokeWidth)
         case .minus:
             VooIconFactory.drawMinus(in: rect, color: color, strokeWidth: strokeWidth)
+        case .eye:
+            VooIconFactory.draw(.eye, in: rect, color: color, strokeWidth: strokeWidth)
+        case .eyeOff:
+            VooIconFactory.draw(.eyeOff, in: rect, color: color, strokeWidth: strokeWidth)
+        case .more:
+            // Lucide `more-horizontal`: three filled 2.6pt dots on the 24-unit grid.
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                EditorChromeGlyph.applyStrokeStyle(ctx, color: color, strokeWidth: strokeWidth)
+                ctx.setFillColor(color.cgColor)
+                for centerX in [5.0, 12.0, 19.0] as [CGFloat] {
+                    ctx.fillEllipse(in: CGRect(x: centerX - 1.3, y: 10.7, width: 2.6, height: 2.6))
+                }
+            }
         case .marquee:
             VooIconFactory.drawMarquee(in: rect, color: color, strokeWidth: strokeWidth)
         case .rotate:
@@ -126,6 +178,87 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
             VooIconFactory.drawTrash(in: rect, color: color, strokeWidth: strokeWidth)
         case .diamond:
             VooIconFactory.drawDiamond(in: rect, color: color, strokeWidth: strokeWidth)
+        case .alignCenterH:
+            // Centre line with triangles pointing in from above/below.
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                EditorChromeGlyph.applyStrokeStyle(ctx, color: color, strokeWidth: strokeWidth)
+                ctx.move(to: CGPoint(x: 3, y: 12))
+                ctx.addLine(to: CGPoint(x: 21, y: 12))
+                ctx.strokePath()
+                let top = CGMutablePath()
+                top.move(to: CGPoint(x: 7.5, y: 4.5))
+                top.addLine(to: CGPoint(x: 16.5, y: 4.5))
+                top.addLine(to: CGPoint(x: 12, y: 10))
+                top.closeSubpath()
+                ctx.addPath(top)
+                ctx.strokePath()
+                let bottom = CGMutablePath()
+                bottom.move(to: CGPoint(x: 7.5, y: 19.5))
+                bottom.addLine(to: CGPoint(x: 16.5, y: 19.5))
+                bottom.addLine(to: CGPoint(x: 12, y: 14))
+                bottom.closeSubpath()
+                ctx.addPath(bottom)
+                ctx.strokePath()
+            }
+        case .distributeH:
+            // Vertical rail with triangles pointing in from left/right.
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                EditorChromeGlyph.applyStrokeStyle(ctx, color: color, strokeWidth: strokeWidth)
+                ctx.move(to: CGPoint(x: 12, y: 3))
+                ctx.addLine(to: CGPoint(x: 12, y: 21))
+                ctx.strokePath()
+                let left = CGMutablePath()
+                left.move(to: CGPoint(x: 4.5, y: 7.5))
+                left.addLine(to: CGPoint(x: 9.5, y: 12))
+                left.addLine(to: CGPoint(x: 4.5, y: 16.5))
+                left.closeSubpath()
+                ctx.addPath(left)
+                ctx.strokePath()
+                let right = CGMutablePath()
+                right.move(to: CGPoint(x: 19.5, y: 7.5))
+                right.addLine(to: CGPoint(x: 14.5, y: 12))
+                right.addLine(to: CGPoint(x: 19.5, y: 16.5))
+                right.closeSubpath()
+                ctx.addPath(right)
+                ctx.strokePath()
+            }
+        case .alignLeftH:
+            // Left rail with two bars.
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                EditorChromeGlyph.applyStrokeStyle(ctx, color: color, strokeWidth: strokeWidth)
+                ctx.move(to: CGPoint(x: 4.5, y: 4))
+                ctx.addLine(to: CGPoint(x: 4.5, y: 20))
+                ctx.strokePath()
+                ctx.move(to: CGPoint(x: 9, y: 8))
+                ctx.addLine(to: CGPoint(x: 19, y: 8))
+                ctx.strokePath()
+                ctx.move(to: CGPoint(x: 9, y: 16))
+                ctx.addLine(to: CGPoint(x: 15, y: 16))
+                ctx.strokePath()
+            }
+        case .arrowDown:
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                EditorChromeGlyph.applyStrokeStyle(ctx, color: color, strokeWidth: strokeWidth)
+                ctx.move(to: CGPoint(x: 12, y: 5))
+                ctx.addLine(to: CGPoint(x: 12, y: 19))
+                ctx.strokePath()
+                ctx.move(to: CGPoint(x: 5, y: 12))
+                ctx.addLine(to: CGPoint(x: 12, y: 19))
+                ctx.addLine(to: CGPoint(x: 19, y: 12))
+                ctx.strokePath()
+            }
+        case .fillSwatch:
+            // Solid disc filling the glyph box (the button adds the hover wash).
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                ctx.setFillColor(color.cgColor)
+                ctx.fillEllipse(in: CGRect(x: 0.6, y: 0.6, width: 22.8, height: 22.8))
+            }
+        case .strokeSwatch:
+            // Hollow ring so the dark capsule shows through the middle.
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                EditorChromeGlyph.applyStrokeStyle(ctx, color: color, strokeWidth: strokeWidth)
+                ctx.strokeEllipse(in: CGRect(x: 1.2, y: 1.2, width: 21.6, height: 21.6))
+            }
         case .sparkle:
             VooIconFactory.drawSparkles(in: rect, color: color, strokeWidth: strokeWidth)
         case .arrowUp:
@@ -223,7 +356,7 @@ public final class EditorChromeIconButton: NSButton {
 
     // MARK: Configuration
 
-    public let glyph: EditorChromeGlyph
+    public var glyph: EditorChromeGlyph { didSet { needsDisplay = true } }
 
     /// Invoked on click (after the button's enabled check).
     public var onClick: (() -> Void)?
@@ -236,6 +369,8 @@ public final class EditorChromeIconButton: NSButton {
     public var iconColor: NSColor = NSColor(white: 1.0, alpha: 1.0) {
         didSet { needsDisplay = true }
     }
+
+    public var disabledIconOpacity: CGFloat = 0.55
 
     public var hoverIconColor: NSColor? {
         didSet { needsDisplay = true }
@@ -380,7 +515,7 @@ public final class EditorChromeIconButton: NSButton {
             color = hoverIconColor
         }
         if !isEnabled {
-            color = color.withAlphaComponent(color.alphaComponent * 0.55)
+            color = color.withAlphaComponent(color.alphaComponent * disabledIconOpacity)
         }
 
         let side = min(glyphSize, min(bounds.width, bounds.height))
@@ -845,20 +980,22 @@ public final class PageSwitcherPillView: NSView {
         }
     }
 
-    public var showsChevron: Bool = false {
+    /// Web `page_switcher.jsx`: the trigger always ends with a
+    /// `ChevronDown`/`ChevronUp size={12}` glyph — shown by default here.
+    public var showsChevron: Bool = true {
         didSet {
             invalidateIntrinsicContentSize()
             needsDisplay = true
         }
     }
 
-    // MARK: Styling
+    // MARK: Styling (Web `text-xs text-neutral-100 font-normal` uses system sans / Inter)
 
-    public var nameFont: NSFont = ThemeFonts.mono(size: 12.0) {
+    public var nameFont: NSFont = ThemeFonts.system(size: 12.0, weight: .regular) {
         didSet { needsDisplay = true }
     }
 
-    public var counterFont: NSFont = ThemeFonts.mono(size: 12.0) {
+    public var counterFont: NSFont = ThemeFonts.system(size: 12.0, weight: .regular) {
         didSet { needsDisplay = true }
     }
 
@@ -1102,26 +1239,214 @@ public final class PageSwitcherPillView: NSView {
                 width: chevronSide,
                 height: chevronSide
             )
+            // The page menu opens upward, so the live web capture shows the
+            // trigger chevron pointing up (`ChevronUp` in page_switcher.jsx):
+            // mirror the shared chevron glyph about the icon's mid height.
+            ctx.saveGState()
+            ctx.translateBy(x: 0, y: chevronRect.midY * 2.0)
+            ctx.scaleBy(x: 1.0, y: -1.0)
             EditorChromeGlyph.chevronDown.draw(
                 in: chevronRect,
                 color: counterColor.withAlphaComponent(0.8),
                 strokeWidth: 1.8
             )
+            ctx.restoreGState()
         }
+    }
+}
+
+// MARK: - Add Artboard Button
+
+/// Bottom-left 28pt rounded square that sits above the page pill in the live web
+/// editor (28×28, radius 8, dark fill, ~14pt artboard glyph) and asks the host to
+/// add a new artboard. WindowController owns its placement/wiring.
+public final class EditorAddArtboardButton: NSButton {
+
+    // MARK: Metrics
+
+    public static let preferredSize: CGFloat = 28.0
+    public static let cornerRadius: CGFloat = 8.0
+
+    /// Drawn glyph side (the glyph box, not the button).
+    public var glyphSize: CGFloat = 14.0 {
+        didSet { needsDisplay = true }
+    }
+
+    // MARK: Callbacks
+
+    /// Invoked when the button is activated (click or accessibility press).
+    public var onAddArtboard: (() -> Void)?
+
+    // MARK: Styling
+
+    public var fillColor: NSColor = NSColor(white: 0.13, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var hoverFillColor: NSColor = NSColor(white: 0.20, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var pressedFillColor: NSColor = NSColor(white: 0.26, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var glyphColor: NSColor = NSColor(white: 0.85, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var hoverGlyphColor: NSColor = NSColor(white: 1.0, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public private(set) var isHovered: Bool = false {
+        didSet {
+            if oldValue != isHovered { needsDisplay = true }
+        }
+    }
+
+    /// NSButton's cell normally invalidates on state changes; this view draws
+    /// itself, so mirror the state changes into an explicit redraw.
+    public override var isHighlighted: Bool {
+        didSet {
+            if oldValue != isHighlighted { needsDisplay = true }
+        }
+    }
+
+    private var hoverTrackingArea: NSTrackingArea?
+
+    // MARK: Init
+
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        commonInit()
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        commonInit()
+    }
+
+    private func commonInit() {
+        title = ""
+        isBordered = false
+        focusRingType = .none
+        setButtonType(.momentaryChange)
+        target = self
+        action = #selector(handleClick)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        setAccessibilityIdentifier(EditorChromeAccessibility.addArtboard)
+        setAccessibilityLabel("Add artboard")
+        setAccessibilityHelp("Add a new artboard to the canvas")
+    }
+
+    /// Custom chrome is drawn in a bottom-left origin space.
+    public override var isFlipped: Bool { false }
+
+    public override var intrinsicContentSize: NSSize {
+        NSSize(width: EditorAddArtboardButton.preferredSize, height: EditorAddArtboardButton.preferredSize)
+    }
+
+    public override func accessibilityPerformPress() -> Bool {
+        onAddArtboard?()
+        return true
+    }
+
+    // MARK: Interaction
+
+    @objc private func handleClick() {
+        onAddArtboard?()
+    }
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = hoverTrackingArea {
+            removeTrackingArea(existing)
+        }
+        let area = NSTrackingArea(
+            rect: .zero,
+            options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        hoverTrackingArea = area
+    }
+
+    public override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        isHovered = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        isHovered = false
+    }
+
+    // MARK: Drawing
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+
+        let fill: NSColor
+        if isHighlighted {
+            fill = pressedFillColor
+        } else if isHovered {
+            fill = hoverFillColor
+        } else {
+            fill = fillColor
+        }
+
+        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let path = CGPath(
+            roundedRect: rect,
+            cornerWidth: EditorAddArtboardButton.cornerRadius,
+            cornerHeight: EditorAddArtboardButton.cornerRadius,
+            transform: nil
+        )
+        ctx.setFillColor(fill.cgColor)
+        ctx.addPath(path)
+        ctx.fillPath()
+
+        let side = min(glyphSize, min(bounds.width, bounds.height))
+        let glyphRect = CGRect(
+            x: bounds.midX - side / 2.0,
+            y: bounds.midY - side / 2.0,
+            width: side,
+            height: side
+        )
+        // The live web glyph is two overlapping rounded artboard frames; the
+        // canonical VooIconFactory `copy` geometry is the closest shared mark.
+        VooIconFactory.draw(
+            .copy,
+            in: glyphRect,
+            color: isHovered ? hoverGlyphColor : glyphColor,
+            strokeWidth: 1.6
+        )
     }
 }
 
 // MARK: - Bottom Zoom Bar
 
-/// Bottom-center silver zoom cluster:
-/// undo · redo │ grid · snap │ + 58% −
+/// Bottom-center silver zoom cluster, matching the live web capture:
+/// undo · redo │ − 58% + │ eye │ ⋯
+///
+/// The web keeps the grid/snap controls inside the overflow (⋯) menu, so the
+/// grid button lives in this bar's hierarchy but is not part of the visible row;
+/// the ⋯ menu still drives it.
 public final class StudioBottomZoomBar: NSView {
 
     // MARK: Metrics
 
     public static let preferredHeight: CGFloat = 32.0
-    public static let preferredWidth: CGFloat = 232.0
-    public static let buttonSize: CGFloat = 28.0
+    /// Electron: 8pt padding + five 24pt controls + 28pt guide toggle + 36pt readout + three 3pt dividers.
+    public static let preferredWidth: CGFloat = 201.0
+    public static let buttonSize: CGFloat = 24.0
     public static let horizontalPadding: CGFloat = 4.0
     public static let cornerRadius: CGFloat = 12.0
 
@@ -1131,22 +1456,31 @@ public final class StudioBottomZoomBar: NSView {
     public var onRedo: (() -> Void)?
     public var onGridToggle: ((Bool) -> Void)?
     public var onVisibilityToggle: ((Bool) -> Void)?
+    public var onSnapToggle: ((Bool) -> Void)?
     public var onZoomIn: (() -> Void)?
     public var onZoomOut: (() -> Void)?
     public var onZoomReset: (() -> Void)?
+    public var onZoomFit: (() -> Void)?
+    public var onToggleRulers: ((Bool) -> Void)?
+    public var onClearGuides: (() -> Void)?
 
     // MARK: Controls (public read-only accessors)
 
     public let undoButton: EditorChromeIconButton
     public let redoButton: EditorChromeIconButton
+    /// Hidden in the bar (web keeps grid/snap in the ⋯ menu) but kept live for
+    /// the host and for programmatic/host-driven toggles.
     public let gridButton: EditorChromeIconButton
     public let visibilityButton: EditorChromeIconButton
     public let zoomInButton: EditorChromeIconButton
     public let zoomOutButton: EditorChromeIconButton
     public let zoomLabelButton: EditorChromePillButton
+    /// Web overflow (⋯) trigger; opens the grid/snap menu.
+    public let moreButton: EditorChromeIconButton
 
     public let firstSeparator: EditorChromeSeparatorView
     public let secondSeparator: EditorChromeSeparatorView
+    public let thirdSeparator: EditorChromeSeparatorView
 
     // MARK: State
 
@@ -1156,6 +1490,9 @@ public final class StudioBottomZoomBar: NSView {
     public private(set) var canRedo: Bool = false
     public private(set) var isGridEnabled: Bool = false
     public private(set) var isVisibilityEnabled: Bool = true
+    public private(set) var isRulersEnabled: Bool = false
+    /// Magnet/snap state, surfaced from the ⋯ menu (web keeps it there).
+    public private(set) var isSnapToGridEnabled: Bool = false
 
     // MARK: Init
 
@@ -1163,16 +1500,18 @@ public final class StudioBottomZoomBar: NSView {
         undoButton = EditorChromeIconButton(glyph: .undo, frame: .zero)
         redoButton = EditorChromeIconButton(glyph: .redo, frame: .zero)
         gridButton = EditorChromeIconButton(glyph: .grid, frame: .zero)
-        visibilityButton = EditorChromeIconButton(glyph: .magnet, frame: .zero)
+        visibilityButton = EditorChromeIconButton(glyph: .eye, frame: .zero)
         zoomInButton = EditorChromeIconButton(glyph: .plus, frame: .zero)
         zoomOutButton = EditorChromeIconButton(glyph: .minus, frame: .zero)
         zoomLabelButton = EditorChromePillButton(
             text: "100%",
-            font: ThemeFonts.mono(size: 11.0, weight: .medium),
+            font: NSFont.monospacedDigitSystemFont(ofSize: 10.0, weight: .regular),
             frame: .zero
         )
+        moreButton = EditorChromeIconButton(glyph: .more, frame: .zero)
         firstSeparator = EditorChromeSeparatorView(frame: .zero)
         secondSeparator = EditorChromeSeparatorView(frame: .zero)
+        thirdSeparator = EditorChromeSeparatorView(frame: .zero)
         super.init(frame: frameRect)
         commonInit()
     }
@@ -1181,16 +1520,18 @@ public final class StudioBottomZoomBar: NSView {
         undoButton = EditorChromeIconButton(glyph: .undo, frame: .zero)
         redoButton = EditorChromeIconButton(glyph: .redo, frame: .zero)
         gridButton = EditorChromeIconButton(glyph: .grid, frame: .zero)
-        visibilityButton = EditorChromeIconButton(glyph: .magnet, frame: .zero)
+        visibilityButton = EditorChromeIconButton(glyph: .eye, frame: .zero)
         zoomInButton = EditorChromeIconButton(glyph: .plus, frame: .zero)
         zoomOutButton = EditorChromeIconButton(glyph: .minus, frame: .zero)
         zoomLabelButton = EditorChromePillButton(
             text: "100%",
-            font: ThemeFonts.mono(size: 11.0, weight: .medium),
+            font: NSFont.monospacedDigitSystemFont(ofSize: 10.0, weight: .regular),
             frame: .zero
         )
+        moreButton = EditorChromeIconButton(glyph: .more, frame: .zero)
         firstSeparator = EditorChromeSeparatorView(frame: .zero)
         secondSeparator = EditorChromeSeparatorView(frame: .zero)
+        thirdSeparator = EditorChromeSeparatorView(frame: .zero)
         super.init(coder: coder)
         commonInit()
     }
@@ -1229,8 +1570,8 @@ public final class StudioBottomZoomBar: NSView {
         configureButton(
             visibilityButton,
             identifier: EditorChromeAccessibility.zoomBarVisibility,
-            label: "Toggle visibility",
-            help: "Show or hide canvas overlays"
+            label: NativeCopy.text(.guidesToggle),
+            help: NativeCopy.text(.guidesToggle)
         )
         configureButton(
             zoomInButton,
@@ -1244,14 +1585,23 @@ public final class StudioBottomZoomBar: NSView {
             label: "Zoom out",
             help: "Zoom the canvas out"
         )
+        configureButton(
+            moreButton,
+            identifier: EditorChromeAccessibility.zoomBarMore,
+            label: "More options",
+            help: "Grid and snapping options"
+        )
+        // Web keeps grid/snap behind the ⋯ menu, so the grid button is not part of
+        // the visible row; it stays alive for the host and for the ⋯ menu.
+        gridButton.isHidden = true
 
         zoomLabelButton.setAccessibilityIdentifier(EditorChromeAccessibility.zoomBarZoomReset)
         zoomLabelButton.setAccessibilityRole(.button)
         zoomLabelButton.setAccessibilityLabel("Zoom level. Reset to 100%")
         zoomLabelButton.setAccessibilityHelp("Resets the canvas zoom to 100%")
-        zoomLabelButton.minimumWidth = 30.0
+        zoomLabelButton.minimumWidth = 36.0
         zoomLabelButton.contentHeight = Self.buttonSize
-        zoomLabelButton.horizontalPadding = 4.0
+        zoomLabelButton.horizontalPadding = 2.0
         zoomLabelButton.textColor = .black
         zoomLabelButton.hoverBackgroundColor = NSColor.black.withAlphaComponent(0.07)
         zoomLabelButton.pressedBackgroundColor = NSColor.black.withAlphaComponent(0.12)
@@ -1263,11 +1613,18 @@ public final class StudioBottomZoomBar: NSView {
         visibilityButton.onClick = { [weak self] in self?.toggleVisibility() }
         zoomInButton.onClick = { [weak self] in self?.onZoomIn?() }
         zoomOutButton.onClick = { [weak self] in self?.onZoomOut?() }
+        moreButton.onClick = { [weak self] in self?.showMoreMenu() }
+
+        for separator in [firstSeparator, secondSeparator, thirdSeparator] {
+            // Web `bg-black/15` on the silver capsule (white/15 is invisible here).
+            separator.lineColor = NSColor.black.withAlphaComponent(0.15)
+            separator.setAccessibilityElement(false)
+        }
 
         for view in [
             undoButton, redoButton, gridButton, visibilityButton,
-            zoomInButton, zoomOutButton, zoomLabelButton,
-            firstSeparator, secondSeparator
+            zoomInButton, zoomOutButton, zoomLabelButton, moreButton,
+            firstSeparator, secondSeparator, thirdSeparator
         ] as [NSView] {
             view.translatesAutoresizingMaskIntoConstraints = true
             addSubview(view)
@@ -1289,9 +1646,11 @@ public final class StudioBottomZoomBar: NSView {
         button.toolTip = label
         button.glyphSize = 13.0
         button.backgroundColor = .clear
-        button.hoverBackgroundColor = NSColor.black.withAlphaComponent(0.07)
-        button.pressedBackgroundColor = NSColor.black.withAlphaComponent(0.12)
-        button.cornerRadius = 7.0
+        button.hoverBackgroundColor = .clear
+        button.hoverIconColor = NSColor.black.withAlphaComponent(0.6)
+        button.disabledIconOpacity = 1.0
+        button.pressedBackgroundColor = .clear
+        button.cornerRadius = 8.0
         button.strokeWidth = 2.0
     }
 
@@ -1319,6 +1678,16 @@ public final class StudioBottomZoomBar: NSView {
         refreshAppearance()
     }
 
+    public func setSnapToGridEnabled(_ enabled: Bool) {
+        guard isSnapToGridEnabled != enabled else { return }
+        isSnapToGridEnabled = enabled
+    }
+
+    public func setRulersEnabled(_ enabled: Bool) {
+        guard isRulersEnabled != enabled else { return }
+        isRulersEnabled = enabled
+    }
+
     public var preferredSize: NSSize {
         NSSize(width: StudioBottomZoomBar.preferredWidth, height: StudioBottomZoomBar.preferredHeight)
     }
@@ -1341,10 +1710,98 @@ public final class StudioBottomZoomBar: NSView {
         onVisibilityToggle?(isVisibilityEnabled)
     }
 
+    private func toggleSnapToGrid() {
+        isSnapToGridEnabled.toggle()
+        onSnapToggle?(isSnapToGridEnabled)
+    }
+
     private func resetZoom() {
         zoom = 1.0
         refreshAppearance()
         onZoomReset?()
+    }
+
+    /// Web ⋯ menu: the grid toggle and the magnet/snap toggle live behind the
+    /// overflow trigger (they were inline buttons in the old native bar). The bar
+    /// keeps its existing grid callback, and the magnet gains a dedicated snap
+    /// callback so the eye button stays a pure visibility control.
+    private func showMoreMenu() {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        let fitItem = NSMenuItem(
+            title: "自适应画板 (Fit to Screen)",
+            action: #selector(handleFitFromMenu(_:)),
+            keyEquivalent: "1"
+        )
+        fitItem.keyEquivalentModifierMask = [.shift]
+        fitItem.target = self
+        menu.addItem(fitItem)
+
+        let rulersItem = NSMenuItem(
+            title: "显示标尺 (Rulers)",
+            action: #selector(toggleRulersFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        rulersItem.target = self
+        rulersItem.state = isRulersEnabled ? .on : .off
+        menu.addItem(rulersItem)
+
+        let clearGuidesItem = NSMenuItem(
+            title: "清除所有参考线 (Clear Guides)",
+            action: #selector(clearGuidesFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        clearGuidesItem.target = self
+        menu.addItem(clearGuidesItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let gridItem = NSMenuItem(
+            title: "网格 (Grid)",
+            action: #selector(toggleGridFromMenu(_:)),
+            keyEquivalent: "'"
+        )
+        gridItem.keyEquivalentModifierMask = [.control]
+        gridItem.target = self
+        gridItem.state = isGridEnabled ? .on : .off
+        menu.addItem(gridItem)
+
+        let snapItem = NSMenuItem(
+            title: "磁性吸附 (Snap to Grid)",
+            action: #selector(toggleSnapFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        snapItem.target = self
+        snapItem.state = isSnapToGridEnabled ? .on : .off
+        menu.addItem(snapItem)
+
+        _ = menu.popUp(
+            positioning: nil,
+            at: NSPoint(x: moreButton.frame.minX, y: moreButton.frame.maxY + 4.0),
+            in: self
+        )
+    }
+
+    @objc private func handleFitFromMenu(_ sender: NSMenuItem) {
+        onZoomFit?()
+    }
+
+    @objc private func toggleRulersFromMenu(_ sender: NSMenuItem) {
+        isRulersEnabled.toggle()
+        onToggleRulers?(isRulersEnabled)
+    }
+
+    @objc private func clearGuidesFromMenu(_ sender: NSMenuItem) {
+        onClearGuides?()
+    }
+
+    @objc private func toggleGridFromMenu(_ sender: NSMenuItem) {
+        toggleGrid()
+    }
+
+    @objc private func toggleSnapFromMenu(_ sender: NSMenuItem) {
+        toggleSnapToGrid()
     }
 
     private func refreshAppearance() {
@@ -1358,14 +1815,16 @@ public final class StudioBottomZoomBar: NSView {
         let undoAlpha: CGFloat = canUndo ? 1.0 : 0.30
         let redoAlpha: CGFloat = canRedo ? 1.0 : 0.30
         let gridAlpha: CGFloat = isGridEnabled ? 1.0 : 0.40
-        let visibilityAlpha: CGFloat = isVisibilityEnabled ? 1.0 : 0.30
 
         undoButton.iconColor = NSColor.black.withAlphaComponent(undoAlpha)
         redoButton.iconColor = NSColor.black.withAlphaComponent(redoAlpha)
         gridButton.iconColor = NSColor.black.withAlphaComponent(gridAlpha)
-        visibilityButton.iconColor = NSColor.black.withAlphaComponent(visibilityAlpha)
+        visibilityButton.iconColor = NSColor.black.withAlphaComponent(
+            isVisibilityEnabled ? 1.0 : 0.35)
+        visibilityButton.glyph = isVisibilityEnabled ? .eye : .eyeOff
         zoomInButton.iconColor = .black
         zoomOutButton.iconColor = .black
+        moreButton.iconColor = .black
 
         gridButton.setAccessibilityValue(isGridEnabled ? "On" : "Off")
         visibilityButton.setAccessibilityValue(isVisibilityEnabled ? "On" : "Off")
@@ -1375,23 +1834,43 @@ public final class StudioBottomZoomBar: NSView {
 
     // MARK: Layout
 
+    /// Web row: undo · redo │ − 58% + │ eye │ ⋯
+    /// (buttons are adjacent like the web's `gap-0`; separators get 1pt margins)
     public override func layout() {
         super.layout()
         let height = bounds.height
         let originX = max(0.0, (bounds.width - StudioBottomZoomBar.preferredWidth) / 2.0)
         let buttonY = (height - Self.buttonSize) / 2.0
-        let separatorHeight: CGFloat = 14.0
+        let separatorHeight: CGFloat = 12.0
         let separatorY = (height - separatorHeight) / 2.0
+        let separatorGap: CGFloat = 1.0
+        let side = Self.buttonSize
 
-        undoButton.frame = NSRect(x: originX + 4.0, y: buttonY, width: 28.0, height: 28.0)
-        redoButton.frame = NSRect(x: originX + 34.0, y: buttonY, width: 28.0, height: 28.0)
-        firstSeparator.frame = NSRect(x: originX + 64.0, y: separatorY, width: 1.0, height: separatorHeight)
-        gridButton.frame = NSRect(x: originX + 71.0, y: buttonY, width: 28.0, height: 28.0)
-        visibilityButton.frame = NSRect(x: originX + 101.0, y: buttonY, width: 28.0, height: 28.0)
-        secondSeparator.frame = NSRect(x: originX + 131.0, y: separatorY, width: 1.0, height: separatorHeight)
-        zoomInButton.frame = NSRect(x: originX + 138.0, y: buttonY, width: 28.0, height: 28.0)
-        zoomLabelButton.frame = NSRect(x: originX + 168.0, y: buttonY, width: 30.0, height: 28.0)
-        zoomOutButton.frame = NSRect(x: originX + 200.0, y: buttonY, width: 28.0, height: 28.0)
+        var x = originX + Self.horizontalPadding
+        undoButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side
+        redoButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side + separatorGap
+        firstSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
+        x += 1.0 + separatorGap
+        zoomOutButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side
+        zoomLabelButton.frame = NSRect(x: x, y: buttonY, width: 36.0, height: side)
+        x += 36.0
+        zoomInButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side + separatorGap
+        secondSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
+        x += 1.0 + separatorGap
+        visibilityButton.frame = NSRect(x: x, y: (height - 28) / 2, width: 28, height: 28)
+        x += 28 + separatorGap
+        thirdSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
+        x += 1.0 + separatorGap
+        moreButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side + Self.horizontalPadding
+
+        // Hidden from the row (web keeps it in the ⋯ menu) but still laid out so
+        // host code and parity checks see a real 24×24 button.
+        gridButton.frame = NSRect(x: originX, y: buttonY, width: side, height: side)
     }
 
     // MARK: Drawing
@@ -1594,20 +2073,29 @@ public final class VooAIFloatingButton: NSButton {
 
 // MARK: - Contextual Selection Island
 
-/// Selection-only floating island bar above the zoom cluster:
+/// Selection-only floating island bar above the zoom cluster. The live web
+/// build (web_agent_panel.png) lays it out as:
 ///
-///   [ selection · rotate │ flip-v · flip-h · duplicate · lock │ delete │ component ]
-///   │ ✦ [ Ask AI to modify @Shape... ] ↑  (Vectorize) (Boolean) (Style Transfer)
+///   (●)(○)  align-center │ distribute │ align-left  │  ↑ ↓  │  copy · lock · eye · trash  │  ✦
+///
+/// Prompt pill and the Vectorize / Boolean / Style Transfer chips are no longer
+/// part of the visible bar; their controls and callbacks stay alive (hidden,
+/// zero width) so hosts keep working.
 ///
 /// `update(selectionLabel: nil)` hides the bar; a non-nil label shows it and
-/// rewrites the AI prompt placeholder.
+/// rewrites the (hidden) AI prompt placeholder.
 public final class ContextIslandBar: NSView {
 
     // MARK: Metrics
 
     public static let preferredHeight: CGFloat = 32.0
     public static let horizontalPadding: CGFloat = 8.0
-    public static let glyphButtonSize: CGFloat = 24.0
+    /// Web island glyph buttons are 28×28 (12 items at ~32pt pitch = ~408pt bar).
+    public static let glyphButtonSize: CGFloat = 28.0
+    /// Circular colour swatch buttons (20×20 in the web bar).
+    public static let swatchButtonSize: CGFloat = 20.0
+    /// Island dividers are 1×16 in the web bar.
+    public static let separatorHeight: CGFloat = 16.0
     public static let aiSparkleSize: CGFloat = 24.0
     public static let sendButtonSize: CGFloat = 20.0
     public static let chipHeight: CGFloat = 24.0
@@ -1621,12 +2109,18 @@ public final class ContextIslandBar: NSView {
 
     // MARK: Controls (public read-only accessors)
 
-    /// Leading geometry / transform glyph buttons, left-to-right:
-    /// marquee, rotate, flip-vertical, flip-horizontal, duplicate, lock, delete, diamond.
+    /// Visible glyph buttons, left-to-right:
+    /// align-centre, distribute, align-left, move-up, move-down, copy, lock,
+    /// eye, delete.
     public let glyphButtons: [EditorChromeIconButton]
+    /// Circular colour swatches: [fill (solid disc), stroke (ring)].
+    public let swatchButtons: [EditorChromeIconButton]
     public let sparkleButton: EditorChromeIconButton
+    /// Kept for host compatibility; hidden and zero-width in the current bar.
     public let promptButton: EditorChromePromptButton
+    /// Kept for host compatibility; hidden and zero-width in the current bar.
     public let sendButton: EditorChromeIconButton
+    /// Kept for host compatibility; hidden and zero-width in the current bar.
     public let quickActionChips: [EditorChromePillButton]
     public let separators: [EditorChromeSeparatorView]
 
@@ -1637,15 +2131,23 @@ public final class ContextIslandBar: NSView {
     /// Quick action chip titles, in display order.
     public static let quickActionTitles: [String] = ["Vectorize", "Boolean", "Style Transfer"]
 
+    /// Visible glyph order (see `glyphButtons`).
+    private static let glyphOrder: [EditorChromeGlyph] = [
+        .alignCenterH, .distributeH, .alignLeftH,
+        .arrowUp, .arrowDown,
+        .copy, .lock, .eye, .trash
+    ]
+
     // MARK: Init
 
     public override init(frame frameRect: NSRect) {
-        let glyphOrder: [EditorChromeGlyph] = [
-            .marquee, .rotate, .flipVertical, .flipHorizontal,
-            .copy, .lock, .trash, .diamond
-        ]
-        glyphButtons = glyphOrder.map { EditorChromeIconButton(glyph: $0, frame: .zero) }
-        separators = (0..<4).map { _ in EditorChromeSeparatorView(frame: .zero) }
+        glyphButtons = ContextIslandBar.glyphOrder.map {
+            EditorChromeIconButton(glyph: $0, frame: .zero)
+        }
+        swatchButtons = [.fillSwatch, .strokeSwatch].map {
+            EditorChromeIconButton(glyph: $0, frame: .zero)
+        }
+        separators = (0..<3).map { _ in EditorChromeSeparatorView(frame: .zero) }
         sparkleButton = EditorChromeIconButton(glyph: .sparkle, frame: .zero)
         promptButton = EditorChromePromptButton(frame: .zero)
         sendButton = EditorChromeIconButton(glyph: .arrowUp, frame: .zero)
@@ -1661,12 +2163,13 @@ public final class ContextIslandBar: NSView {
     }
 
     public required init?(coder: NSCoder) {
-        let glyphOrder: [EditorChromeGlyph] = [
-            .marquee, .rotate, .flipVertical, .flipHorizontal,
-            .copy, .lock, .trash, .diamond
-        ]
-        glyphButtons = glyphOrder.map { EditorChromeIconButton(glyph: $0, frame: .zero) }
-        separators = (0..<4).map { _ in EditorChromeSeparatorView(frame: .zero) }
+        glyphButtons = ContextIslandBar.glyphOrder.map {
+            EditorChromeIconButton(glyph: $0, frame: .zero)
+        }
+        swatchButtons = [.fillSwatch, .strokeSwatch].map {
+            EditorChromeIconButton(glyph: $0, frame: .zero)
+        }
+        separators = (0..<3).map { _ in EditorChromeSeparatorView(frame: .zero) }
         sparkleButton = EditorChromeIconButton(glyph: .sparkle, frame: .zero)
         promptButton = EditorChromePromptButton(frame: .zero)
         sendButton = EditorChromeIconButton(glyph: .arrowUp, frame: .zero)
@@ -1696,6 +2199,7 @@ public final class ContextIslandBar: NSView {
         layer?.shadowRadius = 12.0
         layer?.shadowOffset = CGSize(width: 0, height: -4)
 
+        configureSwatchButtons()
         configureGlyphButtons()
         configureSparkleButton()
         configurePromptButton()
@@ -1703,17 +2207,23 @@ public final class ContextIslandBar: NSView {
         configureQuickActionChips()
         configureSeparators()
 
-        let orderedSubviews: [NSView] = [
-            glyphButtons[0], glyphButtons[1], separators[0],
-            glyphButtons[2], glyphButtons[3], glyphButtons[4], glyphButtons[5],
-            separators[1], glyphButtons[6], separators[2], glyphButtons[7], separators[3],
-            sparkleButton, promptButton, sendButton,
-            quickActionChips[0], quickActionChips[1], quickActionChips[2]
-        ]
+        let orderedSubviews: [NSView] =
+            swatchButtons
+            + [glyphButtons[0], glyphButtons[1], glyphButtons[2], separators[0],
+               glyphButtons[3], glyphButtons[4], separators[1],
+               glyphButtons[5], glyphButtons[6], glyphButtons[7], glyphButtons[8],
+               separators[2], sparkleButton, promptButton, sendButton,
+               quickActionChips[0], quickActionChips[1], quickActionChips[2]]
         for view in orderedSubviews {
             view.translatesAutoresizingMaskIntoConstraints = true
             addSubview(view)
         }
+
+        // The web bar no longer shows the AI prompt / send / quick-action chips;
+        // keep them alive for the host but out of the visible row.
+        promptButton.isHidden = true
+        sendButton.isHidden = true
+        for chip in quickActionChips { chip.isHidden = true }
 
         refreshSendButtonAppearance()
         isHidden = true
@@ -1763,16 +2273,46 @@ public final class ContextIslandBar: NSView {
 
     // MARK: Configuration helpers
 
+    /// Circular fill/stroke colour swatches (20×20 buttons, ~14pt discs).
+    private func configureSwatchButtons() {
+        let configs: [(identifier: String, label: String, help: String)] = [
+            (EditorChromeAccessibility.islandFill, "Fill colour", "Change the selection fill colour"),
+            (EditorChromeAccessibility.islandStroke, "Stroke colour", "Change the selection stroke colour")
+        ]
+        for (index, button) in swatchButtons.enumerated() {
+            let config = configs[index]
+            button.setAccessibilityIdentifier(config.identifier)
+            button.setAccessibilityRole(.button)
+            button.setAccessibilityLabel(config.label)
+            button.setAccessibilityHelp(config.help)
+            button.toolTip = config.label
+            button.glyphSize = 14.0
+            button.iconColor = NSColor(white: 0.95, alpha: 1.0)
+            button.hoverIconColor = NSColor.white
+            button.backgroundColor = .clear
+            button.hoverBackgroundColor = NSColor(white: 1.0, alpha: 0.10)
+            button.pressedBackgroundColor = NSColor(white: 1.0, alpha: 0.16)
+            // Circular wash behind the disc/ring.
+            button.cornerRadius = ContextIslandBar.swatchButtonSize / 2.0
+            button.strokeWidth = 2.4
+            button.onClick = { [weak self] in
+                guard let self else { return }
+                self.onGlyphAction?(button.glyph)
+            }
+        }
+    }
+
     private func configureGlyphButtons() {
         let configs: [(identifier: String, label: String, help: String)] = [
-            (EditorChromeAccessibility.islandSelection, "Selection", "Select the layer"),
-            (EditorChromeAccessibility.islandRotate, "Rotate", "Rotate the selection"),
-            (EditorChromeAccessibility.islandFlipVertical, "Flip vertical", "Flip the selection vertically"),
-            (EditorChromeAccessibility.islandFlipHorizontal, "Flip horizontal", "Flip the selection horizontally"),
+            (EditorChromeAccessibility.islandAlignCenterH, "Align centre", "Align the selection to its horizontal centre"),
+            (EditorChromeAccessibility.islandDistributeH, "Distribute horizontally", "Distribute the selection horizontally"),
+            (EditorChromeAccessibility.islandAlignLeftH, "Align left", "Align the selection to the left"),
+            (EditorChromeAccessibility.islandMoveUp, "Move up", "Move the selection up one layer"),
+            (EditorChromeAccessibility.islandMoveDown, "Move down", "Move the selection down one layer"),
             (EditorChromeAccessibility.islandDuplicate, "Duplicate", "Duplicate the selection"),
             (EditorChromeAccessibility.islandLock, "Lock", "Lock or unlock the selection"),
-            (EditorChromeAccessibility.islandDelete, "Delete", "Delete the selection"),
-            (EditorChromeAccessibility.islandDiamond, "Create component", "Create a component from the selection")
+            (EditorChromeAccessibility.islandVisibility, "Toggle visibility", "Show or hide the selection"),
+            (EditorChromeAccessibility.islandDelete, "Delete", "Delete the selection")
         ]
 
         for (index, button) in glyphButtons.enumerated() {
@@ -1783,10 +2323,12 @@ public final class ContextIslandBar: NSView {
             button.setAccessibilityHelp(config.help)
             button.toolTip = config.label
             button.glyphSize = 13.0
-            button.iconColor = index == 6
+            // Delete keeps the rose hover from the old bar (last item).
+            let isDelete = button.glyph == .trash
+            button.iconColor = isDelete
                 ? NSColor(hex: "#fb7185")   // rose-400 delete glyph
                 : NSColor(white: 0.83, alpha: 1.0)
-            button.hoverIconColor = index == 6
+            button.hoverIconColor = isDelete
                 ? NSColor(hex: "#fda4af")
                 : NSColor.white
             button.backgroundColor = .clear
@@ -1807,10 +2349,11 @@ public final class ContextIslandBar: NSView {
         sparkleButton.setAccessibilityLabel("Ask VOO AI Agent")
         sparkleButton.setAccessibilityHelp("Ask the AI agent to work on the selection")
         sparkleButton.toolTip = "Ask VOO AI Agent"
-        sparkleButton.glyphSize = 13.0
+        sparkleButton.glyphSize = 14.0
         sparkleButton.iconColor = NSColor(hex: ThemeTokens.accentPurple)
         sparkleButton.hoverIconColor = NSColor(hex: ThemeTokens.accentPurpleText)
-        sparkleButton.backgroundColor = NSColor(white: 1.0, alpha: 0.08)
+        // Web reference: a bare purple sparkle, no resting circle behind it.
+        sparkleButton.backgroundColor = .clear
         sparkleButton.hoverBackgroundColor = NSColor(hex: ThemeTokens.accentPurple).withAlphaComponent(0.20)
         sparkleButton.pressedBackgroundColor = NSColor(hex: ThemeTokens.accentPurple).withAlphaComponent(0.30)
         sparkleButton.cornerRadius = ContextIslandBar.aiSparkleSize / 2.0
@@ -1913,51 +2456,59 @@ public final class ContextIslandBar: NSView {
         let gapBefore: CGFloat
     }
 
+    /// Visible row (live web):
+    /// (●)(○) · align-centre · distribute · align-left │ ↑ ↓ │ copy · lock · eye · delete │ ✦
+    ///
+    /// The prompt pill / send / quick-action chips keep 24pt-tall frames but a
+    /// zero width so they stay live for the host without occupying the bar.
     private func layoutSlots() -> [LayoutSlot] {
         var slots: [LayoutSlot] = []
         let glyphSize = ContextIslandBar.glyphButtonSize
-        let separatorHeight: CGFloat = 14.0
-        let chipHeight = ContextIslandBar.chipHeight
+        let swatchSize = ContextIslandBar.swatchButtonSize
+        let separatorHeight = ContextIslandBar.separatorHeight
         let gap = ContextIslandBar.itemGap
 
-        slots.append(LayoutSlot(view: glyphButtons[0], width: glyphSize, height: glyphSize, gapBefore: 0))
-        slots.append(LayoutSlot(view: glyphButtons[1], width: glyphSize, height: glyphSize, gapBefore: gap))
+        // 1. Fill / stroke colour swatches.
+        slots.append(LayoutSlot(view: swatchButtons[0], width: swatchSize, height: swatchSize, gapBefore: 0))
+        slots.append(LayoutSlot(view: swatchButtons[1], width: swatchSize, height: swatchSize, gapBefore: gap))
+
+        // 2. Align + distribute group.
+        for button in glyphButtons[0...2] {
+            slots.append(LayoutSlot(view: button, width: glyphSize, height: glyphSize, gapBefore: gap))
+        }
+
+        // 3. Separator, then 4. move up / move down.
         slots.append(LayoutSlot(view: separators[0], width: 1, height: separatorHeight, gapBefore: gap))
-        slots.append(LayoutSlot(view: glyphButtons[2], width: glyphSize, height: glyphSize, gapBefore: gap))
-        slots.append(LayoutSlot(view: glyphButtons[3], width: glyphSize, height: glyphSize, gapBefore: gap))
-        slots.append(LayoutSlot(view: glyphButtons[4], width: glyphSize, height: glyphSize, gapBefore: gap))
-        slots.append(LayoutSlot(view: glyphButtons[5], width: glyphSize, height: glyphSize, gapBefore: gap))
+        for button in glyphButtons[3...4] {
+            slots.append(LayoutSlot(view: button, width: glyphSize, height: glyphSize, gapBefore: gap))
+        }
+
+        // 5. Separator, then 6. copy · lock · eye · delete.
         slots.append(LayoutSlot(view: separators[1], width: 1, height: separatorHeight, gapBefore: gap))
-        slots.append(LayoutSlot(view: glyphButtons[6], width: glyphSize, height: glyphSize, gapBefore: gap))
+        for button in glyphButtons[5...8] {
+            slots.append(LayoutSlot(view: button, width: glyphSize, height: glyphSize, gapBefore: gap))
+        }
+
+        // 7. Separator, then 8. the purple sparkle (far right).
         slots.append(LayoutSlot(view: separators[2], width: 1, height: separatorHeight, gapBefore: gap))
-        slots.append(LayoutSlot(view: glyphButtons[7], width: glyphSize, height: glyphSize, gapBefore: gap))
-        slots.append(LayoutSlot(view: separators[3], width: 1, height: separatorHeight, gapBefore: gap))
         slots.append(LayoutSlot(
             view: sparkleButton,
             width: ContextIslandBar.aiSparkleSize,
             height: ContextIslandBar.aiSparkleSize,
             gapBefore: gap
         ))
-        slots.append(LayoutSlot(
-            view: promptButton,
-            width: promptButton.preferredWidth,
-            height: 24.0,
-            gapBefore: gap
-        ))
+
+        // Hidden legacy AI controls: keep 24pt-tall frames, zero width/air so
+        // they do not widen or visually disturb the bar.
+        slots.append(LayoutSlot(view: promptButton, width: 0, height: 24.0, gapBefore: 0))
         slots.append(LayoutSlot(
             view: sendButton,
-            width: ContextIslandBar.sendButtonSize,
+            width: 0,
             height: ContextIslandBar.sendButtonSize,
-            gapBefore: gap
+            gapBefore: 0
         ))
-
         for chip in quickActionChips {
-            slots.append(LayoutSlot(
-                view: chip,
-                width: ceil(chip.intrinsicContentSize.width),
-                height: chipHeight,
-                gapBefore: gap
-            ))
+            slots.append(LayoutSlot(view: chip, width: 0, height: ContextIslandBar.chipHeight, gapBefore: 0))
         }
         return slots
     }

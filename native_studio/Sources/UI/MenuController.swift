@@ -53,6 +53,10 @@ import Foundation
     func distributeSelectionAction(_ sender: Any?)
     func toggleGridAction(_ sender: Any?)
     func toggleSnappingAction(_ sender: Any?)
+    func bringForwardAction(_ sender: Any?)
+    func sendBackwardAction(_ sender: Any?)
+    func bringToFrontAction(_ sender: Any?)
+    func sendToBackAction(_ sender: Any?)
 }
 
 @objc public protocol DocumentOpener: AnyObject {
@@ -167,6 +171,14 @@ public final class MenuController: NSObject, @unchecked Sendable {
             let item = geomMenu.addItem(withTitle: title, action: selector, keyEquivalent: "")
             item.representedObject = key
         }
+
+        geomMenu.addItem(NSMenuItem.separator())
+        geomMenu.addItem(withTitle: "上移一层 (Bring Forward)", action: #selector(StudioMenuActions.bringForwardAction(_:)), keyEquivalent: "]")
+        geomMenu.addItem(withTitle: "下移一层 (Send Backward)", action: #selector(StudioMenuActions.sendBackwardAction(_:)), keyEquivalent: "[")
+        let bringToFront = geomMenu.addItem(withTitle: "置顶 (Bring to Front)", action: #selector(StudioMenuActions.bringToFrontAction(_:)), keyEquivalent: "]")
+        bringToFront.keyEquivalentModifierMask = [.command]
+        let sendToBack = geomMenu.addItem(withTitle: "置底 (Send to Back)", action: #selector(StudioMenuActions.sendToBackAction(_:)), keyEquivalent: "[")
+        sendToBack.keyEquivalentModifierMask = [.command]
 
         // 5. View Menu
         let viewMenuItem = NSMenuItem()

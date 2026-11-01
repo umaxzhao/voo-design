@@ -8,6 +8,20 @@ const fill = n => { const f = n.fills?.find(f => f.visible !== false) ?? n.fill;
 const values = v => typeof v === 'number' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(values) : [];
 const weights = { overlap: 10, overflow: 10, misalignment: 4, offGrid: 4, typeScale: 7, contrast: 12, radii: 5, purpleGradient: 12, identicalCards: 10, centerStackedHero: 10, decorativeLines: 7, evenTemplateSpacing: 6, flatHierarchy: 10, noFocal: 8 };
 
+function* candidateSiblingPairs(siblings) {
+  const ordered = siblings.map((node, index) => ({ node, index })).sort((a, b) =>
+    a.node.x - b.node.x || a.index - b.index,
+  );
+  let active = [];
+  for (const current of ordered) {
+    active = active.filter(({ node }) =>
+      current.node.x - node.x <= 3 || node.x + node.width > current.node.x,
+    );
+    for (const previous of active) yield [previous.node, current.node];
+    active.push(current);
+  }
+}
+
 /** Axis-aligned heuristics on editor world coordinates. Intentional overlaps and
  * decorative motifs are warnings to review, not a claim about visual intent. */
 export function lintDesign(doc, { rootId, kit } = {}) {
@@ -40,8 +54,7 @@ export function lintDesign(doc, { rootId, kit } = {}) {
     }
   }
   for (const siblings of children.values()) {
-    for (let i = 0; i < siblings.length; i++) for (let j = i + 1; j < siblings.length; j++) {
-      const a = siblings[i], b = siblings[j];
+    for (const [a, b] of candidateSiblingPairs(siblings)) {
       // A containing rect commonly supplies a button/card background.
       if (!container(a) && !container(b) && intersects(a,b) && !contains(a,b) && !contains(b,a)) add('overlap', [a,b], 'Sibling content overlaps.', 'Separate content or group intentional layered elements.', 'error');
       const dx = Math.abs(a.x - b.x);

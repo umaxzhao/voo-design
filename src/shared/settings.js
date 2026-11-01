@@ -67,6 +67,7 @@ const STORAGE_KEYS = [
   "voo.editor.showGuides",
   "voo.editor.snapToGrid",
   "voo.editor.panelLayout",
+  "voo.editor.layersWidth",
   "voo.editor.panelSections",
   // Editor chrome theme (dark by default): read synchronously before first paint.
   "voo.editor.theme",

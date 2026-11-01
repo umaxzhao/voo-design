@@ -273,7 +273,9 @@ public enum VOOBinaryContainer {
             throw SerializationError.invalidMagic("Expected VOOBIN01 magic bytes")
         }
 
-        let headerLength: UInt32 = data.subdata(in: 8..<12).withUnsafeBytes { $0.load(as: UInt32.self) }.littleEndian
+        let headerLength: UInt32 = data[8..<12].enumerated().reduce(UInt32(0)) {
+            $0 | UInt32($1.element) << (8 * $1.offset)
+        }
         let headerStart = payloadPrefixBytes
         let headerEnd = headerStart + Int(headerLength)
 
@@ -290,6 +292,12 @@ public enum VOOBinaryContainer {
 
         if let index = envelope.assetIndex {
             for (id, entry) in index {
+                guard entry.offset >= 0, entry.length >= 0,
+                    entry.offset <= data.count - payloadStart,
+                    entry.length <= data.count - payloadStart - entry.offset
+                else {
+                    throw SerializationError.assetOutOfRange(id)
+                }
                 let start = payloadStart + entry.offset
                 let end = start + entry.length
                 guard end <= data.count else {

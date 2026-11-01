@@ -82,7 +82,13 @@ export function createTransformPointerGestures(ctx) {
     }
     if (api.isEditing?.()) {
       const subTool = api.getPenSubTool?.() ?? "move";
-      if (subTool === "lasso" || subTool === "bend" || subTool === "cut") {
+      if (
+        subTool === "lasso" ||
+        subTool === "bend" ||
+        subTool === "cut" ||
+        event.metaKey ||
+        event.ctrlKey
+      ) {
         penEditPress(event);
         return;
       }

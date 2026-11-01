@@ -1,0 +1,11 @@
+
+ RUN  v2.1.9 /Volumes/TD/Projects/voo-native-parity
+
+ ✓ tests/unit/editor-check-plans.test.js (11 tests) 500ms
+   ✓ module evidence never certifies untested features > runs the actual CLI and fails on unknown modules and contradictory modes 491ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  08:48:55
+   Duration  1.16s (transform 64ms, setup 0ms, collect 106ms, tests 500ms, environment 0ms, prepare 83ms)
+

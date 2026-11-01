@@ -152,7 +152,7 @@ export function AutoLayoutFields({
           ))}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
+      <div data-autolayout-align-row className="grid grid-cols-2 gap-2">
         <div
           role="group"
           aria-label={t("editor.autoLayout.align")}
@@ -306,7 +306,7 @@ export function AutoLayoutFields({
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div data-autolayout-paired-padding className="grid grid-cols-2 gap-2">
         {pairedPadding("Horizontal", "left", "right", Columns2)}
         {pairedPadding("Vertical", "top", "bottom", Rows2)}
       </div>

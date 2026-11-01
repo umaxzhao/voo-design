@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
+import { IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop, IconChevronLeft, IconChevronRight } from "../icons.jsx";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
 import { AlignIcon, DistributeIcon, TidyIcon } from "./alignment_icon.jsx";
 import { alignNodes, distributeNodes, tidyNodes } from "../editor/align_ops.js";
@@ -99,7 +99,10 @@ function EditorContextualTaskBar({
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [position, setPosition] = useState(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const barRef = useRef(null);
+  const actionsRef = useRef(null);
   const fileRef = useRef(null);
   const node = selected ?? engine?.getSelected?.();
   const pickIds = list => (Array.isArray(list) && list.length ? list : null);
@@ -138,6 +141,30 @@ function EditorContextualTaskBar({
       document.removeEventListener("pointerdown", close);
     };
   }, []);
+
+  const updateScrollState = () => {
+    const el = actionsRef.current;
+    if (!el) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
+    }
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(maxScroll > 2 && el.scrollLeft < maxScroll - 2);
+  };
+
+  useLayoutEffect(() => {
+    updateScrollState();
+  });
+
+  const scrollByAmount = (delta) => {
+    const el = actionsRef.current;
+    if (el) {
+      el.scrollLeft += delta;
+      updateScrollState();
+    }
+  };
   useLayoutEffect(() => {
     if (!docRect || !active || docked) return;
     const place = () => {
@@ -198,8 +225,19 @@ function EditorContextualTaskBar({
     maxWidth: "calc(100vw - 16px)"
   } : {
     maxWidth: "calc(100vw - 16px)"
-  }} className={`pointer-events-auto z-40 flex items-center gap-0.5 rounded-full bg-neutral-900/95 border border-white/10 px-2 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docked ? "absolute bottom-[3.25rem] left-1/2 -translate-x-1/2" : docRect ? "absolute -translate-x-1/2" : "relative"}`}>
-    <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto" data-testid={`editor-taskbar-${type}-actions`}>
+  }} className={`pointer-events-auto z-40 flex items-center gap-0.5 rounded-full bg-neutral-900/95 border border-white/10 px-1 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docked ? "absolute bottom-[3.25rem] left-1/2 -translate-x-1/2" : docRect ? "absolute -translate-x-1/2" : "relative"}`}>
+    {canScrollLeft ? (
+      <button
+        type="button"
+        data-testid="editor-taskbar-scroll-left"
+        aria-label="Scroll taskbar left"
+        onClick={() => scrollByAmount(-180)}
+        className="flex h-7 w-5 shrink-0 items-center justify-center rounded-l-full text-neutral-400 hover:bg-white/10 hover:text-white"
+      >
+        <IconChevronLeft size={13} strokeWidth={2} />
+      </button>
+    ) : null}
+    <div ref={actionsRef} onScroll={updateScrollState} className="flex min-w-0 items-center gap-0.5 overflow-x-auto" data-testid={`editor-taskbar-${type}-actions`}>
     {transforming ? <>{action("applyTransform", <IconCheck size={14} strokeWidth={1.5} />, () => engine?.applySelectionTransform?.())}{action("cancelTransform", <IconClose size={14} strokeWidth={1.5} />, () => engine?.cancelSelectionTransform?.())}</> : pen ? <>{action("finishPath", <IconCheck size={14} strokeWidth={1.5} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}</> : hasSelection ? <>{action("transform", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.beginSelectionTransform?.())}{action("invert", <IconSwap size={14} strokeWidth={1.5} />, () => engine?.invertPixelSelection?.())}{action("deselect", <IconClose size={14} strokeWidth={1.5} />, () => clearActivePixelSelection(engine))}<Divider />{ai}</> : <>
       {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>
       {type === "image" && <>
@@ -298,6 +336,17 @@ function EditorContextualTaskBar({
       </>}
     </>}
     </div>
+    {canScrollRight ? (
+      <button
+        type="button"
+        data-testid="editor-taskbar-scroll-right"
+        aria-label="Scroll taskbar right"
+        onClick={() => scrollByAmount(180)}
+        className="flex h-7 w-5 shrink-0 items-center justify-center rounded-r-full text-neutral-400 hover:bg-white/10 hover:text-white"
+      >
+        <IconChevronRight size={13} strokeWidth={2} />
+      </button>
+    ) : null}
     {adjustOpen && <div className="absolute bottom-full right-0 z-50 mb-2"><AddKindPicker isImage bitmap={getBitmap?.(node) ?? null} imageKey={node?.imageId ?? node?.src ?? null} adjustments={node?.adjustments ?? null} showEffects onPick={(kind, effect) => {
         onAddAdjustmentLayer?.(kind, effect);
         setAdjustOpen(false);

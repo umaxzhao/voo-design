@@ -140,6 +140,17 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 110]);
   checks.push("a child inside the current free-canvas Frame moves and repaints independently with one-step undo");
 
+  // The opposite direction: with the Frame selected, its own empty surface is
+  // the Frame's drag handle and moves the whole Frame (and its content) at once.
+  await page.evaluate(() => window.__vooEditor.selectExactly(["current-frame"]));
+  await settled();
+  const frameSurface = await docPoint({ x: 300, y: 240 });
+  await drag(frameSurface, { x: 30, y: 20 });
+  assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [110, 140]);
+  await tool("undo");
+  assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 110]);
+  checks.push("dragging the selected Frame's empty surface moves the whole Frame with one-step undo");
+
   await page.evaluate(async () => {
     const e = window.__vooEditor;
     e.selectExactly(["current-frame"]);

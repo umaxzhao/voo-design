@@ -4,6 +4,9 @@ import { lintDesignTool, LINT_TOOL_SCHEMA } from '../../src/canvas/agent/design_
 import { runCritiqueLoop, formatIssuesForModel } from '../../src/canvas/agent/design_quality/critique_loop.js';
 import { runAgentTurn } from '../../src/canvas/agent/canvas_agent.js';
 import { parseOptions } from '../../scripts/design-bench/run.mjs';
+import { getLocalizedIssueCopy } from '../../src/canvas/components/editor_design_issues.jsx';
+import englishTranslations from '../../src/shared/i18n/extended-en.js';
+import chineseTranslations from '../../src/shared/i18n/extended-zh.js';
 
 const rect = (id, patch = {}) => ({ id, kind: 'rect', x: 0, y: 0, width: 100, height: 60, fill: '#ffffff', ...patch });
 const text = (id, patch = {}) => rect(id, { kind: 'text', fontSize: 16, fill: '#111111', ...patch });
@@ -74,6 +77,49 @@ describe('lint geometry and tokens', () => {
   it('recognizes structural dividers and empty canvas hierarchy', () => {
     expect(rules([0,1,2,3].map(i => rect(`${i}`, { name: 'divider', height: 1, y: i*20 })))).not.toContain('decorativeLines');
     expect(lintDesign({ width: 2000, height: 2000, nodes: [rect('tiny')] }).issues.map(i => i.rule)).toContain('flatHierarchy');
+  });
+  it('keeps sparse sibling checks near-linear as documents grow', () => {
+    const nodes = Array.from({ length: 8000 }, (_, i) => rect(`node-${i}`, { x: i * 28, width: 20, height: 20 }));
+    const started = performance.now();
+    const result = lintDesign({ width: 240000, height: 1000, nodes });
+    expect(result.metrics.nodeCount).toBe(8000);
+    expect(performance.now() - started).toBeLessThan(1500);
+  });
+  it('uses localized layer-review copy for every lint rule', () => {
+    const dictionaries = [englishTranslations, chineseTranslations];
+    const translatorFor = dictionary => (key, params) => {
+      const template = dictionary[key];
+      expect(template).toBeTypeOf('string');
+      return template.replace(/\{(\w+)\}/g, (match, name) => String(params?.[name] ?? match));
+    };
+    const cases = [
+      ['overflow', 'Child extends outside its parent bounds.', 'Resize the child.'],
+      ['offGrid', 'Spacing is off the 4px grid.', 'Snap spacing.'],
+      ['purpleGradient', 'Purple to blue/pink gradient.', 'Use a restrained palette.'],
+      ['overlap', 'Sibling content overlaps.', 'Separate content.'],
+      ['misalignment', 'Left edges almost align.', 'Align edges.'],
+      ['identicalCards', 'Three identical cards.', 'Vary the modules.'],
+      ['centerStackedHero', 'Content forms a centered stack.', 'Use an asymmetric hero.'],
+      ['noFocal', 'No module has twice the area.', 'Enlarge the primary module.'],
+      ['typeScale', 'Font size 17px is outside the token scale.', 'Use 16px.'],
+      ['typeScale', 'More than five text sizes create a chaotic hierarchy.', 'Reduce the type sizes.'],
+      ['contrast', 'Text contrast 2.00 is below 4.5:1.', 'Increase contrast.'],
+      ['radii', 'More than three corner radii are in use.', 'Choose three radius tokens.'],
+      ['decorativeLines', 'Excess non-structural lines distract.', 'Remove decoration.'],
+      ['evenTemplateSpacing', 'Every layout group uses the same gap.', 'Vary spacing.'],
+      ['flatHierarchy', 'The composition lacks a strong focal point.', 'Increase visual weight.'],
+    ];
+    for (const dictionary of dictionaries) {
+      for (const [rule, message, fix] of cases) {
+        const result = getLocalizedIssueCopy({ rule, message, fix }, translatorFor(dictionary));
+        if (dictionary === chineseTranslations) {
+          expect(result.message).not.toBe(message);
+          expect(result.fix).not.toBe(fix);
+        }
+        expect(result.message).not.toMatch(/^editor\.designIssues\.message\./);
+        expect(result.fix).not.toMatch(/^editor\.designIssues\.fix\./);
+      }
+    }
   });
 });
 

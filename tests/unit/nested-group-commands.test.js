@@ -3,6 +3,7 @@ import { insertGroup } from "../../src/canvas/editor/doc_ops_groups.js";
 import { createEngineGroups } from "../../src/canvas/editor/editor_engine_groups.js";
 import { frameSelectionUnit } from "../../src/canvas/editor/frame-selection-unit.js";
 import { alignNodes } from "../../src/canvas/editor/align_ops.js";
+import { deserialiseDocument, serialiseDocument } from "../../src/canvas/editor/scene_model.js";
 
 const frame = (id, parentId = null) => ({ id, kind: "group", isFrame: true, parentId,
   x: 0, y: 0, width: 500, height: 400, visible: true });
@@ -30,6 +31,17 @@ describe("group commands inside Frames", () => {
     f.api.groupSelection();
     const group = f.doc().nodes.find(n => n.kind === "group" && !n.isFrame);
     expect(f.select).toHaveBeenCalledWith(group.id);
+  });
+  it("creates a named non-frame Section around selected layers", () => {
+    const f = fixture([rect("a", null), { ...rect("b", null), x: 120 }], ["a", "b"]);
+    f.api.createSection("Hero assets");
+    const section = f.doc().nodes.find(node => node.section === true);
+    expect(section).toMatchObject({ kind: "group", name: "Hero assets", section: true });
+    expect(section.isFrame).not.toBe(true);
+    expect(f.doc().nodes.filter(node => ["a", "b"].includes(node.id)).every(node => node.parentId === section.id)).toBe(true);
+    expect(f.select).toHaveBeenCalledWith(section.id);
+    const restored = deserialiseDocument(serialiseDocument(f.doc()));
+    expect(restored.nodes.find(node => node.id === section.id)).toMatchObject({ section: true, name: "Hero assets" });
   });
   it("ungroups the selected ordinary unit without dissolving either ancestor Frame", () => {
     const f = fixture([frame("outer"), frame("inner", "outer"),

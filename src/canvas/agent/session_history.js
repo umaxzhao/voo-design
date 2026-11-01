@@ -53,3 +53,13 @@ export function upsertSession(sessions, session) {
 export function deleteSessionFromList(sessions, sessionId) {
   return sessions.filter((session) => session.id !== sessionId);
 }
+
+export function renameSessionInList(sessions, sessionId, title) {
+  const normalizedTitle = String(title ?? "").trim();
+  if (!normalizedTitle) return sessions;
+  return sessions.map((session) =>
+    session.id === sessionId
+      ? { ...session, title: normalizedTitle, updatedAt: Date.now() }
+      : session,
+  );
+}

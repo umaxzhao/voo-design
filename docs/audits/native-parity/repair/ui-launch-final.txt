@@ -1,0 +1,3 @@
+2026-11-01 09:15:26.949 VOO Design Native[92392:10141445] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+2026-11-01 09:15:27.236 VOO Design Native[92392:10141445] [VOO Design Native] controller.window = Optional(<NSWindow: 0x8491f5180>)
+2026-11-01 09:15:27.360 VOO Design Native[92392:10141445] [VOO Design Native] Cold launch window ready in 0.7044 seconds

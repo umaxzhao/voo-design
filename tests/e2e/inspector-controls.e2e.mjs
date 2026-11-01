@@ -50,6 +50,25 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
     e.setDoc({ ...e.getDocument(), nodes: [{ ...createTextNode({ x: 100, y: 100, text: "Menu audit", fontSize: 24, fill: "#000000" }), id: "text" }] });
   });
   await mount("text", "text");
+  await mount("paint", "text");
+  const emptyStrokeSection = host.getByRole("button", { name: /add stroke/i }).evaluate((button) => {
+    const section = button.closest("[class*='border-t']");
+    const header = section.firstElementChild;
+    const contentBounds = [...header.children].map((child) => child.getBoundingClientRect());
+    const contentTop = Math.min(...contentBounds.map((bounds) => bounds.top));
+    const contentBottom = Math.max(...contentBounds.map((bounds) => bounds.bottom));
+    const sectionBounds = section.getBoundingClientRect();
+    return {
+      top: contentTop - sectionBounds.top,
+      bottom: sectionBounds.bottom - contentBottom,
+    };
+  });
+  const emptyStrokeSpacing = await emptyStrokeSection;
+  assert.ok(
+    Math.abs(emptyStrokeSpacing.top - emptyStrokeSpacing.bottom) <= 1,
+    `empty stroke spacing should be balanced: ${JSON.stringify(emptyStrokeSpacing)}`,
+  );
+  await mount("text", "text");
   await host.getByRole("button", { name: /Font weight/i, exact: true }).click();
   const weights = await options().allTextContents();
   assert.equal(weights.length, 9);

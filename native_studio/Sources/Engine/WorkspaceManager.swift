@@ -121,15 +121,28 @@ public final class WorkspaceManager: @unchecked Sendable {
     private let fileManager = FileManager.default
     private let lock = NSRecursiveLock()
 
-    // Watcher state
-    private var fileWatcherSource: DispatchSourceFileSystemObject?
-    private var fileWatcherFD: Int32 = -1
-    private var watcherDebounceWorkItem: DispatchWorkItem?
+    private let directoryWatcher: WorkspaceDirectoryWatcher
+    private let injectedUserDataDirectory: String?
+    private let injectedDocumentsRoot: String?
 
     /// Change notification callback (broadcast when files are added, removed, modified, or trashed)
     public var onWorkspaceChanged: (() -> Void)?
 
-    public init() {
+    /// Delivered on the main queue; watcher failures are also recorded in the OS log.
+    public var onWorkspaceWatcherError: ((Error) -> Void)?
+
+    public convenience init() { self.init(watcher: WorkspaceDirectoryWatcher()) }
+
+    init(
+        watcher: WorkspaceDirectoryWatcher,
+        userDataDirectory: String? = nil,
+        documentsRootDirectory: String? = nil
+    ) {
+        directoryWatcher = watcher
+        injectedUserDataDirectory = userDataDirectory
+        injectedDocumentsRoot = documentsRootDirectory
+        directoryWatcher.onChange = { [weak self] in self?.onWorkspaceChanged?() }
+        directoryWatcher.onFailure = { [weak self] error in self?.onWorkspaceWatcherError?(error) }
         // Ensure default directory exists
         let defaultDir = defaultDirectoryPath()
         if !fileManager.fileExists(atPath: defaultDir) {
@@ -139,12 +152,13 @@ public final class WorkspaceManager: @unchecked Sendable {
     }
 
     deinit {
-        stopWatcher()
+        directoryWatcher.stop()
     }
 
     // MARK: - Path Resolution
 
     public func userDataDirectory() -> String {
+        if let injectedUserDataDirectory { return injectedUserDataDirectory }
         if let env = ProcessInfo.processInfo.environment["VOO_USER_DATA_DIR"], !env.isEmpty {
             return (env as NSString).standardizingPath
         }
@@ -165,6 +179,7 @@ public final class WorkspaceManager: @unchecked Sendable {
     }
 
     public func documentsRootDirectory() -> String {
+        if let injectedDocumentsRoot { return injectedDocumentsRoot }
         if let env = ProcessInfo.processInfo.environment["VOO_DOCUMENTS_ROOT"], !env.isEmpty {
             return (env as NSString).standardizingPath
         }
@@ -796,52 +811,9 @@ public final class WorkspaceManager: @unchecked Sendable {
     // MARK: - File System Watcher
 
     private func setupWatcher() {
-        stopWatcher()
         let root = currentWorkspacePath
         guard isValidWorkspaceDirectory(root) else { return }
-
-        let fd = open(root, O_EVTONLY)
-        guard fd >= 0 else { return }
-        self.fileWatcherFD = fd
-
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: fd,
-            eventMask: [.write, .delete, .extend, .attrib, .rename],
-            queue: DispatchQueue.global(qos: .utility)
-        )
-
-        source.setEventHandler { [weak self] in
-            self?.scheduleDebouncedNotification()
-        }
-
-        source.setCancelHandler {
-            close(fd)
-        }
-
-        source.resume()
-        self.fileWatcherSource = source
-    }
-
-    private func stopWatcher() {
-        if let source = fileWatcherSource {
-            source.cancel()
-            fileWatcherSource = nil
-        }
-        fileWatcherFD = -1
-    }
-
-    private func scheduleDebouncedNotification() {
-        lock.lock()
-        watcherDebounceWorkItem?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            DispatchQueue.main.async {
-                self?.onWorkspaceChanged?()
-            }
-        }
-        watcherDebounceWorkItem = workItem
-        lock.unlock()
-
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.3, execute: workItem)
+        directoryWatcher.replace(directory: root)
     }
 
     private func notifyChanged() {

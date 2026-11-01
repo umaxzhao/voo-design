@@ -16,8 +16,8 @@ public struct ThemeTokens {
     // MARK: - 6-Tier Surface Lightness Ladder (VOO Dark)
     public static let surfacePage = "#000000"     // html/body, window background
     /// Design-system "surface-canvas" token (web `WORKSPACE_BACKGROUND`). The
-    /// editor stage itself is the darker `colorStageStudio` below; this token
-    /// stays as the documented ladder rung the test suite pins.
+    /// editor stage renders this exact value (`colorStageStudio` below); this
+    /// token stays as the documented ladder rung the test suite pins.
     public static let surfaceStage = "#525252"
     public static let surfacePanel = "#171717"    // Studio Inspector & floating overlay panels, TitleBar chrome
     public static let surfaceRaised = "#262626"   // Control resting surface, input fields, cards
@@ -48,17 +48,28 @@ public struct ThemeTokens {
     public static let rotateStalkOffset: CGFloat = 20.0
     public static let snapThresholdPx: CGFloat = 6.0
 
+    // MARK: - Stage Dot Grid (web `radial-gradient(rgba(255,255,255,0.14) 1.2px, transparent 1.2px)`)
+    /// Tile pitch in DOCUMENT-independent screen px at 100% zoom (web multiplies
+    /// it by the camera zoom: `backgroundSize: 20 * zoom`).
+    public static let dotGridSpacing: CGFloat = 20.0
+    /// Dot radius in SCREEN px (not scaled by zoom).
+    public static let dotGridRadius: CGFloat = 1.2
+    /// Dot fill alpha: web `rgba(255,255,255,0.14)`.
+    public static let dotGridAlpha: CGFloat = 0.14
+
     // MARK: - NSColor Instances (Deterministic sRGB, Zero OS Theme Drift)
     public static let colorPanel = NSColor(red: 0.09, green: 0.09, blue: 0.09, alpha: 1.0) // #171717 (23/255)
     public static let colorStage = NSColor(red: 0.06, green: 0.06, blue: 0.06, alpha: 1.0) // #0f0f0f (15/255)
-    /// Editor workspace ground around the artboards. Measured from the web
-    /// editor: `rgb(28,28,28)` = `#1c1c1c` (the value the web rulers also use).
-    public static let colorStageStudio = NSColor(hex: "#1c1c1c")
+    /// Editor workspace ground around the artboards. Pixel-sampled from the
+    /// current web build (2026-10-31): `rgb(82,82,82)` = `#525252`.
+    public static let colorStageStudio = NSColor(hex: "#525252")
     /// Default canvas/artboard surface when a document carries no explicit
     /// background: web document background `#171717`.
     public static let colorArtboard = NSColor(hex: "#171717")
-    /// Focused frame outline: 1px mint, measured `rgb(165,252,210)` = `#a5fcd2`.
-    public static let colorFrameSelection = NSColor(hex: "#a5fcd2")
+    /// Focused/selected frame outline: web `ring-1 ring-[#b2ffd6]/60`. The ref's
+    /// 1px ring samples `rgb(122,171,144)` over `#525252` (mint at ~55-60%), so
+    /// this is mint #b2ffd6 at 60% alpha rather than a solid stroke.
+    public static let colorFrameSelection = NSColor(hex: "#b2ffd6").withAlphaComponent(0.60)
     /// Unselected frame outline: `ring-1 ring-white/10`.
     public static let colorFrameIdleBorder = NSColor(white: 1.0, alpha: 0.10)
     /// Canvas type / frame label colour for a selected (or focused) frame:
@@ -66,8 +77,9 @@ public struct ThemeTokens {
     public static let colorFrameLabelSelected = NSColor(hex: "#a7ffd4")
     /// Frame label colour for an unselected frame: web `text-neutral-400`.
     public static let colorFrameLabelIdle = NSColor(hex: "#a3a3a3")
-    /// Ruler strip ground (`bg-[#1c1c1c]/95` over the stage).
-    public static let colorRulerBackground = NSColor(hex: "#1c1c1c")
+    /// Ruler strip ground. The current web rulers overlay the stage with the
+    /// same `#525252` ground (only the separators/ticks distinguish them).
+    public static let colorRulerBackground = NSColor(hex: "#525252")
     /// Ruler tick labels: web `text-[9px] ... text-neutral-400`.
     public static let colorRulerLabel = NSColor(hex: "#a3a3a3")
     /// Ruler ticks: web `bg-white/25` for major and minor ticks.
@@ -108,9 +120,13 @@ public enum VooMonoTypeface {
 
     private static var didRegister = false
 
-    /// Registers the bundled faces for this process. Called once at launch; also
-    /// covers the un-bundled (test / `swiftc` binary) case by looking next to the
-    /// executable and in the source resource folder.
+    /// Registers every `.ttf` in `Resources/Fonts` for this process: the three
+    /// Intel One Mono weights (chrome) plus the OFL text faces the web build also
+    /// ships — Inter, Archivo Black, Bitter, Caveat, Playfair Display and ZCOOL
+    /// KuaiLe — so `TextStyleResolver` can resolve web-authored CSS stacks without
+    /// a fallback. Called once at launch; also covers the un-bundled (test /
+    /// `swiftc` binary) case by looking next to the executable and in the source
+    /// resource folder.
     public static func registerBundledFonts() {
         guard !didRegister else { return }
         didRegister = true
@@ -122,7 +138,7 @@ public enum VooMonoTypeface {
         }
         isAvailable = NSFont(name: Weight.regular.rawValue, size: 12) != nil
         NSLog(
-            "[VOO Design Native] bundled typeface Intel One Mono: %@ (%d face file(s))",
+            "[VOO Design Native] bundled fonts: Intel One Mono %@; %d face file(s) found",
             isAvailable ? "ready" : "missing — falling back to SF Mono",
             urls.count
         )

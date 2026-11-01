@@ -22,38 +22,51 @@ public enum AgentPanelMetrics {
     /// Host adds the 12pt outer window padding; this is the panel's inner gutter.
     public static let contentInset: CGFloat = 16
 
-    public static let headerHeight: CGFloat = 50
+    public static let headerHeight: CGFloat = 48
     public static let headerTrailingInset: CGFloat = 16
+    public static let headerLeadingInset: CGFloat = 16
     public static let bodyRightInset: CGFloat = 16
     public static let iconButtonSpacing: CGFloat = 8
     public static let avatarSize: CGFloat = 28
     public static let heroBadgeSize: CGFloat = 56
+    public static let messageAvatarSize: CGFloat = 40
     public static let iconButtonSize: CGFloat = 32
     public static let iconGlyphSize: CGFloat = 16
 
     public static let suggestionChipHeight: CGFloat = 38
     public static let suggestionChipSpacing: CGFloat = 8
     public static let suggestionChipCornerRadius: CGFloat = 12
+    public static let suggestionChipTextInset: CGFloat = 14
 
     public static let composerHeight: CGFloat = 130
     public static let composerSideInset: CGFloat = 12
     public static let composerBottomInset: CGFloat = 12
     public static let composerCornerRadius: CGFloat = 16
-    public static let composerTextInset: CGFloat = 12
+    public static let composerTextInset: CGFloat = 14
+    public static let composerBottomRowHeight: CGFloat = 24
     public static let sendButtonSize: CGFloat = 32
-    public static let sendButtonInset: CGFloat = 8
+    public static let sendButtonInset: CGFloat = 12
+    public static let modelChipHeight: CGFloat = 24
+    public static let modelChipRadius: CGFloat = 8
+    public static let modelChipSpacing: CGFloat = 8
 
     public static let messageBubbleMaxWidth: CGFloat = 300
-    public static let messageStackSpacing: CGFloat = 10
+    public static let messageBubbleHorizontalInset: CGFloat = 14
+    public static let messageBubbleVerticalInset: CGFloat = 10
+    public static let messageStackSpacing: CGFloat = 16
+    /// Left gutter reserved for the 40pt author avatar on the first message of a turn.
+    public static let messageAvatarIndent: CGFloat = 52
 
-    // Typography (values verified against the 1440x900 web reference screenshot).
+    // Typography (values verified against docs/refs/web_20261031/web_agent_open.png).
     public static let headerTitleFontSize: CGFloat = 12
     public static let modelStatusFontSize: CGFloat = 10
     public static let greetingFontSize: CGFloat = 15
     public static let suggestionFontSize: CGFloat = 12
     public static let hintFontSize: CGFloat = 12
     public static let composerFontSize: CGFloat = 12
-    public static let messageFontSize: CGFloat = 12
+    public static let modelChipFontSize: CGFloat = 11
+    public static let messageFontSize: CGFloat = 12.5
+    public static let messageCodeFontSize: CGFloat = 11.5
 }
 
 // MARK: - Accessibility Identifiers
@@ -85,8 +98,6 @@ private enum AgentPalette {
 
     static let chipFill = NSColor(hex: "#0F0F0F")
     static let chipFillHover = NSColor(hex: "#1A1A1A")
-    static let chipBorder = NSColor(white: 1.0, alpha: 0.06)
-    static let chipBorderHover = NSColor(white: 1.0, alpha: 0.14)
     static let chipText = NSColor(hex: "#D6D6D6")
 
     static let purple = NSColor(hex: ThemeTokens.accentPurple)
@@ -96,25 +107,20 @@ private enum AgentPalette {
 
     static let composerFill = NSColor(hex: "#171717")
     static let composerBorder = NSColor(white: 1.0, alpha: 0.08)
-    static let composerBorderFocused = NSColor(hex: ThemeTokens.accentPurple).withAlphaComponent(0.45)
+    static let composerBorderFocused = NSColor(hex: "#A7FFD4").withAlphaComponent(0.45)
     static let placeholder = ThemeTokens.textMuted
-
-    static let pillFill = NSColor(hex: "#161616")
-    static let pillPrefix = NSColor(white: 0.55, alpha: 1.0)
+    static let composerGlow = NSColor(hex: "#A7FFD4").withAlphaComponent(0.16)
+    static let modelChipFill = NSColor(white: 1.0, alpha: 0.05)
+    static let modelChipText = NSColor(white: 0.64, alpha: 1.0)
 
     static let markColor = NSColor(hex: "#0B0B0B")
 
-    static let agentBubbleFill = NSColor(hex: "#171717")
-    static let agentBubbleBorder = NSColor(white: 1.0, alpha: 0.08)
-    static let agentBubbleText = NSColor(hex: "#E4E4E4")
-    static let userBubbleFill = NSColor(hex: "#2A2033")
-    static let userBubbleBorder = NSColor(hex: ThemeTokens.accentPurple).withAlphaComponent(0.30)
-    static let userBubbleText = NSColor(hex: "#F3E8FA")
+    static let agentProseText = NSColor(hex: "#E5E5E5")
+    static let agentCodeText = NSColor(hex: "#C9C9C9")
+    static let userBubbleFill = NSColor(white: 1.0, alpha: 0.08)
+    static let userBubbleText = NSColor(hex: "#F5F5F5")
 
-    static let agentErrorFill = NSColor(hex: "#2A1717")
-    static let agentErrorBorder = NSColor(hex: "#FF6B6B").withAlphaComponent(0.38)
     static let agentErrorText = NSColor(hex: "#FFB4B4")
-    static let streamingBorder = NSColor(hex: ThemeTokens.accentPurple).withAlphaComponent(0.45)
 }
 
 // MARK: - Typography helpers
@@ -523,33 +529,26 @@ public final class AgentSuggestionChipView: NSButton {
         let radius = AgentPanelMetrics.suggestionChipCornerRadius
         let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
 
+        // Web suggestion row: `rounded-xl bg-white/[0.06]` on black, no border.
         let fill: NSColor
-        let border: NSColor
         if isHighlighted {
             fill = NSColor(white: 0.16, alpha: 1.0)
-            border = NSColor(white: 1.0, alpha: 0.18)
         } else if isHovered {
             fill = AgentPalette.chipFillHover
-            border = AgentPalette.chipBorderHover
         } else {
             fill = AgentPalette.chipFill
-            border = AgentPalette.chipBorder
         }
-
         ctx.setFillColor(fill.cgColor)
         ctx.addPath(path)
         ctx.fillPath()
-        ctx.setStrokeColor(border.cgColor)
-        ctx.setLineWidth(1.0)
-        ctx.addPath(path)
-        ctx.strokePath()
 
-        let font = ThemeFonts.mono(size: AgentPanelMetrics.suggestionFontSize, weight: .regular)
+        let font = ThemeFonts.system(size: AgentPanelMetrics.suggestionFontSize, weight: .regular)
         let lineHeight = ceil(font.ascender - font.descender + font.leading)
+        let inset = AgentPanelMetrics.suggestionChipTextInset
         let textRect = CGRect(
-            x: 14.0,
+            x: inset,
             y: floor((bounds.height - lineHeight) / 2.0),
-            width: max(0, bounds.width - 28.0),
+            width: max(0, bounds.width - inset * 2.0),
             height: lineHeight
         )
         AgentTextDrawing.drawSingleLine(
@@ -615,21 +614,22 @@ public final class AgentSendButton: NSButton {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         let circle = bounds.insetBy(dx: 0.5, dy: 0.5)
 
+        // Empty input → dim purple (web disabled state); typed input → solid white.
         let fill: NSColor
         if !isEnabled {
             fill = AgentPalette.purple.withAlphaComponent(0.42)
         } else if isHighlighted {
-            fill = NSColor(hex: "#C77DFF")
+            fill = NSColor(white: 0.82, alpha: 1.0)
         } else if isHovered {
-            fill = NSColor(hex: "#F0C8FF")
+            fill = NSColor(white: 0.94, alpha: 1.0)
         } else {
-            fill = AgentPalette.purple
+            fill = NSColor(white: 1.0, alpha: 1.0)
         }
 
         ctx.setFillColor(fill.cgColor)
         ctx.fillEllipse(in: circle)
 
-        let glyphSide: CGFloat = 16.0
+        let glyphSide: CGFloat = 12.0
         let glyphRect = CGRect(
             x: bounds.midX - glyphSide / 2.0,
             y: bounds.midY - glyphSide / 2.0,
@@ -687,12 +687,29 @@ public final class AgentComposerView: NSView, NSTextViewDelegate {
         didSet { placeholderLabel.stringValue = placeholderText }
     }
 
+    /// Model / agent label shown in the composer chip (host updates it from the
+    /// active agent; web shows the current model next to a sparkle glyph).
+    public var modelLabel: String = "Opus 5.5" {
+        didSet {
+            needsLayout = true
+            needsDisplay = true
+        }
+    }
+
     public private(set) var isFocused: Bool = false
 
     public let textView: AgentComposerTextView
     public let sendButton: AgentSendButton
 
     private let placeholderLabel = NSTextField(labelWithString: "")
+    private var modelChipRect: CGRect = .zero
+
+    /// Width of the [sparkle glyph + label] composer model chip.
+    private func modelChipWidth() -> CGFloat {
+        let font = ThemeFonts.system(size: AgentPanelMetrics.modelChipFontSize)
+        let textWidth = ceil(AgentTextDrawing.measuredWidth(modelLabel, font: font))
+        return 8.0 + 10.0 + 4.0 + textWidth + 8.0
+    }
 
     public override init(frame frameRect: NSRect) {
         self.textView = AgentComposerTextView(frame: NSRect(x: 0, y: 0, width: 300, height: 96))
@@ -723,16 +740,16 @@ public final class AgentComposerView: NSView, NSTextViewDelegate {
         setAccessibilityRole(.group)
         setAccessibilityLabel("Message composer")
 
-        // Soft purple under-glow around the composer card (reference: radial purple bloom).
+        // Soft mint under-glow around the composer card (web `prompt-composer`).
         wantsLayer = true
-        layer?.shadowColor = AgentPalette.purple.cgColor
-        layer?.shadowOpacity = 0.26
-        layer?.shadowRadius = 18.0
+        layer?.shadowColor = AgentPalette.mint.cgColor
+        layer?.shadowOpacity = 0.20
+        layer?.shadowRadius = 16.0
         layer?.shadowOffset = .zero
 
         // Placeholder overlay (visible only while the composer is empty).
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = true
-        placeholderLabel.font = ThemeFonts.mono(size: AgentPanelMetrics.composerFontSize, weight: .regular)
+        placeholderLabel.font = ThemeFonts.system(size: AgentPanelMetrics.composerFontSize, weight: .regular)
         placeholderLabel.textColor = AgentPalette.placeholder
         placeholderLabel.stringValue = placeholderText
         placeholderLabel.lineBreakMode = .byTruncatingTail
@@ -745,12 +762,12 @@ public final class AgentComposerView: NSView, NSTextViewDelegate {
         textView.isRichText = false
         textView.importsGraphics = false
         textView.drawsBackground = false
-        textView.font = ThemeFonts.mono(size: AgentPanelMetrics.composerFontSize, weight: .regular)
+        textView.font = ThemeFonts.system(size: AgentPanelMetrics.composerFontSize, weight: .regular)
         textView.textColor = NSColor(white: 0.92, alpha: 1.0)
         textView.insertionPointColor = AgentPalette.mint
         textView.focusRingType = .none
         textView.textContainerInset = NSSize(
-            width: 13.0,
+            width: AgentPanelMetrics.composerTextInset,
             height: AgentPanelMetrics.composerTextInset
         )
         textView.textContainer?.lineFragmentPadding = 0.0
@@ -809,23 +826,41 @@ public final class AgentComposerView: NSView, NSTextViewDelegate {
         let height = bounds.height
         guard width > 0, height > 0 else { return }
 
+        // Bottom-right row: [model chip] [send] inside the 12pt card padding.
         let sendSize = AgentPanelMetrics.sendButtonSize
         let sendInset = AgentPanelMetrics.sendButtonInset
+        let sendY = height - sendInset - sendSize
         sendButton.frame = NSRect(
             x: width - sendInset - sendSize,
-            y: height - sendInset - sendSize,
+            y: sendY,
             width: sendSize,
             height: sendSize
         )
+        let chipHeight = AgentPanelMetrics.modelChipHeight
+        let chipWidth = min(
+            modelChipWidth(),
+            max(48.0, width - sendInset * 2.0 - sendSize - AgentPanelMetrics.modelChipSpacing)
+        )
+        modelChipRect = NSRect(
+            x: sendButton.frame.minX - AgentPanelMetrics.modelChipSpacing - chipWidth,
+            y: sendY + (sendSize - chipHeight) / 2.0,
+            width: chipWidth,
+            height: chipHeight
+        )
 
-        let textWidth = max(40.0, width - sendInset - sendSize - 4.0)
-        textView.frame = NSRect(x: 0, y: 0, width: textWidth, height: height)
+        // Text area spans the card above the bottom row; text inset = web `p-3`.
+        let textHeight = max(24.0, sendY - AgentPanelMetrics.modelChipSpacing)
+        textView.frame = NSRect(x: 0, y: 0, width: width, height: textHeight)
+        textView.textContainerInset = NSSize(
+            width: AgentPanelMetrics.composerTextInset,
+            height: AgentPanelMetrics.composerTextInset
+        )
 
         let placeholderHeight = ceil(placeholderLabel.font.map { $0.ascender - $0.descender } ?? 16.0)
         placeholderLabel.frame = NSRect(
-            x: 12.0,
+            x: AgentPanelMetrics.composerTextInset,
             y: AgentPanelMetrics.composerTextInset,
-            width: max(0.0, width - 28.0),
+            width: max(0.0, width - AgentPanelMetrics.composerTextInset * 2.0),
             height: placeholderHeight
         )
 
@@ -853,31 +888,11 @@ public final class AgentComposerView: NSView, NSTextViewDelegate {
         let radius = AgentPanelMetrics.composerCornerRadius
         let path = CGPath(roundedRect: card, cornerWidth: radius, cornerHeight: radius, transform: nil)
 
-        // Purple under-glow bleeding in from the bottom-right (reference card glow).
-        ctx.saveGState()
-        ctx.addPath(path)
-        ctx.clip()
         ctx.setFillColor(AgentPalette.composerFill.cgColor)
-        ctx.fill(card)
-        if let glow = CGGradient(
-            colorsSpace: CGColorSpaceCreateDeviceRGB(),
-            colors: [
-                AgentPalette.purple.withAlphaComponent(0.035).cgColor,
-                AgentPalette.purple.withAlphaComponent(0.0).cgColor
-            ] as CFArray,
-            locations: [0.0, 1.0]
-        ) {
-            let center = CGPoint(x: card.maxX - 24.0, y: card.maxY - 8.0)
-            ctx.drawRadialGradient(
-                glow,
-                startCenter: center,
-                startRadius: 0,
-                endCenter: center,
-                endRadius: max(card.width, card.height) * 0.45,
-                options: [.drawsAfterEndLocation]
-            )
-        }
-        ctx.restoreGState()
+        ctx.addPath(path)
+        ctx.fillPath()
+
+        drawModelChip(in: modelChipRect, ctx: ctx)
 
         ctx.setStrokeColor(
             (isFocused ? AgentPalette.composerBorderFocused : AgentPalette.composerBorder).cgColor
@@ -885,6 +900,51 @@ public final class AgentComposerView: NSView, NSTextViewDelegate {
         ctx.setLineWidth(1.0)
         ctx.addPath(path)
         ctx.strokePath()
+    }
+
+    /// Web composer model chip: `bg-white/[0.05] rounded-lg h-6 px-2 text-[11px]`
+    /// with a sparkle glyph before the model label.
+    private func drawModelChip(in rect: CGRect, ctx: CGContext) {
+        guard rect.width > 4, rect.height > 4 else { return }
+        let chipPath = CGPath(
+            roundedRect: rect,
+            cornerWidth: AgentPanelMetrics.modelChipRadius,
+            cornerHeight: AgentPanelMetrics.modelChipRadius,
+            transform: nil
+        )
+        ctx.setFillColor(AgentPalette.modelChipFill.cgColor)
+        ctx.addPath(chipPath)
+        ctx.fillPath()
+
+        // Sparkle glyph (8 rays) at the left padding.
+        let center = CGPoint(x: rect.minX + 8.0 + 5.0, y: rect.midY)
+        ctx.setStrokeColor(AgentPalette.modelChipText.cgColor)
+        ctx.setLineWidth(1.1)
+        ctx.setLineCap(.round)
+        for index in 0..<8 {
+            let angle = Double(index) * Double.pi / 4.0
+            let inner: CGFloat = index % 2 == 0 ? 1.4 : 2.6
+            let outer: CGFloat = 5.0
+            ctx.strokeLineSegments(between: [
+                CGPoint(x: center.x + CGFloat(cos(angle)) * inner,
+                        y: center.y + CGFloat(sin(angle)) * inner),
+                CGPoint(x: center.x + CGFloat(cos(angle)) * outer,
+                        y: center.y + CGFloat(sin(angle)) * outer)
+            ])
+        }
+
+        let font = ThemeFonts.system(size: AgentPanelMetrics.modelChipFontSize)
+        AgentTextDrawing.drawSingleLine(
+            modelLabel,
+            in: CGRect(
+                x: rect.minX + 8.0 + 10.0 + 4.0,
+                y: rect.minY,
+                width: max(0, rect.width - 8.0 - 10.0 - 4.0 - 8.0),
+                height: rect.height
+            ),
+            font: font,
+            color: AgentPalette.modelChipText
+        )
     }
 
     // MARK: NSTextViewDelegate
@@ -977,20 +1037,22 @@ public final class AgentIntroView: NSView {
 
     // MARK: Metrics
 
-    private static let greetingFont = ThemeFonts.mono(
+    private static let greetingFont = ThemeFonts.system(
         size: AgentPanelMetrics.greetingFontSize,
         weight: .regular
     )
     private static let greetingLineSpacing: CGFloat = 4.0
-    private static let hintFont = ThemeFonts.mono(
+    private static let hintFont = ThemeFonts.system(
         size: AgentPanelMetrics.hintFontSize,
         weight: .regular
     )
     private static let hintLineSpacing: CGFloat = 4.0
 
-    private static let badgeToGreetingGap: CGFloat = 20.0
-    private static let greetingToChipsGap: CGFloat = 23.5
-    private static let chipsToHintGap: CGFloat = 27.0
+    // Web empty-state block: badge → greeting `gap-4` (16), greeting → chips and
+    // chips → hint `gap-6` (24).
+    private static let badgeToGreetingGap: CGFloat = 16.0
+    private static let greetingToChipsGap: CGFloat = 24.0
+    private static let chipsToHintGap: CGFloat = 24.0
 
     public func requiredHeight(forWidth width: CGFloat) -> CGFloat {
         guard width > 0 else { return 0 }
@@ -1081,7 +1143,7 @@ public final class AgentIntroView: NSView {
             greetingText,
             in: NSRect(x: 0, y: greetingTop, width: width, height: greetingHeight),
             font: AgentIntroView.greetingFont,
-            color: NSColor(white: 0.97, alpha: 1.0),
+            color: NSColor(hex: "#E5E5E5"),
             lineSpacing: AgentIntroView.greetingLineSpacing
         )
 
@@ -1126,20 +1188,30 @@ public final class AgentMessageBubbleView: NSView {
     /// True while tokens are being appended by the live local-CLI stream.
     public private(set) var isStreaming: Bool = false
 
-    /// Renders the bubble with the error treatment (red wash / border).
+    /// Streaming/error messages are drawn as prose with the rose treatment.
     public var isError: Bool = false {
         didSet { needsDisplay = true; updateAccessibilityLabel() }
     }
 
-    private static let textFont = ThemeFonts.mono(
+    /// First agent message of a turn shows the 40pt author avatar; follow-up
+    /// agent messages keep the same indent without repeating it.
+    public var showsAvatar: Bool = false {
+        didSet { if oldValue != showsAvatar { needsDisplay = true } }
+    }
+
+    private static let proseFont = ThemeFonts.system(
         size: AgentPanelMetrics.messageFontSize,
         weight: .regular
     )
-    private static let textLineSpacing: CGFloat = 3.0
-    private static let horizontalInset: CGFloat = 13.0
-    private static let verticalInset: CGFloat = 9.0
+    private static let codeFont = ThemeFonts.mono(
+        size: AgentPanelMetrics.messageCodeFontSize,
+        weight: .regular
+    )
+    private static let proseLineHeight: CGFloat = 19.0
+    private static let codeLineHeight: CGFloat = 16.0
     private static let minimumWidth: CGFloat = 72.0
-    private static let minimumHeight: CGFloat = 36.0
+    private static let minimumHeight: CGFloat = 24.0
+    private static let avatarSize = AgentPanelMetrics.messageAvatarSize
 
     public init(role: Role, text: String) {
         self.role = role
@@ -1182,7 +1254,7 @@ public final class AgentMessageBubbleView: NSView {
         needsDisplay = true
     }
 
-    /// Toggles the streaming chrome (soft purple border while the CLI is running).
+    /// Kept for API compatibility; prose has no bubble chrome to toggle now.
     public func setStreaming(_ streaming: Bool) {
         guard isStreaming != streaming else { return }
         isStreaming = streaming
@@ -1203,72 +1275,162 @@ public final class AgentMessageBubbleView: NSView {
 
     public override var isFlipped: Bool { true }
 
-    /// Bubble size for a given content column width.
+    // MARK: Text composition (sans prose, mono code/command lines)
+
+    /// Tool/CLI lines stay monospace: `[tool]`, `⚡`, `↳`, `⚠`, backtick code,
+    /// shell prompts and indented fragments coming from the CLI bridge.
+    private static func isCodeLine(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return false }
+        if line.hasPrefix("    ") || line.hasPrefix("\t") { return true }
+        if trimmed.hasPrefix("[") || trimmed.hasPrefix("```") { return true }
+        if trimmed.hasPrefix("⚡") || trimmed.hasPrefix("↳") || trimmed.hasPrefix("⚠") { return true }
+        if trimmed.hasPrefix("$ ") || trimmed.hasPrefix("> ") { return true }
+        if trimmed.contains("`") { return true }
+        return false
+    }
+
+    private func bodyAttributes(font: NSFont, color: NSColor, lineHeight: CGFloat) -> [NSAttributedString.Key: Any] {
+        let style = NSMutableParagraphStyle()
+        style.lineBreakMode = .byWordWrapping
+        style.minimumLineHeight = lineHeight
+        style.maximumLineHeight = lineHeight
+        return [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: style
+        ]
+    }
+
+    private func attributedBody() -> NSAttributedString {
+        let proseColor = isError
+            ? AgentPalette.agentErrorText
+            : (role == .user ? AgentPalette.userBubbleText : AgentPalette.agentProseText)
+        let lines = messageText.components(separatedBy: "\n")
+        let result = NSMutableAttributedString()
+        for (index, line) in lines.enumerated() {
+            let code = role == .agent && !isError && Self.isCodeLine(line)
+            let font = code ? Self.codeFont : Self.proseFont
+            let color = code ? AgentPalette.agentCodeText : proseColor
+            let lineHeight = code ? Self.codeLineHeight : Self.proseLineHeight
+            let text = index == lines.count - 1 ? line : line + "\n"
+            result.append(NSAttributedString(
+                string: text,
+                attributes: bodyAttributes(font: font, color: color, lineHeight: lineHeight)
+            ))
+        }
+        return result
+    }
+
+    private func bodyWidth(for maxWidth: CGFloat) -> CGFloat {
+        switch role {
+        case .agent:
+            return max(60.0, maxWidth - AgentPanelMetrics.messageAvatarIndent)
+        case .user:
+            // Web user bubble: `max-w-[85%] self-end`.
+            let cap = min(maxWidth * 0.85, AgentPanelMetrics.messageBubbleMaxWidth)
+            let natural = ceil(attributedBody().boundingRect(
+                with: NSSize(width: cap, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading]
+            ).width)
+            return min(cap, max(Self.minimumWidth, natural + AgentPanelMetrics.messageBubbleHorizontalInset * 2.0))
+        }
+    }
+
+    private func bodyHeight(for width: CGFloat) -> CGFloat {
+        ceil(attributedBody().boundingRect(
+            with: NSSize(width: max(20, width), height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading]
+        ).height)
+    }
+
+    /// Row size for a given content column width.
     public func sizeFor(maxWidth: CGFloat) -> NSSize {
-        let column = max(Self.minimumWidth, maxWidth)
-        let cap = min(column, AgentPanelMetrics.messageBubbleMaxWidth)
-        let naturalWidth = AgentTextDrawing.measuredWidth(messageText, font: Self.textFont)
-            + Self.horizontalInset * 2.0
-        let bubbleWidth = min(cap, max(Self.minimumWidth, naturalWidth))
-        let contentWidth = bubbleWidth - Self.horizontalInset * 2.0
-        let textHeight = AgentTextDrawing.measuredHeight(
-            messageText,
-            font: Self.textFont,
-            width: contentWidth,
-            lineSpacing: Self.textLineSpacing
-        )
-        let bubbleHeight = max(Self.minimumHeight, textHeight + Self.verticalInset * 2.0)
-        return NSSize(width: ceil(bubbleWidth), height: ceil(bubbleHeight))
+        switch role {
+        case .agent:
+            let contentWidth = bodyWidth(for: max(maxWidth, Self.minimumWidth))
+            let textHeight = bodyHeight(for: contentWidth)
+            let height = max(Self.minimumHeight, max(textHeight, showsAvatar ? Self.avatarSize : 0))
+            return NSSize(width: max(maxWidth, Self.minimumWidth), height: height)
+        case .user:
+            let bubbleWidth = bodyWidth(for: max(maxWidth, Self.minimumWidth))
+            let contentWidth = bubbleWidth - AgentPanelMetrics.messageBubbleHorizontalInset * 2.0
+            let textHeight = bodyHeight(for: contentWidth)
+            let height = max(Self.minimumHeight,
+                             textHeight + AgentPanelMetrics.messageBubbleVerticalInset * 2.0)
+            return NSSize(width: ceil(bubbleWidth), height: ceil(height))
+        }
     }
 
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
-        let radius: CGFloat = 12.0
-        let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+        let body = attributedBody()
 
-        let fill: NSColor
-        let border: NSColor
-        let textColor: NSColor
-        if isError {
-            fill = AgentPalette.agentErrorFill
-            border = AgentPalette.agentErrorBorder
-            textColor = AgentPalette.agentErrorText
-        } else if role == .user {
-            fill = AgentPalette.userBubbleFill
-            border = AgentPalette.userBubbleBorder
-            textColor = AgentPalette.userBubbleText
-        } else {
-            fill = AgentPalette.agentBubbleFill
-            border = isStreaming ? AgentPalette.streamingBorder : AgentPalette.agentBubbleBorder
-            textColor = AgentPalette.agentBubbleText
+        switch role {
+        case .user:
+            // Right-aligned white/8 bubble, sans 12.5 prose.
+            let path = CGPath(
+                roundedRect: bounds,
+                cornerWidth: 12,
+                cornerHeight: 12,
+                transform: nil
+            )
+            ctx.setFillColor(AgentPalette.userBubbleFill.cgColor)
+            ctx.addPath(path)
+            ctx.fillPath()
+            let inset = AgentPanelMetrics.messageBubbleHorizontalInset
+            let vInset = AgentPanelMetrics.messageBubbleVerticalInset
+            body.draw(with: NSRect(
+                x: inset,
+                y: vInset,
+                width: max(0, bounds.width - inset * 2.0),
+                height: max(0, bounds.height - vInset * 2.0)
+            ), options: [.usesLineFragmentOrigin, .usesFontLeading])
+        case .agent:
+            // Plain left-aligned prose; avatar only on the first message of a turn.
+            if showsAvatar {
+                drawAuthorAvatar(ctx: ctx)
+            }
+            let indent = AgentPanelMetrics.messageAvatarIndent
+            body.draw(with: NSRect(
+                x: indent,
+                y: 0,
+                width: max(0, bounds.width - indent),
+                height: max(0, bounds.height)
+            ), options: [.usesLineFragmentOrigin, .usesFontLeading])
         }
+    }
 
-        ctx.setFillColor(fill.cgColor)
-        ctx.addPath(path)
-        ctx.fillPath()
-        ctx.setStrokeColor(border.cgColor)
-        ctx.setLineWidth(1.0)
-        ctx.addPath(path)
-        ctx.strokePath()
-
-        let textRect = NSRect(
-            x: Self.horizontalInset,
-            y: Self.verticalInset,
-            width: max(0, bounds.width - Self.horizontalInset * 2.0),
-            height: max(0, bounds.height - Self.verticalInset * 2.0)
-        )
-        AgentTextDrawing.draw(
-            messageText,
-            in: textRect,
-            font: Self.textFont,
-            color: textColor,
-            lineSpacing: Self.textLineSpacing
-        )
+    /// 40pt purple brand avatar used for the first agent message of a turn.
+    private func drawAuthorAvatar(ctx: CGContext) {
+        let rect = CGRect(x: 0, y: 0, width: Self.avatarSize, height: Self.avatarSize)
+        ctx.saveGState()
+        ctx.addEllipse(in: rect)
+        ctx.clip()
+        ctx.setFillColor(AgentPalette.purple.cgColor)
+        ctx.fill(rect)
+        if let gradient = CGGradient(
+            colorsSpace: CGColorSpaceCreateDeviceRGB(),
+            colors: [
+                AgentPalette.purpleLight.withAlphaComponent(0.65).cgColor,
+                AgentPalette.purpleDeep.withAlphaComponent(0.35).cgColor
+            ] as CFArray,
+            locations: [0.0, 1.0]
+        ) {
+            ctx.drawLinearGradient(
+                gradient,
+                start: CGPoint(x: rect.midX, y: rect.minY),
+                end: CGPoint(x: rect.midX, y: rect.maxY),
+                options: []
+            )
+        }
+        ctx.restoreGState()
+        let logoRect = rect.insetBy(dx: rect.width * 0.21, dy: rect.height * 0.21)
+        AgentGlyphDrawing.draw(.brandMark, in: logoRect, color: AgentPalette.markColor, lineWidth: 1.4)
     }
 }
 
-// MARK: - Panel header (avatar + title + model pill + trailing icon buttons)
+// MARK: - Panel header (title + trailing icon buttons)
 
 public final class AgentPanelHeaderView: NSView {
     public var onHistory: (() -> Void)?
@@ -1340,10 +1502,6 @@ public final class AgentPanelHeaderView: NSView {
 
     public override var isFlipped: Bool { true }
 
-    /// Reference header content is optically ~1pt above the geometric centre
-    /// (avatar centre y≈24 inside the 50pt header band).
-    private static let contentYOffset: CGFloat = 1.0
-
     public override func layout() {
         super.layout()
         layoutChildren()
@@ -1357,7 +1515,7 @@ public final class AgentPanelHeaderView: NSView {
     public func layoutChildren() {
         let size = AgentPanelMetrics.iconButtonSize
         let spacing = AgentPanelMetrics.iconButtonSpacing
-        let midY = floor((bounds.height - size) / 2.0) - Self.contentYOffset
+        let midY = floor((bounds.height - size) / 2.0)
         let rightEdge = bounds.width - AgentPanelMetrics.headerTrailingInset
 
         collapseButton.frame = NSRect(x: rightEdge - size, y: midY, width: size, height: size)
@@ -1366,201 +1524,31 @@ public final class AgentPanelHeaderView: NSView {
     }
 
     public override func draw(_ dirtyRect: NSRect) {
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-
-        // 1. Purple gradient avatar with the VOO mark.
-        let avatarSize = AgentPanelMetrics.avatarSize
-        let avatarRect = NSRect(
-            x: AgentPanelMetrics.contentInset,
-            y: floor((bounds.height - avatarSize) / 2.0) - Self.contentYOffset,
-            width: avatarSize,
-            height: avatarSize
+        // Web header: document title at the left + three 32pt icon buttons at the
+        // right. Avatar/model status moved to the intro badge and composer chip.
+        let titleFont = ThemeFonts.system(
+            size: AgentPanelMetrics.headerTitleFontSize,
+            weight: .semibold
         )
-        drawAvatar(in: avatarRect, ctx: ctx)
-
-        // 2. Document title (truncates before it can collide with the icon group).
-        let titleFont = ThemeFonts.mono(size: AgentPanelMetrics.headerTitleFontSize, weight: .semibold)
-        let titleNaturalWidth = AgentTextDrawing.measuredWidth(titleText, font: titleFont)
         let titleHeight = ceil(titleFont.ascender - titleFont.descender)
-        let titleX = avatarRect.maxX + 8.0
         let iconsStart = historyButton.frame.minX > 0
             ? historyButton.frame.minX
             : bounds.width - AgentPanelMetrics.headerTrailingInset
                 - AgentPanelMetrics.iconButtonSize * 3.0
                 - AgentPanelMetrics.iconButtonSpacing * 2.0
-
-        let titlePillGap: CGFloat = 18.0
-        let pillNaturalWidth = modelPillWidth()
-        let availableForTitleAndPill = max(0.0, iconsStart - 10.0 - titleX)
-
-        var titleDrawWidth = titleNaturalWidth
-        var showsPill = !modelStatusText.isEmpty && pillNaturalWidth > 0
-        if showsPill && titleNaturalWidth + titlePillGap + pillNaturalWidth > availableForTitleAndPill {
-            // Truncate the document title first so the model/streaming pill stays
-            // visible; only drop the pill when there is genuinely no room at all.
-            let roomForTitle = availableForTitleAndPill - titlePillGap - pillNaturalWidth
-            if roomForTitle >= 24.0 {
-                titleDrawWidth = min(titleNaturalWidth, roomForTitle)
-            } else {
-                titleDrawWidth = min(titleNaturalWidth, availableForTitleAndPill)
-                showsPill = false
-            }
-        }
-
+        let titleX = AgentPanelMetrics.headerLeadingInset
+        let titleWidth = max(0, iconsStart - 8.0 - titleX)
         AgentTextDrawing.drawSingleLine(
             titleText,
             in: NSRect(
                 x: titleX,
                 y: floor((bounds.height - titleHeight) / 2.0),
-                width: max(0, titleDrawWidth + 2.0),
+                width: titleWidth,
                 height: titleHeight
             ),
             font: titleFont,
             color: .white
         )
-
-        // 3. "● Flash ACTIVE" model pill.
-        guard showsPill else { return }
-        let pillX = ceil(titleX + titleDrawWidth + titlePillGap)
-        drawModelPill(originX: pillX, ctx: ctx)
-    }
-
-    private func drawAvatar(in rect: NSRect, ctx: CGContext) {
-        ctx.saveGState()
-        ctx.addEllipse(in: rect)
-        ctx.clip()
-        ctx.setFillColor(AgentPalette.purple.cgColor)
-        ctx.fill(rect)
-        if let gradient = CGGradient(
-            colorsSpace: CGColorSpaceCreateDeviceRGB(),
-            colors: [
-                AgentPalette.purpleLight.withAlphaComponent(0.65).cgColor,
-                AgentPalette.purpleDeep.withAlphaComponent(0.35).cgColor
-            ] as CFArray,
-            locations: [0.0, 1.0]
-        ) {
-            ctx.drawLinearGradient(
-                gradient,
-                start: CGPoint(x: rect.midX, y: rect.minY),
-                end: CGPoint(x: rect.midX, y: rect.maxY),
-                options: []
-            )
-        }
-        ctx.restoreGState()
-
-        let logoRect = rect.insetBy(dx: rect.width * 0.21, dy: rect.height * 0.21)
-        AgentGlyphDrawing.draw(.brandMark, in: logoRect, color: AgentPalette.markColor, lineWidth: 1.6)
-    }
-
-    /// Splits the status into a muted prefix ("Flash") and a mint suffix ("ACTIVE").
-    private func modelStatusParts() -> (prefix: String, suffix: String) {
-        let status = modelStatusText
-        let parts = status.split(separator: " ")
-        let suffix = parts.count > 1 ? String(parts[parts.count - 1]) : ""
-        let prefix = parts.count > 1 ? parts.dropLast().joined(separator: " ") : status
-        return (prefix, suffix)
-    }
-
-    /// The web pill uses slightly tighter tracking than SF Mono's default advance.
-    private static let pillTextKern: CGFloat = -0.4
-
-    private func modelPillWidth() -> CGFloat {
-        guard !modelStatusText.isEmpty else { return 0 }
-        let parts = modelStatusParts()
-        let prefixFont = ThemeFonts.mono(size: AgentPanelMetrics.modelStatusFontSize, weight: .medium)
-        let suffixFont = ThemeFonts.mono(size: AgentPanelMetrics.modelStatusFontSize, weight: .semibold)
-        let prefixWidth = AgentTextDrawing.measuredWidth(
-            parts.prefix, font: prefixFont, kern: Self.pillTextKern
-        )
-        let suffixWidth = parts.suffix.isEmpty
-            ? 0
-            : AgentTextDrawing.measuredWidth(parts.suffix, font: suffixFont, kern: Self.pillTextKern)
-        let suffixGap: CGFloat = parts.suffix.isEmpty ? 0 : 4.0
-        let dotDiameter: CGFloat = 6.0
-        let leftInset: CGFloat = 10.0
-        let rightInset: CGFloat = 10.0
-        let dotToTextGap: CGFloat = 6.0
-        return ceil(leftInset + dotDiameter + dotToTextGap + prefixWidth + suffixGap + suffixWidth + rightInset)
-    }
-
-    private func drawModelPill(originX: CGFloat, ctx: CGContext) {
-        let status = modelStatusText
-        guard !status.isEmpty else { return }
-
-        let (prefix, suffix) = modelStatusParts()
-
-        let prefixFont = ThemeFonts.mono(size: AgentPanelMetrics.modelStatusFontSize, weight: .medium)
-        let suffixFont = ThemeFonts.mono(size: AgentPanelMetrics.modelStatusFontSize, weight: .semibold)
-        let prefixWidth = AgentTextDrawing.measuredWidth(
-            prefix, font: prefixFont, kern: Self.pillTextKern
-        )
-        let suffixWidth = suffix.isEmpty
-            ? 0
-            : AgentTextDrawing.measuredWidth(suffix, font: suffixFont, kern: Self.pillTextKern)
-        let suffixGap: CGFloat = suffix.isEmpty ? 0 : 6.0
-
-        let dotDiameter: CGFloat = 6.0
-        let height: CGFloat = 20.0
-        let leftInset: CGFloat = 8.0
-        let rightInset: CGFloat = 8.0
-        let dotToTextGap: CGFloat = 6.0
-
-        let width = leftInset + dotDiameter + dotToTextGap + prefixWidth + suffixGap + suffixWidth + rightInset
-        let pillRect = NSRect(
-            x: originX,
-            y: floor((bounds.height - height) / 2.0) - Self.contentYOffset,
-            width: ceil(width),
-            height: height
-        )
-        let radius = height / 2.0
-        let path = CGPath(roundedRect: pillRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-
-        ctx.setFillColor(AgentPalette.pillFill.cgColor)
-        ctx.addPath(path)
-        ctx.fillPath()
-        ctx.setStrokeColor(AgentPalette.panelBorder.cgColor)
-        ctx.setLineWidth(1.0)
-        ctx.addPath(path)
-        ctx.strokePath()
-
-        // Mint status dot.
-        let dotRect = CGRect(
-            x: pillRect.minX + leftInset,
-            y: pillRect.midY - dotDiameter / 2.0,
-            width: dotDiameter,
-            height: dotDiameter
-        )
-        ctx.setFillColor(AgentPalette.mint.cgColor)
-        ctx.fillEllipse(in: dotRect)
-
-        let textHeight = ceil(prefixFont.ascender - prefixFont.descender)
-        let textY = pillRect.midY - textHeight / 2.0
-        AgentTextDrawing.drawSingleLine(
-            prefix,
-            in: NSRect(
-                x: dotRect.maxX + dotToTextGap,
-                y: textY,
-                width: max(0, prefixWidth + 2.0),
-                height: textHeight
-            ),
-            font: prefixFont,
-            color: AgentPalette.pillPrefix,
-            kern: Self.pillTextKern
-        )
-        if !suffix.isEmpty {
-            AgentTextDrawing.drawSingleLine(
-                suffix,
-                in: NSRect(
-                    x: dotRect.maxX + dotToTextGap + prefixWidth + suffixGap,
-                    y: textY,
-                    width: max(0, suffixWidth + 2.0),
-                    height: textHeight
-                ),
-                font: suffixFont,
-                color: AgentPalette.mint,
-                kern: Self.pillTextKern
-            )
-        }
     }
 }
 
@@ -1587,6 +1575,13 @@ public final class AgentPanelView: NSView {
     public var onNewChat: (() -> Void)?
 
     public let composer: AgentComposerView = AgentComposerView(frame: .zero)
+
+    /// Model / agent label shown in the composer chip (e.g. "Opus 5.5").
+    /// Host wiring updates it from the active agent/model.
+    public var modelLabel: String {
+        get { composer.modelLabel }
+        set { composer.modelLabel = newValue }
+    }
 
     public private(set) var header: AgentPanelHeaderView = AgentPanelHeaderView(frame: .zero)
     public private(set) var introView: AgentIntroView = AgentIntroView(frame: .zero)
@@ -1858,6 +1853,7 @@ public final class AgentPanelView: NSView {
             let size = bubble.sizeFor(maxWidth: columnWidth)
             let x = bubble.role == .user ? inset + (columnWidth - size.width) : inset
             bubble.frame = NSRect(x: x, y: y, width: size.width, height: size.height)
+            bubble.needsDisplay = true
             y += size.height + AgentPanelMetrics.messageStackSpacing
         }
 
@@ -1873,6 +1869,11 @@ public final class AgentPanelView: NSView {
 
     /// Installs a bubble into the transcript and refreshes layout + scroll.
     private func addBubble(_ bubble: AgentMessageBubbleView) {
+        // The 40pt author avatar is only drawn on the first agent message of a
+        // turn; follow-ups share its indent without repeating the avatar.
+        if bubble.role == .agent {
+            bubble.showsAvatar = messageBubbles.last?.role != .agent
+        }
         bubble.setAccessibilityIdentifier("Agent.Message.\(bubble.role.rawValue).\(messageBubbles.count)")
         messageBubbles.append(bubble)
         documentView.addSubview(bubble)
@@ -1961,17 +1962,12 @@ public final class AgentPanelView: NSView {
 
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+        // Web panel section: `rounded-3xl bg-black`, no border.
+        let rect = bounds
         let radius = AgentPanelMetrics.cornerRadius
         let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-
         ctx.setFillColor(AgentPalette.panelBackground.cgColor)
         ctx.addPath(path)
         ctx.fillPath()
-
-        ctx.setStrokeColor(AgentPalette.panelBorder.cgColor)
-        ctx.setLineWidth(1.0)
-        ctx.addPath(path)
-        ctx.strokePath()
     }
 }

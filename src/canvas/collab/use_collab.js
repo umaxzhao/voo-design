@@ -116,7 +116,18 @@ async function attachBridge(isCurrent) {
     session.getSnapshot().status === STATUS.OFF
   )
     return;
-  const engine = globalThis.window?.__vooEditor;
+  // Wait up to 5s for the editor engine to initialize if the page just opened
+  let engine = globalThis.window?.__vooEditor;
+  if (!engine?.getDocument || !engine?.setDoc) {
+    const start = Date.now();
+    while (Date.now() - start < 5000) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (!isCurrent() || !session || session.getSnapshot().status === STATUS.OFF) return;
+      engine = globalThis.window?.__vooEditor;
+      if (engine?.getDocument && engine?.setDoc) break;
+    }
+  }
+
   if (!engine?.getDocument || !engine?.setDoc)
     throw new Error("activeEditorEngineMissing");
   detachBridge = createDocumentBridge({

@@ -32,7 +32,7 @@ export function createEngineGroups({
   getIsolationGroupId,
   setIsolationGroupId,
 }) {
-  function groupSelection() {
+  function groupSelection({ section = false, name } = {}) {
     const units = groupingRoots(getDoc(), selectionUnits().map(node => node.id));
     if (units.length < 2) return;
     const left = Math.min(...units.map((node) => node.x));
@@ -44,6 +44,8 @@ export function createEngineGroups({
       y: top,
       width: right - left,
       height: bottom - top,
+      section,
+      name,
     });
     commitEditorDocument(
       "editor.group.change",
@@ -55,6 +57,11 @@ export function createEngineGroups({
       ),
     );
     select?.(folder.id);
+    return folder.id;
+  }
+
+  function createSection(name) {
+    return groupSelection({ section: true, name });
   }
 
   function selectedContainerIds() {
@@ -315,6 +322,7 @@ export function createEngineGroups({
 
   return {
     groupSelection,
+    createSection,
     ungroupSelection,
     toggleAutoLayoutSelection,
     createClippingMask,

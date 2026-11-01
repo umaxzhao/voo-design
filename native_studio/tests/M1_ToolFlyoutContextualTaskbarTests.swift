@@ -379,9 +379,11 @@ public class M1_ToolFlyoutContextualTaskbarTests {
 
             // 2. Synthesize click on canvas to insert text
             let clickDocPt = CGPoint(x: 320, y: 440)
-            let viewPt = stage.viewPoint(from: clickDocPt)
-            sendMouse(stage, .leftMouseDown, viewPt, clickCount: 1)
-            sendMouse(stage, .leftMouseUp, viewPt, clickCount: 1)
+            // Stage points must be converted to window coordinates: the app frame is
+            // inset 4pt (web `.app-root-frame`) so the stage origin is not (0, 40).
+            let windowPt = stage.convert(stage.viewPoint(from: clickDocPt), to: nil)
+            sendMouse(stage, .leftMouseDown, windowPt, clickCount: 1)
+            sendMouse(stage, .leftMouseUp, windowPt, clickCount: 1)
 
             try TestAssertions.assertNotNil(textInsertionRequestedPoint, "Double click must trigger onRequestTextInsertion")
             try TestAssertions.assertPointApproxEqual(textInsertionRequestedPoint!, clickDocPt, accuracy: 2.0)

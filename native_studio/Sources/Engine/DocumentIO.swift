@@ -86,7 +86,12 @@ public final class DocumentIO: @unchecked Sendable {
         if VOOBinaryContainer.isVooBinary(data: data) {
             let res = try VOOBinaryContainer.decode(data: data)
             RecentFilesManager.shared.addRecentFile(at: url)
-            return res.document
+            var document = res.document
+            document.assets.merge(
+                res.assets.mapValues { "data:\($0.mime);base64," + $0.data.base64EncodedString() }
+            ) { _, newer in newer }
+            document.hydratePortableImages()
+            return document
         }
 
         // Standard VOO JSON deserialization
@@ -99,7 +104,9 @@ public final class DocumentIO: @unchecked Sendable {
 
     /// Writes document to disk in canonical JSON format.
     public func saveDocument(_ document: VOODocument, to url: URL) throws {
-        let data = try VOOSerializer.shared.serialize(document: document)
+        let normalized = VOOSerializer.shared.normalizeForExport(document)
+        let envelope = PortableDocumentEnvelope(document: normalized, assets: normalized.assets)
+        let data = try JSONEncoder().encode(envelope)
         try data.write(to: url, options: [.atomic])
         RecentFilesManager.shared.addRecentFile(at: url)
     }

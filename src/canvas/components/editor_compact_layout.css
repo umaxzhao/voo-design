@@ -141,8 +141,12 @@
   transform: none;
 }
 
+/* Zoom cluster clears the collapsed Layers/Properties strips by one 12px
+   control gap. It is measured from the strips' top edge, so the safe-area
+   inset stays the strips' responsibility and this gap never changes on a
+   notched device. Expanded panels keep their own, larger offset below. */
 [data-testid="design-editor"].editor-narrow {
-  --editor-mobile-zoom-bottom: calc(4.5rem + 3.25rem);
+  --editor-mobile-zoom-bottom: 0.75rem;
 }
 
 [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"],
@@ -194,6 +198,28 @@
   > div {
   flex-wrap: nowrap;
   touch-action: pan-x;
+}
+
+[data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] button,
+[data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] label {
+  position: relative;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+}
+
+[data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] button::before,
+[data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] label::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
 }
 
 [data-testid="design-editor"].editor-narrow

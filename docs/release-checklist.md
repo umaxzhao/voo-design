@@ -12,6 +12,13 @@ UI rules in `Design.md` supersede historical descriptions of default controls.
 
 ---
 
+## Publication policy
+
+Create no tag, draft or public Release without a new explicit user request.
+Web previews and ordinary PR merges are separate from desktop publication.
+Future download lists expose installers only; keep required updater metadata,
+and retain CI/signing reports in Actions evidence. Do not rewrite Beta2 assets.
+
 ## Signed Beta2 publication — 2026-11-01
 
 [Beta2](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.2)

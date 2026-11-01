@@ -133,6 +133,15 @@ html[data-theme="light"] [class*="text-[#b2ffd6]"] {
   color: #a7ffd4 !important;
 }
 
+/* Design-type icon accents: brand mint vanishes on white; like
+   .text-accent-mint, the accent becomes the strongest neutral instead. */
+html[data-theme="light"] .welcome-type-accent {
+  fill: #171717;
+}
+html[data-theme="light"] .welcome-type-accent-line {
+  stroke: #171717;
+}
+
 /* Hairlines, rings and dividers */
 html[data-theme="light"] [class*="border-white/"],
 html[data-theme="light"] [class*="divide-white/"] {

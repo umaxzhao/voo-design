@@ -1,0 +1,170 @@
+{
+  "revision": "012d6887a1d2a322ad24342dd0af312ee9e2aa71",
+  "verifiedAt": "2026-11-01T16:58:18.299Z",
+  "status": "registered-checks-passed-functional-coverage-partial",
+  "preservation": {
+    "originalWorktrees": 21,
+    "draftSnapshots": [
+      {
+        "commit": "30c3fe73811891aa0b2bc298e43c397dca7bceec",
+        "files": 97
+      },
+      {
+        "commit": "7bb17361347013058e2fc2b98dac3d868525f563",
+        "files": 1
+      },
+      {
+        "commit": "aa8f46f1de563cc403cd1d2db9bf2441e93090a2",
+        "files": 10
+      },
+      {
+        "commit": "49e13828aa3fd709553c84583c056d7381f84897",
+        "files": 25
+      }
+    ],
+    "originalDivergentHeads": 18,
+    "allOriginalHeadsIncluded": true,
+    "laterConcurrentDrafts": "retained outside this acceptance",
+    "existingStashes": "retained"
+  },
+  "web": {
+    "stepsPassed": 118,
+    "expectedSteps": 118,
+    "coreBrowserSuites": 114,
+    "unitPassed": 4902,
+    "unitSkipped": 4,
+    "unitFilesPassed": 598,
+    "unitFilesSkipped": 3,
+    "designFiles": 1473,
+    "sourceCleanBeforeAndAfter": true,
+    "modules": 12,
+    "capabilityGroups": 115,
+    "functionalCoverage": "partial",
+    "reportPath": "/private/tmp/voo-branch-integration-20261101/consolidated-release-complete.json",
+    "reportSha256": "daab365e7896975d1205d2bbb463abf2b6421942d1b1ca87a00de61bba1cb59f",
+    "logSha256": "74683de2a6afe04b3c0b29da94347cb8458a5d1584a8bd3c2b6cb60afad5e268",
+    "additionalChecks": [
+      {
+        "suite": "claude_agent",
+        "owner": "platform",
+        "kind": "external",
+        "reason": "Live integration requires an authenticated Claude Code CLI and a real model request; no paid preflight is run in offline audits.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "codex_agent",
+        "owner": "platform",
+        "kind": "external",
+        "reason": "Live integration requires an authenticated Codex CLI and a real streamed model/tool request.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "mcp_cli",
+        "owner": "platform",
+        "kind": "external",
+        "reason": "Live integration launches authenticated Claude/Codex to call MCP tools and create canvas content.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "qa3_electron",
+        "owner": "platform",
+        "kind": "native",
+        "reason": "Isolated Electron smoke covering preload, document creation and pointer drawing.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "critical_flows",
+        "owner": "workspace",
+        "kind": "local",
+        "reason": "Isolated localhost browser path covering load, create, draw/select, undo/redo, ZIP export, draft restore and local signaling share.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "canvas_fps",
+        "owner": "canvas",
+        "kind": "hardware",
+        "reason": "Hardware/scene-specific FPS gate; preserve environment and scene sizes.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "image-electron",
+        "owner": "platform",
+        "kind": "native",
+        "reason": "Separate isolated Electron and native filesystem acceptance.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "image-network",
+        "owner": "images",
+        "kind": "network",
+        "reason": "Separate real model downloads, inference and network acceptance.",
+        "execution": "not-run"
+      },
+      {
+        "suite": "ui-audit",
+        "owner": "inspector",
+        "kind": "audit",
+        "reason": "Generic layout scan and per-platform screenshot baselines; fails on known open findings until fixed or accepted with a reason.",
+        "execution": "not-run"
+      }
+    ]
+  },
+  "native": {
+    "command": "VOO_NATIVE_OPTIMIZATION=-Onone bash native_studio/tests/run_tests.sh --integrated",
+    "passed": 485,
+    "total": 485,
+    "nativeTree": "74d9a3116411b622b921fdb126f87a71c891ce22",
+    "identicalNativeRevision": "90577a75ef434140a323df957a43bf0f147602f0",
+    "logPath": "/private/tmp/voo-branch-integration-20261101/final-native-integrated.log",
+    "logSha256": "b3c5804f6e969eff8cfcb8e1cfdc6f1f1bab1e0ed2d49507c50c5dd9fa61cbf1",
+    "scope": "local macOS AppKit/Metal integrated tests; not an installer or complete native parity certification"
+  },
+  "regressions": [
+    {
+      "revision": "bd9cb27f",
+      "failure": "generation type keyboard navigation lost during icon redraw",
+      "fixedBy": "eb995923"
+    },
+    {
+      "revision": "eb995923",
+      "failure": "share test searched inside title bar instead of global Portal",
+      "fixedBy": "012d6887a1d2a322ad24342dd0af312ee9e2aa71"
+    },
+    {
+      "failure": "duplicate browser full-page import action",
+      "fixedBy": "bd9cb27f",
+      "evidence": "browser-current-contract.log -> browser-current-contract-after.log"
+    }
+  ],
+  "ci": "https://github.com/umaxzhao/voo-design/actions/runs/41328591315",
+  "publication": {
+    "releaseCreated": false,
+    "tagCreated": false,
+    "existingBeta2": "unchanged"
+  },
+  "remaining": [
+    "External CLI/paid/network/model services and unreviewed screenshot baselines are not certified.",
+    "Physical input, other OS/browser contexts and installer/upgrade flows remain separate.",
+    "Large real Figma scene zoom, complete readable-scale fidelity and cache memory budgets remain open.",
+    "Later primary-workspace and newly started task drafts are retained, not silently included."
+  ],
+  "preview": {
+    "url": "https://voo.run/editor/",
+    "revision": "012d6887a1d2a322ad24342dd0af312ee9e2aa71",
+    "canonicalHtml": "byte-identical to verified build",
+    "checks": [
+      "actual constraint midpoint changes only horizontal axis and undoes",
+      "390px browser stays below editor; 48px duplicate action creates one object and undo restores it",
+      "phone card midpoint opens file; generation types remain behind one advanced entry",
+      "real legacy redirect preserves room id and hash without joining any room"
+    ],
+    "pageErrors": 0,
+    "loadedAssetResponses": 77,
+    "uniqueAssets": 77,
+    "reportPath": "/private/tmp/voo-branch-integration-20261101/production-proof.json",
+    "reportSha256": "65b896b3a77e484d78ed856b3009811f9ee6752878ae5e544183018b575cd39a",
+    "entryReportSha256": "29f86f4f6dc6bc53099e061dff3198d8134ce1e0456316a643a1e9fa95368329",
+    "deploymentLogPath": "/private/tmp/voo-branch-integration-20261101/deployment.log",
+    "method": "scripts/deploy-editor.sh through ssh la2; rollback backup retained"
+  }
+}
