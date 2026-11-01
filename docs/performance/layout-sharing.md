@@ -2,8 +2,8 @@
 
 Scope: `layout.reflow-sharing`, `compositing.effect-resources` and
 `documents.serialization-purity`. No controls, dependencies or format changes.
-`native_studio` remains excluded. Candidate on main baseline `5e317f4`;
-full fixed-revision release and production receipts are pending below.
+`native_studio` remains excluded. Verified source `ba1a1cd9f22bbb643d7ce3aef6658f8d4c56a2a9` on main
+baseline `5e317f4`. Later documentation commits do not extend source coverage.
 
 ## Causes and implementation
 
@@ -85,7 +85,8 @@ memoized. Tests mutate every JSON leaf and compare with structural equality.
 | Effect resources | Projection lifecycle, fonts, bitmap/matte/warp readiness, renderer/pass flags, decoded source garbage collection, backdrop styles. | Fourteen targeted units |
 | Actual editor | Six unrelated edits add zero static-effect alpha readbacks; 600x400 warm/cold equality; real nudge, Agent styles and keyboard history. | Targeted browser passed |
 | Resource pixels | Engine-version and standalone draw modes x bitmap/mask/late bitmap x normal/blur/glass; updated pixels equal fresh-node cold pixels. | Eighteen targeted browser contexts passed |
-| Full release / production | New clean fixed revision, complete gate and independent asset/interaction receipts. | Pending |
+| Full release | Clean ba1a1cd: 105/105 steps, 101 core browser suites, 4813 units passed / four skipped, 1445 design files; all 12 modules remain functionally partial. | Passed; eleven standalone checks not run |
+| Production | Independent deployed-byte and interaction receipts in the private artifact below. | Separate publication evidence; not inherited from the core gate |
 | Remaining | Physical hardware, signed desktop packages, every font/effect/animation/mask combination, global cache memory budget. | Partial; not certified |
 
 ## Measurement protocol
@@ -98,10 +99,36 @@ are actual keyboard operations. These script waits are not GPU FPS or physical
 input-to-photon latency. Exact 1000x800 overview pixels do not certify every
 property/page/font. Private file/decoded scenes remain outside Git and production.
 
-All five decoded pages (56422 nodes) also matched the prior VOO reflow and
-serialized values before convergence changes, with one representative resize
-per page and unchanged inputs. This is value equivalence against VOO, not full
-Figma-property fidelity. Repeat it for the final source below.
+All five decoded pages (56422 nodes) match the prior VOO reflow and serialized
+values on final ba1a1cd, including one representative resize per page and
+unchanged inputs. All settled node identities are retained. This is value
+equivalence against VOO, not full Figma-property fidelity.
 
-Final fixed source, release, comparisons and publication evidence will be
-recorded in the private `layout-sharing/` artifact and the progress entry.
+## Final fixed-source measurements
+
+Fresh production order: before, after, after-reverse, before-reverse. Source is
+`5e317f410f197b45e90db6616edc190c4068a797` versus ba1a1cd. Apple M4 Pro,
+Chromium 156 Metal, 1440x1000/DPR1, external font/network requests blocked;
+shared host load and every raw sample remain in the receipts.
+
+| Observation | Forward before -> after | Reverse before -> after |
+| --- | --- | --- |
+| Fifty synchronous API edits | 1661.1 -> 1269.1ms | 1647.0 -> 1253.9ms |
+| Eighteen real arrow inputs, median | 540.5 -> 508.5ms | 523.5 -> 528.5ms |
+| Same inputs, mean | 555.8 -> 504.8ms | 554.3 -> 511.4ms |
+| Same inputs, nearest-rank P95 | 700 -> 674ms | 766 -> 700ms |
+| Exact 1000x800 viewport difference | 0 pixels | 0 pixels |
+
+API batch time falls 23.6/23.9%. Key means improve 9.2/7.7%, but median
+improvement is not stable; do not advertise a stable whole-key latency gain.
+Import retains all five pages, 56422 nodes and 478 assets (247642346 bytes),
+with no unsubscribed chunks. Selection, keyboard undo/redo and geometry remain
+correct; original file SHA-256 remains
+`ddf80a00291c5c79ebc30c9b71c7c4180a74ca80311a170ed16f2aeed006b2c2`.
+Full-document dirty-state serialization and exact artwork work remain hotspots.
+
+Private `layout-sharing/` retains the full gate, final comparisons, every
+superseded result, CPU profiles, exact pixels, scripts and independent GitHub /
+publication receipts. The source gate is not a certification of every Figma
+property, desktop package, physical input device, animation or global memory
+budget. Original `.fig` and decoded scene payloads are not in Git or production.
