@@ -317,6 +317,11 @@ function resolveGradient(def, defsMap) {
     .map((s) => `${s.color} ${Math.round(s.position)}%`);
 
   if (tag === "radialgradient") {
+    const cx = Math.round(parseCoordPercent(def.attrs.cx ?? def.attrs.fx, 0.5) * 100);
+    const cy = Math.round(parseCoordPercent(def.attrs.cy ?? def.attrs.fy, 0.5) * 100);
+    if (cx !== 50 || cy !== 50) {
+      return `radial-gradient(circle at ${cx}% ${cy}%, ${stopStrings.join(", ")})`;
+    }
     return `radial-gradient(circle, ${stopStrings.join(", ")})`;
   }
 
@@ -495,6 +500,7 @@ export function parseSvgStringToNodes(svgString) {
           in: inHandle,
           out: outHandle,
           close: Boolean(a.close),
+          ...(a.moveTo ? { moveTo: true } : {}),
         };
       });
 
@@ -514,7 +520,9 @@ export function parseSvgStringToNodes(svgString) {
       const y = parseNum(attrs.y, 0);
       const w = parseNum(attrs.width, 0);
       const h = parseNum(attrs.height, 0);
-      const rx = parseNum(attrs.rx, parseNum(attrs.ry, 0));
+      const style = parseInlineStyle(attrs.style);
+      const rxVal = attrs.rx ?? attrs.ry ?? style.rx ?? style.ry ?? style["border-radius"];
+      const rx = parseNum(rxVal, 0);
       if (w <= 0 || h <= 0) return null;
 
       const p1 = applyTransformToPoint(x, y, matrix);
@@ -630,12 +638,21 @@ export function parseSvgStringToNodes(svgString) {
     if (shapes.length === 0) return null;
 
     if (def.tag === "clippath") {
-      const clipBase = shapes[0];
-      clipBase.maskBase = true;
-      clipBase.fill = clipBase.fill && clipBase.fill !== "transparent" ? clipBase.fill : "#ffffff";
-      if (parentClipId) clipBase.clipTo = parentClipId;
-      nodes.push(clipBase);
-      return clipBase.id;
+      if (shapes.length === 1) {
+        const clipBase = shapes[0];
+        clipBase.maskBase = true;
+        clipBase.fill = clipBase.fill && clipBase.fill !== "transparent" && clipBase.fill !== "none" ? clipBase.fill : "#ffffff";
+        if (parentClipId) clipBase.clipTo = parentClipId;
+        nodes.push(clipBase);
+        return clipBase.id;
+      }
+      const booleanClip = createBooleanNode(shapes, "union");
+      booleanClip.op = "union";
+      booleanClip.maskBase = true;
+      booleanClip.fill = "#ffffff";
+      if (parentClipId) booleanClip.clipTo = parentClipId;
+      nodes.push(booleanClip);
+      return booleanClip.id;
     }
 
     if (def.tag === "mask") {
@@ -651,14 +668,18 @@ export function parseSvgStringToNodes(svgString) {
         const maskBase = shapes[0];
         maskBase.maskBase = true;
         maskBase.maskType = def.attrs?.["mask-type"] || "luminance";
+        if (!maskBase.fill || maskBase.fill === "transparent" || maskBase.fill === "none") {
+          maskBase.fill = "#ffffff";
+        }
         if (parentClipId) maskBase.clipTo = parentClipId;
         nodes.push(maskBase);
         return maskBase.id;
       }
       const booleanMask = createBooleanNode(shapes, "subtract");
+      booleanMask.op = "subtract";
       booleanMask.maskBase = true;
       booleanMask.maskType = def.attrs?.["mask-type"] || "luminance";
-      if (!booleanMask.fill || booleanMask.fill === "transparent") {
+      if (!booleanMask.fill || booleanMask.fill === "transparent" || booleanMask.fill === "none") {
         booleanMask.fill = "#ffffff";
       }
       if (parentClipId) booleanMask.clipTo = parentClipId;
@@ -767,18 +788,32 @@ export function parseSvgStringToNodes(svgString) {
           const tContent = (tspan.text || "").trim();
           if (!tContent) continue;
           const tAttrs = { ...attrs, ...tspan.attrs };
+          const tStyle = parseInlineStyle(tAttrs.style);
           const tPaint = parsePaintProps(tAttrs, paint, defsMap);
           const tx = parseNum(tAttrs.x, attrs.x ? parseNum(attrs.x, 0) : 0);
           const ty = parseNum(tAttrs.y, attrs.y ? parseNum(attrs.y, 0) : 0);
-          const tFontSize = parseNum(tAttrs["font-size"] || tAttrs.fontSize, 16);
+          const tFontSize = parseNum(tAttrs["font-size"] ?? tAttrs.fontSize ?? tStyle["font-size"] ?? tStyle.fontSize, 16);
           const tpt = applyTransformToPoint(tx, ty - tFontSize, matrix);
           const textNode = createTextNode({
             x: tpt.x,
             y: tpt.y,
             text: tContent,
             fontSize: tFontSize,
-            fill: tPaint.fill !== "transparent" ? tPaint.fill : "#000000",
+            fill: tPaint.fill !== "transparent" && tPaint.fill !== "none" ? tPaint.fill : "#000000",
           });
+          const fontFamily = tAttrs["font-family"] ?? tAttrs.fontFamily ?? tStyle["font-family"] ?? tStyle.fontFamily;
+          if (fontFamily) textNode.fontFamily = fontFamily.replace(/['"]/g, "").trim();
+          const fontWeight = tAttrs["font-weight"] ?? tAttrs.fontWeight ?? tStyle["font-weight"] ?? tStyle.fontWeight;
+          if (fontWeight) {
+            const fwNum = parseInt(fontWeight, 10);
+            textNode.fontWeight = Number.isFinite(fwNum) ? fwNum : fontWeight === "bold" ? 700 : 400;
+          }
+          const fontStyle = tAttrs["font-style"] ?? tAttrs.fontStyle ?? tStyle["font-style"] ?? tStyle.fontStyle;
+          if (fontStyle) textNode.fontStyle = fontStyle;
+          if (fontStyle === "italic") textNode.italic = true;
+          const textAnchor = tAttrs["text-anchor"] ?? tAttrs.textAnchor ?? tStyle["text-anchor"] ?? tStyle.textAnchor;
+          if (textAnchor === "middle") textNode.align = "center";
+          else if (textAnchor === "end") textNode.align = "right";
           textNode.opacity = tPaint.opacity;
           if (parentGroupId) textNode.parentId = parentGroupId;
           if (effectiveClipId) textNode.clipTo = effectiveClipId;
@@ -790,7 +825,8 @@ export function parseSvgStringToNodes(svgString) {
       if (!content.trim()) return;
       const x = parseNum(attrs.x, 0);
       const y = parseNum(attrs.y, 0);
-      const fontSize = parseNum(attrs["font-size"] || attrs.fontSize, 16);
+      const style = parseInlineStyle(attrs.style);
+      const fontSize = parseNum(attrs["font-size"] ?? attrs.fontSize ?? style["font-size"] ?? style.fontSize, 16);
       // SVG y is a baseline; editor text positions are the top of the box.
       const pt = applyTransformToPoint(x, y - fontSize, matrix);
       const textNode = createTextNode({
@@ -798,8 +834,21 @@ export function parseSvgStringToNodes(svgString) {
         y: pt.y,
         text: content,
         fontSize,
-        fill: paint.fill !== "transparent" ? paint.fill : "#000000",
+        fill: paint.fill !== "transparent" && paint.fill !== "none" ? paint.fill : "#000000",
       });
+      const fontFamily = attrs["font-family"] ?? attrs.fontFamily ?? style["font-family"] ?? style.fontFamily;
+      if (fontFamily) textNode.fontFamily = fontFamily.replace(/['"]/g, "").trim();
+      const fontWeight = attrs["font-weight"] ?? attrs.fontWeight ?? style["font-weight"] ?? style.fontWeight;
+      if (fontWeight) {
+        const fwNum = parseInt(fontWeight, 10);
+        textNode.fontWeight = Number.isFinite(fwNum) ? fwNum : fontWeight === "bold" ? 700 : 400;
+      }
+      const fontStyle = attrs["font-style"] ?? attrs.fontStyle ?? style["font-style"] ?? style.fontStyle;
+      if (fontStyle) textNode.fontStyle = fontStyle;
+      if (fontStyle === "italic") textNode.italic = true;
+      const textAnchor = attrs["text-anchor"] ?? attrs.textAnchor ?? style["text-anchor"] ?? style.textAnchor;
+      if (textAnchor === "middle") textNode.align = "center";
+      else if (textAnchor === "end") textNode.align = "right";
       textNode.opacity = paint.opacity;
       if (parentGroupId) textNode.parentId = parentGroupId;
       if (effectiveClipId) textNode.clipTo = effectiveClipId;

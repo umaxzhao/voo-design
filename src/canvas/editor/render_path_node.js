@@ -191,7 +191,11 @@ export function drawPathNode(ctx, node, renderState = null) {
     const fillAlpha = node.fillOpacity ?? 1;
     const strokeAlpha = node.strokeOpacity ?? 1;
     const fill =
-      node.fill && node.fill !== "transparent" && fillAlpha > 0
+      node.fill &&
+      node.fill !== "transparent" &&
+      node.fill !== "none" &&
+      !node.fillHidden &&
+      fillAlpha > 0
         ? node.fill
         : null;
 

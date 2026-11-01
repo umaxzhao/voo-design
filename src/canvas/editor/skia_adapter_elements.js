@@ -55,6 +55,7 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
     const hasVectorFill =
       typeof node.fill === "string" &&
       node.fill !== "transparent" &&
+      node.fill !== "none" &&
       !/^(?:blob:|data:image\/|https?:|file:)/i.test(node.fill) &&
       (node.fillOpacity ?? 1) > 0 &&
       node.fillHidden !== true;
@@ -181,12 +182,12 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
             node.points[node.points.length - 1]?.close === true,
         ),
       // The fill the shape or pen tools draw with; an unclosed stroke carries none.
-      ...(node.poly === true || (node.fill && node.fill !== "transparent")
-        ? { fills: fillsOf(node) }
+      ...(node.poly === true || (node.fill && node.fill !== "transparent" && node.fill !== "none" && !node.fillHidden)
+        ? (fillsOf(node) ? { fills: fillsOf(node) } : {})
         : {}),
       // A fill-only poly or pen path (strokeWidth 0, the shape tools' default) has no
       // stroke to paint — the 2D renderer skips it on the same condition.
-      ...((node.poly === true || node.pen === true) && !(node.strokeWidth > 0)
+      ...((node.poly === true || node.pen === true) && !(node.strokeWidth > 0) || !node.stroke || node.stroke === "transparent" || node.stroke === "none" || node.strokeHidden
         ? {}
         : {
             stroke: {
