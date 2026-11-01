@@ -20,7 +20,7 @@ describe("runAgentTurn image pass-back", () => {
     });
 
     const result = await runAgentTurn({
-      config: { apiKey: "k", baseUrl: "https://api.example.com", model: "m" },
+      config: { apiKey: "k", baseUrl: "https://api.example.com", model: "gpt-4o" },
       history: [],
       userText: "verify the canvas",
       tools: [],
@@ -48,6 +48,43 @@ describe("runAgentTurn image pass-back", () => {
         { type: "text", text: expect.stringContaining("capture_canvas") },
         { type: "image_url", image_url: { url: "data:image/png;base64,CAPTURE" } },
       ],
+    });
+  });
+
+
+  it("omits image_url for non-vision models like deepseek-chat", async () => {
+    const messagesSeen = [];
+    const streamStep = vi.fn(async ({ messages }) => {
+      messagesSeen.push(messages.slice());
+      if (streamStep.mock.calls.length === 1) {
+        return {
+          text: "capturing",
+          toolCalls: [{ id: "call_1", name: "capture_canvas", arguments: "{}" }],
+        };
+      }
+      return { text: "looks good", toolCalls: [] };
+    });
+
+    const result = await runAgentTurn({
+      config: { apiKey: "k", baseUrl: "https://api.example.com", model: "deepseek-chat" },
+      history: [],
+      userText: "verify the canvas",
+      tools: [],
+      executeTool: vi.fn(async () => ({
+        ok: true,
+        dataUrl: "data:image/png;base64,CAPTURE",
+        width: 1024,
+        height: 512,
+      })),
+      streamStep,
+    });
+
+    expect(result).toBe("looks good");
+    const afterTool = messagesSeen[1];
+    const imageMessage = afterTool.at(-1);
+    expect(imageMessage).toEqual({
+      role: "user",
+      content: "Canvas captured. Review the lint summary above.",
     });
   });
 
