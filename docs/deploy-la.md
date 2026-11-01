@@ -48,3 +48,11 @@ claim that upscaling or an offline desktop package is complete without them.
 GitHub Actions builds on main pushes. Its optional deployment requires both
 `LA2_SSH_KEY` and `LA2_SSH_HOST`; `LA2_SSH_USER` defaults to root. Without those
 secrets only the build runs. This does not prevent direct local SSH deployment.
+
+
+Legacy room links use `scripts/nginx-editor-sharing.conf`, provisioned by
+`scripts/deploy-editor-sharing.sh` during editor deployment. Only `/r/<room>`
+redirects to `/editor/?r=<room>`; the browser retains the `#k` fragment without
+sending it to nginx. Configuration is backed up outside `sites-enabled`, checked
+with `nginx -t` before reload and restored on failure. This is URL compatibility,
+not certification of real multi-device collaboration.

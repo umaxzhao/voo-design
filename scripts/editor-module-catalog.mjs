@@ -13,7 +13,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/titlebar*",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.file-actions-ready","workspace.projects","workspace.cold-start-new","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
+    features: ["workspace.touch-file-open", "workspace.file-actions-ready","workspace.projects","workspace.cold-start-new","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
@@ -33,7 +33,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow",
-      "nested-project-roundtrip", "pages_dnd",
+      "nested-project-roundtrip", "pages_dnd", "multi_document_tabs", "qa3_roundtrip", "roundtrip",
     ],
     remaining: [
       "Interrupted native writes, signed installer recovery and every legacy document version are not certified by browser round trips.",
@@ -125,7 +125,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "container-opacity", "svg-frame-clipping", "frame-clip-review", "nested-mask-lifecycle",
-      "image-layer-alpha", "layout-mask-audit",
+      "image-layer-alpha", "layout-mask-audit", "ed04_pixel_consistency",
     ],
     remaining: ["All blend/mask/effect combinations and GPU-driver-specific parity are not exhausted."],
   },
@@ -140,7 +140,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["selection","compositing","documents","inspector"],
     features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
-    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity"],
+    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity","html2nodes"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
     ],
@@ -150,10 +150,10 @@ export const EDITOR_MODULES = [
     title: "Text editing and typography",
     paths: [
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
-      "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
+      "src/canvas/components/editor_properties/text*", "tests/unit/text-spacing-probe.test.js", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
     ],
     related: ["selection","layout","compositing","documents","platform"],
-    features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
+    features: ["text.spacing-probe", "text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
     suites: ["agent-paint-text", "text-creation-boundaries"],
     remaining: [
       "Physical IME composition, installed-font differences, RTL and arbitrary variable fonts need dedicated acceptance.",
@@ -189,9 +189,9 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_properties/*variant*", "src/canvas/design_systems/*",
     ],
     related: ["layers","text","inspector","documents","platform"],
-    features: ["layout.auto-layout","layout.constraints","layout.variables","layout.components"],
+    features: ["layout.constraint-hit-targets","layout.auto-layout","layout.constraints","layout.variables","layout.components"],
     suites: [
-      "editor-effects", "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls",
+      "constraint-hit-targets", "editor-effects", "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls",
       "editor-document-aids",
     ],
     remaining: [
@@ -211,7 +211,7 @@ export const EDITOR_MODULES = [
       "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/opacity_icon_blend_bg.test.jsx", "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
       "src/canvas/components/anchored_global_popover.jsx", "src/canvas/components/global_overlay_portal.jsx", "src/canvas/components/deferred_editor_surface.jsx",
-      "src/canvas/components/shortcut_reference_modal.jsx", "src/canvas/components/editor_icon_picker_modal.jsx", "src/canvas/components/SvgEditModal.jsx",
+      "src/canvas/components/editor_mobile_control_targets.css", "src/canvas/components/editor_touch_targets.css", "src/canvas/components/editor_mobile*.css", "src/canvas/components/editor_compact_layout.css", "src/canvas/components/shortcut_reference_modal.jsx", "src/canvas/components/editor_icon_picker_modal.jsx", "src/canvas/components/SvgEditModal.jsx",
       "tests/e2e/global-overlay-harness.jsx", "tests/unit/global-overlay-portals.test.jsx",
       "src/canvas/color_picker/*", "src/canvas/components/popover_scope.js", "tests/e2e/unified-fill-*.mjs", "tests/unit/unified-fill-picker.test.jsx", "tests/unit/fill-paint-values.test.js",
       "src/canvas/components/editor_properties/*", "src/canvas/components/*context*",
@@ -220,11 +220,11 @@ export const EDITOR_MODULES = [
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],
-    features: ["inspector.comments-panel-slot", "inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
+    features: ["inspector.mobile-targets", "inspector.comments-panel-slot", "inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.global-overlay-stacking", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
     suites: ["impeccable-polish",
-      "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction",
+      "mobile-control-targets", "command_palette", "design_tokens", "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction",
       "settings-i18n", "locale-lifecycle",
     ],
     remaining: [
@@ -244,7 +244,7 @@ export const EDITOR_MODULES = [
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
-      "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
+      "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js",
       "src/canvas/components/collab_avatars.jsx",
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
@@ -261,7 +261,7 @@ export const EDITOR_MODULES = [
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
     suites: [
-      "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
+      "agent_cancel_polish", "agent_tools", "agent_pencil_tools", "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
       "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
     ],
@@ -279,13 +279,8 @@ export const RELEASE_BROWSER_SUITES = ["editor-fixture-startup", ...EDITOR_MODUL
 
 // Standalone checks are visible debt, not implicit passes or silent omissions.
 const unreviewedSuites = {
-  platform: ["agent-selection-context", "agent-suggestions", "agent_cancel_polish", "agent_pencil_tools",
-    "agent_tools", "claude_agent", "codex_agent", "mcp_cli", "qa3_electron"],
+  platform: ["agent-selection-context", "agent-suggestions", "claude_agent", "codex_agent", "mcp_cli", "qa3_electron"],
   workspace: ["critical_flows", "qa_flows"],
-  inspector: ["command_palette", "design_tokens"],
-  documents: ["multi_document_tabs", "qa3_roundtrip", "roundtrip"],
-  compositing: ["ed04_pixel_consistency"],
-  vectors: ["html2nodes"],
 };
 export const ADDITIONAL_BROWSER_CHECKS = [
   ...Object.entries(unreviewedSuites).flatMap(([owner, suites]) => suites.map(suite => ({

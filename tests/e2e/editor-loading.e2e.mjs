@@ -60,6 +60,14 @@ await withEditorBrowser(async ({ page }) => {
     await icon.evaluate(el => el.getAnimations()[0].play());
     const iconBox = await icon.boundingBox(), barBox = await progress.boundingBox();
     assert.ok(barBox.y >= iconBox.y + iconBox.height + 20, "Progress sits below the brand with breathing room");
+    // A rotating span's viewport rectangle includes its transparent corners.
+    // Layout spacing must not depend on which animation frame was sampled.
+    const brandGap = await loading.evaluate(element => {
+      const brand = element.querySelector("[data-loading-brand]");
+      const track = element.querySelector('[role="progressbar"]');
+      return track.offsetTop - brand.offsetTop - brand.offsetHeight;
+    });
+    assert.ok(brandGap >= 20, "Progress sits below the brand with breathing room");
     assert.equal(await icon.evaluate(el => getComputedStyle(el).animationName), "voo-loading-turn");
     const transform = await icon.evaluate(el => getComputedStyle(el).transform);
     await page.waitForFunction(before => getComputedStyle(document.querySelector("[data-loading-brand]")).transform !== before, transform);

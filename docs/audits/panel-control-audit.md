@@ -438,3 +438,89 @@ Baseline `/private/tmp/voo-inspector-radius-before.log` reproduces 6px versus
 12px. The existing inspector control browser helper verifies every control
 category, actual commit/cancel, dropdown keyboard/focus, rotation/layout undo,
 and 16 viewport/theme/locale contexts. Final revision `b965942e22bcfb408015acdba58f49d8d7c3cd8c`: all 91 release checks including 87 browser suites, 4637 unit passes/4 skips. Evidence `/private/tmp/voo-inspector-radius-release.json`. Production resources match the build; actual Chinese Frame and text controls, keyboard and undo pass without errors (`/private/tmp/voo-inspector-radius-production-result.log`). Physical devices and all advanced dialogs remain unverified.
+
+
+<a id="claude-checklist-closeout"></a>
+## Claude checklist closeout — 2026-11-01
+
+The input report describes committed `78155ee` plus another, uncommitted main
+workspace. This audit starts at clean `c85224c`; the local private tree is not
+replaced by the clean public checkout. Execution and functional coverage remain
+separate. No native, paid or physical-device context inherits a browser pass.
+
+| Issue | Current finding and acceptance |
+| --- | --- |
+| A1 | Reproduced 19×2px target. Six separate midpoint clicks, unchanged other axis, one undo and keyboard now pass in `constraint-hit-targets`. |
+| A2 | Actual 28px quickbar and 32px tabs reproduced. `mobile-control-targets` requires 48px ordinary navigation/tool/tab targets at 320/390/768 with mouse and touch contexts. Precision artwork controls are separate; no universal touch certification. |
+| A3 | Current preset uses translated provider key. Both locales exist; first-run tests expect all configured providers, including DeepSeek API and Harness. No provider was silently removed. |
+| A4 | `resize_document` already appears in the Canvas tools table; schema/document parity tests pass. |
+| B1 | Prior test explicitly required the overlapping mobile drawer. Replaced with separate vertical geometry and usable heights; opening Browser still closes Agent, and reverse switching remains valid. |
+| B2 | Single-column phone cards, visible independent corner actions, no hidden interception and scroll padding above fixed Settings. Real card midpoint and More, plus keyboard opening, are covered in `ui-home-settings`. |
+| B3 | Committed composer keeps advanced controls behind its existing settings entry. The private redesign now also uses one advanced entry for eight types/style/system/candidates/size, retains automatic sizing and attachment IDs, and passes scoped real UI and unit checks. Its original dialogs are archived; unrelated drafts remain untouched. |
+| B4 | Unit URL compatibility alone missed a deployed 404. Deployed a scoped legacy redirect and rollback-safe nginx provisioning; actual public redirects preserve the room and browser fragment, and no longer leak the private 8444 listener. The destination was intercepted before any room join. |
+| B5 | Both named suites exist in current clean source. Module registration explicitly rejects missing files and duplicate ownership. In the private tree, only the two truly absent entries were removed; two other standalone suites were explicitly left unreviewed, never marked passed. |
+| B6 | Existing comments slot/navigation and welcome inertness remain; run their current core regressions rather than reverting them. |
+| C | All ten named scripts become self-starting; paths are temporary OS paths. No assertions are discarded to hide failures. See gate records below. |
+
+Restored standalone suites: `agent_cancel_polish`, `agent_tools`,
+`agent_pencil_tools`, `command_palette`, `design_tokens`, `multi_document_tabs`,
+`qa3_roundtrip`, `roundtrip`, `html2nodes`, `ed04_pixel_consistency`.
+Agent cancellation uses a deterministic provider stub, not a live endpoint.
+File roundtrips compare every persisted field, canonicalizing only JSON-omitted
+undefined values and absent/null `clipTo` references. Non-null masks and all
+paint values still compare. GL retains its original max-channel-delta ≤3.
+HTML retains its original <1% pixel mismatch gate.
+
+The HTML pixel gate revealed an additional real defect: the letter-spacing
+capability probe could leave 8px spacing active because restoring an empty
+native getter is ignored. Native Canvas save/restore now protects the probe;
+`text-spacing-probe.test.js` reproduces that browser contract. Typography pixel
+mismatch falls from 2.617% to 0; the four other HTML fixtures remain under 1%.
+
+Evidence while developing (not fixed-revision release certification):
+`/private/tmp/voo-claude-constraints-before.log`,
+`/private/tmp/voo-claude-mobile-before.log`,
+`/private/tmp/voo-claude-checklist-baseline-unit.log`,
+`/private/tmp/voo-claude-targeted-results.log`,
+`/private/tmp/voo-claude-fifth-results.log`,
+`/private/tmp/voo-claude-html-restored-probe.log`,
+`/private/tmp/voo-claude-qa3-verified.log`.
+Earlier failed development runs stay failed; only the final clean revision's
+complete gate can certify integrated execution. The private generic `ui-audit`
+and its screenshot baseline collection have not been adopted here: missing
+baselines, skipped states and untested devices cannot count as passes.
+
+Final acceptance on unchanged clean source `db4a184b9bd712dbff87982ecd75a4b6a88ac826`: all 103 registered
+commands have a passing result, including 99 browser suites, 4717 unit passes
+and 4 skips. Build and design lint (1432 files) pass. This is a same-revision
+recovery, not one successful full-script invocation: startup/registration
+failures remain in `voo-claude-checklist-release-complete.json` and the first
+recovery receipt; `voo-claude-checklist-release-recovered-final.json` links the
+immutable source-report hashes and passing results. The existing 1% HTML and
+GL channel-delta thresholds were not relaxed. The earlier unrelated-height,
+hidden-action and rotating-icon geometry failures remain in their original
+reports. Loading layout now measures untransformed offsets while still checking
+rotation, spacing and reduced motion. HTML uses the shared isolated-cache server.
+
+Production is deployed through SSH la2. Index and 12 selected resources match
+the build byte-for-byte; 83 actually loaded JS/CSS paths match SHA-256. Real
+constraint midpoint/undo, phone Browser/editor separation, a 48px duplicate
+action/undo, file-card midpoint and default advanced disclosure pass with no
+page errors. The actual legacy redirect preserves the room and dummy fragment
+without joining a room. Evidence: `/private/tmp/voo-claude-production-proof.json`
+and `voo-claude-deployment-proof.json`. Nginx backup:
+`/etc/nginx/voo-editor-sharing-backup-lJVyNn`; prior app backup:
+`/srv/voo-run/editor-backups/db4a184b9bd712dbff87982ecd75a4b6a88ac826-20261101T014747Z`.
+Initial production-probe assumptions (Escape-cleared selection and absent
+versus explicit default constraints) were corrected in the probe, with original
+logs retained; the application source did not change.
+
+Private-workspace acceptance is deliberately partial: 120 related unit checks,
+design lint (1427 files), ten restored suites after explicit startup retries,
+and actual constraint/mobile/composer scenarios pass. Receipt:
+`/private/tmp/voo-claude-primary-proof.json`. The 38 original draft snapshots
+are hash-verified in
+`/Volumes/TD/Projects/voo_design/.local-drafts/claude-checklist-2026-11-01.tar`.
+This does not certify the entire dirty workspace or the private generic UI
+audit/baseline collection. Native packages, physical devices, WebKit/IME, paid
+services, live multi-peer networking and hardware performance remain unverified.
