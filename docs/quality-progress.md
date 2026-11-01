@@ -2,7 +2,7 @@
 
 ## 本轮：Linux v1.0.0-beta.2 缺陷与补充清单集中修复与分支合入（源码完成，未推送未发布）
 
-- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `3aa07735`，未 push，未部署）。
+- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `58dd1516`，未 push，未部署）。
 - **并行执行模式**：使用 Orca orchestration 在多个独立 child worktree 中启动子 Agent 针对各个独立模块进行修复与回归测试，协调者逐一审查、运行测试并合并入主分支。同时并发调度 Mac Electron 原生测试 Agent 执行全量复测与截图核验。
 - **修复项与模块验证**：
   1. `worker-psd-import` (PSD 位图水合与持久化)：`psd_to_voo.js` 与 `project_io.js` 对 PSD 导入产出的图层位图 assets 建立与 images 统一的水合映射，修复重新打开与存盘位图占位问题。定向单测 `tests/unit/psd_pipeline_reopen.test.js` (5/5 通过)。
@@ -31,15 +31,23 @@
      - `welcome_file_collection.jsx`: 首页文件卡片容器、封面按钮与表格行绑定 `onContextMenu`，支持右键弹出菜单。
      - `font_picker.jsx`: 针对本地与 Figma 未安装字体渲染 `data-testid="missing-font-warning"` 警示标签。
      - 定向单测 `tests/unit/mac_qa_interaction_fixes.test.jsx` (7/7 通过)。
-- **Mac Electron 原生复测证据**：
-  - 运行 `npm run electron:dev` 与 Playwright 自动化驱动原生窗口（测试报告记录于 `~/Desktop/voo-mac-retest/REPORT.md`，配套 27 组现场截图在 `~/Desktop/voo-mac-retest/shots/`）。
-  - 证实 PSD 真实位图水合显示、反选 UI 回调生效、普通设计页创建组件无报错、macOS safeStorage 凭据加密读回重启保留、Frame 拖拽不位移根画板、Hand 平移正常、.fig 真实导出落盘 30KB 文件、冷重启语言保留为中文、Light 主题文字对比度达到 4.5:1、2X 超分模型编译 358ms 内即时取消且无异常弹窗。
-  - 对复测中发现的 SVG 剪裁 alpha 丢失和新建形状吸附缺漏，已在本轮完成二次攻坚并补充像素比对断言通过。
+  15. `worker-rotation-handle-gesture` (旋转手柄与选区交互避让，commit `58dd1516`)：
+     - `artboard-body-gesture.js`: 在 `shouldDragArtboardBody` 增加 `engine.hasHandleUnder?.({ clientX, clientY })` 判定，防止画板容器 `onPointerDownCapture` 在外部手柄处吞掉事件；
+     - `editor_pointer_hit_test.js`: 实现并暴露 `hasHandleUnder(event)`，统一覆盖单选/多选手柄、顶部旋转 Grip、四角旋转光环 (Corner Ring)、圆角半径手柄与裁切手柄；
+     - `editor_pointer.js` / `use_editor_canvas_gestures.js`: 完善 `api.hasHandleUnder` 绑定与卸载生命周期，并防止画板外缘手柄误触发自由平移；
+     - 定向单测 `tests/unit/artboard-body-gesture.test.js` (12/12), `tests/unit/frame_tool_creation_pan.test.js` (10/10), `tests/unit/mac_qa_interaction_fixes.test.jsx` (11/11 通过)。
+- **Mac Electron 原生复测证据（revision 58dd1516 终态确认）**：
+  - 运行 `npm run electron:dev` 与 Playwright 自动化驱动原生窗口（完整测试报告记录于 `~/Desktop/voo-mac-retest/REPORT.md`，新增 58dd1516 专属章节与配套 85 张现场截图在 `~/Desktop/voo-mac-retest/shots/`）。
+  - **旋转手柄 20 组全量通过**：证实 Rectangle/Ellipse/Polygon/Star 四类形状的顶部 grip 与 NW/NE/SE/SW 四角外侧旋转手柄拖拽后均产生有效非零旋转角（`abs(rotation)>1`），手柄不再被画板手势劫持。
+  - **SVG 指定四类特征通过**：圆角 clip 采样为 0、mask 复合孔洞为 0、径向渐变单通道差 ≤1、文字 Design 1 保留 text 节点并可读。
+  - **tdot 新发现全部通过**：独占 profile 冷启动草稿自动恢复（Restore draft 恢复同一 UUID 与尺寸矩形）、多选拖入 Frame（两矩形 parentId 均变目标 Frame，支持单步撤销重做）、叠层 Esc 优先级（先关命令面板、后关底层 Browser）、macOS 平台标识（显示 `[macOS 原生]`）。
+  - **旧报告重点交互修复通过**：图层行右键菜单 Esc 即时关闭、Ctrl+Shift+L 锁定/解锁、Combine 检查器显示、200+50 表达式提交后 W=250、首页卡片右键菜单弹出与关闭、Missing font 警示标识。
+  - **边界与限制明确保留**：严格最终包围盒网格条件在 Polygon/Star 因路径收紧失败，Arrow/Line 含描边外框因 1px 描边扩张 0.5px 但几何端点 `(96,96)/(224,192)` 完全吸附；原项目封面与 Design7 恢复仍受限于旧测试夹具与缺少独立异色参考；真实付费/API/流式生成等服务场景未认证。
 - **Linux QA 交付材料同步 (18:30 检查点)**：
   - 最新 DOCX v4 (`/Users/tt/Desktop/voo-linux-qa/VOO_Design_Linux_QA_2026-11-01.docx`) 及补充包 ZIP v3 (`/Users/tt/Desktop/voo-linux-qa/supplement-v3/`) 已完整存档并对账。
   - 原 34 组补测已收口，确认 Linux QA 测试基线为 GitHub Release v1.0.0-beta.2 固定包；新确认的“自动恢复草稿丢失最新画布内容”、“多选拖入Frame重挂”、“叠层 Esc 优先级”均已在本分支完全定位并提供源码与单元测试覆盖。
 - **模块所有权与验收登记**：
-  - 更新 `scripts/editor-module-catalog.mjs`，将所有新增模块源码及 5 个新增单元测试套件完整注册到 `workspace`、`canvas`、`inspector` 及 `platform` 模块。
+  - 更新 `scripts/editor-module-catalog.mjs`，将所有新增模块源码及单元测试套件完整注册到 `workspace`、`canvas`、`inspector` 及 `platform` 模块。
   - `node scripts/editor-checks.mjs --check` 校验通过（12 模块、73 能力、99 浏览器套件、24 附加检查项有效注册，0 个未映射文件）。
 - **约束声明**：严格遵守不 push 到远端、不运行部署脚本、不触碰 Codex `nba-font-fidelity` 分支与任务。
 
