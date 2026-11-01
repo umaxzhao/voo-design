@@ -7,6 +7,7 @@ import { dirtyRectsToDevice, shouldUseDirtyRect } from "./dirty_rect.js";
 import {
   effectivePage,
 } from "./scene_model.js";
+import { nodeAABB } from "./scene_geometry.js";
 import {
   cullMarginWorld,
   cullableNodeIds,
@@ -22,6 +23,8 @@ import {
 import { drawArtworkNodes } from "./chrome-artwork-nodes.js";
 import { drawLayoutGrids } from "./chrome_layout_grid.js";
 import { drawRegions } from "./chrome_regions.js";
+import { drawSections } from "./chrome_sections.js";
+import { drawDesignIssueMarkers } from "./chrome_design_issues.js";
 import { drawSelection, drawSelectionSet } from "./chrome_selection.js";
 import {
   drawCrop,
@@ -73,6 +76,8 @@ function drawUncached(
     dpr,
     selectionRect,
     selectionNode = null,
+    hoveredNode = null,
+    designIssues = [],
     selectionSet = null,
     marqueeRect = null,
     textDraftRect = null,
@@ -280,6 +285,8 @@ function drawUncached(
   ctx.restore();
 
   if (includeRegions && !isPlainRectList(doc.nodes)) drawRegions(ctx, doc, viewport, hiddenLabelId);
+  if (includeRegions && !isPlainRectList(doc.nodes)) drawSections(ctx, doc.nodes, viewport);
+  drawDesignIssueMarkers(ctx, doc, designIssues, viewport);
 
   if (cropRect) drawCrop(ctx, cropRect, doc, viewport);
   else if (selectionSet) drawSelectionSet(ctx, selectionSet, viewport);
@@ -296,6 +303,10 @@ function drawUncached(
       selectedPuppetPin,
       selectionPaintOutline,
     );
+
+  if (hoveredNode && hoveredNode.id !== selectionNode?.id) {
+    drawSelection(ctx, nodeAABB(hoveredNode), viewport, false, hoveredNode);
+  }
 
   if (marqueeRect) drawMarquee(ctx, marqueeRect, viewport);
 

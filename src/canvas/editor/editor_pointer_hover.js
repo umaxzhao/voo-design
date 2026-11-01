@@ -266,7 +266,10 @@ export function createHoverCursorController({
         return;
       }
     }
-    if (selected && selected.kind === NODE_KIND.RECT) {
+    if (tool === TOOL.SELECT) {
+      const point = api.toDocPoint(event.clientX, event.clientY);
+      api.setHoveredNode(api.nodeAtPoint(point)?.id ?? null);
+    } else if (selected && selected.kind === NODE_KIND.RECT) {
       const isOver =
         nodeRectContains(selected, event) ||
         Boolean(rectRadiusHandleUnder(selected, event));

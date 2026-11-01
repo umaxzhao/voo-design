@@ -40,7 +40,7 @@ export default function EditorLayersTree({
     aria-activedescendant={listActiveDescendantDomId}
     onKeyDown={handleListKeyDown}
     onMouseDown={() => listRef.current?.focus?.()}
-    className="ui-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden space-y-1 outline-none"
+    className="ui-scroll min-h-0 flex-1 overflow-x-auto overflow-y-auto space-y-1 outline-none"
   >
     {listEmpty ? <div
       className="flex min-h-[80px] items-center justify-center px-3 py-4 text-center text-[11px] font-mono text-neutral-500"

@@ -111,6 +111,7 @@ export function createEditor({
   let renderedDpr = 1;
   let selectedPuppetPinId = null;
   let hoveredNodeId = null;
+  let designIssues = [];
   let marqueeRect = null;
   let textDraftRect = null;
   let gradientAdjusting = null;
@@ -397,6 +398,7 @@ export function createEditor({
       healingMode: ctrl.toolsController.getHealingMode(),
       selectedPuppetPinId,
       hoveredNodeId,
+      designIssues,
       marqueeRect,
       textDraftRect,
       gradientAdjusting,
@@ -595,6 +597,12 @@ export function createEditor({
     getSpatialIndex: () => getSpatialIndex(getDoc()),
     nodeAtPoint: (point, options = {}) =>
       ctrl.nodesController.nodeAtPoint(point, {
+        zoom: viewportTools.getZoom(),
+        spatialIndex: getSpatialIndex(getDoc()),
+        ...options,
+      }),
+    nodesAtPoint: (point, options = {}) =>
+      ctrl.nodesController.nodesAtPoint(point, {
         zoom: viewportTools.getZoom(),
         spatialIndex: getSpatialIndex(getDoc()),
         ...options,
@@ -840,6 +848,10 @@ export function createEditor({
     setHoveredNode(id) {
       if (hoveredNodeId === id) return;
       hoveredNodeId = id;
+      requestRender();
+    },
+    setDesignIssues(issues) {
+      designIssues = Array.isArray(issues) ? issues : [];
       requestRender();
     },
 

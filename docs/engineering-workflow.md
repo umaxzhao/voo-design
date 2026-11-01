@@ -30,8 +30,8 @@ button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.
 
-The existing core release contains 101 browser suites. Another 11 standalone
-suites are explicitly listed in `ADDITIONAL_BROWSER_CHECKS`: 8 need fixture,
+The existing core release contains 104 browser suites. Another 8 standalone
+suites are explicitly listed in `ADDITIONAL_BROWSER_CHECKS`: 5 need fixture,
 assertion and service-requirement review; `canvas_fps`, `image-electron` and
 `image-network` run separately for hardware, native-host and network/model
 acceptance. They appear as **not-run** in a core release report. They are not

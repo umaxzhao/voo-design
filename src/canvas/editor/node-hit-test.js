@@ -11,33 +11,28 @@ export function createNodeHitTester({ getDoc, getZoom, paintTools, getEffectiveN
     // can be far from an animated node's visible position at the playhead.
     const doc = getDoc();
     const zoom = options.zoom ?? (typeof getZoom === "function" ? getZoom() : 1);
-    return ops.nodeAtPoint(doc, point, {
-      zoom,
-      ...options,
-      reject: (node, at) => {
-        if (maskedOut(node, at)) return true;
-        if (node.paint === true && !paintTools.api.isPaintOpaqueAt(node, at)) {
-          return true;
-        }
-        if (node.kind === NODE_KIND.IMAGE) {
-          const eff = getEffectiveNode?.(node);
-          if (eff?.effectiveLocal) {
-            const local = toNodeLocal(node, at);
-            const el = eff.effectiveLocal;
-            if (
-              local.x < el.x ||
-              local.x > el.x + el.width ||
-              local.y < el.y ||
-              local.y > el.y + el.height
-            ) {
-              return true;
-            }
-          }
-        }
-        return false;
-      },
-    });
+    return ops.nodeAtPoint(doc, point, { zoom, ...options, reject: isRejected });
   }
+
+  function isRejected(node, at) {
+    if (maskedOut(node, at)) return true;
+    if (node.paint === true && !paintTools.api.isPaintOpaqueAt(node, at)) return true;
+    if (node.kind === NODE_KIND.IMAGE) {
+      const eff = getEffectiveNode?.(node);
+      if (eff?.effectiveLocal) {
+        const local = toNodeLocal(node, at);
+        const el = eff.effectiveLocal;
+        return local.x < el.x || local.x > el.x + el.width || local.y < el.y || local.y > el.y + el.height;
+      }
+    }
+    return false;
+  }
+
+  nodeAtPoint.nodesAtPoint = (point, options = {}) => {
+    const doc = getDoc();
+    const zoom = options.zoom ?? (typeof getZoom === "function" ? getZoom() : 1);
+    return ops.nodeAtPoint(doc, point, { zoom, ...options, reject: isRejected, all: true });
+  };
 
   return nodeAtPoint;
 }

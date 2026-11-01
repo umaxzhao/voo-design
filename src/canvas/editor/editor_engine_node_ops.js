@@ -284,6 +284,7 @@ export function createEngineNodeOps({
     moveNodeToRoot,
     expandMoveSet: (ids) => ops.moveAffectedIds(getDoc(), ids),
     nodeAtPoint,
+    nodesAtPoint: nodeAtPoint.nodesAtPoint,
     toggleLockNode,
     setLockTransparency,
     getLockTransparency: (id) =>
