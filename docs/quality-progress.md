@@ -9,9 +9,25 @@
   外部最大化/还原状态优先于迟到查询；标题栏保留实际拖动区域。
 - 真实渲染器检查覆盖按钮顺序、1024px 布局、点击区、状态切换和平台隔离；
   原始缺少控件的失败保存在 `/private/tmp/voo-linux-window-before.log`。
-- Linux 实际窗口行为由 CI 中 X11/openbox/xdotool 的独立 Electron 检查验证，
-  当前等待结果。浏览器桥接夹具不能替代实际宿主窗口验收；Wayland、其他
-  桌面环境与签名安装包仍需分别验证。本轮不创建桌面新版本。
+- 固定应用源码 `a535785d3f0babcb55c184587df3777cdf641739`：构建、1479 文件
+  设计检查、4938 单测通过/4 历史跳过、604 文件通过/3 跳过；
+  `desktop-window-controls`、`titlebar-file-actions`、`ui-responsive-editor`
+  真实浏览器检查通过。后续提交仅完善测试夹具和验收记录，不改变应用源码。
+- Linux/X11 + openbox 的真实 Electron 检查在
+  [`8ecf94fd`](https://github.com/umaxzhao/voo-design/commit/8ecf94fd4f05ec334ab4b6514b8082334e9e8676)
+  [CI](https://github.com/umaxzhao/voo-design/actions/runs/41339348018) 中通过：
+  无系统标题栏/菜单高度、Alt 不显菜单、最小化/最大化/还原及外部状态、
+  X11 原生鼠标拖窗、隐藏菜单的 Ctrl+N 快捷键均正常。真实未保存提示可由
+  OS Esc 取消；最后批准关闭使用测试响应，不计为原生“放弃”按钮点测。
+  截图和五组检查收据：`linux-window-evidence` Actions 附件，
+  本地 `/private/tmp/voo-linux-window-verified/`；零页面异常。
+- 失败链保留：旧 Linux 模拟窗口缺少菜单显隐方法，已补齐并增加实际配置断言；
+  第一轮原生鼠标输入按下即释放未产生移动，改为指定窗口、按住与分段移动后通过。
+  保留真实位置变化和拖动区域命中断言，没有改用程序移动窗口代替拖动。
+- 目录为 118 组能力、117 核心浏览器、10 独立检查。本轮只新增该原生宿主
+  检查的执行证据，不把其他独立检查和全部核心浏览器都计为本轮完成。
+  Wayland、其他桌面环境、实际 Windows/macOS 宿主和签名安装包仍需分别验证。
+  本轮不创建桌面新版本，已发布的旧 Linux 安装包保持不变。
 
 ## 错误恢复页视觉统一（2026-11-02）
 
