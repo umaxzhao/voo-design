@@ -87,7 +87,7 @@ export function drawEllipseNode(ctx, node) {
     const path = new Path2D(ellipseArcPath(node));
     ctx.save();
     ctx.translate(node.x, node.y);
-    if (node.fill && node.fill !== "transparent") {
+    if (node.fill && node.fill !== "transparent" && node.fill !== "none" && !node.fillHidden) {
       ctx.fillStyle = resolvePaintStyle(ctx, node.fill, 0, 0, node.width, node.height, node.fillOpacity ?? 1);
       ctx.fill(path, "evenodd");
     }
@@ -104,7 +104,13 @@ export function drawEllipseNode(ctx, node) {
   const centreY = node.y + node.height / 2;
   const fillAlpha = node.fillOpacity ?? 1;
   const strokeAlpha = node.strokeOpacity ?? 1;
-  if (node.fill && node.fill !== "transparent" && fillAlpha > 0) {
+  if (
+    node.fill &&
+    node.fill !== "transparent" &&
+    node.fill !== "none" &&
+    !node.fillHidden &&
+    fillAlpha > 0
+  ) {
     ctx.fillStyle = resolvePaintStyle(
       ctx,
       node.fill,
@@ -198,7 +204,13 @@ export function drawRectNode(ctx, node) {
   const radii = resolveCornerRadii(node.cornerRadius, node.width, node.height);
   const fillAlpha = node.fillOpacity ?? 1;
   const strokeAlpha = node.strokeOpacity ?? 1;
-  if (node.fill && node.fill !== "transparent" && fillAlpha > 0) {
+  if (
+    node.fill &&
+    node.fill !== "transparent" &&
+    node.fill !== "none" &&
+    !node.fillHidden &&
+    fillAlpha > 0
+  ) {
     ctx.fillStyle = resolvePaintStyle(
       ctx,
       node.fill,

@@ -127,8 +127,9 @@ export function toSkiaBlendMode(blendMode) {
  */
 export function fillsOf(node) {
   const fill = node.fill;
-  if (!fill || fill === "transparent") return undefined;
+  if (!fill || fill === "transparent" || fill === "none" || node.fillHidden) return undefined;
   const fillOpacity = node.fillOpacity ?? 1;
+  if (fillOpacity <= 0) return undefined;
   if (isCssGradient(fill)) {
     const gradient = parseGradient(fill);
     if (gradient.type === "mesh") return [meshSceneFill(gradient, fillOpacity)];
@@ -144,7 +145,15 @@ export function fillsOf(node) {
 }
 
 export function strokeOf(node) {
-  if (!node.stroke) return undefined;
+  if (
+    !node.stroke ||
+    node.stroke === "transparent" ||
+    node.stroke === "none" ||
+    node.strokeHidden ||
+    !(node.strokeWidth > 0)
+  ) return undefined;
+  const strokeOpacity = node.strokeOpacity ?? node.opacity ?? 1;
+  if (strokeOpacity <= 0) return undefined;
   const strokeAlign =
     node.strokeAlign ??
     (node.kind === "rect" || node.kind === "ellipse" ? "inside" : undefined);

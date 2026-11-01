@@ -464,6 +464,11 @@ function resolveGradient(def, defsMap) {
     .map((s) => `${s.color} ${Math.round(s.position)}%`);
 
   if (tag === "radialgradient") {
+    const cx = Math.round(parseCoordPercent(def.attrs.cx ?? def.attrs.fx, 0.5) * 100);
+    const cy = Math.round(parseCoordPercent(def.attrs.cy ?? def.attrs.fy, 0.5) * 100);
+    if (cx !== 50 || cy !== 50) {
+      return `radial-gradient(circle at ${cx}% ${cy}%, ${stopStrings.join(", ")})`;
+    }
     return `radial-gradient(circle, ${stopStrings.join(", ")})`;
   }
 
@@ -1099,10 +1104,15 @@ function buildTextElement(attrs, paint, matrix, ctx, element) {
       const tContent = (tspan.text || "").trim();
       if (!tContent) continue;
       const tAttrs = { ...attrs, ...tspan.attrs };
+      const tStyle = parseStyle(tAttrs.style);
       const tx = parseNumber(tAttrs.x) ?? (parseNumber(attrs.x) ?? 0);
       const ty = parseNumber(tAttrs.y) ?? (parseNumber(attrs.y) ?? 0);
-      const tFontSize = parseNumber(tAttrs["font-size"] ?? tAttrs.fontSize) ?? 16;
+      const tFontSize = parseNumber(tAttrs["font-size"] ?? tStyle["font-size"] ?? tAttrs.fontSize) ?? 16;
       const tpt = applyMatrix(matrix, tx, ty - tFontSize);
+      const fontFamily = tAttrs["font-family"] ?? tStyle["font-family"];
+      const fontWeight = tAttrs["font-weight"] ?? tStyle["font-weight"];
+      const fontStyle = tAttrs["font-style"] ?? tStyle["font-style"];
+      const textAnchor = tAttrs["text-anchor"] ?? tStyle["text-anchor"];
       nodes.push({
         kind: "text",
         x: round(tpt.x),
@@ -1114,17 +1124,27 @@ function buildTextElement(attrs, paint, matrix, ctx, element) {
         strokeWidth:
           paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
         opacity: round(paint.opacity),
+        ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
+        ...(fontWeight ? { fontWeight: Number.isFinite(parseInt(fontWeight, 10)) ? parseInt(fontWeight, 10) : fontWeight === "bold" ? 700 : 400 } : {}),
+        ...(fontStyle ? { fontStyle } : {}),
+        ...(fontStyle === "italic" ? { italic: true } : {}),
+        ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
       });
     }
     return nodes.length > 0 ? nodes : null;
   }
 
+  const style = parseStyle(attrs.style);
   const content = (element ? collectElementText(element) : "") || attrs["aria-label"] || "";
   if (!content.trim()) return null;
   const x = parseNumber(attrs.x) ?? 0;
   const y = parseNumber(attrs.y) ?? 0;
-  const fontSize = parseNumber(attrs["font-size"] ?? attrs.fontSize) ?? 16;
+  const fontSize = parseNumber(attrs["font-size"] ?? style["font-size"] ?? attrs.fontSize) ?? 16;
   const pt = applyMatrix(matrix, x, y - fontSize);
+  const fontFamily = attrs["font-family"] ?? style["font-family"];
+  const fontWeight = attrs["font-weight"] ?? style["font-weight"];
+  const fontStyle = attrs["font-style"] ?? style["font-style"];
+  const textAnchor = attrs["text-anchor"] ?? style["text-anchor"];
   return {
     kind: "text",
     x: round(pt.x),
@@ -1136,6 +1156,11 @@ function buildTextElement(attrs, paint, matrix, ctx, element) {
     strokeWidth:
       paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
     opacity: round(paint.opacity),
+    ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
+    ...(fontWeight ? { fontWeight: Number.isFinite(parseInt(fontWeight, 10)) ? parseInt(fontWeight, 10) : fontWeight === "bold" ? 700 : 400 } : {}),
+    ...(fontStyle ? { fontStyle } : {}),
+    ...(fontStyle === "italic" ? { italic: true } : {}),
+    ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
   };
 }
 
@@ -1258,6 +1283,7 @@ export function parseSvgToNodes(svgText, options = {}) {
       const currentTransform = parseTransformMatrix(def.attrs?.transform, ctx);
       const defMatrix = elemMatrix && currentTransform ? multiplyMatrix(elemMatrix, currentTransform) : currentTransform || elemMatrix;
 
+      const shapes = [];
       for (const child of def.children) {
         const childTransform = parseTransformMatrix(child.attrs?.transform, ctx);
         const childMatrix = defMatrix && childTransform ? multiplyMatrix(defMatrix, childTransform) : childTransform || defMatrix;
@@ -1266,28 +1292,56 @@ export function parseSvgToNodes(svgText, options = {}) {
         if (b) {
           const shapeNode = b(child.attrs || {}, childPaint, childMatrix, ctx, child);
           if (shapeNode) {
-            const base = Array.isArray(shapeNode) ? shapeNode[0] : shapeNode;
-            base.maskBase = true;
-            if (def.tag === "clippath") {
-              base.fill = base.fill && base.fill !== "transparent" ? base.fill : "#ffffff";
-            } else if (def.tag === "mask") {
-              base.maskType = def.attrs?.["mask-type"] || "luminance";
-              if (parentClipId) {
-                const parentNode = ctx.nodes?.find(n => n.name === parentClipId || n.id === parentClipId);
-                if (parentNode && base.kind === "rect") {
-                  base.x = parentNode.x;
-                  base.y = parentNode.y;
-                  base.width = parentNode.width;
-                  base.height = parentNode.height;
-                  base.cornerRadius = parentNode.cornerRadius;
-                }
-              }
-            }
-            if (parentClipId) base.clipTo = parentClipId;
-            addNode(child.tag, child.attrs || {}, base);
-            return base.name;
+            const arr = Array.isArray(shapeNode) ? shapeNode : [shapeNode];
+            for (const s of arr) shapes.push({ tag: child.tag, attrs: child.attrs || {}, node: s });
           }
         }
+      }
+      if (shapes.length === 0) return null;
+
+      if (def.tag === "clippath") {
+        if (shapes.length === 1) {
+          const { tag, attrs, node: base } = shapes[0];
+          base.maskBase = true;
+          base.fill = "#ffffff";
+          if (parentClipId) base.clipTo = parentClipId;
+          addNode(tag, attrs, base);
+          return base.name;
+        }
+        const booleanClip = {
+          kind: "boolean",
+          op: "union",
+          operation: "union",
+          name: typeof def.attrs?.id === "string" ? def.attrs.id.trim() : `clip-${nodes.length + 1}`,
+          maskBase: true,
+          fill: "#ffffff",
+          children: shapes.map((s) => s.node),
+          ...(parentClipId ? { clipTo: parentClipId } : {}),
+        };
+        addNode("boolean", def.attrs || {}, booleanClip);
+        return booleanClip.name;
+      }
+
+      if (def.tag === "mask") {
+        const { tag, attrs, node: base } = shapes[0];
+        base.maskBase = true;
+        base.maskType = def.attrs?.["mask-type"] || "luminance";
+        if (!base.fill || base.fill === "transparent" || base.fill === "none") {
+          base.fill = "#ffffff";
+        }
+        if (parentClipId) {
+          const parentNode = ctx.nodes?.find((n) => n.name === parentClipId || n.id === parentClipId);
+          if (parentNode && base.kind === "rect") {
+            base.x = parentNode.x;
+            base.y = parentNode.y;
+            base.width = parentNode.width;
+            base.height = parentNode.height;
+            base.cornerRadius = parentNode.cornerRadius;
+          }
+        }
+        if (parentClipId) base.clipTo = parentClipId;
+        addNode(tag, attrs, base);
+        return base.name;
       }
       return null;
     }
