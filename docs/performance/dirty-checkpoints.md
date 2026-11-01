@@ -67,3 +67,8 @@ the complete clean release, use fresh forward/reverse production runs on the
 read-only original file, and retain actual key waits separately from synchronous
 API setup and explicit checkpoint creation. Record the imported baseline and explicit saved-checkpoint context separately,
 alongside exact pixels, original file hash and source revisions.
+
+Candidate 85361f3 stopped at full-unit step 4: the public model-export guard
+needed the intentional one-argument `serializeDocumentFields` addition.
+All previous names/arity checks remain; no failure is skipped or weakened.
+The corrected committed candidate requires a fresh complete release.

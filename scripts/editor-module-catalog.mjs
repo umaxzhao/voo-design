@@ -30,6 +30,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/scene_model_serialization.js", "src/canvas/editor/scene-node-serialization.js", "tests/unit/scene-serialization-purity.test.js",
       "src/canvas/editor/scene_model_core.js", "src/canvas/editor/default-value-matcher.js", "tests/unit/default-value-matcher.test.js",
       "src/canvas/editor/document-snapshot-state.js", "tests/unit/document-snapshot-state.test.js", "tests/e2e/document-dirty-state-checks.mjs",
+      "tests/unit/scene-model-lint.test.js",
       "src/canvas/editor/editor_engine.js", "src/canvas/editor/editor_engine_assembly.js",
     ],
     related: ["workspace","layers","images","platform","compositing","layout"],
