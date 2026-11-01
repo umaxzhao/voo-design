@@ -353,3 +353,15 @@ an already elapsed quiet timer before its exact frame. The browser case waits
 for font readiness, queues the actual wheel burst without automation-created
 idle gaps, and retains the strict zero-extra-raster and exact-RGBA assertions.
 Targeted repeats pass; a fresh fixed-revision full gate is required below.
+
+The second frozen run (`6ababe5`) passes 4,730 units (four skipped), including
+the strict zoom suite, but stops at step 69: the layout fixture's default 30s
+engine-readiness timeout expires before any business assertion. Its unchanged
+isolated rerun passes all layout/history assertions. Host load was about 52.
+`voo-zoom-final-release.json` preserves the incomplete 70-result attempt.
+A real engine-module request held for 35s reproduces the same setup failure
+(`voo-zoom-workspace-delay-red.log`). Workspace setup now gets its own bounded
+90s phase, matching welcome setup; business/pixel assertions keep their original
+timeouts. The startup suite retains this real delayed-import/create/pixel/undo
+scenario. Application source remains identical to `6ababe5`; a fresh full gate
+is required. No historical or isolated pass completes either failed report.

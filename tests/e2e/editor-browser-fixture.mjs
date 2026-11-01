@@ -74,12 +74,17 @@ export async function withEditorBrowser(run, pageOptions = {}) {
       }
     }
     if (openDocument) {
+      // The lazy workspace starts after welcome; give its setup the same
+      // bounded budget without changing any functional assertion timeout.
+      const workspaceDeadline = Date.now() + STARTUP_TIMEOUT_MS;
+      const remainingWorkspaceTime = () => Math.max(1, workspaceDeadline - Date.now());
       await tool("new_document", { width: 600, height: 400, name: "EffectsAudit", force: true });
-      await page.waitForFunction(() => window.__vooStore?.activeDocumentId && window.__vooEditor);
+      await page.waitForFunction(() => window.__vooStore?.activeDocumentId && window.__vooEditor,
+        null, { timeout: remainingWorkspaceTime() });
       // Exercise normal stacking and hit testing, not the entry guard that
       // temporarily disables inspector pointer events during document opening.
       await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')
-        ?.getAttribute("data-open-guard") === "off");
+        ?.getAttribute("data-open-guard") === "off", null, { timeout: remainingWorkspaceTime() });
     }
     await run({ page, tool, origin, bridge, errors, reloadModule: environment.reloadModule });
     if (errors.length) throw new Error(`Editor errors: ${errors.join("\n")}`);
