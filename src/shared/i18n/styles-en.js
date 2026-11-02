@@ -18,5 +18,6 @@ export default {
   "styles.delete": "Delete style",
   "styles.detach": "Detach style",
   "styles.empty": "No styles yet.",
+  "styles.add": "Add style",
   "styles.hint": "Reuse paint, text and effect settings across layers.",
 };

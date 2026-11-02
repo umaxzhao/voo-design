@@ -79,6 +79,7 @@ const STRUCTURAL_JSX_COUNTS = {
   "src/canvas/components/editor_properties/fill_paint_row.jsx": 1,
   "src/canvas/components/editor_properties/instance_section.jsx": 1,
   "src/canvas/components/editor_properties/panel_add_menu.jsx": 1,
+  "src/canvas/components/editor_properties/property_section.jsx": 1,
   "src/canvas/components/editor_properties/prototype_runner.jsx": 2,
   "src/canvas/components/editor_rulers.jsx": 3,
   "src/canvas/components/first_run_workspace.jsx": 1,

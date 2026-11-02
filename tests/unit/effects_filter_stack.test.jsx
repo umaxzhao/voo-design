@@ -174,7 +174,6 @@ describe("single filter surface", () => {
         engine={{ getDocument: () => ({ nodes: [] }), subscribeRender: () => () => {} }}
       />,
     );
-    expect(html).toContain('data-testid="properties-add-menu"');
     expect(html).not.toContain('data-testid="properties-add-liveFilters"');
     expect(html).not.toContain('data-testid="editor-live-filter-section"');
   });

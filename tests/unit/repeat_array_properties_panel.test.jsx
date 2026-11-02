@@ -41,33 +41,30 @@ function renderSections(props) {
 }
 
 describe("Modifiers group", () => {
-  it("renders no Modifiers section for an empty stack; the add menu offers it", () => {
+  it("shows the Modifiers title, its add entry and an empty row for an empty stack", () => {
     const html = renderSections();
-    expect(html).not.toContain('data-testid="editor-modifiers-section"');
-    expect(html).not.toContain('data-testid="editor-modifiers-empty"');
-    expect(html).toContain('data-testid="properties-add-menu"');
+    expect(html).toContain('data-testid="editor-modifiers-section"');
+    expect(html).toContain('data-testid="editor-modifiers-add"');
+    expect(html).toContain('data-testid="editor-modifiers-empty"');
+    expect(html).not.toContain('data-testid="editor-modifiers-picker"');
     expect(html).not.toContain('editor-repeat-array-section');
     expect(html).not.toContain('editor.props.repeatArray');
     expect(html).not.toContain('editor-linear-array-enable');
   });
 
-  it("reveals a header-only Modifiers section with the kind picker from the add menu", () => {
+  it("keeps the kind picker closed until the title add entry opens it", () => {
     for (const object of [
       { id: "n1", kind: "group", x: 0, y: 0, width: 10, height: 10 },
       { id: "n2", kind: "rect", x: 0, y: 0, width: 4, height: 4 },
     ]) {
       const html = renderToStaticMarkup(
-        <ModifiersSection object={object} engine={makeEngine()} t={t} revealed />,
+        <ModifiersSection object={object} engine={makeEngine()} t={t} />,
       );
       expect(html).toContain('data-testid="editor-modifiers-section"');
-      expect(html).toContain('data-testid="editor-modifiers-picker"');
       expect(html).toContain('data-testid="editor-modifiers-add"');
-      expect(html).not.toContain('editor-modifiers-empty');
+      expect(html).toContain('data-testid="editor-modifiers-empty"');
+      expect(html).not.toContain('data-testid="editor-modifiers-picker"');
     }
-    const hidden = renderToStaticMarkup(
-      <ModifiersSection object={{ id: "n3", kind: "rect" }} engine={makeEngine()} t={t} />,
-    );
-    expect(hidden).toBe("");
   });
 
   it("places Modifiers directly after Effects", () => {

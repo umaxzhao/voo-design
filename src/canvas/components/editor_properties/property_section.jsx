@@ -12,9 +12,6 @@ export const fieldClass =
 export const sectionTitleClass =
   "inspector-section-title max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
 
-/** The separator and vertical rhythm every section in the panel shares. */
-// One vertical rhythm separates groups through whitespace, without rules.
-const sectionRhythmClass = "py-2 first:pt-0";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
@@ -70,6 +67,16 @@ export function SectionEmptyRow({
   ariaLabel = null,
 }) {
   const isPlaceholder = variant === "empty";
+  // The placeholder states that nothing is here yet; it has no action to take.
+  if (isPlaceholder)
+    return (
+      <div
+        data-testid={testId}
+        className="flex h-7 w-full items-center justify-center rounded-xl bg-white/[0.02] text-[10px] font-mono tracking-wide text-neutral-500"
+      >
+        <span className="truncate">{label}</span>
+      </div>
+    );
   return (
     <button
       type="button"
@@ -112,7 +119,7 @@ export function SectionEmptyRow({
 
 SectionEmptyRow.propTypes = {
   label: PropTypes.string.isRequired,
-  onClick: PropTypes.func.isRequired,
+  onClick: PropTypes.func,
   icon: PropTypes.node,
   testId: PropTypes.string,
   /** Hide the trailing "+" when the section header already exposes the add action. */
@@ -176,9 +183,12 @@ export function StaticSection({
   void storageKey;
   const isEmpty = emptyState || Children.toArray(children).length === 0;
   return (
+    // The hairline between groups is a structural line (design/structural-lines.cjs);
+    // the first group has no line above it.
     <div
       data-inspector-section
-      className={sectionRhythmClass}
+      data-ui-structure="divider"
+      className="border-t border-white/10 py-2 first:border-t-0 first:pt-0"
       data-testid={testId}
     >
       {hideHeader ? null : (

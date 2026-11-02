@@ -113,14 +113,13 @@ describe("core sections are always visible; advanced extras hide behind one add 
     }
     for (const hidden of [
       "editor-live-filter-section",
-      "editor-modifiers-section",
-      "editor-style-section",
-      "editor.variables.title",
       "editor.layers.noEffects",
     ]) {
       expect(html, hidden).not.toContain(hidden);
     }
-    expect(html.match(/data-testid="properties-add-menu"/g)).toHaveLength(1);
+    // Variables, styles and modifiers are visible directly now; the add menu
+    // holds only the remaining optional extras, and it is absent when none apply.
+    expect(html.match(/data-testid="properties-add-menu"/g) ?? []).toHaveLength(0);
   });
 
   it("keeps the Effects header even with an empty stack", () => {

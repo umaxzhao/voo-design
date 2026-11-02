@@ -19,5 +19,6 @@ export default {
   "styles.delete": "删除样式",
   "styles.detach": "分离样式",
   "styles.empty": "还没有样式。",
+  "styles.add": "添加样式",
   "styles.hint": "在图层之间复用颜色、文字与效果设置。",
 };

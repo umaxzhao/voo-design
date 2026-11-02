@@ -102,14 +102,13 @@ export default function PropertiesPanelSections({
   const revealed = (key) => current.keys.includes(key);
   const reveal = (key) => setRevealState({ ...current, keys: [...current.keys, key] });
   const setEffectsPicker = (open) => setRevealState({ ...current, effectsPicker: open });
-  const { eligible, hasContent } = resolveExtras({
+  const { eligible } = resolveExtras({
     object, allowed, isWarpTool, isMedia, selectionCount: selectionCount ?? 1,
     parentLayout, parentIsFrame, parentNode, colorVariableActions, styleActions, engine,
   });
   // Array modifiers target one node at a time, so they are a single-selection
   // affordance; frames and adjustments have no array target.
   const showRepeatArray = !isBackground && eligible.modifiers;
-  const show = (key) => eligible[key] && (hasContent[key] || revealed(key));
   // Inline binding chips (Pen-style): resolve the bound variable/style names
   // once for the Fill/Stroke rows.
   const bindingDoc = engine?.getDocument?.();
@@ -133,7 +132,7 @@ export default function PropertiesPanelSections({
   const hasSlots = Array.isArray(object.slot) ? object.slot.length > 0 : Boolean(object.slot);
   const showSlot = slotEligible && (hasSlots || isMainComponent || revealed("slot"));
   const addItems = buildPanelAddItems({
-    slotEligible, showSlot, eligible, show, showRepeatArray, reveal, t, object, engine,
+    slotEligible, showSlot, reveal, t,
   });
   return (
     <>
@@ -320,7 +319,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
       {/* Image tools sit before Fill/Stroke so the histogram and image actions stay on the first screen. */}
-      {show("variables") ? (
+      {eligible.variables ? (
         <ColorVariablesSection
           object={object}
           documentId={colorVariableActions.documentId}
@@ -330,15 +329,13 @@ export default function PropertiesPanelSections({
           onUpdate={colorVariableActions.update}
           variablesV2={colorVariableActions.variablesV2 ?? null}
           variableActions={colorVariableActions.variableActions ?? null}
-          revealed={revealed("variables")}
         />
       ) : null}
-      {show("styles") ? (
+      {eligible.styles ? (
         <StyleSection
           object={object}
           styles={styleActions.styles ?? null}
           styleActions={styleActions.actions ?? null}
-          revealed={revealed("styles")}
         />
       ) : null}
       {eligible.effects ? (
@@ -363,7 +360,7 @@ export default function PropertiesPanelSections({
       {eligible.export ? (
         <ExportSection object={object} selectedNodes={selectedNodes} engine={engine} />
       ) : null}
-      {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} revealed={revealed("modifiers")} /> : null}
+      {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} /> : null}
       <PanelAddMenu items={addItems} />
     </>
   );
