@@ -1,5 +1,5 @@
 import { listPackage, extractFile } from '@electron/asar';
-import { readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -34,6 +34,13 @@ export function verifyPackage(appDir) {
   const mac = appDir.endsWith('.app');
   const resources = path.join(appDir, mac ? 'Contents/Resources' : 'resources');
   const archive = path.join(resources, 'app.asar');
+  const models = JSON.parse(readFileSync(new URL('./desktop-model-manifest.json', import.meta.url), 'utf8')).models;
+  for (const model of models) {
+    const file = path.join(resources, 'models', model.file);
+    if (!existsSync(file) || !statSync(file).isFile() || statSync(file).size !== model.bytes) {
+      throw new Error(`Missing or invalid required desktop model: ${model.file}`);
+    }
+  }
   const files = new Set(listPackage(archive).map(normalizeArchiveEntry));
   const required = [
     'electron/main.cjs', 'electron/preload.cjs', 'dist/index.html',

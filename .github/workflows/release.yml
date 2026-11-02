@@ -80,8 +80,13 @@ jobs:
           node-version: '22.14'
           cache: npm
       - run: npm ci
+      - name: Fetch and checksum required desktop AI weights
+        env:
+          VOO_DESKTOP_MODELS_DIR: ${{ runner.temp }}/voo-desktop-models
+        run: node scripts/prepare-desktop-models.mjs --download
       - name: Package on the native architecture
         env:
+          VOO_DESKTOP_MODELS_DIR: ${{ runner.temp }}/voo-desktop-models
           CSC_LINK: ${{ matrix.platform == 'mac' && secrets.CSC_LINK || '' }}
           CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.CSC_KEY_PASSWORD || '' }}
           WIN_CSC_LINK: ${{ matrix.platform == 'win' && secrets.WIN_CSC_LINK || '' }}

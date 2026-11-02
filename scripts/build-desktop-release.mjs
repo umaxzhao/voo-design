@@ -18,6 +18,7 @@ function run(args) {
   if (result.status !== 0) throw new Error(`Desktop build step failed: ${args[0]} (exit ${result.status})`);
 }
 try {
+  run(["scripts/prepare-desktop-models.mjs"]);
   run([process.env.npm_execpath, "run", "build", "--", "--mode", "electron"]);
   run(["scripts/build-connector-resource.mjs"]);
   const config = { ...pkg.build, publish: pkg.build.publish.map(provider => ({

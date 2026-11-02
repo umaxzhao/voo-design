@@ -234,12 +234,11 @@ export const EDITOR_MODULES = [
       "scripts/deploy-editor.sh", "scripts/deploy-editor-runtime.sh", "scripts/nginx-editor-runtime.conf",
       "scripts/verify-editor-runtime.mjs", "tests/unit/editor-runtime.test.js",
       "src/canvas/components/ai_repair_download_dialog.jsx", "tests/unit/ai_repair_download_dialog.test.jsx",
+      "src/canvas/module_loader.js", "tests/unit/client-model-ipc.test.js", "tests/unit/module-loader-assets.test.js", "scripts/prepare-desktop-models.mjs", "scripts/desktop-model-manifest.json", "tests/unit/desktop-model-assets.test.js",
     ],
-    related: [
-      "selection", "compositing", "documents", "inspector",
-    ],
+    related: ["selection", "compositing", "documents", "inspector"],
     features: [
-      "images.retouch", "images.pixel-selections", "images.adjustments", "images.local-models", "images.ai-repair-responsiveness",
+      "images.retouch", "images.pixel-selections", "images.adjustments", "images.local-models", "images.ai-repair-responsiveness", "images.model-readiness", "images.subpath-runtime",
     ],
     suites: [
       "healing-responsiveness", "drawing-retouch", "raster-loading", "image-action-loading", "image-interaction-boundaries", "image-adjustments-complete",
@@ -331,7 +330,7 @@ export const EDITOR_MODULES = [
       "tests/unit/integration-conflict-regressions.test.jsx",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs", "scripts/license-texts/*", "scripts/verify-package.mjs",
-      "NOTICE", "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
+      "NOTICE", "package.json", "tests/unit/electron_builder_config.test.js", "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js", "src/canvas/agent/*", "src/canvas/mcp/*",
       "src/canvas/collab/*", "src/canvas/comments/*", "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*",
       "plugins/*", "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",

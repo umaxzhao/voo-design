@@ -221,9 +221,9 @@ npm run lint:design  # design-token lint
 
 Model weights are not stored in this repository.
 
-- **Desktop packaging**: Electron builds bundle verified compact upscale weights from tracked `vendor/client-models` (run `git lfs pull` after checking out source). Optional additional `public/models` weights are included when present; otherwise those features use the same on-demand download path as the web app. Set `VOO_BUNDLE_MODELS=1` for an explicitly bundled build; this alone does not guarantee that every feature's weights are present.
+- **Desktop packaging**: All desktop packaging entry points require checksum-verified RMBG and both LaMa weights, staged into `dist-electron/models` and shipped in `Resources/models`. Provision them in `public/models` or set `VOO_DESKTOP_MODELS_DIR` to their source directory. Missing, corrupt or LFS-pointer weights fail the build; another model does not satisfy the requirement. Compact upscale weights remain tracked in `vendor/client-models` (run `git lfs pull` after checking out source). The pinned required files, sizes and SHA-256 values are in `scripts/desktop-model-manifest.json`.
 - **Web builds**: `npm run build` omits weights while retaining other public runtime assets. Models load when a feature is used, from a separately hosted `models/` beside the app first, then `VITE_MODEL_BASE_URL` (default `https://voo.run/editor/models`); valid downloads are cached by the browser. Use `VOO_BUNDLE_MODELS=1 npm run build` only for an explicitly bundled build.
-- The current deployment supplies RMBG background removal and the two LaMa repair weights. The three upscaler weights still require licensed provisioning; they are not included or verified here. See [independent weight deployment](docs/deploy-la.md).
+- The current deployment supplies RMBG background removal, the two LaMa repair weights and two compact upscalers used for three output choices. See [independent weight deployment](docs/deploy-la.md). A reachable download is not evidence of successful inference; desktop acceptance must include a fresh offline profile.
 
 To serve models from your own host, create a `.env` file:
 

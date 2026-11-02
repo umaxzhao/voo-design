@@ -1,5 +1,19 @@
 # 项目检查总进度
 
+## 桌面 AI 模型交付修复：2026-11-03
+
+- 基线：主线 `0363f210`；本轮仅修复模型交付、模型状态和共享运行时资源定位，保留主线修补 Worker、取消与界面更新。
+- 已发布 Beta2 真实复现：独立空用户目录、断网，点击一键抠图后显示 `AI edit failed`，没有生成蒙版；归档缺 RMBG 和两份 LaMa，状态检查却因读取接口存在而返回已缓存。
+- 修复：逐文件 `model:has`；桌面构建必须校验三份必需权重的大小/SHA256并纳入 `Resources/models`；CI 显式获取并校验；归档检查逐项拒绝缺失模型。构建输出使用 `dist-electron/models`，未修改 `.gitignore`。
+- 执行：固定应用提交 `e4896af552f500ffd8daa2d5d60c8aefd1cb25b6` 完整门禁 **122/122 步通过，含 118 组核心浏览器**；单测 **4,993 通过、4 跳过、0 失败**；设计检查 1,481 文件、模块登记及实际候选包资源/传递依赖检查通过。原始收据 `ai-desktop-fix/core-release.json`，功能组合覆盖仍为部分。
+- 后续 CI 修正：GitHub 实际拒绝在 job env 使用 `runner.temp`；已移到获取/打包步骤级 env，并保留同一路径。新增回归先失败后通过；本次 CI/文档更新不改变上述已验证的应用源码。
+- [修复 PR #96](https://github.com/umaxzhao/voo-design/pull/96)；[四平台验证](https://github.com/umaxzhao/voo-design/actions/runs/41504127566) 的权重获取/校验、打包及原生 smoke 步骤已在 Linux x64、Windows x64、macOS Intel/arm64 通过；完整工作流仍在运行，未记为全部完成，也不把 smoke 当作各平台真实模型推理。
+- 已按项目脚本更新 [Web 预览](https://voo.run/editor/)，部署应用构建 `e4896af5`；入口 HTML 与 5 项入口 JS/CSS 逐字节匹配。线上真实模型下载及抠图蒙版应用成功，WebGPU 不可用时走 WASM 回退。证据：`ai-desktop-fix/deployed-build.json`、`web-after.json`；la2 回滚备份 `e4896af5-20261102T184956Z`。
+- 原生证据：macOS arm64 未签名候选 App，全新用户目录、断网，真实抠图有色像素 `49152→18400`；真实 LaMa 修补改变图像；两者 Undo 精确还原、Redo 精确重现。抠图走 UI 按钮，修补走共用引擎操作，不冒记为每种手势认证。
+- 原始证据与源码 SHA256：`/Users/tt/.codex/visualizations/2026/11/02/01a19cf9-3244-7151-ae79-82df60c77ae6/ai-desktop-fix/`；候选 App：`/private/tmp/voo-ai-desktop-candidate/mac-arm64/VOO Design.app`。
+- 剩余：签名/公证、Windows/Linux、真实安装升级、保存冷开及图片质量组合仍未认证。现有已安装 App 和公开 Beta2 均未替换，不创建版本标签、草稿或公开 Release。
+- 详细范围：[图片编辑器验收矩阵](audits/image-editor-complete-audit.md#desktop-model-delivery-2026-11-03)。
+
 ## 全界面无描边规范（2026-11-02）
 
 - `inspector.borderless-chrome`：本轮按最新要求取消大面板允许描边的旧例外。统一清理右侧属性与工具参数、左右面板、工具栏、快捷栏、菜单、弹窗、工作台、设置、引导和恢复页的装饰边框、常驻 ring、内描边阴影与渐变外圈；保留原有大圆角，用底色和留白区分层级。外层背景留白形成的绿色细框也已去掉。

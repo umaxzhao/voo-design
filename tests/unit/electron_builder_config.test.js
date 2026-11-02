@@ -8,6 +8,12 @@ const pkg = JSON.parse(
 const build = pkg.build;
 
 describe("electron-builder commercial packaging config", () => {
+  it("stages required AI weights in every desktop packaging entry point", () => {
+    for (const name of ["electron:build", "dist", "dist:dir", "dist:all"]) {
+      expect(pkg.scripts[name]).toMatch(/^node scripts\/prepare-desktop-models\.mjs && /);
+    }
+    expect(build.extraResources).toContainEqual({ from: "dist-electron/models", to: "models" });
+  });
   it("defines dist script that builds a Linux AppImage", () => {
     expect(pkg.scripts.dist).toMatch(/scripts\/signing-env\.mjs/);
     expect(pkg.scripts.dist).toMatch(/AppImage/);
