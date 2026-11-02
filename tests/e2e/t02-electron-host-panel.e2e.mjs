@@ -16,6 +16,9 @@ await mkdir(evidence, { recursive: true });
 const profile = await mkdtemp(join(tmpdir(), "voo-t02-host-"));
 const entry = join(profile, "entry.cjs");
 await writeFile(entry, `const {app}=require('electron');
+// Test boundary: force the packaged branch so electron/main.cjs loads this copy's dist/index.html,
+// never a dev server on localhost:5173 (which belongs to another tree).
+Object.defineProperty(app,'isPackaged',{get:()=>true});
 app.setPath('userData',${JSON.stringify(join(profile, "profile"))});
 app.setPath('documents',${JSON.stringify(join(profile, "documents"))});
 require(${JSON.stringify(join(root, "electron/main.cjs"))});`);
@@ -35,17 +38,23 @@ const sectionHeights = (page) => page.evaluate(() => [...document.querySelectorA
   border: getComputedStyle(section).borderTopWidth,
 })));
 
+const launchEnv = { ...process.env };
+delete launchEnv.VITE_DEV_SERVER_URL;
+delete launchEnv.NODE_ENV;
 const app = await electron.launch({ args: [entry], env: {
-  ...process.env,
+  ...launchEnv,
   VOO_USER_DATA_DIR: join(profile, "profile"),
   VOO_DOCUMENTS_ROOT: join(profile, "documents"),
   VOO_CLI_BRIDGE_PORT: String(await freePort()),
   VOO_DISABLE_UPDATES: "1",
 } });
 const result = { platform: process.platform, profile: "isolated", checks: {} };
+result.distIndexSha256 = (await import("node:crypto")).createHash("sha256").update(await (await import("node:fs/promises")).readFile(join(root, "dist/index.html"))).digest("hex").slice(0, 16);
 try {
   const page = await app.firstWindow();
   page.setDefaultTimeout(30_000);
+  result.checks.url = page.url();
+  assert.ok(page.url().startsWith("file://") && page.url().includes(root.replace(/\/$/, "")), `renderer must be this copy's dist: ${page.url()}`);
   const errors = [];
   page.on("pageerror", (error) => errors.push(String(error)));
   const newDocument = page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true });
@@ -107,6 +116,8 @@ try {
   throw error;
 } finally {
   await writeFile(join(evidence, "electron-host-result.json"), JSON.stringify(result, null, 2));
-  await app.close();
+  const closed = await Promise.race([app.close().then(() => "closed"), new Promise((r) => setTimeout(() => r("timeout"), 20_000))]);
+  result.cleanup = closed;
+  await writeFile(join(evidence, "electron-host-result.json"), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result.status === "passed" ? { status: "passed", checks: Object.keys(result.checks) } : result));
 }
