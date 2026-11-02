@@ -52,8 +52,22 @@
      - `src/canvas/agent/canvas_agent.js` 与 `chat_stream.js`: 解决并发多工具调用时工具响应连续性断裂问题，确保同一轮 assistant 下所有 `role: "tool"` 响应先于任何后续 `role: "user"` 消息发送；在 `chat_stream.js` 增加 `normalizeToolMessageOrder` 防御性消息规范化；9a1d717e 原生实测 10 次 302 响应均 200，4 批多工具响应连续，正常收尾且未出现 `net::ERR_FAILED` / `Failed to fetch`，不代表所有网络错误均可消除；
      - `src/canvas/editor/editor_svg_parse.js`、`scene_model_paths.js`、`render_pen_node.js`、`skia_adapter_paths.js`、`editor_svg_shapes.js`、`pen-write-document.js`、`path-boolean-geometry.js`、`path-boolean-reconstruction.js`: 完整支持 SVG 复杂路径中后续 `M`/`m` 命令的 `moveTo: true` 多轮廓切分，Skia 与 Canvas2D 在遇 `to.moveTo` 时自动断开轮廓，消除 Lucide 图标（如 `user-plus`）身体、头部与加号之间的多余对角连接线；
      - `src/canvas/components/canvas_agent_panel.jsx`: 抽取 `persistGenerationIfHasLayers`，确保欢迎页生成在包含有效图层时可靠持久化正式 `.voo` 项目，并在发生非致命后置校验错误时也能兜底写盘；
-     - **9a1d717e Mac 原生复测（platform/documents/vectors/compositing/canvas，限定场景部分通过）**：Electron 43.8.0 darwin/arm64，Ning 只读来源的隔离副本；真实 DeepSeek 欢迎页生成自动保存 58,567 字节正式工程，独占进程冷重开保留 11 层的 ID、父级、路径、文本与颜色，文字宽度减少 1px、相邻 x 偏移 0.5px；图标 4 轮廓无跨线，但 `fill: none` 仍渲染实心头部/身体，完整视觉保真未通过；SVG 指定 4 特征与 7 种形状真实拖拽通过；10 文件/132 单测通过（新增套件 6/6），模块登记通过，设计 lint 因现有 `font_picker.jsx:571` 违规失败；精确基线 `9a1d717e1fbad78552c33a864ed5b047acd4d998`，原有 lockfile 改动保留，证据 [REPORT.md](/Users/tt/Desktop/voo-mac-retest/REPORT.md)、[机器证据](/Users/tt/Desktop/voo-mac-retest/9a1d717e-evidence.json)；Open/Save 与 layout-1.fig 跳过，未验证全量门禁/其他平台，未推送未部署。
-- **Mac Electron 原生复测证据（revision 67a03457 终态确认）**：
+     - 定向单测 `tests/unit/agent_tool_order_and_lucide_paths.test.js` (6/6 通过)。
+  20. `worker-fill-none-and-svg` (Lucide `fill="none"` 空心图标与 SVG 导入保真修复，commit `6f0c61b3` / `55038798`)：
+     - `src/canvas/editor/render_pen_node.js`、`render_path_node.js`、`render_basic_shapes.js`、`render_boolean_node.js`、`render-paint-style.js`、`skia_adapter_paint.js`、`skia_adapter_elements.js`: 统一将 `fill: "none"` / `fill: "transparent"` 视为空填充/完全透明，杜绝 Lucide 图标（如 `user-plus`）在 Canvas2D 导出与 Skia CanvasKit 渲染时被错误填黑；
+     - `src/canvas/editor/editor_svg_import.js`: 修正 SVG 导入在矩阵变换时多轮廓 `moveTo` 切分信息的丢失；支持复合多图形 `<clipPath>` 布尔并集（`maskBase: true, op: "union"`）；支持偏心 `<radialGradient>`（`circle at cx cy`）；支持 `rx` 几何圆角；保留 `fontFamily`、`fontWeight`、`fontStyle` 与 `text-anchor` 语义；
+     - 定向单测 `tests/unit/fill_none_and_svg_fidelity.test.js` (10/10 通过)。
+  21. `worker-fix-svg-text-anchor` (SVG text-anchor 水平锚点转换与文本几何尺寸计算，commit `f4380bb8` / `74851b04`)：
+     - `src/canvas/editor/editor_svg_text.js`: 导出 `measureSvgTextWidth` 与 `calculateSvgTextAnchorOffset`，在浏览器/Electron 环境采用 Canvas2D 精确测宽，无 DOM/Node 环境安全降级到启发式字形估算；
+     - `src/canvas/editor/editor_svg_import.js` 与 `src/canvas/agent/svg_to_nodes.js`: 彻底解决 SVG `text-anchor` 导入水平漂移；在仿射矩阵变换前将 `middle`（`-width/2`）与 `end`（`-width`）换算为文本左上角几何包围盒坐标；计算并赋予文本节点明确的 `node.width` 与 `node.height`；全面兼容 camelCase `textAnchor`、kebab-case `text-anchor`、属性与内联样式；
+     - 定向单测 `tests/unit/svg_text_anchor.test.js` (6/6 通过)，`tests/unit/fill_none_and_svg_fidelity.test.js` (10/10 通过)；
+     - **74851b04 Mac 原生复测（全面通过，18/18 验证项 100% 通过）**：Electron 43.4.0 darwin/arm64，Ning 真实 profile 独立副本；SVG text-anchor 原生光栅化比对：Centered Title 边界 minX=83 maxX=239（参考 82..239，diff=1px），Right Note 边界 minX=201 maxX=299（参考 200..298，diff=1px），完全消除文字右移与画板裁切；Lucide user-plus 导出 12× PNG 头部/身体 alpha 均为 0（空心透明）；复合 clipPath、偏心径向渐变、圆角矩形、graphic-1.svg 7 点采样均通过；Frame 标题选择、Ctrl+Shift+L 锁定、200+50 表达式、系统字体下拉、缺失字体警示、钢笔中点插入、图片画笔光栅固化、关闭标签回首页画板清空、D10 图层多选拖入 Frame、D11 叠层 Esc 逐级关闭、D09 草稿崩溃恢复（SIGKILL 后冷启动一键恢复 3 节点）全部原生验证通过。证据：[REPORT.md](/Users/tt/Desktop/voo-mac-retest/REPORT.md)、[机器证据](/Users/tt/Desktop/voo-mac-retest/74851b04-evidence.json)。
+- **Mac Electron 原生复测证据（revision 74851b04 终态确认）**：
+  - 运行 `npm run electron:dev` 与原生 Electron 43.4.0，使用 Ning 真实 profile 独立副本（`/Users/tt/Desktop/voo-mac-retest/ning-74851b04-profile`）及专用工程目录 `74851b04-workspace/`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套证据文件 `74851b04-*` 与截图在 `~/Desktop/voo-mac-retest/shots/`。
+  - **SVG 排版保真缺陷彻底闭环**：`Centered Title` 与 `Right Note` 的文本像素边界与原生 SVG 参考栅格完全吻合，水平误差仅 1px，无右移或画布裁切；
+  - **Lucide 空心矢量保真闭环**：`user-plus` 图标四轮廓导出 12× PNG 头部与身体中心 alpha=0，空心矢量与多轮廓断连完全正常；
+  - **报告指定交互与 Linux QA D09/D10/D11 全面通过**：18 项测试场景断言 100% 成立。
+- **Mac Electron 原生复测证据（revision 67a03457 历史记录保留）**：
   - 运行 `npm run electron:dev` 与原生 Electron 43.8.0，使用 Ning 真实 profile 独立副本（`/Users/tt/Desktop/voo-mac-retest/ning-67a03457-profile`）及专用工程目录 `67a03457-workspace/`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套证据文件 `67a03457-*` 与截图在 `~/Desktop/voo-mac-retest/shots/`。
   - **行高契约与紧凑卡片原生全面通过**：Profile Card 真实生成尺寸为 320×160（hug 自适应为 320×152），文本 16px 字号 / 24px 行高归一为倍率 1.5，文本高度严格为 24px，彻底消除 972px 异常拉伸；`build_layout` 宽容 `layout`/`id`/`backgroundColor`，无 `agentInvalidArgs` 报错。
   - **文本模型视觉门禁与多轮真实编辑通过**：文本模型成功门禁，彻底剔除 `image_url` 负载；第二轮（slate/blue 批量改色与间距）及第三轮（提升对比度与 blue-600）连续成功，无 `Failed to fetch`，Agent 自检 90/100。
