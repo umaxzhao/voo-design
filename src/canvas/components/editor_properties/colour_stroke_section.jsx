@@ -118,7 +118,7 @@ export function StrokeSection({
       {none ? null : (
         <>
           {/* The swatch owns paint type and color editing, matching the fill row. */}
-          <div className={sectionRowClass}>
+          <div className={sectionRowClass} data-stroke-paint-row>
             <Swatch
               value={none ? null : stroke}
               onPick={(colour) => editAndCommit({ stroke: colour })}
@@ -142,7 +142,7 @@ export function StrokeSection({
                 ariaLabel={t("editor.props.customColour")}
               />
             )}
-            <div className="flex shrink-0 items-center gap-0.5 border-l border-white/10 pl-2">
+            <div data-paint-controls className="flex shrink-0 items-center gap-0.5 pl-2">
               {strokeOpacityMixed ? (
                 <span
                   className="text-[11px] font-mono text-neutral-400"
@@ -200,7 +200,7 @@ export function StrokeSection({
           </div>
 
           {/* Position, width and advanced controls share one aligned row. */}
-          <div className="flex min-w-0 items-center gap-1.5">
+          <div data-stroke-detail-row className="flex min-w-0 items-center gap-1.5">
             <StrokeAlignmentControl
               value={strokeAlign}
               disabled={!closed}

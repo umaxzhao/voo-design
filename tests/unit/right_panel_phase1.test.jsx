@@ -135,11 +135,11 @@ describe("phase-1 panel order", () => {
     expect(html).toContain("Card paint");
   });
 
-  it.each([undefined, []])("hides the entire export section until configured: %j", (exportPresets) => {
+  it.each([undefined, []])("keeps opt-in Export heading without settings: %j", (exportPresets) => {
     const html = render(base({ exportPresets }), { sections: ["export"] });
-    expect(html).not.toContain("editor.props.exportTitle");
-    expect(html).not.toContain("editor.props.addExportSettings");
-    expect(html).toContain('data-testid="properties-add-menu"');
+    expect(html).toContain("editor.props.exportTitle");
+    expect(html).toContain("editor.props.addExportSettings");
+    expect(html).not.toContain("editor.props.exportFormat");
   });
 
   it("renders export presets with format, scale and suffix", () => {

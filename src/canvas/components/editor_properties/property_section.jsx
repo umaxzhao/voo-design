@@ -1,7 +1,10 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { Children, useState } from "react";
 import { IconChevronDown } from "../../icons.jsx";
-import { loadEditorPanelSectionState, toggleEditorPanelSectionState } from "../editor_panel_preferences.js";
+import {
+  loadEditorPanelSectionState,
+  toggleEditorPanelSectionState,
+} from "../editor_panel_preferences.js";
 
 /** Shared input skin for every field in the panel. */
 export const fieldClass =
@@ -15,17 +18,14 @@ export const sectionTitleClass =
   "inspector-section-title max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
 
 /** The separator and vertical rhythm every section in the panel shares. */
-// One vertical rhythm for every group: the divider sits centred between the
-// previous group's last row and the next group's header (12px on each side).
-const sectionRhythmClass =
-  "border-t border-white/10 pb-3 pt-1.5 first:border-t-0 first:pt-0";
-const emptySectionRhythmClass = "border-t border-white/10 py-3";
+// One vertical rhythm separates groups through whitespace, without rules.
+const sectionRhythmClass = "py-2 first:pt-0";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
-  "flex min-w-0 items-center justify-between gap-2 px-1 pb-2 select-none";
+  "mb-2 flex min-h-6 min-w-0 items-center justify-between gap-2 px-1 select-none";
 const emptySectionHeaderClass =
-  "flex min-w-0 items-center justify-between gap-2 px-1 select-none";
+  "flex min-h-6 min-w-0 items-center justify-between gap-2 px-1 select-none";
 
 /** The child wrapper shared by every section, so all rows share one inset. */
 export const sectionBodyClass = "space-y-2 px-0.5";
@@ -93,7 +93,10 @@ export function SectionEmptyRow({
       ) : (
         <>
           {icon ? (
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+            <span
+              className="flex h-4 w-4 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
               {icon}
             </span>
           ) : (
@@ -101,7 +104,12 @@ export function SectionEmptyRow({
           )}
           <span className="min-w-0 flex-1 truncate text-left">{label}</span>
           {showPlus ? (
-            <span aria-hidden="true" className="text-[12px] font-mono text-neutral-500">+</span>
+            <span
+              aria-hidden="true"
+              className="text-[12px] font-mono text-neutral-500"
+            >
+              +
+            </span>
           ) : null}
         </>
       )}
@@ -139,7 +147,12 @@ export function CollapsibleSection({
 }) {
   // Callers should pass a stable `storageKey`; the title fallback is
   // locale-dependent, so a language switch would reset that section's fold.
-  const sectionStorageKey = storageKey ?? `panel.${title.trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ".")}`;
+  const sectionStorageKey =
+    storageKey ??
+    `panel.${title
+      .trim()
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ".")}`;
   const [open, setOpen] = useState(
     loadEditorPanelSectionState()[sectionStorageKey] ?? defaultOpen,
   );
@@ -147,8 +160,12 @@ export function CollapsibleSection({
     setOpen(toggleEditorPanelSectionState(sectionStorageKey, open));
   };
   return (
-    <div className={sectionRhythmClass} data-testid={testId}>
-      <div className={sectionHeaderClass}>
+    <div
+      data-inspector-section
+      className={sectionRhythmClass}
+      data-testid={testId}
+    >
+      <div className={open ? sectionHeaderClass : emptySectionHeaderClass}>
         <button
           type="button"
           onClick={toggle}
@@ -159,9 +176,13 @@ export function CollapsibleSection({
             size={12}
             className={`shrink-0 transition-transform duration-200 ${open ? "" : "-rotate-90 text-neutral-500"}`}
           />
-          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+            {title}
+          </span>
         </button>
-        {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
+        {extra ? (
+          <div className="flex shrink-0 items-center gap-2">{extra}</div>
+        ) : null}
       </div>
       {open ? <div className={sectionBodyClass}>{children}</div> : null}
     </div>
@@ -197,20 +218,28 @@ export function StaticSection({
   // Figma's, not a set of drawers. Empty groups show an explicit action row
   // instead of hiding their body behind a chevron.
   void storageKey;
+  const isEmpty = emptyState || Children.toArray(children).length === 0;
   return (
     <div
-      className={emptyState ? emptySectionRhythmClass : sectionRhythmClass}
+      data-inspector-section
+      className={sectionRhythmClass}
       data-testid={testId}
     >
       {hideHeader ? null : (
-        <div className={emptyState ? emptySectionHeaderClass : sectionHeaderClass}>
-          <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
-            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+        <div className={isEmpty ? emptySectionHeaderClass : sectionHeaderClass}>
+          <div
+            className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}
+          >
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+              {title}
+            </span>
           </div>
-          {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
+          {extra ? (
+            <div className="flex shrink-0 items-center gap-2">{extra}</div>
+          ) : null}
         </div>
       )}
-      <div className={bodyClassName}>{children}</div>
+      {isEmpty ? null : <div className={bodyClassName}>{children}</div>}
     </div>
   );
 }

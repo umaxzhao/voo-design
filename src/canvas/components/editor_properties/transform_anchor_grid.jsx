@@ -15,7 +15,7 @@ export default function AnchorPointGrid({ value, onChange, label }) {
       role="radiogroup"
       aria-label={label}
       title={label}
-      className="grid shrink-0 h-14 w-14 grid-cols-3 content-center items-center justify-items-center rounded-xl bg-neutral-800 p-2"
+      className="grid h-[60px] w-[60px] shrink-0 grid-cols-3 content-center items-center justify-items-center rounded-xl bg-neutral-800 p-2"
     >
       {ANCHOR_KEYS.map((key) => {
         const isSelected = value === key;

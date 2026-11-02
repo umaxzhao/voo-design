@@ -68,6 +68,8 @@ export const EDITOR_MODULES = [
     id: "selection",
     title: "Selection and transforms",
     paths: [
+      "src/shared/keyboard-ownership.js", "tests/unit/editor-shortcut-ime.test.js", "tests/e2e/shortcut-focus-cases.mjs",
+      "src/canvas/components/editor_hooks/use_editor_canvas_gestures.js", "src/canvas/components/editor_hooks/use_editor_canvas_pan_keyboard.js",
       "src/canvas/components/editor_page_frame_labels.jsx",
       "src/canvas/editor/frame-canvas-labels.js",
       "tests/unit/frame-canvas-labels.test.js",
@@ -209,6 +211,7 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
+      "tests/e2e/inspector-rhythm-cases.mjs", "tests/e2e/number-input-checkpoint-checks.mjs", "src/canvas/components/editor_mobile_inspector.css", "tests/unit/properties_export_i18n.test.jsx", "tests/unit/properties_panel_spacing.test.jsx",
       "src/canvas/components/scrub_field.jsx", "src/canvas/components/bounded_number_input.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
       "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",

@@ -1,5 +1,9 @@
 import { createFrameMoveEvent } from "./move-gesture-start.js";
 import { TOOL } from "./editor_constants.js";
+import {
+  isComposingKey,
+  isPanControlTarget,
+} from "../../shared/keyboard-ownership.js";
 
 const CANCELLABLE_KINDS = new Set([
   "move",
@@ -36,11 +40,26 @@ const CANCELLABLE_KINDS = new Set([
   "objectStroke",
   "gradient",
 ]);
-const cancellable = gesture => CANCELLABLE_KINDS.has(gesture?.kind);
+const cancellable = (gesture) => CANCELLABLE_KINDS.has(gesture?.kind);
 
 /** Keyboard modifiers and cancellation share the same active pointer transaction. */
-export function createPointerKeyboard({ stage, shared, getGesture, getLastPointerEvent,
-  setSpaceDown, dispatchMove, onPointerUp, hover }) {
+export function createPointerKeyboard({
+  stage,
+  shared,
+  getGesture,
+  getLastPointerEvent,
+  setSpaceDown,
+  dispatchMove,
+  onPointerUp,
+  hover,
+}) {
+  let composing = false;
+  const onCompositionStart = () => {
+    composing = true;
+  };
+  const onCompositionEnd = () => {
+    composing = false;
+  };
   const cancelActiveGesture = () => {
     const gesture = getGesture();
     if (!cancellable(gesture)) return false;
@@ -48,43 +67,62 @@ export function createPointerKeyboard({ stage, shared, getGesture, getLastPointe
     return true;
   };
   const updateModifiers = (event, down) => {
-    const gesture = getGesture(), pointer = getLastPointerEvent();
-    if (["Shift", "Alt", "Meta", "Control"].includes(event.key) && gesture && pointer) {
-      dispatchMove({ ...pointer,
-        shiftKey: event.key === "Shift" ? down : event.shiftKey,
-        altKey: event.key === "Alt" ? down : event.altKey,
-        metaKey: event.key === "Meta" ? down : event.metaKey,
-        ctrlKey: event.key === "Control" ? down : event.ctrlKey,
-      }, gesture);
+    const gesture = getGesture(),
+      pointer = getLastPointerEvent();
+    if (
+      ["Shift", "Alt", "Meta", "Control"].includes(event.key) &&
+      gesture &&
+      pointer
+    ) {
+      dispatchMove(
+        {
+          ...pointer,
+          shiftKey: event.key === "Shift" ? down : event.shiftKey,
+          altKey: event.key === "Alt" ? down : event.altKey,
+          metaKey: event.key === "Meta" ? down : event.metaKey,
+          ctrlKey: event.key === "Control" ? down : event.ctrlKey,
+        },
+        gesture,
+      );
     }
-    if (event.key === "Alt" && !gesture && pointer) hover.updateHoverCursor({ ...pointer, altKey: down });
+    if (event.key === "Alt" && !gesture && pointer)
+      hover.updateHoverCursor({ ...pointer, altKey: down });
   };
-  const onKeyDown = event => {
-    if (event.repeat) return;
+  const onKeyDown = (event) => {
+    if (event.repeat || isComposingKey(event, composing)) return;
     if (event.key === "Escape" && cancelActiveGesture()) {
-      event.preventDefault(); event.stopImmediatePropagation();
+      event.preventDefault();
+      event.stopImmediatePropagation();
       return;
     }
     const gesture = getGesture();
     updateModifiers(event, true);
     if (event.code !== "Space" || shared) return;
-    const target = event.target;
-    if (target instanceof HTMLElement && (["INPUT", "TEXTAREA"].includes(target.tagName) || target.isContentEditable)) return;
-    event.preventDefault(); setSpaceDown(true);
+    if (isPanControlTarget(event.target)) return;
+    event.preventDefault();
+    setSpaceDown(true);
     if (!gesture) stage.style.cursor = "grab";
   };
-  const onKeyUp = event => {
+  const onKeyUp = (event) => {
     updateModifiers(event, false);
     if (event.code !== "Space" || shared) return;
     setSpaceDown(false);
     if (!getGesture()) stage.style.cursor = "default";
   };
   const onWindowBlur = () => {
+    composing = false;
     cancelActiveGesture();
     setSpaceDown(false);
     if (!getGesture()) stage.style.cursor = "default";
   };
-  return { onKeyDown, onKeyUp, onWindowBlur, cancelActiveGesture };
+  return {
+    onKeyDown,
+    onKeyUp,
+    onWindowBlur,
+    onCompositionStart,
+    onCompositionEnd,
+    cancelActiveGesture,
+  };
 }
 
 /** Bind and unbind exactly the same listeners, including cancelled/unmounted drafts. */
@@ -95,15 +133,29 @@ export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, hi
     return true;
   };
   if (api) api.beginFrameMove = beginFrameMove;
-  const stageEvents = { pointerdown: handlers.onPointerDown, pointermove: handlers.onPointerMove,
-    pointerup: handlers.onPointerUp, pointercancel: handlers.onPointerUp,
-    pointerleave: handlers.onPointerLeave, auxclick: handlers.onAuxClick, dblclick: handlers.onDoubleClick };
-  const windowEvents = { keyup: keyboard.onKeyUp, blur: keyboard.onWindowBlur };
-  if (api && keyboard.cancelActiveGesture) api.cancelActiveGesture = keyboard.cancelActiveGesture;
+  const stageEvents = {
+    pointerdown: handlers.onPointerDown,
+    pointermove: handlers.onPointerMove,
+    pointerup: handlers.onPointerUp,
+    pointercancel: handlers.onPointerUp,
+    pointerleave: handlers.onPointerLeave,
+    auxclick: handlers.onAuxClick,
+    dblclick: handlers.onDoubleClick,
+  };
+  const windowEvents = {
+    keyup: keyboard.onKeyUp,
+    blur: keyboard.onWindowBlur,
+    compositionstart: keyboard.onCompositionStart,
+    compositionend: keyboard.onCompositionEnd,
+  };
+  if (api && keyboard.cancelActiveGesture)
+    api.cancelActiveGesture = keyboard.cancelActiveGesture;
   if (!shared) stage.addEventListener("wheel", pan.onWheel, { passive: false });
-  for (const [type, handler] of Object.entries(stageEvents)) stage.addEventListener(type, handler);
+  for (const [type, handler] of Object.entries(stageEvents))
+    stage.addEventListener(type, handler);
   window.addEventListener("keydown", keyboard.onKeyDown, true);
-  for (const [type, handler] of Object.entries(windowEvents)) window.addEventListener(type, handler);
+  for (const [type, handler] of Object.entries(windowEvents))
+    window.addEventListener(type, handler);
   return () => {
     keyboard.onWindowBlur();
     if (api?.beginFrameMove === beginFrameMove) delete api.beginFrameMove;
@@ -111,8 +163,10 @@ export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, hi
     if (api?.hasHandleUnder === hitTest?.hasHandleUnder) delete api.hasHandleUnder;
     if (api?.cancelActiveGesture === keyboard.cancelActiveGesture) delete api.cancelActiveGesture;
     if (!shared) stage.removeEventListener("wheel", pan.onWheel);
-    for (const [type, handler] of Object.entries(stageEvents)) stage.removeEventListener(type, handler);
+    for (const [type, handler] of Object.entries(stageEvents))
+      stage.removeEventListener(type, handler);
     window.removeEventListener("keydown", keyboard.onKeyDown, true);
-    for (const [type, handler] of Object.entries(windowEvents)) window.removeEventListener(type, handler);
+    for (const [type, handler] of Object.entries(windowEvents))
+      window.removeEventListener(type, handler);
   };
 }

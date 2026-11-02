@@ -3,13 +3,22 @@
 import PropTypes from "prop-types";
 import { useMemo } from "react";
 import { useI18n } from "../../use_i18n.js";
-import { StaticSection, SectionAddButton, fieldClass } from "./property_section.jsx";
+import {
+  StaticSection,
+  SectionAddButton,
+  fieldClass,
+} from "./property_section.jsx";
 import FlatSelect from "../flat_select.jsx";
 import { IconDownload } from "../../icons.jsx";
 
 import {
-  FORMATS, SCALES, QUALITIES, MAX_PRESETS,
-  createExportPreset, normalizeExportPresets, updateExportPresets,
+  FORMATS,
+  SCALES,
+  QUALITIES,
+  MAX_PRESETS,
+  createExportPreset,
+  normalizeExportPresets,
+  updateExportPresets,
 } from "./export-presets.js";
 
 export { normalizeExportPresets } from "./export-presets.js";
@@ -65,13 +74,18 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
         ? `${(object?.name || "export").trim() || "export"}-${selectedNodes.length}`
         : (object?.name || "export").trim() || "export";
     const suffix = preset.suffix ? `-${preset.suffix.trim()}` : "";
-    download(dataUrl, `${base}${suffix}@${preset.scale}x.${format?.ext ?? "png"}`);
+    download(
+      dataUrl,
+      `${base}${suffix}@${preset.scale}x.${format?.ext ?? "png"}`,
+    );
   };
 
   return (
     <StaticSection
       title={t("editor.props.exportTitle")}
       storageKey="export"
+      emptyState={presets.length === 0}
+      testId="inspector-export-section"
       extra={
         presets.length < MAX_PRESETS ? (
           <SectionAddButton
@@ -84,85 +98,88 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
       <div className="flex flex-col gap-1.5">
         {presets.map((preset) => (
           <div key={preset.id} className="flex flex-col gap-1">
-          <div className="flex min-h-7 items-center gap-1.5">
-            <FlatSelect
-              value={preset.type}
-              onChange={(type) => patch(preset.id, { type })}
-              label={t("editor.props.exportFormat")}
-              options={FORMATS.map((format) => ({
-                value: format.value,
-                label: t(format.labelKey),
-              }))}
-              className="min-w-0 flex-1"
-              triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100 hover:!bg-neutral-800/80"
-              widthClass="w-40"
-            />
-            <FlatSelect
-              value={String(preset.scale)}
-              onChange={(value) => patch(preset.id, { scale: Number(value) })}
-              label={t("editor.exportScale")}
-              options={SCALES.map((scale) => ({
-                value: String(scale),
-                label: `${scale}x`,
-              }))}
-              className="w-[58px] shrink-0"
-              triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100 hover:!bg-neutral-800/80"
-              widthClass="w-24"
-            />
-            <input
-              value={preset.suffix}
-              onChange={(event) =>
-                patch(preset.id, { suffix: event.target.value })
-              }
-              placeholder={t("editor.props.exportSuffix")}
-              aria-label={t("editor.props.exportSuffix")}
-              className={`${fieldClass} !w-[64px] shrink-0 !px-2 !text-[10px]`}
-            />
-            <button
-              type="button"
-              aria-label={t("editor.props.removeExportSettings")}
-              title={t("editor.props.removeExportSettings")}
-              onClick={() =>
-                persist(presets.filter((row) => row.id !== preset.id))
-              }
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
+            <div
+              data-export-preset-row
+              className="flex min-h-7 flex-wrap items-center gap-1.5"
             >
-              ×
-            </button>
-          </div>
-          {preset.type === "image/png" || preset.type === "image/webp" ? (
-            <label className="flex min-h-7 items-center gap-2 px-0.5 text-[10px] font-mono text-neutral-400">
-              <input
-                type="checkbox"
-                className="flat-check"
-                checked={preset.transparent !== false}
-                onChange={(event) =>
-                  patch(preset.id, { transparent: event.target.checked })
-                }
-                aria-label={t("editor.exportTransparent")}
-              />
-              {t("editor.exportTransparent")}
-            </label>
-          ) : null}
-          {preset.type !== "image/png" ? (
-            <div className="flex min-h-7 items-center gap-1.5 pl-0.5">
-              <span className="w-[64px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
-                {t("editor.exportQuality")}
-              </span>
               <FlatSelect
-                value={String(preset.quality ?? "0.92")}
-                onChange={(quality) => patch(preset.id, { quality })}
-                label={t("editor.exportQuality")}
-                options={QUALITIES.map((quality) => ({
-                  value: quality.value,
-                  label: t(quality.labelKey),
+                value={String(preset.scale)}
+                onChange={(value) => patch(preset.id, { scale: Number(value) })}
+                label={t("editor.exportScale")}
+                options={SCALES.map((scale) => ({
+                  value: String(scale),
+                  label: `${scale}x`,
                 }))}
-                className="min-w-0 flex-1"
+                className="w-[58px] shrink-0"
                 triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100 hover:!bg-neutral-800/80"
-                widthClass="w-full"
+                widthClass="w-24"
               />
+              <input
+                value={preset.suffix}
+                onChange={(event) =>
+                  patch(preset.id, { suffix: event.target.value })
+                }
+                placeholder={t("editor.props.exportSuffix")}
+                aria-label={t("editor.props.exportSuffix")}
+                className={`${fieldClass} !w-[64px] shrink-0 !px-2 !text-[10px]`}
+              />
+              <FlatSelect
+                value={preset.type}
+                onChange={(type) => patch(preset.id, { type })}
+                label={t("editor.props.exportFormat")}
+                options={FORMATS.map((format) => ({
+                  value: format.value,
+                  label: t(format.labelKey),
+                }))}
+                className="min-w-0 flex-1 basis-16"
+                triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100 hover:!bg-neutral-800/80"
+                widthClass="w-40"
+              />
+              <button
+                type="button"
+                aria-label={t("editor.props.removeExportSettings")}
+                title={t("editor.props.removeExportSettings")}
+                onClick={() =>
+                  persist(presets.filter((row) => row.id !== preset.id))
+                }
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
+              >
+                ×
+              </button>
             </div>
-          ) : null}
+            {preset.type === "image/png" || preset.type === "image/webp" ? (
+              <label className="flex min-h-7 items-center gap-2 px-0.5 text-[10px] font-mono text-neutral-400">
+                <input
+                  type="checkbox"
+                  className="flat-check"
+                  checked={preset.transparent !== false}
+                  onChange={(event) =>
+                    patch(preset.id, { transparent: event.target.checked })
+                  }
+                  aria-label={t("editor.exportTransparent")}
+                />
+                {t("editor.exportTransparent")}
+              </label>
+            ) : null}
+            {preset.type !== "image/png" ? (
+              <div className="flex min-h-7 items-center gap-1.5 pl-0.5">
+                <span className="w-[64px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
+                  {t("editor.exportQuality")}
+                </span>
+                <FlatSelect
+                  value={String(preset.quality ?? "0.92")}
+                  onChange={(quality) => patch(preset.id, { quality })}
+                  label={t("editor.exportQuality")}
+                  options={QUALITIES.map((quality) => ({
+                    value: quality.value,
+                    label: t(quality.labelKey),
+                  }))}
+                  className="min-w-0 flex-1"
+                  triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100 hover:!bg-neutral-800/80"
+                  widthClass="w-full"
+                />
+              </div>
+            ) : null}
           </div>
         ))}
         {presets.length > 0 ? (
