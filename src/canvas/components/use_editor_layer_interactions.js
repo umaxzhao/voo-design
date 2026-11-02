@@ -122,11 +122,18 @@ export default function useEditorLayerInteractions(model) {
       // passes the root-plane index straight through.
       if (dragged?.parentId && scope === "siblings") {
         const siblings = objects.filter(object => object.parentId === dragged.parentId);
-        const siblingsWithoutDragged = siblings.filter(object => object.id !== id);
-        const withoutDragged = objects.filter(object => object.id !== id);
-        const siblingTarget = siblingsWithoutDragged[target];
-        const targetIndex = siblingTarget ? withoutDragged.findIndex(object => object.id === siblingTarget.id) : withoutDragged.findIndex(object => object.id === siblingsWithoutDragged.at(-1)?.id) + 1;
-        if (targetIndex >= 0) onReorder?.(id, targetIndex);
+        const movingIds = ids.filter(candidateId => objects.find(o => o.id === candidateId)?.parentId === dragged.parentId);
+        const activeIds = movingIds.length > 0 && movingIds.includes(id) ? movingIds : [id];
+        const movingSet = new Set(activeIds);
+        const siblingsWithoutMoving = siblings.filter(object => !movingSet.has(object.id));
+        const siblingTarget = siblingsWithoutMoving[target];
+        const targetNode = siblingTarget ?? siblingsWithoutMoving.at(-1);
+        if (targetNode) {
+          const docTarget = docIndexOf.get(targetNode.id);
+          if (docTarget !== undefined && docTarget >= 0) {
+            onReorder?.(activeIds.length > 1 ? activeIds : id, docTarget, id);
+          }
+        }
         return;
       }
       if (dragged?.parentId) {
@@ -135,7 +142,13 @@ export default function useEditorLayerInteractions(model) {
       }
       const unit = dragUnits[target];
       const docTarget = unit ? docIndexOf.get(unit.id) : 0;
-      if (isGroupNode(dragged) || isBooleanNode(dragged)) onReorderGroup?.(id, docTarget);else onReorder?.(id, docTarget);
+      if (ids.length > 1) {
+        onReorder?.(ids, docTarget, id);
+      } else if (isGroupNode(dragged) || isBooleanNode(dragged)) {
+        onReorderGroup?.(id, docTarget);
+      } else {
+        onReorder?.(id, docTarget, id);
+      }
     }
   });
 

@@ -1,5 +1,6 @@
 import { isLockedByGroup, isRegionNode } from "./scene_model.js";
 import { moveAffectedIds } from "./doc_ops_move.js";
+import { groupingRoots } from "./group-structure.js";
 
 /** Preserve group subtrees and selection order while moving sibling blocks. */
 export function reorderLayerBatch(doc, ids, direction) {
@@ -59,4 +60,57 @@ export function reorderLayerBatch(doc, ids, direction) {
     nodes = [...rest.slice(0, target), ...block, ...rest.slice(target)];
   }
   return nodes === doc.nodes ? null : nodes;
+}
+
+/**
+ * Moves a node or batch of nodes to an arbitrary target stack index.
+ * Preserves group subtrees, clipping followers, selection relative order,
+ * and locked layer constraints.
+ */
+export function reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId) {
+  if (!Number.isFinite(targetIndex) || !doc.nodes?.length) return null;
+  const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+  if (!ids.length) return null;
+
+  const roots = groupingRoots(doc, ids);
+  if (!roots.length) return null;
+  if (roots.some(n => n.locked || isLockedByGroup(doc, n) || isRegionNode(n))) return null;
+
+  const target = Math.max(0, Math.min(doc.nodes.length - 1, Math.round(targetIndex)));
+  const targetNode = doc.nodes[target];
+  if (!targetNode || isRegionNode(targetNode)) return null;
+
+  const blockIds = new Set(moveAffectedIds(doc, roots.map(n => n.id)));
+  if (blockIds.has(targetNode.id)) return null;
+
+  const leadId = primaryId && blockIds.has(primaryId)
+    ? primaryId
+    : (roots.find(r => r.id === primaryId)?.id ?? roots[0].id);
+  const draggedIndex = doc.nodes.findIndex(n => n.id === leadId);
+  if (draggedIndex < 0 || draggedIndex === target) return null;
+
+  const lo = Math.min(draggedIndex, target);
+  const hi = Math.max(draggedIndex, target);
+  for (let i = lo; i <= hi; i += 1) {
+    if (!blockIds.has(doc.nodes[i].id) && doc.nodes[i].locked) return null;
+  }
+
+  const rest = doc.nodes.filter(n => !blockIds.has(n.id));
+  const targetInRest = rest.findIndex(n => n.id === targetNode.id);
+  if (targetInRest < 0) return null;
+
+  let insertAt = target > draggedIndex ? targetInRest + 1 : targetInRest;
+
+  const firstLocked = rest.findIndex(n => n.locked || isLockedByGroup(doc, n));
+  if (firstLocked >= 0 && insertAt <= firstLocked) {
+    insertAt = firstLocked + 1;
+  }
+  insertAt = Math.max(0, Math.min(rest.length, insertAt));
+
+  const block = doc.nodes.filter(n => blockIds.has(n.id));
+  return [
+    ...rest.slice(0, insertAt),
+    ...block,
+    ...rest.slice(insertAt),
+  ];
 }

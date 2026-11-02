@@ -82,9 +82,9 @@ export function createNodeStackActions({ getDoc, setDoc, selection, getSelectedG
     );
   }
 
-  function reorderNodeTo(id, index) {
+  function reorderNodeTo(id, index, primaryId) {
     const doc = getDoc();
-    const next = ops.reorderNodeTo(doc, id, index);
+    const next = ops.reorderNodeTo(doc, id, index, primaryId);
     if (next === doc) return;
     commitEditorDocument("editor.layer.order", setDoc, next);
   }

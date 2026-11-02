@@ -101,6 +101,8 @@ export const EDITOR_MODULES = [
       "tests/unit/batch-layer-reorder.test.js", "tests/unit/layer-hierarchy-stack.test.js",
       "tests/unit/container-command-boundaries.test.js",
       "tests/unit/nested-group-commands.test.js",
+      "tests/unit/layer_multiselect_reorder.test.js",
+      "tests/unit/layer_panel_multiselect_reparent.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
     features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries","layers.frame-selection"],

@@ -1,5 +1,34 @@
 # 项目检查总进度
 
+## 同一父级与根平面多选图层重排原子迁移修复与双重实测：2026-11-02
+
+- **基线版本**：`cb67e0d2`（前序包含 `de7b42a1`、`31c24644`、`d20c6836`）；未推送、未发布。
+- **问题闭环（现有多选重排未关闭验收缺口）**：
+  - 复现根因：此前多选拖入 Frame 虽已支持多节点批次迁移，但在同一父级同胞拖拽分支（`dragged?.parentId && scope === "siblings"`）及根平面同级拖拽分支（`!dragged?.parentId`）中，`use_editor_layer_interactions.js` 仍仅把首个单节点 `id` 传给 `onReorder` / `onReorderGroup`；底层 `reorderNodeTo`（`doc_ops_groups.js`）亦未支持多选数组，导致拖拽时其余被选中的兄弟图层被遗留原位。此外在虚拟化列表快速连续点击（⌘+点击多选）后触发 pointer down 时，DOM 事件与 React 渲染周期的微小时差可能导致闭包持有的 `selectedIds` 滞后，补充 `liveSelectedIds` 读取保障选区实时。
+  - 架构与工程实现：
+    - 在 `src/canvas/editor/reorder-layer-batch.js` 抽离实现 `reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId)`，完整支持单个或多个根节点的批次重排；严格保留被选节点在文档内的相对层序、子树（descendants）、蒙版附属层（followers）及锁定层边界约束（拒绝跨越锁定层或移动锁定节点），单步插入目标位置；
+    - `src/canvas/editor/doc_ops_groups.js` 中 `reorderNodeTo` 接入 `reorderLayerBatchTo`，保持文件在 359 行（<400 行红线）；
+    - `src/canvas/editor/node-stack-actions.js` 及 `src/canvas/components/image_editor.jsx` 对齐透传 `primaryId` 参数，并在单次操作内完成单一事务性提交（`editor.layer.order`）；
+    - `src/canvas/components/use_editor_layer_interactions.js` 在同级 siblings 与 root 平面统一传入所选批次 `ids`，保持 inside 容器及跨 Frame 既有行为；
+    - `src/canvas/components/use_layer_drag.js` 引入 `liveSelectedIds` 双重兜底，确保在极速输入与列表虚拟化重挂载下选区集合永不失真。
+- **双重实测验收与证据**：
+  1. **小样本与定向单测全链路覆盖**：
+     - 新建专用单测 `tests/unit/layer_multiselect_reorder.test.js`（9/9 全部通过），覆盖根平面连续节点向上/向下重排、非连续节点重排、Frame 内部同胞重排（不越界至父级或外部根节点）、组与蒙版附属层原子绑定、锁定层约束拒动、单步 Undo/Redo 状态无损还原，以及交互层 `useEditorLayerInteractions` 的 root/sibling 事件分发契约；
+     - 运行全量图层模块相关单元测试（共 7 个套件 71 项），100% 通过（71 passed）。
+  2. **2,000 层虚拟化大列表严格重测**：
+     - 运行真实 Chromium 浏览器环境严格重测：`node --input-type=module -e 'import {withEditorBrowser} from "./tests/e2e/editor-browser-fixture.mjs"; import {verifyLayerWindowMultiDrag} from "/Users/tt/Documents/Codex/2026-11-02/task/integration-voo-ui/tests/e2e/layer-window-multiselect-checks.mjs"; await withEditorBrowser(verifyLayerWindowMultiDrag,{deviceScaleFactor:2});'`；
+     - 连续 3 次独立运行全部退出码 0 通过：验证 2000 个根级矩形（`large-0`…`1999`）滚动到底并 ⌘ 多选 `large-0` 与 `large-1` 拖至 `large-3` 上边缘后：
+       - 层序精确为 `["large-2", "large-3", "large-0", "large-1"]`（无单层遗留，解决 `['large-1', 'large-2', 'large-3', 'large-0']` 缺陷）；
+       - 全部 2000 节点几何与属性无破坏；
+       - 选区集合保持为 `["large-0", "large-1"]`；
+       - 单步 `tool("undo")` 精确还原至移动前状态；
+       - 单步 `tool("redo")` 精确重现移动后状态。
+  3. **门禁与合规核验**：
+     - `scripts/editor-module-catalog.mjs` 登记更新，`npm run check:modules` 验证有效，`unmapped` 为 0；
+     - `npm run lint:design` 全量 1,478 文件 0 违规通过；
+     - 所有变更源码单个文件行数严格在 400 行以内（359 / 116 / 169 / 329 / 281）。
+     - 本地环境干净，未触碰性能工作树 `editor_windowed_layer_rows.jsx` 及司令部键盘/IME 文件；无 push、无外部发布、无连接 la 服务器。
+
 ## 独立定向续测与本地测试提交：2026-11-02
 
 - 产品源码基线 `31c24644`（前序包含 `d20c6836`、`03c6ed3e`、`ed288fff`、`164896f0`、`3e8f5214`）；未推送、未发布。模块登记 `scripts/editor-module-catalog.mjs` 中 `workspace` 补齐 `welcome_home_actions.test.js`，`unmapped` 已清零（12 模块 73 特性注册有效）。全量单测 1,707 套件、5,108 项通过（0 失败，4 预留跳过）。

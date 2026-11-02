@@ -125,8 +125,10 @@ export default function useLayerDrag({
         siblingNodes = [],
       } = opts;
       if (!node || node.locked) return;
+      const liveSelectedIds = (typeof window !== "undefined" && window.__vooEditor?.getSelectedIds?.()) || selectedIds;
+      const effectiveSelectedIds = liveSelectedIds?.includes(node.id) ? liveSelectedIds : selectedIds;
       const ids = selectedGroupId === node.id ? [node.id]
-        : selectedIds.includes(node.id) ? [...selectedIds] : [node.id];
+        : effectiveSelectedIds.includes(node.id) ? [...effectiveSelectedIds] : [node.id];
       const excludedTargets = new Set(moveAffectedIds({ nodes: objects }, ids));
       const containerIds = new Set(objects.filter(isContainerNode).map(candidate => candidate.id));
       const slotRange = isChild ? range : allowedSlotRange(nodes, node.id);
