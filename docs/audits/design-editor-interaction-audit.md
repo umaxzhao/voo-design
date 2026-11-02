@@ -242,3 +242,42 @@ keyboard events to verify Ctrl-drag changes the curve handles, preserves anchor
 count, and undoes/redoes as one document operation. The same suite retains
 midpoint insertion checks. This does not certify OS-level Cmd interception,
 physical stylus/touch input or pixel/export parity.
+
+
+## Borderless restoration on the consolidated branch — 2026-11-02
+
+Capability: `inspector.borderless-chrome`. Base `eff4958c431ce4d5b14220338383c978b2e72143`;
+product commits `2294b7fa1dd27a6bee504a31c415dd4d980f6023` and
+`7d925497d64b0d84ca79dbe73f4d8d52036655e5`, isolated tree
+`/private/tmp/voo-border-restoration-20261102`. These are local commits, not an
+integrated or deployed release. Other tasks' engine/history work was preserved.
+
+The consolidation baseline still contained the former outlined inspector skin
+and omitted the earlier borderless enforcement. The restored policy rejects
+ornamental borders, persistent rings and inset perimeter shadows across app UI,
+including shared class constants and raw CSS. Large radii remain unchanged.
+Filled surfaces, whitespace, checkmarks and pressed states carry hierarchy.
+Real document strokes, selection/gradient handles, hierarchy guides and
+keyboard-only focus remain functional graphics. Generated design content is
+outside this chrome policy. Peer keyboard-focus rings remain valid; tests guard
+that exception without exempting a whole panel.
+
+| Context / operation | Evidence and result |
+| --- | --- |
+| First reproduction | `before-design.log`: 724 static token findings in 156 files, not 724 distinct controls. `before-browser.log`: actual outer gradient perimeter reproduced. |
+| Final visible UI | Clean product revision `7d925497`, `final-7d925497/result.json`: 149 states passed; 320/390/768/1440, both themes and locales, shape/Frame/text/image/multiple/background, 15 tools, paint/font/effects/layout popovers, welcome/settings, generation dialogs, export dialog and Browser drawer/menu/HTML form. No page errors or generation/authentication requests. |
+| Retained operations | Real blend/gradient edits and undo, foreground/background switching, numeric focus fill, and actual blue artwork stroke pixels. Supplementary inspector checks cover geometry commit/cancel, typography, image/texture pixels, Frame sizing and Auto Layout. |
+| Responsive defect discovered | The migrated expression textbox missed the numeric styling selector and shrank to 10px on mobile. Added `input[inputmode="decimal"]` to the existing 11px numeric treatment. Updated role locators only where the source really uses textboxes; mixed-number and advanced native numeric inputs retain their correct roles. The metric size assertion now also requires a nonempty sample. |
+| Other chrome defect | Removed the light-theme Prompt's residual colored zero-offset halo; both themes now assert no border, pseudo-element rim or shadow. |
+| Unit/build checks | `followup-all-unit.log`: 5,132 passed, 4 skipped; 616 files passed, 3 skipped. `followup-design.log`: 1,478 files clean. `followup-modules.log`: valid registration. `followup-build.log`: production build passed. Formatting and `git diff --check` passed. |
+| Preserved failures | Old native-number locators, old 1px border expectation, the mobile 10px assertion, one incorrect fixture label, and sandbox listener EPERM logs are retained. Normal listener permission reruns preserved the original unit assertions. |
+| Open timing finding | `final-7d925497-inspector.log`: after Enter commits X=150, immediate typing 222 and Escape leaves the node at 150 but can display 100. An earlier independent run passed all 24 groups (`inspector-final/result.json`), and a subsequent sequential rerun on clean `7d925497` also passed all 24 (`final-7d925497-inspector-sequential/result.json`); neither pass invalidates the concurrent failure. Reported to the integration owner for publication/history-boundary investigation; no assertion was weakened and no sleep was added to hide it. |
+
+Raw receipt and logs live under `/private/tmp/voo-border-restoration-evidence/`.
+The Impeccable detector reported only the existing Inter family; the explicit
+incumbent typography was preserved. These checks do not certify signed desktop
+installers, Windows/Linux native composition, physical touch/IME or every
+control/value/feature combination. Full release verification was not run.
+Remote fetch succeeded, but the current integration branch diverged and
+fast-forward-only pull refused; no forced update, merge, push or deployment was
+performed as part of this isolated acceptance task.

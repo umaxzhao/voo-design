@@ -2,6 +2,8 @@
 
 ## 1.0.0-beta.2
 
+- Restore borderless application chrome after consolidation, retain large corners and editing guides, and keep decimal expression fields readable on mobile. Guard decorative borders across JSX/CSS and verify the real inspector and secondary surfaces.
+
 - Preserve Apple trust-command diagnostics and bound transient ticket-delivery retries; invalid tickets, rejected submissions and failed Gatekeeper assessments still block release.
 
 - Reuse an existing Developer ID identity and App Store Connect or Keychain-profile notarization credentials through an explicitly supplied release configuration. Never export certificates or publish credential values.
