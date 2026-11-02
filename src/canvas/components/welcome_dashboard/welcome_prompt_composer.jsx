@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import PropTypes from "prop-types";
-import { ArrowUp, LayoutGrid, X } from "lucide-react";
+import { ArrowUp, Plus, SlidersHorizontal, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
-import WelcomePromptDialogs, {
-  WelcomePromptContext,
-} from "./welcome_prompt_dialogs.jsx";
-import WelcomePromptTypes from "./welcome_prompt_types.jsx";
+import WelcomePromptSettings from "./welcome_prompt_settings.jsx";
 import WelcomeModelSelect from "./welcome_model_select.jsx";
-/** Shared animated rim, one real variant count, and the existing context options. */
+import { PopoverScopeContext } from "../popover_scope.js";
+import { useWelcomeGenerationSettings } from "./use_welcome_generation_settings.js";
+
+/** Default composer stays focused; all advanced choices share one popover. */
 export function WelcomePromptComposer({
   t,
   activePill,
@@ -36,61 +36,17 @@ export function WelcomePromptComposer({
   configNeeded = false,
   onOpenSettings,
   onSubmit,
+  initialAdvancedOpen = false,
 }) {
-  const [contextOpen, setContextOpen] = useState(false);
-  const [variantsOpen, setVariantsOpen] = useState(false);
-  const [styleModalOpen, setStyleModalOpen] = useState(false);
-  const [systemModalOpen, setSystemModalOpen] = useState(false);
-  const [sizeModalOpen, setSizeModalOpen] = useState(false);
-  const contextButtonRef = useRef(null);
-  const contextMenuRef = useRef(null);
-  const variantsButtonRef = useRef(null);
-  const variantsMenuRef = useRef(null);
+  const settings = useWelcomeGenerationSettings(initialAdvancedOpen);
   const activePreset =
     AI_GEN_TYPES.find((preset) => preset.id === activePill) ?? AI_GEN_TYPES[0];
-  const currentSize = size;
-  // Outside click & Escape handlers
-  useEffect(() => {
-    const onPointerDown = (event) => {
-      if (
-        contextMenuRef.current &&
-        !contextMenuRef.current.contains(event.target) &&
-        !contextButtonRef.current?.contains(event.target)
-      ) {
-        setContextOpen(false);
-      }
-      if (
-        variantsMenuRef.current &&
-        !variantsMenuRef.current.contains(event.target) &&
-        !variantsButtonRef.current?.contains(event.target)
-      ) {
-        setVariantsOpen(false);
-      }
-    };
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setContextOpen(false);
-        setVariantsOpen(false);
-        setStyleModalOpen(false);
-        setSystemModalOpen(false);
-        setSizeModalOpen(false);
-      }
-    };
-    const panelHeight = Math.min(window.innerHeight - 32, 420);
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
   return (
-    <div className="welcome-prompt-root relative w-full font-sans">
-      <WelcomePromptTypes
-        t={t}
-        activePill={activePill}
-        onSelectPill={onSelectPill}
-      />
+    <div
+      ref={settings.rootRef}
+      data-advanced-open={settings.open ? "true" : "false"}
+      className="welcome-prompt-root relative w-full font-sans"
+    >
       <div className="relative mx-auto w-full max-w-3xl">
         <form
           onSubmit={onSubmit}
@@ -109,9 +65,13 @@ export function WelcomePromptComposer({
                 onSubmit?.(event);
               }
             }}
-            placeholder={t("welcome.prompt.placeholder")}
+            placeholder={t(
+              activePreset.placeholder ?? "welcome.prompt.placeholder",
+            )}
             rows={3}
-            aria-label={t("welcome.prompt.placeholder")}
+            aria-label={t(
+              activePreset.placeholder ?? "welcome.prompt.placeholder",
+            )}
             className="min-h-[84px] w-full resize-none bg-transparent px-4 pt-4 font-sans text-[15px] leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
           />
           {attachments?.length > 0 && (
@@ -122,7 +82,7 @@ export function WelcomePromptComposer({
               {attachments.map((attachment) => (
                 <li
                   key={attachment.id ?? `${attachment.kind}:${attachment.name}`}
-                  className="flex max-w-48 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.06] px-2 py-1 text-xs text-neutral-300"
+                  className="flex max-w-48 items-center gap-1.5 rounded-lg bg-white/[0.06] px-2 py-1 text-xs text-neutral-300"
                 >
                   {attachment.kind === "image" && attachment.dataUrl ? (
                     <img
@@ -149,77 +109,23 @@ export function WelcomePromptComposer({
               ))}
             </ul>
           )}
-          <div className="flex items-center justify-between px-3 py-2">
-            <WelcomePromptContext
-              {...{
-                t,
-                contextButtonRef,
-                contextMenuRef,
-                contextOpen,
-                setContextOpen,
-                onAddAttachments,
-                setStyleModalOpen,
-                setSystemModalOpen,
-                setSizeModalOpen,
-              }}
-            />
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <button
-                  ref={variantsButtonRef}
-                  type="button"
-                  onClick={() => setVariantsOpen((o) => !o)}
-                  aria-label={t("welcome.prompt.candidates")}
-                  title={t("welcome.prompt.candidates")}
-                  aria-expanded={variantsOpen}
-                  aria-haspopup="menu"
-                  className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-mono transition-colors cursor-pointer ${
-                    candidates > 1
-                      ? "bg-[#E5B2FF]/15 text-[#eed0ff] font-semibold ring-1 ring-[#E5B2FF]/30"
-                      : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"
-                  }`}
-                >
-                  <LayoutGrid size={13} />
-                  <span>{candidates}x</span>
-                </button>
-                {variantsOpen && (
-                  <div
-                    ref={variantsMenuRef}
-                    role="menu"
-                    aria-label={t("welcome.prompt.candidates")}
-                    className="absolute bottom-full right-0 z-50 mb-2 w-48 rounded-xl border border-white/10 bg-[#1a1a1a] p-2 shadow-panel"
-                  >
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[1, 2, 3].map((count) => (
-                        <button
-                          key={count}
-                          type="button"
-                          onClick={() => {
-                            onSelectCandidates?.(count);
-                            setVariantsOpen(false);
-                          }}
-                          className={`flex items-center justify-center rounded-lg py-1.5 text-xs font-mono transition-colors ${
-                            candidates === count
-                              ? "bg-[#E5B2FF]/20 text-[#eed0ff] font-semibold ring-1 ring-[#E5B2FF]/40"
-                              : "border border-white/10 text-neutral-400 hover:bg-white/[0.06] hover:text-white"
-                          }`}
-                          aria-label={t("welcome.prompt.candidateN", {
-                            n: count,
-                          })}
-                        >
-                          {count}x
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+          <div className="welcome-prompt-controls-row flex min-w-0 items-center gap-2 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => onAddAttachments?.()}
+              aria-label={t("welcome.prompt.addAttachment")}
+              title={t("welcome.prompt.addAttachment")}
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-neutral-400 transition-colors hover:bg-white/[0.1] hover:text-white"
+            >
+              <Plus size={14} />
+            </button>
+            <div className="welcome-prompt-control-actions flex min-w-0 flex-1 items-center gap-2">
               {configNeeded ? (
                 <button
                   type="button"
                   onClick={onOpenSettings}
                   aria-label={t("welcome.prompt.modelLabel")}
-                  className="text-xs text-amber-400"
+                  className="min-w-0 flex-1 truncate text-left text-xs text-amber-400"
                 >
                   {t("welcome.prompt.modelLabel")}
                 </button>
@@ -229,20 +135,28 @@ export function WelcomePromptComposer({
                   modelGroups={modelGroups}
                   selectedModel={selectedModel}
                   onSelectModel={onSelectModel}
-                  className="min-w-0"
-                  triggerClassName="!h-7 !max-w-48 !bg-transparent !text-xs !text-neutral-300 hover:!bg-white/[0.06]"
+                  className="min-w-0 flex-1"
+                  triggerClassName="!h-9 !max-w-full !bg-transparent !text-xs !text-neutral-300 hover:!bg-white/[0.06]"
                 />
               )}
               <button
+                ref={settings.triggerRef}
+                type="button"
+                onClick={() => settings.setOpen((open) => !open)}
+                aria-label={t("welcome.prompt.settingsLabel")}
+                title={t("welcome.prompt.settingsLabel")}
+                aria-haspopup="dialog"
+                aria-expanded={settings.open}
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-neutral-400 hover:bg-white/[0.1] hover:text-white"
+              >
+                <SlidersHorizontal size={14} strokeWidth={1.5} />
+              </button>
+              <button
                 type="submit"
                 disabled={submitting}
-                className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-all cursor-pointer ${
-                  (promptText?.trim() || attachments?.some(item => item.kind === "image"))
-                    ? "bg-white text-black hover:bg-white/90 active:scale-95"
-                    : "bg-white/20 text-neutral-400 opacity-60"
-                }`}
                 title={t("welcome.actions.createNowTitle")}
                 aria-label={t("welcome.actions.createNowTitle")}
+                className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${promptText?.trim() || attachments?.some((item) => item.kind === "image") ? "bg-white text-black hover:bg-white/90" : "bg-white/20 text-neutral-400 opacity-60"}`}
               >
                 <ArrowUp size={14} strokeWidth={2.5} />
               </button>
@@ -250,30 +164,33 @@ export function WelcomePromptComposer({
           </div>
         </form>
       </div>
-      <WelcomePromptDialogs
-        {...{
-          t,
-          styleModalOpen,
-          setStyleModalOpen,
-          styleId,
-          styleOptions,
-          onSelectStyle,
-          systemModalOpen,
-          setSystemModalOpen,
-          designSystemId,
-          designSystemOptions,
-          onSelectDesignSystem,
-          sizeModalOpen,
-          setSizeModalOpen,
-          currentSize,
-          sizeOptions,
-          onSelectSize,
-        }}
-      />
+      {settings.open && (
+        <PopoverScopeContext.Provider value={settings.scope}>
+          <WelcomePromptSettings
+            t={t}
+            panelRef={settings.panelRef}
+            panelPos={settings.position}
+            activePill={activePill}
+            onSelectPill={onSelectPill}
+            styleId={styleId}
+            styleOptions={styleOptions}
+            onSelectStyle={onSelectStyle}
+            designSystemId={designSystemId}
+            designSystemOptions={designSystemOptions}
+            onSelectDesignSystem={onSelectDesignSystem}
+            candidates={candidates}
+            onSelectCandidates={onSelectCandidates}
+            currentSize={size}
+            sizeOptions={sizeOptions}
+            onSelectSize={onSelectSize}
+          />
+        </PopoverScopeContext.Provider>
+      )}
     </div>
   );
 }
 WelcomePromptComposer.propTypes = {
+  initialAdvancedOpen: PropTypes.bool,
   t: PropTypes.func.isRequired,
   activePill: PropTypes.string,
   onSelectPill: PropTypes.func,

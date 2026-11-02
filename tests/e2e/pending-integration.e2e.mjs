@@ -28,7 +28,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   });
   let id = await seed();
   await page.evaluate(() => { const e = window.__vooEditor; e.setTool("fill"); e.setColor("#00ff00"); });
-  const tolerance = page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "Tolerance", exact: true });
+  const tolerance = page.getByTestId("editor-properties-panel").getByRole("textbox", { name: "Tolerance", exact: true });
   await tolerance.fill("0"); await tolerance.press("Enter");
   assert.equal(await page.evaluate(() => window.__vooEditor.getFillTolerance()), 0);
   await click({ x: 125, y: 150 }); await page.evaluate(() => window.__vooEditor.flushTransforms());
@@ -124,15 +124,26 @@ await withEditorBrowser(async ({ page, tool }) => {
   await tool("undo"); assert.equal(await sample(75, 75), "#ff0000");
   checks.push("legacy page opens as a free canvas frame with visible paint and children moving together, undoing once");
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
-  assert.equal(await page.getByRole("radiogroup").count(), 1);
+  await page.locator(".welcome-dashboard").waitFor();
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
+  const settingsTrigger = page.getByRole("button", { name: /Generation settings|生成设置/i });
+  await settingsTrigger.click();
+  const settings = page.getByRole("dialog", { name: /Generation settings|生成设置/i });
+  assert.equal(await settings.getByRole("radio").count(), 8);
   const mobileRadio = page.getByRole("radio", { name: /Mobile app|移动应用/i });
   await mobileRadio.click();
   assert.equal(await mobileRadio.getAttribute("aria-checked"), "true");
-  checks.push("generation type is selected directly via radio and updates active preset");
+  checks.push("one advanced entry retains all eight generation types and updates the active preset");
 
-  // Open advanced settings for design system & style
-  const contextTrigger = page.locator('button[aria-haspopup="menu"][title*="reference"], button[aria-haspopup="menu"][aria-label*="reference"], button[aria-haspopup="menu"][title*="参考图"], button[aria-haspopup="menu"][aria-label*="参考图"]').first();
-  checks.push("welcome composer exposes context and advanced options");
+  const labels = await page.evaluate(async () => {
+    const { t } = await import("/src/shared/i18n.js");
+    return ["styleLabel", "designSystem", "candidates", "sizeLabel"].map(key => t(`welcome.prompt.${key}`));
+  });
+  for (const label of labels) assert.equal(await settings.getByRole("button", { name: label, exact: true }).count(), 1);
+  await page.keyboard.press("Escape");
+  await settings.waitFor({ state: "detached" });
+  assert.ok(await settingsTrigger.evaluate(button => button === document.activeElement));
+  checks.push("style, design system, candidates and dimensions share one settings surface with Escape focus restoration");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });
 
@@ -142,13 +153,15 @@ await withEditorBrowser(async ({ page }) => {
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
   const root = page.locator(".welcome-prompt-root");
   assert.equal(await page.evaluate(() => matchMedia("(hover: none) and (pointer: coarse)").matches), true);
-  assert.equal(await page.getByRole("radiogroup").count(), 1);
-  const radios = page.getByRole("radio");
+  await page.locator(".welcome-dashboard").waitFor();
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
+  await root.getByRole("button", { name: /Generation settings|生成设置/i }).tap();
+  const radios = root.getByRole("radio");
   assert.equal(await radios.count(), 8);
 
   const mobileRadio = page.getByRole("radio", { name: /Mobile app|移动应用/i });
   await mobileRadio.tap();
   assert.equal(await mobileRadio.getAttribute("aria-checked"), "true");
-  checks.push("390px touch viewport selects generation types directly via radio buttons and updates Mobile dimensions");
+  checks.push("390px touch viewport opens the shared settings surface and selects the Mobile type");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 }, { viewport: { width: 390, height: 844 }, hasTouch: true });

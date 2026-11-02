@@ -4,6 +4,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
+import { verifyGeneratedSnapshot } from "./generated-snapshot-checks.mjs";
 import { verifyExternalImageHistory, verifyNewExternalImage } from "./external-image-history-checks.mjs";
 const fixture = resolve("tests/fixtures/image-editor/generated-product.png");
 const directory = resolve(process.env.VOO_IMAGE_AUDIT_DIR ?? editorArtifactPath("voo-image-complete"));
@@ -51,7 +52,7 @@ await withEditorBrowser(async ({
     assert.ok(size.width >= 1024 && size.height >= 1024);
     // Edit the actual inspector rather than replacing the imported bitmap.
     for (const [name, key, value] of [["W", "width", 240], ["H", "height", 240], ["X", "x", 180], ["Y", "y", 100]]) {
-      const field = panel.getByRole("spinbutton", {
+      const field = panel.getByRole("textbox", {
         name,
         exact: true
       });
@@ -193,16 +194,22 @@ await withEditorBrowser(async ({
   });
   await audit.record("portable-snapshot-download", async () => {
     assert.ok(expected, "Edited pixels must have passed");
-    const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", {
-      name: "Export project as a portable .zip snapshot",
-      exact: true
-    }).click()]);
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
+    await palette.getByRole("combobox").fill("portable .zip snapshot");
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      palette.getByRole("option").filter({ hasText: /portable \.zip snapshot/i }).click(),
+    ]);
     snapshot = await readFile(await download.path());
     assert.equal(snapshot.subarray(0, 2).toString(), "PK");
     assert.ok(snapshot.length > 100000);
+    assert.match(download.suggestedFilename(), /\.zip$/i);
+    const members = verifyGeneratedSnapshot(snapshot, expected);
     await download.saveAs(resolve(directory, "generated-edit.zip"));
     return {
-      actualTitlebarExport: true,
+      actualCommandPaletteExport: true,
+      archiveMembers: members,
       archiveBytes: snapshot.length
     };
   });

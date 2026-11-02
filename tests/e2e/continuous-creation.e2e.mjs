@@ -24,7 +24,7 @@ await withEditorBrowser(async ({ page }) => {
   const addedSince = async before => (await f.snapshot()).nodes.filter(n => !before.nodes.some(old => old.id === n.id));
   const panel = page.getByTestId("editor-properties-panel");
   const edit = async (name, value) => {
-    const input = panel.getByRole("spinbutton", { name, exact: true });
+    const input = panel.getByRole("textbox", { name, exact: true });
     await input.fill(String(value)); await input.press("Enter"); await f.settle();
   };
   const context = async (point, testId) => { await f.click(point, { button: "right" }); await page.getByTestId("editor-menu-mask-submenu").hover(); await page.getByTestId(testId).click(); await f.settle(); };
@@ -190,8 +190,11 @@ await withEditorBrowser(async ({ page }) => {
   await f.step("save-the-continuously-created-project", async () => {
     expected = projection((await f.snapshot()).nodes); frameId = frame.id; imageId = image.id;
     painted = await artwork(page, frame.id);
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
+    await palette.getByRole("combobox").fill("portable .zip snapshot");
     const [download] = await Promise.all([page.waitForEvent("download"),
-      page.getByRole("button", { name: "Export project as a portable .zip snapshot", exact: true }).click()]);
+      palette.getByRole("option").filter({ hasText: /portable \.zip snapshot/i }).click()]);
     archive = await readFile(await download.path()); assert.equal(archive.subarray(0, 2).toString(), "PK");
   });
   await f.finish();

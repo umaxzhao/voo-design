@@ -32,7 +32,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   for (const children of [false, true]) {
     await seed(children);
     const before = await snapshot();
-    const width = page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true });
+    const width = page.getByTestId("editor-properties-panel").getByRole("textbox", { name: "W", exact: true });
     await width.fill("300"); await width.press("Enter"); await settled();
     assert.equal(await page.evaluate(() => window.__vooEditor.getNode("boolean").width), 300, `panel ${children}`);
     assert.deepEqual(await sample([[350, 140], [410, 140]]), [red, white], `panel geometry ${children}`);

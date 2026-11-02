@@ -2725,8 +2725,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 !layers[index].lockImagePixels,
               )
             }
-            onReorder={(id, targetIndex) =>
-              engine?.reorderNodeTo(id, targetIndex)
+            onReorder={(id, targetIndex, primaryId) =>
+              engine?.reorderNodeTo(id, targetIndex, primaryId)
             }
             onReorderGroup={(id, targetIndex) =>
               engine?.reorderGroupTo(id, targetIndex)

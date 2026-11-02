@@ -748,3 +748,19 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
    - `test_WindowController_OpenRealVooFileDirectlyLoadsSceneAndSetsTitle`：验证端到端从工作台打开真实 .voo 文件进入画布并切换视图。
 
 验证：`./build.sh` 通过（binary 4.97 MB ≤ 5 MB，bundle 10.29 MB ≤ 35 MB，冷启动 0.20~0.50s）；`./tests/run_tests.sh` **392/392 通过**。真机截图：`native_studio/docs/screenshots/z_dashboard_with_covers.png`。
+
+
+## 本地 QA 候选：后台草稿、导出身份、冷启动 New 与历史边界
+
+本轮在独立 `qa/integrate-background-20261102` 上验收。固定对照 `3421ecf7` 未改；后台候选 `45923f42` 已通过 5171 单测（4 跳过）、lint/build、9 个相关浏览器套件及三组交替原生对照。原生生产 Worker 确认加载，15036 节点与 149 媒体一致；脚本放大 max 基线 433–581ms，候选约100ms，P95约18.5ms，仍非实体输入延迟或完整产品认证。
+
+额外已独立复验并审查移植 `da5659ee`（冷开导出预设身份）、`ee93276e`（New 冷启动队列与 Import readiness 分离）和 `481d2a20`（coalesced 历史边界）。固定 ee 副本 23 单测、真实 titlebar 全流程和五项 ZIP 冷开身份/复制/patch/delete/下载检查通过；固定 ce 副本 18 单测、八种真实导出 Undo/Redo 序列与跨父/嵌套 Frame 回归通过。组合代码须重跑，不能继承其他树的通过。
+
+层序最终 `065796a5` 已独立通过原10组、此前失败副选跨锁双向两组、2000层严格回归、跨父/嵌套Frame及19定向单测，已审查移植；eff/ce失败证据保留。旧隔离包有 `electron-updater→fs-extra` 传递依赖检查失败，已由原负责人核定链接依赖收集环境，私有实体生产依赖闭包已准备、待重包检查；独立未签名包的 file:// Worker 与取消退出后继续保存通过，默认关闭额外Crash草稿设置的Home冷开应走Recents卡片，原弹窗等待契约已纠正，仍需独立分别验证Home与显式开启的Crash恢复，不据此声称丢数据或恢复通过。
+
+证据：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/` 与 `background-integration-evidence/`。历史3421两批门禁103步骤90通过/13失败记录保留；全页面描边候选未纳入。所有改动仅本地，无 push、发布、用户 App 替换或新源码上传。
+
+
+固定 a71794aa 原13失败套件已由协调方独立13/13通过，逐套证据独占，真实PNG hash/ZIP CRC/历史/冷开断言保留；其25路径窄范围补丁已审查移植，组合全量门禁仍需重跑。
+
+组合工作树本轮全量单测 5194 passed / 0 failed / 4 skipped，design 1484 clean，build/module valid；这些是组合源码实测，最终完整浏览器/原生包装门禁仍待执行。

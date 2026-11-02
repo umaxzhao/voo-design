@@ -11,7 +11,7 @@ import {
 import { groupBlockInsertIndex, withNodes } from "./doc_ops_nodes.js";
 import { moveAffectedIds } from "./doc_ops_move.js";
 import { extremeOrder, moveNodeToExtreme } from "./doc_ops_groups_helpers.js";
-import { reorderLayerBatch } from "./reorder-layer-batch.js";
+import { reorderLayerBatch, reorderLayerBatchTo } from "./reorder-layer-batch.js";
 import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
 import { groupingRoots, sharedGroupParent } from "./group-structure.js";
 
@@ -64,29 +64,9 @@ export function reorderNodes(doc, ids, direction) {
  * range, and a no-op returns the document unchanged so the caller can skip
  * the history entry.
  */
-export function reorderNodeTo(doc, id, targetIndex) {
-  const index = doc.nodes.findIndex((node) => node.id === id);
-  if (index < 0) return doc;
-  const node = doc.nodes[index];
-  if (node.locked) return doc;
-  if (!Number.isFinite(targetIndex)) return doc;
-  const target = Math.max(
-    0,
-    Math.min(doc.nodes.length - 1, Math.round(targetIndex)),
-  );
-  if (target === index) return doc;
-  if (isRegionNode(node) !== isRegionNode(doc.nodes[target])) return doc;
-
-  const lo = Math.min(index, target);
-  const hi = Math.max(index, target);
-  for (let i = lo; i <= hi; i += 1) {
-    if (i !== index && doc.nodes[i].locked) return doc;
-  }
-
-  const nodes = [...doc.nodes];
-  nodes.splice(index, 1);
-  nodes.splice(target, 0, node);
-  return withNodes(doc, sanitizeInvertedClipping(nodes));
+export function reorderNodeTo(doc, idOrIds, targetIndex, primaryId) {
+  const nodes = reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId);
+  return nodes ? withNodes(doc, sanitizeInvertedClipping(nodes)) : doc;
 }
 
 /**

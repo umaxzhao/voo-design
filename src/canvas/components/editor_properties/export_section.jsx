@@ -90,7 +90,9 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
         presets.length < MAX_PRESETS ? (
           <SectionAddButton
             label={t("editor.props.addExportSettings")}
-            onClick={() => persist([...presets, createExportPreset()])}
+            onClick={() =>
+              persist([...presets, createExportPreset({}, presets)])
+            }
           />
         ) : null
       }

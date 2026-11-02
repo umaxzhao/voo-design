@@ -100,8 +100,8 @@ describe("welcome prompt composer (Pen app parity)", () => {
     expect(html).not.toContain("Antigravity ·");
   });
 
-  it("renders Pen-style generation type pills at the top", () => {
-    const html = render({ activePill: "mobile" });
+  it("keeps types in the advanced settings panel", () => {
+    const html = render({ activePill: "mobile", initialAdvancedOpen: true });
     expect(html).toContain('role="radiogroup"');
     expect(html).toContain("welcome.pills.landing");
     expect(html).toContain("welcome.pills.mobile");
@@ -115,21 +115,25 @@ describe("welcome prompt composer (Pen app parity)", () => {
 
   it("renders the prompt box with placeholder and ambient glow", () => {
     const html = render();
-    expect(html).toContain('placeholder="welcome.prompt.placeholder"');
+    expect(html).toContain('placeholder="welcome.prompt.landingPlaceholder"');
     expect(html).toContain("prompt-composer");
   });
 
   it("shows a single generation count without a decorative parallel count", () => {
     const html = render();
-    expect(html.match(/>1x</g)).toHaveLength(1);
+    expect(html).not.toContain('aria-label="welcome.prompt.candidates"');
+    expect(
+      render({ initialAdvancedOpen: true }).match(/welcome.prompt.candidates/g)
+        .length,
+    ).toBeGreaterThan(0);
     expect(html).not.toContain("lucide-zap");
   });
 
-  it("exposes the Pen-style variant count control (⊞ 1x)", () => {
-    const html = render({ candidates: 2 });
+  it("exposes the real variant count inside settings", () => {
+    const html = render({ candidates: 2, initialAdvancedOpen: true });
     expect(html).toContain('aria-label="welcome.prompt.candidates"');
-    expect(html).toContain(">2x<");
-    expect(html).toContain("lucide-layout-grid");
+    expect(html).toContain("welcome.prompt.candidateN");
+    expect(html).not.toContain("lucide-layout-grid");
   });
 
   it("renders Add to Context (+) button and submit button", () => {
@@ -137,9 +141,11 @@ describe("welcome prompt composer (Pen app parity)", () => {
     expect(html).toContain('aria-label="welcome.prompt.addAttachment"');
     expect(html).toContain('aria-label="welcome.actions.createNowTitle"');
   });
-  it("keeps the candidate selector on the composer bar and leaves the animated rim to shared CSS", () => {
+  it("keeps all advanced options behind one entry and leaves the rim to shared CSS", () => {
     const closed = render();
-    expect(closed).toContain('aria-label="welcome.prompt.candidates"');
+    expect(closed).not.toContain('role="radiogroup"');
+    expect(closed).not.toContain('aria-label="welcome.prompt.candidates"');
+    expect(closed).toContain('aria-label="welcome.prompt.settingsLabel"');
     const form = /<form[^>]*class="([^"]+)"/.exec(closed)?.[1];
     expect(form).toContain("prompt-composer");
     expect(form).not.toMatch(/\bbg-|\bborder(?:-|\s)/);

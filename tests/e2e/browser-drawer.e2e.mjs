@@ -74,6 +74,12 @@ await withEditorBrowser(async ({ page, errors }) => {
   await page.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i }).waitFor();
   await page.screenshot({ path: editorArtifactPath("voo-browser-split-mobile.png") });
   await page.keyboard.press("Escape");
+  await toolsMenu.waitFor({ state: "detached" });
+  assert.equal(await drawer.count(), 1, "First Escape dismisses the top menu only");
+  const toolsTrigger = drawer.getByRole("button", { name: /Browser tools|浏览器工具/i });
+  assert.equal(await toolsTrigger.getAttribute("aria-expanded"), "false");
+  assert.ok(await toolsTrigger.evaluate(button => document.activeElement === button));
+  await page.keyboard.press("Escape");
   await drawer.waitFor({ state: "detached" });
   assert.equal(await trigger.getAttribute("aria-pressed"), "false");
   await trigger.click();
