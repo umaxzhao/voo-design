@@ -847,7 +847,7 @@ export function createEditor({
         viewport: surface.viewport ?? viewportTools.getViewport(),
         stageWidth: surface.stageWidth,
         stageHeight: surface.stageHeight,
-        dpr: renderedDpr,
+        dpr: surface.dpr ?? renderedDpr,
         paintTools: ctrl.paintTools,
         maskTools: ctrl.maskTools,
         glAdjustments,

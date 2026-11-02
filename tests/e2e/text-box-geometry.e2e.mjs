@@ -56,8 +56,8 @@ await withEditorBrowser(async ({ page }) => {
   const panelMatches = async () => {
     const n = await node();
     const panel = page.getByTestId("editor-properties-panel");
-    assert.equal(Number(await panel.getByRole("spinbutton", { name: "W", exact: true }).inputValue()), Math.round(n.width));
-    assert.equal(Number(await panel.getByRole("spinbutton", { name: "H", exact: true }).inputValue()), Math.round(n.height));
+    assert.equal(Number(await panel.getByRole("textbox", { name: "W", exact: true }).inputValue()), Math.round(n.width));
+    assert.equal(Number(await panel.getByRole("textbox", { name: "H", exact: true }).inputValue()), Math.round(n.height));
   };
   for (const boxWidth of [0, 220]) {
     await seed({ boxWidth });

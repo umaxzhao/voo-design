@@ -7,7 +7,7 @@ export async function verifyNumberInputCheckpoint(page) {
     mountNumberCheckpoint();
   });
   try {
-    const input = page.getByRole("spinbutton", { name: "Checkpoint value", exact: true });
+    const input = page.getByLabel("Checkpoint value", { exact: true });
     await input.fill("30");
     assert.equal(await input.inputValue(), "30");
     await input.press("Enter");

@@ -10,6 +10,7 @@ import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
 import {
+  requestWelcomeNew,
   WELCOME_MENU_ACTION_EVENT,
   WELCOME_NEW_EVENT,
 } from "./canvas/components/welcome_dashboard/welcome_events.js";
@@ -49,6 +50,11 @@ export default function AppTitleBar() {
         { detail: welcomeOpen ? { action: "open-file" } : undefined },
       ),
     );
+  // New can queue before the lazy dashboard mounts; Import needs its picker listeners.
+  const handlePrimaryAction = () => {
+    if (welcomeOpen) requestWelcomeNew();
+    else window.dispatchEvent(new CustomEvent("voo:editor-export"));
+  };
 
   useEffect(() => {
     if (!moreOpen) return undefined;
@@ -247,16 +253,9 @@ export default function AppTitleBar() {
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
-                    window.dispatchEvent(
-                      new CustomEvent(
-                        welcomeOpen
-                          ? WELCOME_NEW_EVENT
-                          : "voo:editor-export",
-                      ),
-                    );
+                    handlePrimaryAction();
                   }}
                   className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-neutral-200 hover:bg-white/10"
                 >

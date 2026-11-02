@@ -43,7 +43,7 @@ await withEditorBrowser(async ({
       });
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const before = await page.evaluate(() => window.__vooEditor.serialise());
-      const field = panel.getByRole("spinbutton", {
+      const field = panel.getByRole("textbox", {
         name: label,
         exact: true
       });

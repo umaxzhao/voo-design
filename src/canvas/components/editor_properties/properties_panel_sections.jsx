@@ -360,7 +360,7 @@ export default function PropertiesPanelSections({
       {!isWarpTool ? (
         <SelectionColorsSection selectedNodes={selectedNodes} engine={engine} />
       ) : null}
-      {show("export") ? (
+      {eligible.export ? (
         <ExportSection object={object} selectedNodes={selectedNodes} engine={engine} />
       ) : null}
       {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} revealed={revealed("modifiers")} /> : null}

@@ -78,7 +78,7 @@ import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { useWorkspaceSkia } from "../use_skia_page.js";
 import { useWorkspaceChrome } from "../use_workspace_chrome.js";
-import { SpatialIndex } from "../editor/spatial_index.js";
+import { createWorkspaceSpatialIndex } from "../editor/workspace-spatial-index.js";
 import { requestCollabOriginal, sendCollabCursor } from "../collab/use_collab.js";
 import RemoteCursors from "./remote_cursors.jsx";
 import OfflineSessionNotice from "./offline_session_notice.jsx";
@@ -695,45 +695,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       .filter(Boolean);
   }, [multi, nodeIds, nodes, engineVersion]);
 
-  const workspaceSpatialIndex = useMemo(() => {
-    if (!workspaceDocs.length) return null;
-    const index = new SpatialIndex();
-    for (const doc of workspaceDocs) {
-      const docId = doc.id || doc.canvasId;
-      const layout = (docId ? layoutById.get(docId) : null) ?? {
-        x: FREE_PADDING,
-        y: FREE_PADDING,
-      };
-      const offsetX = layout.x ?? 0;
-      const offsetY = layout.y ?? 0;
-      if (!doc.isCanvasRoot) index.insert({
-        id: `frame-${docId}`,
-        minX: offsetX,
-        minY: offsetY,
-        maxX: offsetX + (doc.width || 1024),
-        maxY: offsetY + (doc.height || 1024),
-        isFrame: true,
-        docId: docId,
-      });
-      for (const node of doc.nodes || []) {
-        if (!node) continue;
-        const nx = (node.x ?? 0) + offsetX;
-        const ny = (node.y ?? 0) + offsetY;
-        const nw = node.width ?? 0;
-        const nh = node.height ?? 0;
-        index.insert({
-          id: node.id,
-          minX: nx,
-          minY: ny,
-          maxX: nx + nw,
-          maxY: ny + nh,
-          node,
-          docId: docId,
-        });
-      }
-    }
-    return index;
-  }, [workspaceDocs, layoutById]);
+  const resolveWorkspaceIndex = useMemo(() => createWorkspaceSpatialIndex(FREE_PADDING), []);
+  const workspaceSpatialIndex = resolveWorkspaceIndex(workspaceDocs, layoutById);
 
   useWorkspaceChrome({
     enabled: multi,

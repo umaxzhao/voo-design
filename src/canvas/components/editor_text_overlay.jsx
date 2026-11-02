@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LINE_HEIGHT_RATIO } from "../editor/scene_model_core.js";
 import { createUnmountGuard } from "./agent-panel/unmount_guard.js";
+import { isComposingKey } from "../../shared/keyboard-ownership.js";
 
 /**
  * The text caret, as a real `<textarea>` laid over the canvas.
@@ -22,8 +23,15 @@ export default function EditorTextOverlay({
 }) {
   const { t } = useI18n();
   // Match the actual first face exactly: "Interstate" must not match "Inter".
-  const family = node.fontFamily?.split(",")[0].trim().replace(/^['"]|['"]$/g, "") || node.figmaFont?.family;
-  const genericFamily = /^(sans-serif|serif|monospace|cursive|fantasy|system-ui|ui-sans-serif|ui-serif|ui-monospace)$/i.test(family ?? "");
+  const family =
+    node.fontFamily
+      ?.split(",")[0]
+      .trim()
+      .replace(/^['"]|['"]$/g, "") || node.figmaFont?.family;
+  const genericFamily =
+    /^(sans-serif|serif|monospace|cursive|fantasy|system-ui|ui-sans-serif|ui-serif|ui-monospace)$/i.test(
+      family ?? "",
+    );
   const missingFont = family && !genericFamily && !isFigmaFontAvailable(family);
   const ref = useRef(null);
   const [value, setValue] = useState(node.text ?? "");
@@ -33,6 +41,7 @@ export default function EditorTextOverlay({
   const commitRef = useRef(onCommit);
   commitRef.current = onCommit;
   const committedRef = useRef(false);
+  const composingRef = useRef(false);
   const finishEdit = () => {
     if (committedRef.current) return;
     committedRef.current = true;
@@ -85,7 +94,9 @@ export default function EditorTextOverlay({
       <textarea
         data-canvas-text-overlay="true"
         aria-label={node.name || "Text"}
-        aria-description={missingFont ? t("textEdit.missingFont", { family }) : undefined}
+        aria-description={
+          missingFont ? t("textEdit.missingFont", { family }) : undefined
+        }
         ref={ref}
         value={value}
         onChange={(event) => {
@@ -97,18 +108,27 @@ export default function EditorTextOverlay({
           }
         }}
         onBlur={finishEdit}
+        onCompositionStart={() => {
+          composingRef.current = true;
+        }}
+        onCompositionEnd={() => {
+          composingRef.current = false;
+        }}
         onKeyDown={(event) => {
           // An IME composition owns every key while composing — Escape picks a
           // candidate (macOS) and Windows fires keystrokes with keyCode 229.
           // Guard like the rest of the codebase (ime_textarea.jsx) so a
           // composition like selecting a candidate never commits and closes.
-          if (event.nativeEvent.isComposing || event.keyCode === 229) {
+          if (isComposingKey(event.nativeEvent, composingRef.current)) {
             event.stopPropagation();
             return;
           }
           // Cmd+Enter / Ctrl+Enter or Escape finishes text editing and commits value
           const isCmdOrCtrl = event.metaKey || event.ctrlKey;
-          if (event.key === "Escape" || (event.key === "Enter" && isCmdOrCtrl)) {
+          if (
+            event.key === "Escape" ||
+            (event.key === "Enter" && isCmdOrCtrl)
+          ) {
             event.preventDefault();
             event.currentTarget.blur();
             return;
@@ -135,7 +155,10 @@ export default function EditorTextOverlay({
           // committed canvas render measures the same wrap, and the box starts
           // no shorter than that last measured height.
           height: "auto",
-          minHeight: Math.max(node.height * viewport.zoom, fontSize * lineHeight),
+          minHeight: Math.max(
+            node.height * viewport.zoom,
+            fontSize * lineHeight,
+          ),
           color: node.fill,
           fontFamily: node.fontFamily,
           fontSize,
@@ -173,7 +196,10 @@ EditorTextOverlay.propTypes = {
   node: PropTypes.shape({
     id: PropTypes.string,
     name: PropTypes.string,
-    figmaFont: PropTypes.shape({ family: PropTypes.string, style: PropTypes.string }),
+    figmaFont: PropTypes.shape({
+      family: PropTypes.string,
+      style: PropTypes.string,
+    }),
     fontMissing: PropTypes.bool,
     x: PropTypes.number.isRequired,
     y: PropTypes.number.isRequired,

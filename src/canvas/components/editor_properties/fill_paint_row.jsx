@@ -40,7 +40,7 @@ export default function FillPaintRow({
     {type === "solid" && HEX_COLOUR.test(object.fill) ? <HexField value={object.fill} onCommit={fill => editAndCommit({
       fill
     })} ariaLabel={t("editor.props.customColour")} /> : <span className="min-w-0 flex-1 truncate text-[11px] text-neutral-300">{type === "image" ? t("editor.props.imageLabel") : type === "texture" ? t("editor.fillPicker.texture") : t("editor.props.gradientLabel")}</span>}
-    <div className="flex shrink-0 items-center gap-0.5 pl-2">
+    <div data-paint-controls className="flex shrink-0 items-center gap-0.5 pl-2">
       {mixed ? <span className="text-[11px] text-neutral-400" title={t("editor.props.mixedValues")}>—%</span> : <>
         <ScrubValueInput min={0} max={100} step={1} value={fillOpacity} format={value => `${value}`} onChange={value => edit(opacityPatch("fillOpacity", value))} onCommit={commitNow} ariaLabel={t("editor.props.opacity")} scrubHint={t("editor.props.dragToAdjust")} className="!w-7 !p-0 bg-transparent text-right text-[11px] tabular-nums text-neutral-300 outline-none" />
         <span className="text-[10px] text-neutral-400">%</span>

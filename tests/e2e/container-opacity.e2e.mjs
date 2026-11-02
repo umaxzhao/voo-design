@@ -93,7 +93,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     ], [[100, 120]]);
     window.__vooEditor.selectExactly(["frame"]);
   });
-  const opacity = page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "Opacity", exact: true });
+  const opacity = page.getByTestId("editor-properties-panel").getByRole("textbox", { name: "Opacity", exact: true });
   await opacity.fill("50"); await opacity.press("Enter");
   await page.waitForFunction(() => window.__vooEditor.getNode("frame").opacity === 0.5);
   const currentPixels = () => page.evaluate(async () => {

@@ -31,7 +31,14 @@ const TYPE_ICONS = {
     <>
       <rect x="6" y="6" width="44" height="28" rx="5" {...L} />
       <path d="M6 13.5H50" {...S(0.45)} />
-      <rect x="21" y="19.5" width="14" height="5.5" rx="2.75" className={ACCENT} />
+      <rect
+        x="21"
+        y="19.5"
+        width="14"
+        height="5.5"
+        rx="2.75"
+        className={ACCENT}
+      />
     </>
   ),
   mobile: (
@@ -45,7 +52,14 @@ const TYPE_ICONS = {
     <>
       <rect x="6" y="6" width="44" height="28" rx="5" {...L} />
       <path d="M19 6V34" {...S(0.45)} />
-      <rect x="9.5" y="12" width="6" height="3.5" rx="1.75" className={ACCENT} />
+      <rect
+        x="9.5"
+        y="12"
+        width="6"
+        height="3.5"
+        rx="1.75"
+        className={ACCENT}
+      />
       <path d="M24 14H43M24 21H38" {...S(0.45)} />
     </>
   ),
@@ -60,14 +74,28 @@ const TYPE_ICONS = {
     <>
       <path d="M12 6H44" {...S(0.35)} />
       <rect x="7" y="10" width="42" height="26" rx="4" {...L} />
-      <rect x="13" y="17" width="13" height="4.5" rx="2.25" className={ACCENT} />
+      <rect
+        x="13"
+        y="17"
+        width="13"
+        height="4.5"
+        rx="2.25"
+        className={ACCENT}
+      />
       <path d="M13 27H30" {...S(0.45)} />
     </>
   ),
   storyboard: (
     <>
       <rect x="4" y="12" width="14.5" height="16" rx="3" {...L} />
-      <rect x="20.75" y="12" width="14.5" height="16" rx="3" className={ACCENT} />
+      <rect
+        x="20.75"
+        y="12"
+        width="14.5"
+        height="16"
+        rx="3"
+        className={ACCENT}
+      />
       <rect x="37.5" y="12" width="14.5" height="16" rx="3" {...L} />
     </>
   ),
@@ -124,31 +152,24 @@ function TypePreview({ type }) {
 
 TypePreview.propTypes = { type: PropTypes.string.isRequired };
 
-export default function WelcomePromptTypes({ t, activePill, onSelectPill }) {
-  const selectedId = AI_GEN_TYPES.some(item => item.id === activePill) ? activePill : AI_GEN_TYPES[0].id;
-  // Keep one tab stop and move focus with selection, including wrapped rows.
-  const navigate = (event, index) => {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    const offsets = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
-    let next;
-    if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = AI_GEN_TYPES.length - 1;
-    else if (offsets[event.key]) next = (index + offsets[event.key] + AI_GEN_TYPES.length) % AI_GEN_TYPES.length;
-    else return;
-    event.preventDefault();
-    event.stopPropagation();
-    const buttons = event.currentTarget.parentElement.querySelectorAll('[role="radio"]');
-    onSelectPill(AI_GEN_TYPES[next].id);
-    buttons[next]?.focus();
-  };
+export default function WelcomePromptTypes({
+  t,
+  activePill,
+  onSelectPill,
+  compact = false,
+}) {
   return (
     <div
-      className="welcome-prompt-type-options mb-3 flex flex-wrap items-center justify-center gap-1"
+      className={
+        compact
+          ? "mb-2 grid grid-cols-3 gap-1 min-[400px]:grid-cols-4"
+          : "welcome-prompt-type-options mb-3 flex flex-wrap items-center justify-center gap-1"
+      }
       role="radiogroup"
       aria-label={t("welcome.prompt.generationTypeLabel")}
     >
-      {AI_GEN_TYPES.map((typeItem, index) => {
-        const isSelected = selectedId === typeItem.id;
+      {AI_GEN_TYPES.map((typeItem) => {
+        const isSelected = activePill === typeItem.id;
         return (
           <button
             key={typeItem.id}
@@ -156,16 +177,49 @@ export default function WelcomePromptTypes({ t, activePill, onSelectPill }) {
             role="radio"
             aria-checked={isSelected}
             tabIndex={isSelected ? 0 : -1}
-            onKeyDown={event => navigate(event, index)}
+            onKeyDown={(event) => {
+              const index = AI_GEN_TYPES.indexOf(typeItem);
+              const directions = {
+                ArrowRight: 1,
+                ArrowDown: 1,
+                ArrowLeft: -1,
+                ArrowUp: -1,
+              };
+              let next =
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? AI_GEN_TYPES.length - 1
+                    : null;
+              if (event.key in directions)
+                next =
+                  (index + directions[event.key] + AI_GEN_TYPES.length) %
+                  AI_GEN_TYPES.length;
+              if (next === null) return;
+              event.preventDefault();
+              event.stopPropagation();
+              onSelectPill?.(AI_GEN_TYPES[next].id);
+              event.currentTarget.parentElement
+                .querySelectorAll('[role="radio"]')
+                [next]?.focus();
+            }}
             onClick={() => onSelectPill?.(typeItem.id)}
-            className={`group flex min-w-[4.75rem] flex-col items-center gap-1 rounded-xl px-2.5 py-2 text-[11px] font-medium transition-colors cursor-pointer select-none ${
+            className={`group flex min-w-0 flex-col items-center gap-1 rounded-xl px-2.5 py-2 text-[11px] font-medium transition-colors cursor-pointer select-none ${
               isSelected
                 ? "bg-white/[0.09] text-white"
                 : "bg-transparent text-neutral-500 hover:bg-white/[0.045] hover:text-neutral-200"
             }`}
           >
             <TypePreview type={typeItem.preview} />
-            <span className="whitespace-nowrap">{t(typeItem.label)}</span>
+            <span
+              className={
+                compact
+                  ? "max-w-full break-words text-center leading-4"
+                  : "whitespace-nowrap"
+              }
+            >
+              {t(typeItem.label)}
+            </span>
           </button>
         );
       })}
@@ -174,6 +228,7 @@ export default function WelcomePromptTypes({ t, activePill, onSelectPill }) {
 }
 
 WelcomePromptTypes.propTypes = {
+  compact: PropTypes.bool,
   t: PropTypes.func.isRequired,
   activePill: PropTypes.string.isRequired,
   onSelectPill: PropTypes.func.isRequired,

@@ -6,7 +6,7 @@ export async function runTypographyCases({ page, tool, mark, evidence }) {
   const section = page.getByTestId("text-typography-section");
   const node = (id = "type-title") => page.evaluate(id => window.__vooEditor.getNode(id), id);
   const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const metric = name => section.getByRole("spinbutton", { name: new RegExp(`^${name}`) });
+  const metric = name => section.getByRole("textbox", { name: new RegExp(`^${name}`) }).or(section.getByRole("spinbutton", { name: new RegExp(`^${name}`) }));
   const change = async (name, value) => {
     const field = metric(name); await field.fill(String(value)); await field.press("Enter"); await settle();
   };
@@ -100,7 +100,7 @@ export async function runTypographyCases({ page, tool, mark, evidence }) {
   const defaults = page.getByTestId("text-tool-typography");
   await defaults.waitFor();
   for (const [name, value] of [["Font size", "48"], ["Line height", "150"], ["Letter spacing", "1.5"]]) {
-    const field = defaults.getByRole("spinbutton", { name: new RegExp(`^${name}`) });
+    const field = defaults.getByRole("textbox", { name: new RegExp(`^${name}`) });
     await field.fill(value); await field.press("Enter"); await settle();
   }
   await defaults.getByRole("button", { name: "Font weight", exact: true }).click();

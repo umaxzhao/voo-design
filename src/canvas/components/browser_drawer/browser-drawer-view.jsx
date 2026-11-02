@@ -46,6 +46,7 @@ export default function BrowserDrawerView({ model, onClose }) {
   } = model;
   const [toolsOpen, setToolsOpen] = useState(false);
   const toolsRef = useRef(null);
+  const toolsTriggerRef = useRef(null);
   const {
     width: drawerWidth,
     isResizing,
@@ -64,6 +65,7 @@ export default function BrowserDrawerView({ model, onClose }) {
         event.preventDefault();
         event.stopPropagation();
         setToolsOpen(false);
+        toolsTriggerRef.current?.focus();
       }
     };
     document.addEventListener("pointerdown", closeOnOutsidePointer, true);
@@ -201,6 +203,7 @@ export default function BrowserDrawerView({ model, onClose }) {
           {/* Secondary "..." Tools Menu */}
           <button
             type="button"
+            ref={toolsTriggerRef}
             aria-label={t("browser.actions")}
             aria-expanded={toolsOpen}
             title={t("browser.actions")}

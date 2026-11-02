@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
 import { TOOL } from "../../editor/editor_constants.js";
 import { dragArtboardPosition } from "../../editor/editor_artboard_positions.js";
@@ -8,6 +8,7 @@ import {
   resolveFreeDrawingStart,
   calculateFreeDrawingBox,
 } from "../../editor/shape_snapping.js";
+import { useEditorCanvasPanKeyboard } from "./use_editor_canvas_pan_keyboard.js";
 
 /** Shared-stage pan/selection and artboard title/body pointer ownership. */
 const DRAWING_TOOLS = new Set([
@@ -32,31 +33,7 @@ export function useEditorCanvasGestures({
   const setEditorArtboardLayout = useDesignStore((state) => state.setEditorArtboardLayout);
   const moveEditorArtboard = useDesignStore((state) => state.moveEditorArtboard);
   const artboardDragRef = useRef(null);
-  // Space arms the hand tool over the free canvas.
-  useEffect(() => {
-    if (!multi || !visible || welcomeOpen) return undefined;
-    const isTyping = (t) => t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
-    const setHand = (active) => {
-      spaceRef.current = active;
-      if (freeStageRef.current) freeStageRef.current.style.cursor = active ? "grab" : "default";
-    };
-    const onKeyDown = (e) => {
-      if (e.code !== "Space" || e.target.closest?.("[data-presentation-overlay]") || isTyping(e.target)) return;
-      e.preventDefault();
-      setHand(true);
-    };
-    const onKeyUp = (e) => { if (e.code === "Space") setHand(false); };
-    const onBlur = () => setHand(false);
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("blur", onBlur);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("blur", onBlur);
-      setHand(false);
-    };
-  }, [multi, visible, welcomeOpen, freeStageRef, spaceRef]);
+  useEditorCanvasPanKeyboard({ enabled: multi && visible && !welcomeOpen, freeStageRef, spaceRef });
 
   // Free-stage pointer gestures: Space / middle-button drag pans, and clicking
   // the empty canvas deselects the focused page. Left-button drag on the empty

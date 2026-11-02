@@ -27,7 +27,11 @@ export function projectCover(file, { preferEmbedded = true } = {}) {
 
 /** Keep cached covers small; never export or resize the live editing canvas. */
 export async function createProjectCover(file, options) {
-  const source = projectCover(file, options);
+  return rasterizeProjectCover(projectCover(file, options));
+}
+
+/** Decode a worker-generated SVG without walking the live scene on this thread. */
+export async function rasterizeProjectCover(source) {
   if (!source || typeof Image === "undefined" || typeof document === "undefined") return source;
   const image = new Image();
   image.src = source;

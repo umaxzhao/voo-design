@@ -79,9 +79,13 @@ describe("mobile interaction experience polish", () => {
 
   it("uses pointerdown for welcome composer popup dismiss and clamps panel safely", () => {
     const composer = readFileSync("src/canvas/components/welcome_dashboard/welcome_prompt_composer.jsx", "utf8");
-    expect(composer).toContain('document.addEventListener("pointerdown", onPointerDown)');
-    expect(composer).not.toContain('document.addEventListener("mousedown", onPointerDown)');
-    expect(composer).toContain('panelHeight');
+    const popup = readFileSync("src/canvas/components/welcome_dashboard/use_welcome_generation_settings.js", "utf8");
+    expect(composer).toContain("useWelcomeGenerationSettings");
+    expect(popup).toContain('document.addEventListener("pointerdown", onPointerDown, true)');
+    expect(popup).toContain('document.removeEventListener("pointerdown", onPointerDown, true)');
+    expect(popup).not.toContain('document.addEventListener("mousedown"');
+    expect(popup).toContain("window.innerHeight - height - gutter");
+    expect(popup).toContain("window.innerWidth - width - gutter");
   });
 
   it("prevents iOS input focus auto-zoom and centers export modal on mobile screens", () => {

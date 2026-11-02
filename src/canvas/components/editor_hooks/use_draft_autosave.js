@@ -13,11 +13,12 @@ export function useDraftAutosave({ enginesRef, snapshotsRef, revision }) {
   const saverRef = useRef(null);
   if (!saverRef.current) {
     saverRef.current = createDraftAutosaver({
-      write: () =>
+      write: ({ signal }) =>
         writeDraftSnapshot({
           store: useDesignStore.getState(),
           enginesRef: latest.current.enginesRef,
           snapshotsRef: latest.current.snapshotsRef,
+          signal,
         }),
     });
   }
@@ -29,6 +30,7 @@ export function useDraftAutosave({ enginesRef, snapshotsRef, revision }) {
       return;
     }
     saver.notify();
+    return () => saver.cancel();
   }, [revision, saver]);
 
   useEffect(() => () => saver.cancel(), [saver]);

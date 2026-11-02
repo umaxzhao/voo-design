@@ -26,7 +26,7 @@ export async function checkCommentPanelSlot(page) {
       "Opening comments still dismisses page navigation");
     assert.equal(await rail.count(), 1);
     assert.equal(await panel.locator("xpath=ancestor::aside").getAttribute("data-testid"), "editor-properties-panel");
-    assert.equal(await rail.getByRole("spinbutton", { name: "W", exact: true, includeHidden: true }).count(), 0);
+    assert.equal(await rail.getByRole("textbox", { name: "W", exact: true, includeHidden: true }).or(rail.getByRole("spinbutton", { name: "W", exact: true, includeHidden: true })).count(), 0);
     const bounds = await rail.boundingBox();
     assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 0 && bounds.y + bounds.height <= 900,
       `Shared comment rail remains in the viewport at ${width}px: ${JSON.stringify(bounds)}`);
@@ -40,7 +40,7 @@ export async function checkCommentPanelSlot(page) {
       await panel.getByRole("button", { name: "Close comments", exact: true }).click();
     }
     await panel.waitFor({ state: "hidden" });
-    await rail.getByRole("spinbutton", { name: "W", exact: true, includeHidden: true }).waitFor({ state: "attached" });
+    await rail.getByRole("textbox", { name: "W", exact: true, includeHidden: true }).waitFor({ state: "attached" });
     assert.deepEqual(await page.evaluate(() => ({ doc: JSON.stringify(window.__vooEditor.getDocument()), ids: window.__vooEditor.getSelectedIds() })), before);
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -52,7 +52,7 @@ export async function checkCommentPanelSlot(page) {
   assert.ok(Math.abs(swappedComments.x - swapped.x) < 1 && Math.abs(swappedComments.width - swapped.width) < 1,
     "Comments use the inspector's chosen side without covering Layers");
   await panel.getByRole("button", { name: "Close comments", exact: true }).click();
-  await rail.getByRole("spinbutton", { name: "W", exact: true }).waitFor();
+  await rail.getByRole("textbox", { name: "W", exact: true }).waitFor();
   await swap.click(); await settle();
   const history = page.getByTestId("editor-history-panel");
   const toggleHistory = () => page.evaluate(() => window.dispatchEvent(new CustomEvent("voo:editor-toggle-history")));

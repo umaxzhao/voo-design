@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { verifyCompletePicture } from "./complete-picture-checks.mjs";
 
 await withEditorBrowser(async ({ page, errors }) => {
   await page.evaluate(async () => {
@@ -89,3 +90,7 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.deepEqual(errors, []);
   console.log("Real zoom: no invisible painting, motion reuse, exact settled pixels, readback flush, edit invalidation and undo/redo passed.");
 });
+
+for (const deviceScaleFactor of [1, 2]) {
+  await withEditorBrowser(verifyCompletePicture, { deviceScaleFactor });
+}

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { runShortcutFocusCases } from "./shortcut-focus-cases.mjs";
 
 await withEditorBrowser(async ({ page }) => {
   const checks = [];
@@ -12,6 +13,21 @@ await withEditorBrowser(async ({ page }) => {
   const bodyFocus = () => page.evaluate(() => document.activeElement?.blur());
   const calls = action => page.evaluate(action => window.__shortcutAudit.calls.filter(item => item.action === action), action);
   const x = index => page.evaluate(index => window.__shortcutAudit.engines[index].getNode(`keyboard-target-${index}`).x, index);
+
+  await bodyFocus();
+  const beforeComposition = (await calls("save")).length;
+  await page.evaluate(() => {
+    window.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+    for (const [key, code, extra] of [["ArrowRight", "ArrowRight", {}], ["s", "KeyS", { ctrlKey: true }], ["k", "KeyK", { ctrlKey: true }]]) {
+      document.body.dispatchEvent(new KeyboardEvent("keydown", { key, code, bubbles: true, ...extra }));
+    }
+    window.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true }));
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "s", code: "KeyS", ctrlKey: true, keyCode: 229, bubbles: true }));
+  });
+  assert.equal(await x(0), 10);
+  assert.equal((await calls("save")).length, beforeComposition);
+  assert.equal((await calls("palette")).length, 0);
+  checks.push("synthetic compositionstart/end and legacy keyCode 229 retain canvas geometry and suppress save/palette; this is not an OS IME test");
 
   await page.evaluate(() => window.__shortcutAudit.render({ version: "latest" })); await settled(); await bodyFocus();
   for (const key of ["Control+s", "Control+Shift+s", "Control+o", "Control+n"]) await page.keyboard.press(key);
@@ -129,3 +145,5 @@ await withEditorBrowser(async ({ page }) => {
   checks.push("unmount finishes history before passive engine snapshots, retains one-step session undo and removes every shortcut listener");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 }, { openDocument: false, mcpLink: false });
+
+await withEditorBrowser(runShortcutFocusCases);

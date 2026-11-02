@@ -7,7 +7,6 @@ const state = vi.hoisted(() => ({ welcomeOpen: false, welcomeActionsReady: false
 vi.mock("react", async (original) => ({
   ...await original(),
   useState: (initial) => [initial, vi.fn()],
-  useCallback: (callback) => callback,
   useEffect: () => {},
   useRef: (current) => ({ current }),
   useId: () => "titlebar-popover-scope",
@@ -16,6 +15,13 @@ vi.mock("../../src/store/design_store.js", () => ({ useDesignStore: (selector) =
 vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => key }) }));
 vi.mock("../../src/canvas/components/canvas_tab_bar.jsx", () => ({ default: () => null }));
 vi.mock("../../src/canvas/components/settings_drawer.jsx", () => ({ default: () => null }));
+// AppTitleBar is called as a plain function here, so the hook-based window controls must be stubbed.
+vi.mock("../../src/canvas/use_window_controls.js", () => ({
+  useWindowControls: () => ({
+    supported: false, isMac: false, isWindows: false, isLinux: false, maximized: false,
+    minimize: () => {}, toggleMaximize: () => {}, close: () => {},
+  }),
+}));
 import AppTitleBar from "../../src/app_title_bar.jsx";
 import CollabAvatars from "../../src/canvas/components/collab_avatars.jsx";
 
@@ -32,7 +38,7 @@ function visibleText(node) {
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 describe("title bar actions", () => {
-  it.each([false, true])("gates welcome import while queued New remains available (readiness=%s)", ready => {
+  it.each([false, true])("gates Import but keeps queued New usable when readiness=%s", ready => {
     state.welcomeOpen = true;
     state.welcomeActionsReady = ready;
     vi.stubGlobal("window", {});

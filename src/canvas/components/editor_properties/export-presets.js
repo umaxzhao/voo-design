@@ -13,25 +13,44 @@ export const QUALITIES = [
 ];
 export const MAX_PRESETS = 4;
 
-let presetSeq = 0;
-export const createExportPreset = (patch = {}) => ({
-  id: `preset-${++presetSeq}`,
-  type: "image/png",
-  scale: 1,
-  suffix: "",
-  ...patch,
-});
+const hasPresetId = (id) => typeof id === "string" && id.trim().length > 0;
+
+/** IDs belong to one node's persisted list, never a module-session counter. */
+function availablePresetId(reserved) {
+  let index = 1;
+  while (reserved.has(`preset-${index}`)) index += 1;
+  return `preset-${index}`;
+}
+
+export function createExportPreset(patch = {}, existing = []) {
+  const reserved = new Set(existing.map((row) => row?.id).filter(hasPresetId));
+  const id =
+    hasPresetId(patch.id) && !reserved.has(patch.id)
+      ? patch.id
+      : availablePresetId(reserved);
+  return { type: "image/png", scale: 1, suffix: "", ...patch, id };
+}
 
 const FORMAT_VALUES = new Set(FORMATS.map((format) => format.value));
 
 /** Node-stored export presets survive selection changes; bad rows are ignored. */
 export function normalizeExportPresets(raw) {
   if (!Array.isArray(raw) || raw.length === 0) return [];
-  const rows = raw
-    .slice(0, MAX_PRESETS)
+  const candidates = raw
     .filter((row) => row && typeof row === "object" && !Array.isArray(row))
-    .map((row) => ({
-      id: typeof row.id === "string" && row.id ? row.id : `preset-${++presetSeq}`,
+    .slice(0, MAX_PRESETS);
+  // Reserve later valid IDs too, so repairing an earlier row cannot steal one.
+  const reserved = new Set(candidates.map((row) => row.id).filter(hasPresetId));
+  const assigned = new Set();
+  const rows = candidates.map((row) => {
+    const id =
+      hasPresetId(row.id) && !assigned.has(row.id)
+        ? row.id
+        : availablePresetId(reserved);
+    reserved.add(id);
+    assigned.add(id);
+    return {
+      id,
       type: FORMAT_VALUES.has(row.type) ? row.type : "image/png",
       scale: SCALES.includes(Number(row.scale)) ? Number(row.scale) : 1,
       suffix: typeof row.suffix === "string" ? row.suffix.slice(0, 32) : "",
@@ -39,17 +58,21 @@ export function normalizeExportPresets(raw) {
       ...(row.type !== "image/png" && row.quality != null
         ? { quality: String(row.quality) }
         : {}),
-    }));
+    };
+  });
   return rows;
 }
 
-
 /** Adding/removing a preset is one history entry; text edits may coalesce. */
-export function updateExportPresets(engine, nodeId, presets, coalesced = false) {
+export function updateExportPresets(
+  engine,
+  nodeId,
+  presets,
+  coalesced = false,
+) {
   if (!nodeId) return;
   const update = coalesced
-    ? engine?.updateNodeCoalesced ?? engine?.updateNode
-    : engine?.updateNode ?? engine?.updateNodeCoalesced;
+    ? (engine?.updateNodeCoalesced ?? engine?.updateNode)
+    : (engine?.updateNode ?? engine?.updateNodeCoalesced);
   update?.(nodeId, { exportPresets: presets });
 }
-

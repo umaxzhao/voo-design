@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -155,6 +155,7 @@ try {
         await dialog.waitFor();
         await settingsPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         assert.equal(await dialog.getByRole("radio").count(), 8);
+        assert.ok(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1), "Settings must not scroll horizontally");
         const bounds = await dialog.boundingBox();
         assert.ok(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= width && bounds.y + bounds.height <= 568, JSON.stringify(bounds));
         await dialog.getByRole("radio", { name: labels.poster, exact: true }).click();
@@ -166,7 +167,37 @@ try {
         await settingsPage.keyboard.press("End");
         assert.equal(await composer.getAttribute("data-selected"), "other");
         assert.equal(await composer.locator("textarea").getAttribute("placeholder"), labels.otherPlaceholder);
-        assert.match(await dialog.getByRole("button", { name: labels.size, exact: true }).innerText(), /1200.*800/);
+        const size = dialog.getByRole("button", { name: labels.size, exact: true });
+        assert.equal(await size.innerText(), labels.autoSize, "Unspecified dimensions remain automatic");
+        await size.click();
+        await settingsPage.getByRole("option", { name: "1440 × 900", exact: true }).click();
+        assert.equal(await composer.getAttribute("data-size"), "1440x900");
+        assert.match(await size.innerText(), /1440.*900/);
+        await size.click();
+        await settingsPage.getByRole("option", { name: labels.autoSize, exact: true }).click();
+        assert.equal(await composer.getAttribute("data-size"), "auto");
+        const candidates = dialog.getByRole("button", { name: labels.candidates, exact: true });
+        await candidates.click();
+        await settingsPage.getByRole("option", { name: labels.twoCandidates, exact: true }).click();
+        assert.equal(await composer.getAttribute("data-candidates"), "2");
+        await dialog.getByRole("button", { name: labels.style, exact: true }).click();
+        await settingsPage.getByRole("option", { name: "Controlled style", exact: true }).click();
+        assert.equal(await composer.getAttribute("data-style"), "clean");
+        const system = dialog.getByRole("button", { name: labels.system, exact: true });
+        await system.click();
+        await settingsPage.getByRole("option", { name: "Controlled system", exact: true }).click();
+        assert.equal(await composer.getAttribute("data-system"), "controlled");
+        assert.equal(await dialog.getByRole("button", { name: labels.style, exact: true }).isDisabled(), true);
+        await system.click();
+        await settingsPage.getByRole("option", { name: labels.systemAuto, exact: true }).click();
+        if (process.env.VOO_WELCOME_SETTINGS_EVIDENCE_DIR) {
+          await mkdir(process.env.VOO_WELCOME_SETTINGS_EVIDENCE_DIR, { recursive: true });
+          await settingsPage.screenshot({ path: `${process.env.VOO_WELCOME_SETTINGS_EVIDENCE_DIR}/${width}-${hasTouch ? "touch" : "mouse"}.png` });
+        }
+        await size.click();
+        await settingsPage.keyboard.press("Escape");
+        assert.equal(await dialog.count(), 1, "The first Escape closes only the nested choice");
+        assert.equal(await size.getAttribute("aria-expanded"), "false");
         await settingsPage.keyboard.press("Escape");
         await dialog.waitFor({ state: "detached" });
         assert.ok(await trigger.evaluate(button => document.activeElement === button));

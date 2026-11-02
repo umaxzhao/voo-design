@@ -53,13 +53,40 @@ await withEditorBrowser(async ({
     const before = await page.evaluate(() => ({ builds: window.__vooTestLayerTreeBuilds,
       renders: window.__vooTestLayerPanelRenders }));
     assert.ok(before.builds > 0 && before.renders > 0);
-    for (const id of ["large-1999", "large-1998"]) {
-      await page.evaluate(id => window.__vooEditor.selectExactly([id]), id);
-      await page.waitForFunction(id => document.querySelector("[data-layers-list]")
-        ?.getAttribute("aria-activedescendant") === `layer-row-${id}`, id);
+    await page.evaluate(async () => {
+      const { SpatialIndex } = await import("/src/canvas/editor/spatial_index.js");
+      const insert = SpatialIndex.prototype.insert;
+      const load = SpatialIndex.prototype.load;
+      window.__selectionIndexBuilds = 0;
+      SpatialIndex.prototype.insert = function (...args) {
+        window.__selectionIndexBuilds += 1;
+        return insert.apply(this, args);
+      };
+      SpatialIndex.prototype.load = function (...args) {
+        window.__selectionIndexBuilds += 1;
+        return load.apply(this, args);
+      };
+      window.__restoreSelectionIndexProbe = () => {
+        SpatialIndex.prototype.insert = insert;
+        SpatialIndex.prototype.load = load;
+      };
+    });
+    let indexBuilds;
+    try {
+      for (const id of ["large-1999", "large-1998"]) {
+        await page.evaluate(id => window.__vooEditor.selectExactly([id]), id);
+        await page.waitForFunction(id => document.querySelector("[data-layers-list]")
+          ?.getAttribute("aria-activedescendant") === `layer-row-${id}`, id);
+      }
+      assert.equal(await page.evaluate(() => window.__vooTestLayerTreeBuilds), before.builds,
+        "Selection must reuse the tree while real rows and controls update");
+    } finally {
+      indexBuilds = await page.evaluate(() => {
+        window.__restoreSelectionIndexProbe();
+        return window.__selectionIndexBuilds;
+      });
     }
-    assert.equal(await page.evaluate(() => window.__vooTestLayerTreeBuilds), before.builds,
-      "Selection must reuse the tree while real rows and controls update");
+    assert.equal(indexBuilds, 0, "Selection must not rebuild unchanged workspace geometry");
     assert.ok(await page.evaluate(() => window.__vooTestLayerPanelRenders) > before.renders);
     assert.equal(await page.evaluate(() => window.__layerCacheDocument === window.__vooEditor.getDocument()), true);
     await page.evaluate(() => window.__vooEditor.selectExactly([]));
@@ -92,6 +119,10 @@ await withEditorBrowser(async ({
     };
   });
   await audit.record("scrolled-reorder-and-undo", async () => {
+    const geometry = () => page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => ({
+      id: node.id, parentId: node.parentId, x: node.x, y: node.y, width: node.width, height: node.height,
+    })));
+    const before = await geometry();
     const source = await page.locator('#layer-row-large-1 button[title="Rename layer"]').boundingBox();
     const target = await page.locator("#layer-row-large-3").boundingBox();
     await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
@@ -104,11 +135,18 @@ await withEditorBrowser(async ({
       await page.mouse.up();
     }
     await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.findIndex(node => node.id === "large-1") === 3);
+    const reordered = await geometry();
+    assert.deepEqual([...reordered].sort((a, b) => a.id.localeCompare(b.id)), [...before].sort((a, b) => a.id.localeCompare(b.id)));
     await tool("undo");
-    assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().nodes.findIndex(node => node.id === "large-1")), 1);
+    assert.deepEqual(await geometry(), before);
+    await tool("redo");
+    assert.deepEqual(await geometry(), reordered);
+    await tool("undo");
+    assert.deepEqual(await geometry(), before);
     return {
       absoluteDropPosition: true,
-      oneUndo: true
+      geometryPreserved: true,
+      oneUndoRedo: true
     };
   });
   await audit.record("offscreen-selection-mounts-focused-row", async () => {
@@ -187,4 +225,4 @@ await withEditorBrowser(async ({
     };
   });
   audit.finish();
-});
+}, { deviceScaleFactor: Number(process.env.VOO_LAYER_TEST_DPR ?? 1) });

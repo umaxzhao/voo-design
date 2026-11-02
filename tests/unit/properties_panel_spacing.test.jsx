@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import PropertiesExportAction from "../../src/canvas/components/editor_properties/properties_export_action.jsx";
+import ExportSection from "../../src/canvas/components/editor_properties/export_section.jsx";
 import { CollapsibleSection } from "../../src/canvas/components/editor_properties/property_section.jsx";
 import {
   loadEditorPanelSectionState,
@@ -43,11 +43,12 @@ describe("properties panel spacing and sections", () => {
     expect(expanded).toContain("Stroke controls");
   });
 
-  it("renders the fixed Export action once", () => {
+  it("renders the real opt-in Export heading without a fixed action", () => {
     const html = renderToStaticMarkup(
-      <PropertiesExportAction title="Export" label="Export PNG" onExport={() => {}} />,
+      <ExportSection object={{ id: "shape" }} engine={{ exportSelectionPng: () => {} }} />,
     );
-    expect(html.match(/data-testid="properties-export-action"/gu)).toHaveLength(1);
+    expect(html).not.toContain('data-testid="properties-export-action"');
+    expect(html).toContain('data-testid="inspector-export-section"');
     expect(html.match(/<button/gu)).toHaveLength(1);
   });
 
