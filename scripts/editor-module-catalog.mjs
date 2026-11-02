@@ -253,12 +253,14 @@ export const EDITOR_MODULES = [
       "tests/e2e/agent-suggestions.e2e.mjs", "tests/e2e/agent-suggestions-harness.jsx",
       "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
       "tests/unit/agent_tool_order_and_lucide_paths.test.js",
+      "tests/unit/voo_editor_panel.test.js",
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
+      "platform.harness-editor-panel",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions", "pending-integration", "agent-model-catalog", "editor-loading",
@@ -267,6 +269,7 @@ export const EDITOR_MODULES = [
     ],
     remaining: [
       "Paid endpoints, authenticated external clients, signed installers and skipped collaboration cases require separate evidence and cannot inherit an offline pass.",
+      "The DeepSeek Harness right-panel host (plugins/voo-editor-panel) has unit coverage for its loopback server; its rendered panel and the DSH-side tab registration are verified in the Harness profile, not by these browser suites.",
     ],
   },
 ];

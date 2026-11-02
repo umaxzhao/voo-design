@@ -1,5 +1,27 @@
 # 项目检查总进度
 
+## VOO 设计编辑器进驻 DeepSeek Harness 右侧面板：2026-11-03
+
+- **基线版本**：`3657d11e`（`merge/consolidate-all-branches`，工作树在改动前干净）；本轮改动为新增插件包与单测，未推送。
+- **交付**：新增 Harness 插件包 `plugins/voo-editor-panel`（Host + Client 两半），已通过 Harness Plugin Manager 安装到 `desktop` profile（`voo-editor-panel 1.0.0 <- plugins/voo-editor-panel` 链接安装，`application: applied`，无 warnings）。
+  - Host 半 `index.js` / `lib/*`：在 `http://127.0.0.1:4173` 提供仓库 `dist/` 构建（仅回环、GET/HEAD、SPA 回退、拒绝路径穿越、`/__voo/health` 健康信息），并在 4179 无人监听时于 Host 进程内启动 VOO CLI bridge（已运行则复用），随插件行卸载一并关闭。
+  - Client 半 `client.js`：注册右侧栏标签类型 `voo`（`keepMounted`，切换标签保留文档）、引导页卡片与 iframe 主体 `http://127.0.0.1:4173/?embed`；含加载态、页面刷新命令绑定、`zh`/`en` 文案，外观只用 `--dsw-alias-*` 主题 token，不引用任何 Harness Client 包。
+  - 编辑器侧零改动：`?embed` 已支持隐藏标题栏/引导、自动新建未命名项目，并主动连接本地 bridge（`src/canvas/mcp/mcp_link_boot.js`）。
+- **验收证据**：
+  1. 单测 `tests/unit/voo_editor_panel.test.js`：16/16 通过（`npx vitest run tests/unit/voo_editor_panel.test.js`，退出码 0），覆盖 options 解析、请求路径映射、真实 HTTP 服务（端口 0 + 临时构建夹具）、目录穿越、缺失构建提示页、`close()` 后拒绝连接；含本轮修复的回归断言——`editorDir: ""` 不再遮蔽 `VOO_EDITOR_PANEL_DIR` 环境覆盖（独立验证者发现，已修复并锁定）。
+  2. 注册门禁：`npm run check:modules` 通过（12 模块 / 74 能力 / 99 浏览器套件注册有效；新增 `platform.harness-editor-panel`，`tests/unit/voo_editor_panel.test.js` 归属 `platform` 路径）；`node scripts/editor-checks.mjs --changed --json` 的 `unmapped` 为 0、`fullReleaseRequired` 为 false（影响面按 `platform` 及其 related 模块列出）。
+  3. 语法与清单：`node --check` 覆盖 `index.js`、`client.js`、`lib/*.js`；`package.json`、`locale/*.json`、`cordis.patch.yml` 解析通过；`icon.png` 为有效 PNG（92,379 字节 < 256 KiB）。
+  4. 运行态（本机 `desktop` profile）：
+     - `curl http://127.0.0.1:4173/__voo/health` → `{"ok":true,"service":"voo-editor-panel","editorDir":".../dist","hasBuild":true}`；`GET /` 返回 200 HTML，`assets/index-HO9CiTZV.js` 返回 200 `text/javascript`（553,244 B）。
+     - `curl http://127.0.0.1:4179/health` → `{"ok":true,"service":"voo-cli-bridge"}`，由插件 Host 半启动。
+     - Client 注册：Harness Client Slots 的 `sidebar.right.pane.tab` 出现占位 `voo-editor-panel`（active），证明 Client 半已加载并完成标签类型与主体注册。
+     - 端到端：右侧面板里的编辑器页面连接上 bridge 后，`voo_status` 返回 `canvasConnected: true`、`documentId: "document-1"`，`inspect_layer_tree` 读到真实文档（`totalCount: 79`），即 Agent 的 `mcp__voo__*` 画布工具作用对象正是右侧面板中的编辑器。
+- **未验证 / 保留项**：
+  - 已认证 Harness GUI 的渲染外观（浅色/深色、悬浮与全屏呈现）未截图核对：本环境不启动独立浏览器读取已认证页面，只验证到 Client 注册与页面内运行态；显示元数据（标题/描述/图标）已核对安装资源，但未在 Plugin Manager 中目视确认。
+  - Harness 重启后的重新激活、以及 VOO 桌面 App 自带 bridge 与插件启动的 bridge 之间的接管顺序未做双实例实测。
+  - 未运行编辑器浏览器套件：本轮未改动 `src/`、`electron/` 运行时代码，`--changed` 列出的 platform 及 related 模块浏览器套件未执行，不能据此认定通过；也未执行 `npm run lint:design`（扫描范围仅 `src/`，本轮无 `src/` 变更）。
+  - 未执行 `scripts/deploy-editor.sh`：`dist/` 与源码均未变化，部署不携带本插件；本轮未 push——本地 `merge/consolidate-all-branches` 相对 `origin` 领先 61 / 落后 8，直接 push 会被拒绝，未做合并或强推。
+
 ## 同一父级与根平面多选图层重排原子迁移修复与双重实测：2026-11-02
 
 - **基线版本**：`cb67e0d2`（前序包含 `de7b42a1`、`31c24644`、`d20c6836`）；未推送、未发布。
