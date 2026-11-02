@@ -5,9 +5,8 @@ import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { importZipFromWelcome, saveZipSnapshot } from "./uf13-pen-join-helpers.mjs";
 // Optional evidence directory for the before/after PNGs reviewed by a human.
 const EVIDENCE = process.env.UF14_EVIDENCE;
-// Destination result saved as a portable ZIP and reopened in a new browser process.
+// Each direction's result is saved as a portable ZIP and reopened in a new browser process.
 const COLD_DIR = process.env.UF14_COLD_EVIDENCE ?? join(process.env.HOME ?? "/tmp", "voo-uf14-cold-reopen");
-const COLD_ZIP = join(COLD_DIR, "patch-destination.zip");
 
 // UF14 regression: the Patch tool's Source / Destination direction must reach the engine
 // and change which region receives pixels. Source writes the lasso (the region dragged
@@ -17,6 +16,7 @@ const IMAGE_AT = { x: 100, y: 100, size: 100 };
 const LASSO = { x0: 140, y0: 140, x1: 170, y1: 170 };
 const DRAG = { from: { x: 155, y: 155 }, to: { x: 115, y: 155 } };
 const DX = DRAG.to.x - DRAG.from.x;
+const destinationBox = { x0: LASSO.x0 + DX, y0: LASSO.y0, x1: LASSO.x1 + DX, y1: LASSO.y1 };
 
 /** Image pixels of one node as {width, data}, so regions can be addressed in image space. */
 async function readPixels(page, id) {
@@ -43,8 +43,7 @@ function changedIn(before, after, box) {
   return count;
 }
 
-const destinationBox = { x0: LASSO.x0 + DX, y0: LASSO.y0, x1: LASSO.x1 + DX, y1: LASSO.y1 };
-let destinationAfter = null;
+const coldResults = new Map();
 
 await withEditorBrowser(async ({ page, tool, errors }) => {
   const client = (point) => page.evaluate(async (point) => {
@@ -76,10 +75,19 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
     return n.id;
   }, { at: IMAGE_AT.x, size: IMAGE_AT.size });
 
+  // Real toolbar entry: the Healing family chevron, then its Patch item (not an engine setTool call).
+  const enterPatchFromToolbar = async () => {
+    await page.getByTestId("editor-healing-menu-trigger").click();
+    await page.getByRole("menuitem", { name: /^(Patch|修补)$/ }).first().click();
+    await page.waitForFunction(() => window.__vooEditor.getHealingMode() === "patch");
+    // The toolbar's healing button is pressed and labelled with the active mode (Patch).
+    await page.getByRole("button", { name: /^(Patch|修补)$/, pressed: true }).first().waitFor({ timeout: 5000 });
+  };
+
   const runPatch = async (direction) => {
     const id = await seedImage();
     const before = await readPixels(page, id);
-    await page.evaluate(() => { const e = window.__vooEditor; e.setTool("healing"); e.setHealingMode("patch"); });
+    await enterPatchFromToolbar();
     // Use the panel's own Source / Destination control, as a user would.
     await page.locator("button[aria-pressed]").filter({ hasText: direction === "source" ? /^(Source|源)$/ : /^(Destination|目标)$/ }).first().click();
     const corners = [[LASSO.x0, LASSO.y0], [LASSO.x1, LASSO.y0], [LASSO.x1, LASSO.y1], [LASSO.x0, LASSO.y1], [LASSO.x0, LASSO.y0]];
@@ -102,12 +110,12 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
       const png = await page.evaluate((nodeId) => window.__vooEditor.exportSelectionPng([nodeId]), id);
       const dataUrl = typeof png === "string" ? png : png.dataUrl;
       await writeFile(join(EVIDENCE, `${direction}-after.png`), Buffer.from(dataUrl.split(",")[1], "base64"));
+      await writeFile(join(EVIDENCE, `${direction}-before.json`), JSON.stringify({ width: before.width }));
     }
-    if (direction === "destination") {
-      // Save the patched state (before Undo) as a normal portable ZIP for the cold reopen check.
-      await saveZipSnapshot(page, COLD_ZIP);
-      destinationAfter = { id, after };
-    }
+    // Save the patched state (before Undo) as a normal portable ZIP for the cold reopen check.
+    const zipPath = join(COLD_DIR, `patch-${direction}.zip`);
+    await saveZipSnapshot(page, zipPath);
+    coldResults.set(direction, { zipPath, after });
     await tool("undo");
     assert.deepEqual(await readPixels(page, id), before, `${direction}: one Undo restores the image`);
     await tool("redo");
@@ -129,15 +137,18 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   console.log(JSON.stringify({ source, destination }));
 }, { openDocument: true, mcpLink: true });
 
-// Cold reopen: the Destination result must come back pixel-identical in a new browser process.
-assert.ok(destinationAfter, "Destination result was captured for the cold reopen");
-await withEditorBrowser(async ({ page, errors }) => {
-  page.setDefaultTimeout(30000);
-  await importZipFromWelcome(page, COLD_ZIP);
-  const reopenedId = await page.evaluate(() => window.__vooEditor.getDocument().nodes.find((n) => n.kind === "image")?.id ?? null);
-  assert.ok(reopenedId, "cold reopen keeps the image layer");
-  const reopened = await readPixels(page, reopenedId);
-  assert.deepEqual(reopened, destinationAfter.after, "cold reopen keeps the Destination patch pixels");
-  assert.deepEqual(errors, [], `cold reopen page errors: ${errors.join("\n")}`);
-  console.log(JSON.stringify({ cold: "pass", zip: COLD_ZIP }));
-}, { openDocument: false, mcpLink: false });
+// Cold reopen per direction: each result must come back pixel-identical in a new browser process.
+for (const direction of ["source", "destination"]) {
+  const entry = coldResults.get(direction);
+  assert.ok(entry, `${direction} result was captured for the cold reopen`);
+  await withEditorBrowser(async ({ page, errors }) => {
+    page.setDefaultTimeout(30000);
+    await importZipFromWelcome(page, entry.zipPath);
+    const reopenedId = await page.evaluate(() => window.__vooEditor.getDocument().nodes.find((n) => n.kind === "image")?.id ?? null);
+    assert.ok(reopenedId, `${direction}: cold reopen keeps the image layer`);
+    const reopened = await readPixels(page, reopenedId);
+    assert.deepEqual(reopened, entry.after, `${direction}: cold reopen keeps the patched pixels`);
+    assert.deepEqual(errors, [], `${direction} cold reopen page errors: ${errors.join("\n")}`);
+    console.log(JSON.stringify({ cold: direction, pass: true, zip: entry.zipPath }));
+  }, { openDocument: false, mcpLink: false });
+}
