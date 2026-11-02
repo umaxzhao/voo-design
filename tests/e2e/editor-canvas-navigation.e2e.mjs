@@ -198,6 +198,8 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await camera(), beforeEdit);
   const stateBeforeWelcome = await page.evaluate(() => ({ nodes: window.__vooEditor.getDocument().nodes, selection: window.__vooEditor.getSelectedIds() }));
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
+  const settingsLabel = await page.evaluate(async () => (await import("/src/shared/i18n.js")).t("welcome.prompt.settingsLabel"));
+  await page.getByRole("button", { name: settingsLabel }).click();
   const typeGroup = page.getByRole("radiogroup");
   await typeGroup.waitFor();
   const radios = typeGroup.getByRole("radio");
