@@ -62,6 +62,19 @@
      - `src/canvas/editor/editor_svg_import.js` 与 `src/canvas/agent/svg_to_nodes.js`: 彻底解决 SVG `text-anchor` 导入水平漂移；在仿射矩阵变换前将 `middle`（`-width/2`）与 `end`（`-width`）换算为文本左上角几何包围盒坐标；计算并赋予文本节点明确的 `node.width` 与 `node.height`；全面兼容 camelCase `textAnchor`、kebab-case `text-anchor`、属性与内联样式；
      - 定向单测 `tests/unit/svg_text_anchor.test.js` (6/6 通过)，`tests/unit/fill_none_and_svg_fidelity.test.js` (10/10 通过)；
      - **74851b04 Mac 原生复测（全面通过，18/18 验证项 100% 通过）**：Electron 43.4.0 darwin/arm64，Ning 真实 profile 独立副本；SVG text-anchor 原生光栅化比对：Centered Title 边界 minX=83 maxX=239（参考 82..239，diff=1px），Right Note 边界 minX=201 maxX=299（参考 200..298，diff=1px），完全消除文字右移与画板裁切；Lucide user-plus 导出 12× PNG 头部/身体 alpha 均为 0（空心透明）；复合 clipPath、偏心径向渐变、圆角矩形、graphic-1.svg 7 点采样均通过；Frame 标题选择、Ctrl+Shift+L 锁定、200+50 表达式、系统字体下拉、缺失字体警示、钢笔中点插入、图片画笔光栅固化、关闭标签回首页画板清空、D10 图层多选拖入 Frame、D11 叠层 Esc 逐级关闭、D09 草稿崩溃恢复（SIGKILL 后冷启动一键恢复 3 节点）全部原生验证通过。证据：[REPORT.md](/Users/tt/Desktop/voo-mac-retest/REPORT.md)、[机器证据](/Users/tt/Desktop/voo-mac-retest/74851b04-evidence.json)。
+     - **Codex 独立原生复测（74851b04，worker `ctx_ff6a1d7bb0a9`）**：
+       - **SVG text-anchor**：通过，Centered Title 83..239（参考 82..239），Right Note 201..299（参考 200..298），水平边界误差 1px，右端未触及 360px 画板裁切边；
+       - **Lucide fill=none**：通过，`user-plus` 12× PNG 头部与身体中心均为 `[0,0,0,0]` 空心透明；
+       - **Agent 欢迎生成与正式落盘**：通过，302.AI `deepseek-chat` 连续调用 10+ 工具（update_plan/build_layout/batch_mutate等），无 `Failed to fetch`，自动落盘正式文件 `CreateoneeditableProf.voo`（75,597 字节、17 节点），无需手动 Save；
+       - **Agent 冷重开布局保真**：部分通过，冷启动后标题栏导入打开，17 节点与全部内容保留，自适应文字宽度存在 1–3px 变化与 Follow 按钮 1px 横移；
+       - **标题栏 Open**：通过，点击“导入”呼出原生选择器并成功打开工程；
+       - **标题栏 Save**：未通过指定入口，实际标题栏无 Save 按钮；原生 File 菜单 Save（首次保存 17,213 字节、修改更新 17,215 字节）与 Save As（另存 17,215 字节）单独通过；
+       - **Linux QA D09-B（保存基线 + 未保存增量崩溃恢复）**：通过，已保存基线加未保存红色矩形增量，等待写盘后 SIGKILL 崩溃退出，冷启动首页恢复横幅点击恢复，4 个节点全部保留，手动保存原文件 SHA-256 完全未变；
+       - **Linux QA D01（PSD 像素水合）**：通过，导入真实 RGBA 双层 PSD，两图层成功解析 imageId 并在导出时准确取样红绿像素；
+       - **Linux QA D04（像素选区反选）**：通过，点击反选仅调用 `invertPixelSelection` 一次、`invertMask` 零次，选区轮廓 1→2，像素数据未受污染；
+       - **Linux QA D07（右键创建组件）**：通过，普通设计页右键矩形→组件→创建组件成功进入组件编辑，无 Uncaught TypeError；
+       - **Linux QA D02（API 面板状态）**：通过，设置面板打开 AI 供应商显示“未配置 API KEY”，无“无法保存”误报；
+       - **门禁验证**：定向单测 3 文件 20 用例全部通过（0 失败 0 跳过）；`npm run check:modules` 注册有效；完整机器证据详见 `~/Desktop/voo-mac-retest/codex-74851b04-evidence/results.json` 与 `evidence.json`。
 - **Mac Electron 原生复测证据（revision 74851b04 终态确认）**：
   - 运行 `npm run electron:dev` 与原生 Electron 43.4.0，使用 Ning 真实 profile 独立副本（`/Users/tt/Desktop/voo-mac-retest/ning-74851b04-profile`）及专用工程目录 `74851b04-workspace/`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套证据文件 `74851b04-*` 与截图在 `~/Desktop/voo-mac-retest/shots/`。
   - **SVG 排版保真缺陷彻底闭环**：`Centered Title` 与 `Right Note` 的文本像素边界与原生 SVG 参考栅格完全吻合，水平误差仅 1px，无右移或画布裁切；
