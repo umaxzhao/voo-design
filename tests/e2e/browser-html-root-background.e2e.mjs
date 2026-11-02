@@ -71,6 +71,12 @@ await withEditorBrowser(async ({ page, errors }) => {
     `root background must land on the imported frame, got ${after.frameFill}`,
   );
   assert.ok(after.count > before.count, "import must add layers");
+  // Original HTML content must survive the import as real text layers, not just the frame.
+  const importedTexts = await page.evaluate((ids) => window.__vooEditor.getDocument().nodes
+    .filter((node) => !ids.includes(node.id) && node.kind === "text")
+    .map((node) => node.text), before.ids);
+  assert.ok(importedTexts.includes("Typography"), `heading text must survive import, got ${JSON.stringify(importedTexts)}`);
+  assert.ok(importedTexts.includes("Body copy line one."), `body text must survive import, got ${JSON.stringify(importedTexts)}`);
 
   await page.getByTestId("editor-pages").click({ position: { x: 20, y: 20 } });
   await page.keyboard.press("ControlOrMeta+Z");

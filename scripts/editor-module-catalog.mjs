@@ -182,7 +182,7 @@ export const EDITOR_MODULES = [
     suites: [
       "drawing-retouch", "raster-loading", "image-action-loading", "image-interaction-boundaries",
       "image-adjustments-complete", "image-selections-warp", "image-toolbar-complete", "image-agent-complete",
-      "image-inspector-core", "gl-spatial-parity", "generated-output", "image-export-formats",
+      "image-inspector-core", "gl-spatial-parity", "generated-output", "image-export-formats", "dodge-burn-panel-controls",
     ],
     remaining: [
       "Real model/network and hardware memory/FPS gates are separate from offline browser checks; video is excluded from this audit.",
