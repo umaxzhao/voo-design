@@ -1,6 +1,37 @@
 # 项目检查总进度
 
-## Codex 独立 Mac 原生复测：6d7b3cfa（核心验收未通过）
+## 独立定向续测与本地测试提交：2026-11-02
+
+- 产品源码基线 `3e8f5214`，只更新测试的本地提交 `164896f0`、`ed288fff`；未推送发布。36项（含冷重开几何）+27项快捷键定向单测通过；后续3契约文件21项独立通过，无新增skip。表达式输入的min HTML属性改为文本工具minFontSize=6源码契约；首页仍属静态顺序检查，不能当provider失败/一次intent的运行时认证。
+- 浏览器大图层、快捷键生命周期与布局历史通过。隔离原生Electron 5项通过；另独立退出旧进程、新进程读回同一磁盘文件并加载1图片节点/1asset成功，不扩展为复杂项目认证。
+- ZIP导出UI下载等待超时尚未定位。最小直接调用导出实际生成EffectsAudit.zip(1676字节)、嵌套样本nested.zip(1680字节)，两者CRC通过，含document.voo/manifest.json；嵌套新context导入等待图片就绪超时仍未通过，不能只增加超时或用直接API通过取代UI验收。
+- 原生IME/实体硬件、复杂连续编辑后的冷重开、font_picker设计lint和滚动长帧仍未关闭。详细增量与日志：`/Users/tt/Documents/Codex/2026-11-02/task/qa-followup/`、`qa-continuation/`；Mac结果不继承为Linux通过。
+
+## Codex 独立 Mac 原生复测：3e8f5214（两项核心修复获限定场景通过，发布门禁未过）
+
+- **绑定版本与证据**：`3e8f5214195f0d8a6afcc302f4e316a8db2c2b01`（merge/consolidate-all-branches），Electron 43.4.0 darwin/arm64，Apple M4 Pro / macOS 26.5.2；Ning profile 独立副本（`codex-3e8f5214-profile`），测试工作区 `codex-3e8f5214-workspace/`；[完整报告](/Users/tt/Desktop/voo-mac-retest/REPORT.md)、[机器结果](/Users/tt/Desktop/voo-mac-retest/codex-3e8f5214-evidence/results.json)、[证据清单](/Users/tt/Desktop/voo-mac-retest/codex-3e8f5214-evidence/evidence.json)。
+- **两项核心修复限定验证**：
+  - **冷重开文本几何零漂移（Strict Lossless）**：通过。修改 Name 颜色后原生 ⌘S，退出进程后二次冷开并额外等待 10s 字体就绪，17 个节点序列化精确匹配，`strictLossless: true`；指定 7 节点与全量节点 Δx/Δy/Δwidth/Δheight/ΔboxWidth 均为 0px。[对比](/Users/tt/Desktop/voo-mac-retest/codex-3e8f5214-evidence/cold-font-settled-visible.json)、[字体](/Users/tt/Desktop/voo-mac-retest/codex-3e8f5214-evidence/font-settlement.json)。
+  - **图层列表 ⌘ 多选快速拖拽原子迁移**：通过所测路径。列表点击 Child A、⌘点击 Child B，极速单次拖拽（Frame 34.3ms，根槽位 31.6ms）原子迁移全部节点，单步 ⌘Z / ⇧⌘Z 恢复，拖拽平移帧率 59.99 FPS。[Frame 结果](/Users/tt/Desktop/voo-mac-retest/codex-3e8f5214-evidence/frame-result.json)、[根级结果](/Users/tt/Desktop/voo-mac-retest/codex-3e8f5214-evidence/root-result.json)。
+- **本地可执行验收项补测与真实边界**：
+  - **原生切片文件选择器（未覆盖原生 Picker）**：代码中切片导出逐个触发 `saveMediaExport`，因桌面端 `preload.cjs` 未注入 `window.vooElectron.chooseExportPath`，走浏览器 `<a download>` 回退；此前测试仅通过适配器证明生产渲染与文件 IPC，**原生切片选择器（Picker 对话框）未接入且未覆盖**。
+  - **虚拟化大图层列表滚动（长帧未关闭）**：原报告记载 118 帧、p95 49.9ms、max 133.3ms，但尚未定位该轮原始记录，不据此认定根因。独立 Chromium 开发版 2000 层重跑保留原始 120 帧数据，挂载最多 34 行，滚动 p95/max 约33.4ms；存在超过20ms帧。不是原生Electron或实体触摸板认证；帧耗时也不能证明没有内存泄漏。证据：`/Users/tt/Documents/Codex/2026-11-02/task/qa-continuation/scroll.json`。
+- **合成样本检查与竞品标杆边界纠正**：
+  - D04 像素反选无蒙版污染、画笔单步撤销无损恢复、SVG 四项采样容差 ≤12、32px 网格几何路径贴合 (96,96,128,96)、SIGKILL 崩溃恢复 17 节点均为**本地合成断言检查通过**，未与 Figma/Affinity 在相同机器/相同文件/相同操作下做横向实测对比，**禁止表述为“标杆全量通过”**。
+  - 画布平移缩放导航中，Profile Card 实测 60.00fps（p95 17.6ms，max 17.8ms），但 1000 矩形样本中记录到一次 **33.3ms 帧**，不能概括为始终 60fps。
+- **需外部硬件/环境的未覆盖项（前提与受阻原因）**：
+  - **实体触摸板手势**：需物理触控板产生 OS 原生捏合缩放与惯性滑动；受阻于自动化环境仅能通过 CDP 模拟离散指针/滚轮事件，无法生成真实物理惯性与触控点阵。
+  - **实体触控笔**：需物理连接支持压感/倾斜的数位板（如 Wacom/Apple Pencil）；受阻于无连接实体硬件，无法捕获真实电磁压感级数与倾斜轴数据。
+  - **签名安装包**：需 Apple 开发者证书与公证凭据；受阻于本地无生产签名密钥环境且红线禁止发布推送，仅运行开发版实例。
+  - **Linux 原生环境认证**：需在 Ubuntu 22.04 / Debian 原生 X11/Wayland 桌面环境中构建运行；受阻于当前执行机为 macOS arm64，无法运行 Linux 原生二进制，Linux QA 正在等待独立的 aae01585 固定源码快照进行环境测试。严禁用 Mac 结果代替 Linux 认证。
+- **完整现有测试门禁执行状态（门禁未通过）**：
+  - `npm run check:modules`：通过（12 模块 73 能力有效注册，功能覆盖标记为 partial）；
+  - `npx vitest run`：全量通过（1,707 套件通过，5,108 用例通过，0 失败，4 跳过/待测，通过率 100%）。此前 4 文件 9 项失败已完成测试契约同步：`affinity_tool_properties_panel.test.jsx` 与 `no_size_presets.test.jsx` 对齐 `BoundedNumberInput` 的 `inputMode="decimal"` 表达式模式；`container_selection_chrome.test.js` 补齐旋转标线 Canvas mock 上下文（`moveTo/lineTo/stroke/arc`）；`welcome_home_actions.test.js` 对齐内存建构顺序（`store.newVooProject` 先于 `setPendingGeneration`）；
+  - `node tests/e2e/image-layer-window.e2e.mjs`：8 项全量通过；
+  - `node tests/e2e/editor-layers-composition.e2e.mjs`：17 项全量通过；
+  - `npm run lint:design`：**失败**（`src/canvas/components/font_picker.jsx:571:25` 裸 rounded）。核实属于并行任务分支 `codex/nba-font-fidelity`，严守红线未越界修改；**门禁如实记录为未通过**。未运行全量 release 门禁，本轮无 push、无 deploy、无 la 访问。
+
+## Codex 独立 Mac 原生复测：6d7b3cfa（核心验收未通过，已由 3e8f5214 修复替代）
 
 - **绑定版本与证据**：`6d7b3cfa2b7f5f8aae8c00bd4d879d4f0e9edb97`，Electron 43.4.0 darwin/arm64，Apple M4 Pro / macOS 26.5.2；Ning profile 的独立副本，独立开发源 5187；[完整报告](/Users/tt/Desktop/voo-mac-retest/REPORT.md)、[机器结果](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/results.json)、[证据清单](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/evidence.json)。
 - **documents / text / layout：失败**。历史 Profile Card 原生打开→File 保存→⌘S 保存→全退出冷重开后，Name Block / Name 宽度各 −3px、Role −1px、Meta +2px；其余指定节点几何不变，17 节点完整，`strictLossless: false`。4 文件 60 定向单测通过，但不能替代该原生复测失败。[对比](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/cold-after-restart.json)。
@@ -84,7 +115,20 @@
        - **Linux QA D07（右键创建组件）**：通过，普通设计页右键矩形→组件→创建组件成功进入组件编辑，无 Uncaught TypeError；
        - **Linux QA D02（API 面板状态）**：通过，设置面板打开 AI 供应商显示“未配置 API KEY”，无“无法保存”误报；
        - **门禁验证**：定向单测 3 文件 20 用例全部通过（0 失败 0 跳过）；`npm run check:modules` 注册有效；完整机器证据详见 `~/Desktop/voo-mac-retest/codex-74851b04-evidence/results.json` 与 `evidence.json`。
-- **Mac Electron 原生复测证据（revision 74851b04 终态确认）**：
+	  22. `worker-fix-cold-reopen-lossless` (冷重开文本 0px 几何漂移与 Auto Layout 尺寸保真，commit `0d8c6490`)：
+	     - `src/canvas/editor/editor_engine_init.js`: 维护 `persistedTextSignatures` 签名缓存，在反序列化（`open`）时记录已保存的未修改文本节点签名；在后续 `queueFontLoads` 异步字体加载完成触发 `measureTextNodes(getDoc(), { force: true })` 强制重测时，对未发生文本内容或样式变更的节点直接跳过 Canvas2D 重新测量，保持其已持久化的精确几何尺寸；用户后续编辑或样式修改时主动失效签名允许正常重测；
+	     - 定向单测 `tests/unit/cold_reopen_text_geometry.test.js` (6/6 通过)，证实冷重开场景下字体就绪后 0px 几何漂移、Auto Layout 零扰动且 `strictLossless: true`。
+	  23. `worker-fix-layer-list-multiselect-drag` (图层列表 ⌘ 多选快速拖拽原子移入容器与根槽位，commit `3e8f5214`)：
+	     - `src/canvas/components/use_layer_drag.js`: 在拖拽完成 `finish(commit)` 时触发 `session.measure?.()` 重新测量当前视口中各行几何位置；将容器行的内嵌边界（inset）从 25% 紧缩至 `Math.min(3, row.height * 0.1)`（约 3px），防止快速指针滑动手势落入容器边缘的插入插槽，确保可靠命中目标 Frame；
+	     - `src/canvas/editor/doc_ops_groups.js`: 升级 `moveNodeToRoot(doc, id, targetRootIndex)` 支持 `Array.isArray(id)`，利用 `groupingRoots(doc, ids)` 计算根节点集，实现多选中节点一次性、单事务批量移至根画板插槽，支持单步 Undo/Redo；
+	     - 定向单测 `tests/unit/layer_panel_multiselect_reparent.test.js` (9/9 通过)，证实多选快速拖入 Frame 与根槽位均完整原子迁移并单步可撤销。
+- **Mac Electron 原生复测证据（revision 3e8f5214 终态确认）**：
+  - 运行 `npm run electron:dev` 与原生 Electron 43.4.0（Apple M4 Pro，darwin/arm64），使用 Ning 真实 profile 独立副本（`codex-3e8f5214-profile`）及专用工程目录 `codex-3e8f5214-workspace/`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套证据文件在 `~/Desktop/voo-mac-retest/codex-3e8f5214-evidence/`。
+  - **冷重开文本几何零漂移彻底闭环**：Profile Card 17 节点冷启动重开序列化精确匹配，`strictLossless: true`，包括 Name Block、Name、Role、Meta、Follow Button、Icon / plus、Follow Label 在内的所有节点 Δx、Δy、Δwidth、Δheight、ΔboxWidth 均为 0px（即便二次冷开额外等待 10s 字体就绪亦保持 0px 偏差）；
+  - **图层列表多选快速拖拽彻底闭环**：⌘ 多选 Child A + Child B 快速拖入 Frame（34.3ms）与根槽位（31.6ms）均原子迁移全部节点，单步 ⌘Z / ⇧⌘Z 完整恢复，拖拽平移帧率 59.99 FPS；
+  - **本地合成样本定向验证（非竞品同条件实测）**：D04 像素选区反选无蒙版污染、画笔单步撤销无损恢复、SVG 四项保真抽测全过、32px 网格几何路径边界精确贴合 (96,96,128,96)、切片与区域导出稳定、SIGKILL 崩溃恢复 17 节点 100% 精确还原；
+  - **60fps 画布平移缩放导航**：Profile Card 导航实测 60.00fps（p95 17.6ms，max 17.8ms，>20ms 帧 0）；1000 简单矩形压力测试 59.86fps（p95 17.7ms，max 33.3ms，>20ms 帧 1）。
+- **Mac Electron 原生复测证据（revision 74851b04 历史记录保留）**：
   - 运行 `npm run electron:dev` 与原生 Electron 43.4.0，使用 Ning 真实 profile 独立副本（`/Users/tt/Desktop/voo-mac-retest/ning-74851b04-profile`）及专用工程目录 `74851b04-workspace/`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套证据文件 `74851b04-*` 与截图在 `~/Desktop/voo-mac-retest/shots/`。
   - **SVG 排版保真缺陷彻底闭环**：`Centered Title` 与 `Right Note` 的文本像素边界与原生 SVG 参考栅格完全吻合，水平误差仅 1px，无右移或画布裁切；
   - **Lucide 空心矢量保真闭环**：`user-plus` 图标四轮廓导出 12× PNG 头部与身体中心 alpha=0，空心矢量与多轮廓断连完全正常；
