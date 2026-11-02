@@ -1,0 +1,92 @@
+{
+  "sourceNodes": 14,
+  "outputNodes": 14,
+  "droppedRootKeys": [
+    "backgroundColor",
+    "canvasBackgroundColor",
+    "canvasId",
+    "editingNodeId",
+    "editorArtboardLayouts",
+    "editorCamera",
+    "height",
+    "isCanvasRoot",
+    "pages",
+    "stroke",
+    "strokeHidden",
+    "strokeWidth",
+    "strokes",
+    "width"
+  ],
+  "nodeChecks": [
+    {
+      "property": "fills",
+      "lostOnNodes": 1,
+      "sampleIds": [
+        "60deffd2-5aba-47fe-8095-feea76ca5b68"
+      ]
+    },
+    {
+      "property": "strokes",
+      "lostOnNodes": 1,
+      "sampleIds": [
+        "60deffd2-5aba-47fe-8095-feea76ca5b68"
+      ]
+    },
+    {
+      "property": "clipContent",
+      "lostOnNodes": 1,
+      "sampleIds": [
+        "60deffd2-5aba-47fe-8095-feea76ca5b68"
+      ]
+    },
+    {
+      "property": "fillHidden",
+      "lostOnNodes": 1,
+      "sampleIds": [
+        "60deffd2-5aba-47fe-8095-feea76ca5b68"
+      ]
+    },
+    {
+      "property": "strokeHidden",
+      "lostOnNodes": 1,
+      "sampleIds": [
+        "60deffd2-5aba-47fe-8095-feea76ca5b68"
+      ]
+    },
+    {
+      "property": "paragraphSpacing",
+      "lostOnNodes": 7,
+      "sampleIds": [
+        "485a58f0-6078-4423-99dd-2262783dfe99",
+        "6fda3552-1bcf-471d-b2ef-7a1336169656",
+        "c2eb9f54-3de8-40d8-bcd9-f5ea56583f78"
+      ]
+    }
+  ],
+  "beforeStyle": {
+    "fill": "#171717",
+    "fillHidden": false,
+    "fills": [
+      {
+        "fill": "#171717",
+        "opacity": 1,
+        "visible": true
+      }
+    ],
+    "strokeHidden": false,
+    "strokes": [],
+    "clipContent": true
+  },
+  "afterStyle": {
+    "blendMode": "source-over",
+    "fill": "#171717",
+    "fillOpacity": 1,
+    "locked": false,
+    "opacity": 1,
+    "stroke": "none",
+    "strokeAlign": "inside",
+    "strokeOpacity": 1,
+    "strokeWidth": 1,
+    "visible": true
+  }
+}

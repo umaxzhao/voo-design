@@ -1,0 +1,72 @@
+{
+  "revision": "1e5d8793a70ebc6cca972be77cfc2a2e4287b217",
+  "verifiedAt": "2026-10-27T20:44:00.515Z",
+  "results": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exitCode": 0,
+      "durationMs": 5905
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "lint:design"
+      ],
+      "exitCode": 0,
+      "durationMs": 2457
+    },
+    {
+      "command": [
+        "npm",
+        "test"
+      ],
+      "exitCode": 0,
+      "durationMs": 18887
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/editor-effects.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 7175
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/agent-paint-text.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 5750
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/layout-mask-audit.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 6383
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/inspector-controls.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 7737
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/drawing-retouch.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 22218
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+=== [Integrated Mode] Compiling against production Sources/ ===
+=== 正在编译 VOO Design Native Studio E2E 测试套件 ===
+=== 正在执行 VOO Design Native Studio E2E 测试 ===
+2026-11-01 12:13:33.704 VOODesignE2ETests[98704:11476067] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+2026-11-01 12:13:35.270 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: creation.started
+2026-11-01 12:13:35.278 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: shape.created.rect
+2026-11-01 12:13:35.715 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:13:36.198 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: path.created
+2026-11-01 12:13:36.331 VOODesignE2ETests[98704:11476067] [VOO Design Native] 抓手工具：拖拽平移画布
+2026-11-01 12:13:36.331 VOODesignE2ETests[98704:11476067] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 12:13:36.332 VOODesignE2ETests[98704:11476067] [VOO Design Native] 魔棒选择：点击选中相同填充色的图层
+2026-11-01 12:13:36.709 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 12:13:36.723 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 12:13:36.844 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 12:13:36.858 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 12:13:36.858 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: paint.erase.started
+2026-11-01 12:13:36.865 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: paint.erase.committed
+2026-11-01 12:13:37.143 VOODesignE2ETests[98704:11476067] [VOO Design Native] 已创建页面: Page 2
+2026-11-01 12:13:37.395 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:13:38.123 VOODesignE2ETests[98704:11476067] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:13:40.117 VOODesignE2ETests[98704:11476067] [VOO Design Native] Cropping is not implemented in the native editor yet.
+2026-11-01 12:13:40.117 VOODesignE2ETests[98704:11476067] [VOO Design Native] Image healing is not implemented in the native editor yet.
+2026-11-01 12:13:40.192 VOODesignE2ETests[98704:11476067] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 12:13:42.174 VOODesignE2ETests[98704:11476067] [VOO Design Native] This effect format is preserved but cannot be edited here yet.
+================================================================================
+             VOO DESIGN NATIVE STUDIO — OPAQUE-BOX E2E TEST RUNNER
+================================================================================
+Target: VOO Design Native (Swift 6 + AppKit + CoreGraphics + Metal)
+Filter: Tier = All (1-4), Pattern = None
+Total registered test cases: 440 | Selected: 440
+--------------------------------------------------------------------------------
+
+  [31m[FAIL][0m (0.003s) [T1] [UIParity-Layers] test_UIParity_Layers_SelectRowForContextMenuUpdatesSelection
+         [31m↳ [UIParityTests.swift:2302] Assertion failed: expected <Optional("5FA11BBE-C011-4A94-B2E9-698161CEB20C")>, got <Optional("B90203CD-1376-485A-8118-55D6988026A5")>[0m
+
+================================================================================
+                             TEST RESULTS SUMMARY
+================================================================================
+Tier & Feature Category                   Total     Passed    Failed    Pass Rate
+--------------------------------------------------------------------------------
+Tier 1: Feature Coverage (F1-F18)         258       257       1           99.6%
+Tier 2: Boundary & Corner Cases           108       108       0          100.0%
+Tier 3: Cross-Feature Combinations        64        64        0          100.0%
+Tier 4: Real-World Scenarios              10        10        0          100.0%
+--------------------------------------------------------------------------------
+TOTAL                                     440       439       1           99.8%
+================================================================================
+Execution Time: 9.404 seconds
+[31m✗ TEST SUITE FAILED with 1 failure(s) (Exit Code 1)[0m
+

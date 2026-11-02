@@ -1,0 +1,8 @@
+{
+  "modules": 12,
+  "features": 87,
+  "browserSuites": 89,
+  "additionalChecks": 21,
+  "registration": "valid",
+  "functionalCoverage": "partial"
+}

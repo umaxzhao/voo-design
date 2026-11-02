@@ -1,0 +1,24 @@
+============================================================
+ Building: VOO Design Native (Pure Native macOS AppKit + Metal)
+ Workspace: /Volumes/TD/Projects/voo-native-parity/native_studio
+============================================================
+--> Found 82 Swift source files.
+--> Using macOS SDK: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+--> Compiling with swiftc (-Osize, arm64-apple-macosx14.0)...
+--> Binary compiled successfully: /Volumes/TD/Projects/voo-native-parity/native_studio/build/VOO Design Native.app/Contents/MacOS/VOO Design Native
+--> Copying local AppIcon.icns...
+--> Copying onboarding guide assets...
+--> Copying bundled fonts (Intel One Mono, Inter, Archivo Black, Bitter, Caveat, Playfair Display, ZCOOL KuaiLe)...
+--> Info.plist verified via plutil.
+--> Applying ad-hoc codesign to bundle...
+/Volumes/TD/Projects/voo-native-parity/native_studio/build/VOO Design Native.app: replacing existing signature
+--> Codesign verified.
+============================================================
+ BUILD VERIFICATION SUMMARY
+============================================================
+ Output Bundle: /Volumes/TD/Projects/voo-native-parity/native_studio/build/VOO Design Native.app
+ Binary Size:   5113312 bytes (4.87 MB) [Target <= 5 MB]
+ Bundle Size:   10444 KB (10.19 MB) [Target <= 35 MB]
+============================================================
+ ✓ BUILD SUCCESS: All packaging criteria satisfied!
+============================================================

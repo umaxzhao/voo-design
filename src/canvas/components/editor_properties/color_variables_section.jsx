@@ -1,0 +1,299 @@
+import PropTypes from "prop-types";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "../../use_i18n.js";
+import { HEX_COLOUR, HexField } from "./colour_swatch.jsx";
+import { CollapsibleSection } from "./property_section.jsx";
+import {
+  IconMinus,
+  IconSliders,
+  IconTrash,
+} from "../../icons.jsx";
+import VariablesPanel from "./variables_panel.jsx";
+import {
+  VARIABLE_TYPES,
+  variablesFromLegacyColorVariables,
+} from "../../editor/scene_variables.js";
+import CustomSelect from "../custom_select.jsx";
+
+export default function ColorVariablesSection({
+  object,
+  documentId,
+  variables,
+  onCreate,
+  onBind,
+  onUpdate,
+  onDelete,
+  /**
+   * Optional variables-v2 wiring (the Lead mounts these from the parent):
+   * `variablesV2` is `doc.variablesV2`, `variableActions` is an object of
+   * document-level handlers — see `variables_panel.jsx` for the contract.
+   * Without them the panel falls back to the legacy colour list and the
+   * existing create/bind/update callbacks (one engine commit per action).
+   * With `variableActions` but no `variablesV2` yet (first use), the panel
+   * still shows the full v2 surface against a legacy-derived model; the first
+   * action seeds `doc.variablesV2` from the legacy colours (one undo entry).
+   */
+  variablesV2 = null,
+  variableActions = null,
+  /** Show the section while the layer is unbound (set by the panel's add menu). */
+  revealed = false,
+}) {
+  const { t } = useI18n();
+  const [managerOpen, setManagerOpen] = useState(false);
+  const closeManager = useCallback(() => setManagerOpen(false), []);
+  const canCreate = HEX_COLOUR.test(object.fill ?? "");
+
+  // A live v2 model may arrive as a prop or on the actions bag. When the
+  // document does not have one yet, `variableActions` can still mutate it: the
+  // action factory seeds `variablesV2` from the legacy colours on first use,
+  // so the panel must present the full v2 surface against a legacy-derived
+  // model instead of falling back to the read-only colour list.
+  const liveModel =
+    variablesV2?.collections?.length > 0
+      ? variablesV2
+      : variableActions?.model?.collections?.length > 0
+        ? variableActions.model
+        : null;
+  const canMutateVariables = Boolean(variableActions);
+
+  const panelModel = useMemo(
+    () => liveModel ?? variablesFromLegacyColorVariables(variables),
+    [liveModel, variables],
+  );
+
+  const panelActions = useMemo(() => {
+    if (variableActions) return { close: closeManager, ...variableActions };
+    const fallback = {
+      close: closeManager,
+      // The legacy host exposes exactly create/bind/update; each of these is
+      // one engine.setDoc commit (one undo entry) in image_editor.jsx.
+      updateValue: (id, _modeId, value) => onUpdate(id, { value }),
+      renameVariable: (id, name) => onUpdate(id, { name }),
+      bind: (id) => onBind(id),
+      addVariable: (_collectionId, type) => {
+        // Legacy hosts can only derive a variable from the current fill.
+        if (type === "color" && canCreate) onCreate();
+      },
+    };
+    if (onDelete) fallback.deleteVariable = (id) => onDelete(id);
+    return fallback;
+  }, [
+    variableActions,
+    closeManager,
+    onCreate,
+    onBind,
+    onUpdate,
+    onDelete,
+    canCreate,
+  ]);
+
+  // v2-only colour variables never enter the legacy `doc.colorVariables`
+  // mirror, so the binding dropdown lists the live model's colour variables
+  // when one exists (D13). Legacy docs keep their original list.
+  const bindableVariables = useMemo(() => {
+    if (!liveModel) return variables;
+    return panelModel.collections.flatMap((collection) => {
+      const modeId =
+        panelModel.activeModeByCollection?.[collection.id] ??
+        collection.modes?.[0]?.id;
+      return collection.variables
+        .filter((variable) => variable.type === "color")
+        .map((variable) => ({
+          id: variable.id,
+          name: variable.name,
+          value: variable.valuesByMode?.[modeId],
+          modeId,
+        }))
+        .filter((variable) => typeof variable.value === "string");
+    });
+  }, [liveModel, panelModel, variables]);
+
+  const active = bindableVariables.find((item) => item.id === object.fillVariableId);
+  const bindVariable = (id) =>
+    liveModel && variableActions ? panelActions.bind?.(id) : onBind(id);
+  const displayName = (item) =>
+    item.id.startsWith("system:") && item.name === item.id.split(":").at(-1)
+      ? t(`editor.variables.token.${item.name}`)
+      : item.name;
+  const nameInputRef = useRef(null);
+  const activeId = active?.id;
+  const activeName = active ? displayName(active) : "";
+
+  // Undo and page switches can change the committed name without changing the
+  // variable ID. Synchronize that value while preserving the input and focus;
+  // unrelated renders must leave the user's uncommitted draft untouched.
+  useLayoutEffect(() => {
+    if (nameInputRef.current) nameInputRef.current.value = activeName;
+  }, [documentId, activeId, activeName]);
+
+  // An unbound layer has no variables section until the add menu reveals it.
+  if (!active && !revealed) return null;
+
+  return (
+    <>
+    <CollapsibleSection
+      title={t("editor.variables.title")}
+      storageKey="editor.colorVariables"
+      extra={
+        <div className="flex items-center gap-0.5">
+          {canCreate ? (
+            <button
+              type="button"
+              onClick={onCreate}
+              title={t("editor.variables.create")}
+              className="flex h-5 w-5 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors text-xs font-mono"
+            >
+              ＋
+            </button>
+          ) : null}
+          <button
+            type="button"
+            data-testid="editor-variables-manage"
+            onClick={() => setManagerOpen(true)}
+            title={t("editor.variables.panel.manage")}
+            aria-label={t("editor.variables.panel.manage")}
+            aria-haspopup="dialog"
+            className="flex h-5 w-5 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <IconSliders size={12} strokeWidth={1.5} />
+          </button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-2">
+        {/* Variable binding dropdown with color swatch and chevron */}
+        <div className="relative flex items-center">
+          <div className="pointer-events-none absolute left-2.5 flex items-center">
+            <span
+              className="h-3 w-3 rounded-full border border-white/20 shrink-0"
+              style={{
+                backgroundColor:
+                  active?.value ?? (object.fill || "transparent"),
+              }}
+            />
+          </div>
+          <CustomSelect
+            data-testid="editor-color-variable-select"
+            aria-label={t("editor.variables.binding")}
+            rootClassName="min-w-0 flex-1"
+            className="w-full appearance-none rounded-xl bg-[#222222] pl-8 pr-7 py-1.5 text-[11px] font-mono text-neutral-200 outline-none hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-white/20 transition-colors cursor-pointer"
+            value={active?.id ?? ""}
+            onChange={(event) => bindVariable(event.target.value || null)}
+          >
+            <option value="" className="bg-[#1e1e1e] text-neutral-300">
+              {t("editor.variables.unlinked")}
+            </option>
+            {bindableVariables.map((item) => (
+              <option
+                key={item.id}
+                value={item.id}
+                className="bg-[#1e1e1e] text-neutral-100"
+              >
+                {displayName(item)}
+              </option>
+            ))}
+          </CustomSelect>
+        </div>
+
+        {/* When a variable is bound, show the active variable card with editable name and value */}
+        {active ? (
+          <div className="flex items-center gap-1.5 rounded-xl bg-[#1c1c1c] border border-white/5 p-1.5">
+            <input
+              key={active.id}
+              ref={nameInputRef}
+              aria-label={t("editor.variables.name")}
+              defaultValue={activeName}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+              }}
+              onBlur={(event) => {
+                const name = event.target.value.trim();
+                if (name && name !== displayName(active)) {
+                  if (liveModel && variableActions) {
+                    panelActions.renameVariable?.(active.id, name);
+                  } else {
+                    onUpdate(active.id, { name });
+                  }
+                }
+              }}
+              className="min-w-0 flex-1 rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none focus:bg-[#282828] focus:ring-1 focus:ring-white/20"
+            />
+            <HexField
+              value={active.value}
+              ariaLabel={t("editor.variables.value")}
+              onCommit={(value) => {
+                if (liveModel && variableActions) {
+                  panelActions.updateValue?.(active.id, active.modeId, value);
+                } else {
+                  onUpdate(active.id, { value });
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => bindVariable(null)}
+              title={t("editor.variables.unlinked")}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <IconMinus size={12} />
+            </button>
+            {onDelete ? (
+              <button
+                type="button"
+                data-testid="editor-color-variable-delete"
+                onClick={() =>
+                  liveModel && variableActions?.deleteVariable
+                    ? variableActions.deleteVariable(active.id)
+                    : onDelete(active.id)
+                }
+                title={t("editor.variables.delete")}
+                aria-label={t("editor.variables.delete")}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+              >
+                <IconTrash className="text-neutral-400" size={12} strokeWidth={1.5} />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* Action to save current fill as variable */}
+        <button
+          type="button"
+          data-testid="editor-color-variable-create"
+          disabled={!canCreate}
+          onClick={onCreate}
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/[0.08] py-1.5 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <span className="text-xs">＋</span>
+          <span>{t("editor.variables.create")}</span>
+        </button>
+      </div>
+    </CollapsibleSection>
+    {/* Portalled: kept outside the fold so the manager never unmounts with it. */}
+    <VariablesPanel
+      open={managerOpen}
+      model={panelModel}
+      activeBindingId={active?.id ?? null}
+      supportedTypes={canMutateVariables ? VARIABLE_TYPES : ["color"]}
+      canAddVariable={canMutateVariables ? true : canCreate}
+      actions={panelActions}
+    />
+    </>
+  );
+}
+
+ColorVariablesSection.propTypes = {
+  object: PropTypes.object.isRequired,
+  documentId: PropTypes.string,
+  variables: PropTypes.array.isRequired,
+  onCreate: PropTypes.func.isRequired,
+  onBind: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  onDelete: PropTypes.func,
+  variablesV2: PropTypes.shape({
+    collections: PropTypes.array,
+    activeModeByCollection: PropTypes.object,
+  }),
+  variableActions: PropTypes.object,
+  revealed: PropTypes.bool,
+};

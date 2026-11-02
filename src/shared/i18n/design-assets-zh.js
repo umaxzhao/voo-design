@@ -1,0 +1,33 @@
+export default {
+  "editor.assets.searchToggle": "搜索资源",
+  "editor.assets.source": "资源来源",
+  "editor.assets.workspace": "工作台资源",
+  "editor.assets.current": "当前文件",
+  "editor.assets.templates": "模板",
+  "editor.assets.import": "导入资源",
+  "editor.assets.saveSelection": "将选区保存到资源",
+  "editor.assets.insert": "插入资源",
+  "editor.assets.remove": "将资源移至废纸篓",
+  "editor.assets.loading": "正在加载资源…",
+  "editor.assets.loadFailed": "无法加载资源，请检查工作区访问权限。",
+  "editor.assets.failed": "操作未完成，请检查文件及工作区权限。",
+  "editor.assets.tooLarge": "资源文件不能超过 50 MB。",
+  "editor.assets.noResults": "没有匹配的资源",
+  "editor.assets.emptyLibrary": "导入图片、SVG 或 .voo 模板，也可以将选区保存为可复用资源。",
+  "editor.assets.folderHint": "Resources · 工作台资源库",
+  "editor.assets.search": "搜索资源…",
+  "editor.assets.insertHistory": "插入资源",
+
+  "designAssets.defaultLayerName": "生成图片",
+  "designAssets.mountCall": "放入设计稿",
+  "designAssets.mountResult": "已作为可编辑图层放入",
+  "designAssets.error.invalidNodes": "请选择图片和设计节点。",
+  "designAssets.error.invalidSource": "此节点无法输出图片。",
+  "designAssets.error.noImage": "请先生成或选择图片。",
+  "designAssets.error.invalidPlacement": "请将图片放在设计稿内。",
+  "designAssets.error.alreadyConnected":
+    "图片已连接。请编辑已有图层，或断开后重新放置。",
+  "designAssets.error.connectionRefused": "图片无法连接到设计节点。",
+  "designAssets.error.mountIncomplete":
+    "已连接，但无法确认图片已放入。",
+};
