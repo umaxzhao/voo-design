@@ -241,11 +241,35 @@ describe("model_asset_loader (Offline & Local Bundle & Browser Caching)", () => 
     expect(globalThis.fetch).toHaveBeenCalledWith("https://models.test/test.onnx");
   });
 
-  it("preserves native IPC availability reporting without reading a large model for status", async () => {
-    const loadModelBytes = vi.fn();
-    globalThis.window = { electronAPI: { loadModelBytes } };
+  it("reports a native model as cached only when that file exists, without reading it", async () => {
+    const loadModelBytes = vi.fn(), hasModelBytes = vi.fn().mockResolvedValue(true);
+    globalThis.window = { electronAPI: { loadModelBytes, hasModelBytes } };
     expect(await isModelAssetCached({ filename: "optional.onnx" })).toBe(true);
+    expect(hasModelBytes).toHaveBeenCalledWith("optional.onnx");
     expect(loadModelBytes).not.toHaveBeenCalled();
+  });
+
+  it("does not report a missing native model as cached just because the bridge exists", async () => {
+    const loadModelBytes = vi.fn(), hasModelBytes = vi.fn().mockResolvedValue(false);
+    globalThis.window = { electronAPI: { loadModelBytes, hasModelBytes } };
+    globalThis.caches = undefined;
+    expect(await isModelAssetCached({ filename: "optional.onnx" })).toBe(false);
+    expect(loadModelBytes).not.toHaveBeenCalled();
+  });
+
+  it("treats a bridge without an existence check as unverified, not cached", async () => {
+    globalThis.window = { electronAPI: { loadModelBytes: vi.fn() } };
+    globalThis.caches = undefined;
+    expect(await isModelAssetCached({ filename: "optional.onnx" })).toBe(false);
+  });
+
+  it("keeps an unverifiable native check from being reported as installed", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    globalThis.window = { electronAPI: { hasModelBytes: vi.fn().mockRejectedValue(new Error("ipc down")) } };
+    globalThis.caches = undefined;
+    expect(await isModelAssetCached({ filename: "optional.onnx" })).toBe(false);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("reports poisoned HTML cache entries as absent and removes them without fetching", async () => {

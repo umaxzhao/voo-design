@@ -23,6 +23,11 @@ exports.registerClientModelIpc = function registerClientModelIpc(ipcMain, app) {
     }
     return null;
   }
+  // Existence-only check for status badges: same allowlist and directory rules,
+  // no read, so a 100MB weight is never loaded just to report it is installed.
+  ipcMain.handle("model:hasBytes", async (_, modelName) => {
+    return resolveBundledModelPath(modelName) !== null;
+  });
   ipcMain.handle("model:loadBytes", async (_, modelName) => {
     const fullPath = resolveBundledModelPath(modelName);
     if (!fullPath) return null;
