@@ -38,6 +38,15 @@ async function fixture() {
 }
 
 describe("desktop release acceptance", () => {
+  it("shares model provisioning paths at step scope where runner context is available", async () => {
+    const workflow = yaml.load(await readFile(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8"));
+    const build = workflow.jobs.build;
+    expect(Object.values(build.env ?? {}).some(value => String(value).includes("runner."))).toBe(false);
+    const fetchModels = build.steps.find(step => step.run === "node scripts/prepare-desktop-models.mjs --download");
+    const packageModels = build.steps.find(step => String(step.run).startsWith("npm run release:build"));
+    expect(fetchModels.env.VOO_DESKTOP_MODELS_DIR).toContain("runner.temp");
+    expect(packageModels.env.VOO_DESKTOP_MODELS_DIR).toBe(fetchModels.env.VOO_DESKTOP_MODELS_DIR);
+  });
   it("canonicalizes absent masks only, preserving actual mask references and geometry", () => {
     expect(canonicalProjectNodes([{ id: "a", clipTo: null, x: 1 }, { id: "b", clipTo: "mask" }]))
       .toEqual([{ id: "a", x: 1 }, { id: "b", clipTo: "mask" }]);

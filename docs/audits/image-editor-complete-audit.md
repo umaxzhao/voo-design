@@ -15,7 +15,7 @@ current chat's visualization directory. This receipt does not inherit an older r
 | Resource delivery | RMBG and both LaMa variants are checked by exact size/SHA256 before staging into `dist-electron/models`; every desktop packaging entry point and native CI provisions these resources. Package inspection checks each required file, not merely any ONNX. |
 | Status | `model:has` checks a real nonempty file without allocating a full model buffer. Missing legacy IPC status no longer means the model is cached. Browser cache fallback remains available. |
 | Hosted subpath | Published Web model download succeeded, then `/ort/...wasm` returned 404. Module assets now resolve beside document.baseURI; the regression retains origin-root behavior without a document. |
-| Unit and build | 4993 passing units, 4 skipped; design scan 1481 files; production build, module registration, and real candidate archive/transitive dependency inspection pass. Core browser release receipt is still pending for this revision. |
+| Unit and build | Fixed application commit `e4896af552f500ffd8daa2d5d60c8aefd1cb25b6`: 122/122 release steps, including 118 core browser suites; 4993 passing units, 4 skipped; design scan 1481 files; production build, module registration, and real candidate archive/transitive dependency inspection pass. `ai-desktop-fix/core-release.json` retains the exact revision. |
 | Remaining | Windows/Linux, signed distribution, updater/install UX, cold project reopening, all image-quality cases, and all physical input paths remain unverified. Existing public Beta2 is unchanged. |
 
 Retained regression checks: `module-loader-assets.test.js`,
@@ -26,6 +26,11 @@ the native receipt separately records actual model inference and real pixels.
 
 Local candidate: `/private/tmp/voo-ai-desktop-candidate/mac-arm64/VOO Design.app`.
 This is an unsigned test artifact, not a replacement of the published Beta2.
+
+GitHub rejected `runner.temp` inside job-level env. The follow-up CI-only change
+uses matching step-level env for provisioning and packaging; its retained
+regression fails before the change and passes afterward. This does not alter
+the application sources verified on the fixed commit above.
 
 This is the maintained coverage map, not a claim that every possible interaction
 or platform is certified. Run the checks on the exact clean revision; reports
