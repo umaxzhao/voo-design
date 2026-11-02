@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-beta.3
+
+- Linux x64 prerelease (AppImage) only; Windows and macOS entries stay on main until their checks pass on this channel.
+- Fix toolbar combine modes (subtract, union, intersect): starting a pixel marquee in a non-replace mode no longer moves the existing pixel selection.
+
 ## 1.0.0-beta.2
 
 - Preserve Apple trust-command diagnostics and bound transient ticket-delivery retries; invalid tickets, rejected submissions and failed Gatekeeper assessments still block release.
