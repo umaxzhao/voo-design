@@ -1,0 +1,28 @@
+{
+  "binaryDecodedAssets" : 1,
+  "binaryImageRenderedPixel" : [
+    1,
+    0,
+    0,
+    1
+  ],
+  "gradientExportCenterRGB" : [
+    0.49803921568627452,
+    0.49803921568627452,
+    0.49803921568627452
+  ],
+  "gradientParsedByStage" : true,
+  "gradientStageCenterRGB" : [
+    0.49502849578857422,
+    0.49502849578857422,
+    0.49502849578857422
+  ],
+  "htmlImageHasSource" : true,
+  "loadedImageHasSource" : true,
+  "narrowEditorWidth" : 613,
+  "narrowToolRailFrame" : "{{12, 482}, {589, 56}}",
+  "narrowToolRailWidth" : 589,
+  "numeric800WeightEqualsRegular" : false,
+  "sourceRevision" : "b740009e9dcb86fb74bdcd4ac8bba0f60e03ed63",
+  "stageUsesTopLeftCoordinates" : true
+}

@@ -1,0 +1,359 @@
+import {
+  canCombine,
+  createBooleanNode,
+  groupDescendants,
+  isContainerNode,
+  isGroupNode,
+  isRegionNode,
+  isLockedByGroup,
+  NODE_KIND,
+} from "./scene_model.js";
+import { groupBlockInsertIndex, withNodes } from "./doc_ops_nodes.js";
+import { moveAffectedIds } from "./doc_ops_move.js";
+import { extremeOrder, moveNodeToExtreme } from "./doc_ops_groups_helpers.js";
+import { reorderLayerBatch, reorderLayerBatchTo } from "./reorder-layer-batch.js";
+import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
+import { groupingRoots, sharedGroupParent } from "./group-structure.js";
+
+export { extremeOrder, moveNodeToExtreme };
+
+function sanitizeInvertedClipping(nodes) {
+  const indexMap = new Map(nodes.map((node, i) => [node.id, i]));
+  let changed = false;
+  const result = nodes.map((node) => {
+    if (node.clipTo) {
+      const baseIndex = indexMap.get(node.clipTo);
+      const nodeIndex = indexMap.get(node.id);
+      if (baseIndex === undefined || baseIndex >= nodeIndex) {
+        changed = true;
+        const copy = { ...node };
+        delete copy.clipTo;
+        return copy;
+      }
+    }
+    return node;
+  });
+  return changed ? result : nodes;
+}
+
+/**
+ * Moves a node one step through the stack.
+ *
+ * `direction` is +1 for forward (towards the viewer) and -1 for backward. The
+ * locked base image keeps the bottom slot, so nothing can be pushed under it,
+ * and a node can never swap across the region plane's boundary.
+ */
+export function reorderNode(doc, id, direction) {
+  // Single-target and selection entry points share subtree, mask and lock rules.
+  return reorderNodes(doc, [id], direction);
+}
+
+/** Move selected siblings one step as a stable batch, without swapping them. */
+export function reorderNodes(doc, ids, direction) {
+  const nodes = reorderLayerBatch(doc, ids, direction);
+  return nodes ? withNodes(doc, sanitizeInvertedClipping(nodes)) : doc;
+}
+
+/**
+ * Moves a node to an arbitrary stack index — the drop half of drag-to-reorder.
+ *
+ * The same two invariants as `reorderNode` apply: a locked node keeps its
+ * slot (the move may neither land on it nor push past it), and a node may
+ * never cross the region plane's boundary in either direction. `targetIndex`
+ * is the index the node should occupy after the move; it is clamped into
+ * range, and a no-op returns the document unchanged so the caller can skip
+ * the history entry.
+ */
+export function reorderNodeTo(doc, idOrIds, targetIndex, primaryId) {
+  const nodes = reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId);
+  return nodes ? withNodes(doc, sanitizeInvertedClipping(nodes)) : doc;
+}
+
+/**
+ * Moves a node into a group as a member (Photoshop's drag-a-layer-onto-a-
+ * folder): `parentId` is set and the node — a folder drags its whole subtree
+ * — joins the group's block, so its stacking position sits inside the group
+ * instead of jumping to the top of the document. Refuses when the target is
+ * the node's own descendant, either side is locked, or the node is a region.
+ * An array of IDs moves selected roots as one document transaction.
+ */
+export function moveIntoGroup(doc, id, groupId) {
+  if (Array.isArray(id)) {
+    const roots = groupingRoots(doc, id);
+    const target = doc.nodes.find(candidate => candidate.id === groupId);
+    // Validate the complete transaction before moving anything. Selected
+    // descendants travel with their root instead of being flattened.
+    if (
+      !isContainerNode(target) || target.locked || isLockedByGroup(doc, target) ||
+      roots.some(node => node.locked || isLockedByGroup(doc, node) || isRegionNode(node)) ||
+      moveAffectedIds(doc, roots.map(node => node.id)).includes(groupId)
+    ) return doc;
+    return roots.reduce((next, node) => moveIntoGroup(next, node.id, groupId), doc);
+  }
+  const node = doc.nodes.find((candidate) => candidate.id === id);
+  const group = doc.nodes.find((candidate) => candidate.id === groupId);
+  if (
+    !node ||
+    !isContainerNode(group) ||
+    group.locked ||
+    node.locked ||
+    isLockedByGroup(doc, group) ||
+    isLockedByGroup(doc, node) ||
+    node.parentId === groupId ||
+    isRegionNode(node)
+  ) {
+    return doc;
+  }
+  const blockIds = moveAffectedIds(doc, [id]);
+  if (blockIds.includes(groupId)) return doc;
+  const block = doc.nodes.filter((candidate) =>
+    blockIds.includes(candidate.id),
+  );
+  const rest = doc.nodes.filter(
+    (candidate) => !blockIds.includes(candidate.id),
+  );
+  const root = { ...node, parentId: groupId };
+  const combined = [root, ...block.filter((candidate) => candidate.id !== id)];
+  const insertAt = groupBlockInsertIndex(withNodes(doc, rest), root);
+  const nodes = [...rest];
+  nodes.splice(insertAt >= 0 ? insertAt : nodes.length, 0, ...combined);
+  return withNodes(doc, nodes);
+}
+
+/**
+ * Combines several shapes into a non-destructive boolean group container.
+ *
+ * The original shapes are kept intact as child nodes inside the boolean group,
+ * allowing individual selection, direct editing, live updates, and ungrouping (Figma-style).
+ * The result takes the stacking position of the bottom-most member in the stack.
+ */
+export function combineNodes(doc, ids, operation) {
+  const rawChosen = new Set(ids ?? []);
+  const rawMembers = doc.nodes.filter((node) => rawChosen.has(node.id));
+  if (rawMembers.length === 1 && rawMembers[0].kind === NODE_KIND.BOOLEAN) {
+    return {
+      doc: withNodes(
+        doc,
+        doc.nodes.map((node) =>
+          node.id === rawMembers[0].id ? { ...node, operation } : node,
+        ),
+      ),
+      id: rawMembers[0].id,
+    };
+  }
+  const members = groupingRoots(doc, ids);
+  const chosen = new Set(members.map((node) => node.id));
+  if (!canCombine(members)) return { doc, id: null };
+
+  const parentId = sharedGroupParent(doc, members);
+  const combined = createBooleanNode(members, operation, parentId);
+
+  let bottomIndex = doc.nodes.length;
+  doc.nodes.forEach((node, index) => {
+    if (chosen.has(node.id) && index < bottomIndex) bottomIndex = index;
+  });
+
+  const nodes = doc.nodes.map((node) => {
+    let next = chosen.has(node.id) ? { ...node, parentId: combined.id } : node;
+    if (next.clipTo && chosen.has(next.id) !== chosen.has(next.clipTo)) {
+      next = { ...next };
+      delete next.clipTo;
+    }
+    return next;
+  });
+  nodes.splice(bottomIndex, 0, combined);
+
+  return {
+    doc: withNodes(doc, nodes),
+    id: combined.id,
+  };
+}
+
+/**
+ * Wraps nodes in a new folder.
+ *
+ * `childIds` are the direct children — the caller picks the top-level units,
+ * so nesting a group inside the new one is just passing its id alongside the
+ * loose nodes. The folder slots in directly above its topmost child, which is
+ * where the layers panel anchors it; the folder itself never paints, so its
+ * index means nothing to the renderers.
+ */
+export function insertGroup(doc, groupNode, childIds) {
+  const members = groupingRoots(doc, childIds);
+  if (!members.length) return doc;
+  const chosen = new Set(members.map(node => node.id));
+  const folder = { ...groupNode, parentId: groupNode.parentId ?? sharedGroupParent(doc, members) };
+  let bottomIndex = doc.nodes.length;
+  doc.nodes.forEach((node, index) => {
+    if (chosen.has(node.id) && index < bottomIndex) bottomIndex = index;
+  });
+  const nodes = doc.nodes.map((node) =>
+    chosen.has(node.id) ? { ...node, parentId: groupNode.id } : node,
+  );
+  nodes.splice(bottomIndex, 0, folder);
+  return withNodes(doc, nodes);
+}
+
+/**
+ * Dissolves folders and boolean containers: their children keep their slots
+ * and lose only the `parentId` — ungrouping never changes what covers what.
+ */
+export function ungroupNodes(doc, groupIds) {
+  const requested = new Set(groupIds);
+  const gone = new Set(doc.nodes.filter(node => requested.has(node.id) && isContainerNode(node)).map(node => node.id));
+  const dissolvable = (node) =>
+    (isGroupNode(node) || node.kind === NODE_KIND.BOOLEAN) && gone.has(node.id);
+  if (!doc.nodes.some(dissolvable)) {
+    return doc;
+  }
+
+  // Find parents of dissolved containers so children inherit parent's parentId
+  const parentMap = new Map(
+    doc.nodes
+      .filter((node) => gone.has(node.id))
+      .map((node) => [node.id, node.parentId ?? null]),
+  );
+  const survivingParent = id => {
+    const visited = new Set();
+    while (parentMap.has(id)) {
+      if (visited.has(id)) return null;
+      visited.add(id); id = parentMap.get(id);
+    }
+    return id;
+  };
+
+  return withNodes(
+    doc,
+    doc.nodes
+      .filter((node) => !dissolvable(node))
+      .map((node) => {
+        let next = node.parentId && gone.has(node.parentId)
+          ? { ...node, parentId: survivingParent(node.parentId) ?? null } : node;
+        // Dissolving a mask container also releases followers of that missing base.
+        if (gone.has(node.clipTo)) { next = { ...next }; delete next.clipTo; }
+        return next;
+      }),
+  );
+}
+
+/**
+ * Drops every folder or boolean container left with no members — the cleanup pass after deletions.
+ * A folder that lost its children to a delete is an empty row in the panel
+ * that can never be filled again; Photoshop removes it with the last child.
+ * Loops because emptying a nested folder empties its parent in turn.
+ */
+export function pruneEmptyGroups(doc) {
+  let current = doc;
+  for (;;) {
+    const parentIds = new Set(
+      current.nodes
+        .filter((node) => node.parentId)
+        .map((node) => node.parentId),
+    );
+    const empty = current.nodes.filter(
+      (node) =>
+        (isGroupNode(node) || node.kind === NODE_KIND.BOOLEAN) &&
+        !isFrameSelectionBoundary(node) &&
+        !parentIds.has(node.id),
+    );
+    if (empty.length === 0) return current;
+    const gone = new Set(empty.map((node) => node.id));
+    current = withNodes(
+      current,
+      current.nodes
+        .filter((node) => !gone.has(node.id))
+        .map((node) =>
+          node.parentId && gone.has(node.parentId)
+            ? { ...node, parentId: null }
+            : node,
+        ),
+    );
+  }
+}
+
+/**
+ * Moves a folder and everything inside it as one block — the drop half of
+ * dragging a group row in the layers panel. Members become contiguous behind
+ * the folder, which matches how every editor stacks a group's contents.
+ */
+export function reorderGroupTo(doc, groupId, targetIndex) {
+  const group = doc.nodes.find((node) => node.id === groupId);
+  if (!isContainerNode(group) || group.locked) return doc;
+  if (!Number.isFinite(targetIndex)) return doc;
+  const blockIds = new Set([
+    groupId,
+    ...groupDescendants(doc, groupId).map((node) => node.id),
+  ]);
+  const block = doc.nodes.filter((node) => blockIds.has(node.id));
+  const rest = doc.nodes.filter((node) => !blockIds.has(node.id));
+  if (rest.some((node) => node.locked)) {
+    // The locked base image keeps the bottom slot: clamp the drop above it.
+    const firstLocked = rest.findIndex((node) => node.locked);
+    if (firstLocked >= 0 && targetIndex <= firstLocked) {
+      targetIndex = firstLocked + 1;
+    }
+  }
+  const target = Math.max(0, Math.min(rest.length, Math.round(targetIndex)));
+  return withNodes(
+    doc,
+    sanitizeInvertedClipping([
+      ...rest.slice(0, target),
+      ...block,
+      ...rest.slice(target),
+    ]),
+  );
+}
+
+/**
+ * Moves a group member (or any node) out to the root plane at a target root
+ * position, clearing its `parentId` — the drop half of "drag a layer out of
+ * its folder". The moved unit travels as one block (a folder member's own
+ * subtree, and its clipping-mask followers, ride along), and its descendants
+ * keep their parentIds pointing inside the unit.
+ *
+ * `targetRootIndex` is a 0-based position among the root (parentless) nodes
+ * after the unit is lifted out; clamp so a locked base keeps the bottom slot
+ * and the move never lands on a locked node. Refuses (returns the document
+ * unchanged) when the node is locked, a region, or missing — so the caller
+ * can skip the history entry.
+ */
+export function moveNodeToRoot(doc, id, targetRootIndex) {
+  const ids = Array.isArray(id) ? id : [id];
+  const roots = Array.isArray(id)
+    ? groupingRoots(doc, ids)
+    : doc.nodes.filter((candidate) => candidate.id === id);
+  if (
+    !roots.length ||
+    roots.some((n) => n.locked || isLockedByGroup(doc, n) || isRegionNode(n))
+  ) {
+    return doc;
+  }
+  const rootIds = new Set(roots.map((candidate) => candidate.id));
+  const blockIds = new Set(moveAffectedIds(doc, Array.from(rootIds)));
+  const block = doc.nodes.filter((candidate) => blockIds.has(candidate.id));
+  const rest = doc.nodes.filter((candidate) => !blockIds.has(candidate.id));
+  const rootTargets = rest.filter(
+    (candidate) => !candidate.parentId && !candidate.clipTo,
+  );
+  const target = Number.isFinite(targetRootIndex)
+    ? targetRootIndex
+    : rootTargets.length;
+  let at = Math.max(0, Math.min(rootTargets.length, Math.round(target)));
+  const firstLocked = rootTargets.findIndex((candidate) => candidate.locked);
+  if (firstLocked >= 0) at = Math.max(at, firstLocked + 1);
+  const flatIndex =
+    at >= rootTargets.length
+      ? rest.length
+      : rest.findIndex((candidate) => candidate.id === rootTargets[at].id);
+  const detached = block.map((candidate) =>
+    rootIds.has(candidate.id) ? { ...candidate, parentId: null } : candidate,
+  );
+  return withNodes(
+    doc,
+    sanitizeInvertedClipping([
+      ...rest.slice(0, flatIndex),
+      ...detached,
+      ...rest.slice(flatIndex),
+    ]),
+  );
+}

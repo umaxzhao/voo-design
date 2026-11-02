@@ -1,0 +1,29 @@
+=== [Integrated Mode] Compiling against production Sources/ ===
+=== 正在编译 VOO Design Native Studio E2E 测试套件 ===
+=== 正在执行 VOO Design Native Studio E2E 测试 ===
+2026-11-01 12:11:22.652 VOODesignE2ETests[96822:11459741] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+================================================================================
+             VOO DESIGN NATIVE STUDIO — OPAQUE-BOX E2E TEST RUNNER
+================================================================================
+Target: VOO Design Native (Swift 6 + AppKit + CoreGraphics + Metal)
+Filter: Tier = All (1-4), Pattern = test_FormLayerCard
+Total registered test cases: 440 | Selected: 1
+--------------------------------------------------------------------------------
+
+  [32m[PASS][0m (0.462s) [T3] [Native-Inspector] test_FormLayerCardShowsAllRowsAndCanvasBackgroundWithoutScrolling
+
+================================================================================
+                             TEST RESULTS SUMMARY
+================================================================================
+Tier & Feature Category                   Total     Passed    Failed    Pass Rate
+--------------------------------------------------------------------------------
+Tier 1: Feature Coverage (F1-F18)         0         0         0            0.0%
+Tier 2: Boundary & Corner Cases           0         0         0            0.0%
+Tier 3: Cross-Feature Combinations        1         1         0          100.0%
+Tier 4: Real-World Scenarios              0         0         0            0.0%
+--------------------------------------------------------------------------------
+TOTAL                                     1         1         0          100.0%
+================================================================================
+Execution Time: 0.462 seconds
+[32m✓ ALL 1 TESTS PASSED CLEANLY (Filtered Run) (Exit Code 0)[0m
+

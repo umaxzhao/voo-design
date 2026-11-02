@@ -1,0 +1,26 @@
+/* Native color controls share the circular geometry of custom paint swatches.
+ * Invisible native inputs keep their larger parent hit area unchanged. */
+input[type="color"]:not(.opacity-0) {
+  aspect-ratio: 1;
+  inline-size: auto !important;
+  min-inline-size: 0;
+  flex: none !important;
+  overflow: hidden;
+  border: 0;
+  border-radius: 50% !important;
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
