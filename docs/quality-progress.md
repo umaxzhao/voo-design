@@ -1,5 +1,14 @@
 # 项目检查总进度
 
+## 右侧下拉框描边与键盘归属（2026-11-02）
+
+- `inspector.control-hierarchy`：定位到公共样式主动添加的 1px 描边，移除右侧面板下拉框和字体选择器的常驻边框；保留 12px 控件圆角、面板圆角、底色层级、键盘焦点及浮层边缘。
+- `inspector.menu-focus` / `selection.shortcuts`：实际下拉方向键曾把选中对象向下移动 1px；在共享键盘目标分类中隔离自定义 listbox 及其触发器，保留 Ctrl/⌘ 历史快捷键和普通画布操作。
+- 修复前浏览器描边失败与键盘归属单测失败均已保留；新增浏览器检查覆盖 32 组真实形状/Frame/文字/图片、深浅主题、中英文、桌面/移动面板状态，并保留原有输入、填充、文字、撤销和响应式回归。
+- 固定干净源码 [`e863e7f7`](https://github.com/umaxzhao/voo-design/commit/e863e7f7969d09f7938e84b8028081b30be56141)：**121/121 完整门禁通过**，117 核心浏览器、4967 单测通过/4 历史跳过、608 文件通过/3 跳过、1481 文件设计检查、构建和任务格式/静态检查通过。10 独立检查不继承本地完整门禁通过；同源码 [CI](https://github.com/umaxzhao/voo-design/actions/runs/41382933157) 另通过真实 Linux 窗口检查。
+- 同一验收构建已部署 [网页预览](https://voo.run/editor/)，保留 la2 回滚备份。正式 HTML 和实际加载的 75 个不同 JS/CSS 与构建逐字节一致；线上真实指针绘制后，下拉无描边、键盘不误移/删除对象、混合模式修改及一次撤销均通过，零页面异常。[PR #94](https://github.com/umaxzhao/voo-design/pull/94)；后续收据提交只改文档。
+- 进度与限制见[详细验收](audits/design-editor-interaction-audit.md#inspector-dropdown-surfaces--2026-11-02)。本轮不发布桌面安装包。
+
 ## 空文件默认 Frame（2026-11-02）
 
 - `documents.empty-canvas`：空文件、新建和载入前默认页面统一为空的无限画布，不自动增加 Frame；同时去掉根画布的绿色边界线。已有空 Frame、有内容的旧文件及其图层关系保留。

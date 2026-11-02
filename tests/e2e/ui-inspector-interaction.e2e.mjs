@@ -5,6 +5,7 @@ import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { runInspectorControlCases } from "./inspector-control-cases.mjs";
 import { runTypographyCases } from "./typography-inspector-cases.mjs";
 import { runUnifiedFillCases } from "./unified-fill-picker-cases.mjs";
+import { verifyInspectorDropdownSurfaces } from "./inspector-dropdown-surfaces.mjs";
 
 const evidence = process.env.VOO_INSPECTOR_EVIDENCE_DIR ?? editorArtifactPath("voo-ui-inspector");
 await mkdir(evidence, { recursive: true });
@@ -55,6 +56,7 @@ await withEditorBrowser(async ({ page, tool }) => {
 
   try {
     await seed();
+    await verifyInspectorDropdownSurfaces({ page, evidence, mark });
     const exportFormat = panel.getByRole("button", { name: "Format", exact: true });
     const exportAction = panel.getByRole("button", { name: "Export", exact: true });
     const addExport = async () => {
