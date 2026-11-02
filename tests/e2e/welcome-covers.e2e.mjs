@@ -1,6 +1,7 @@
 import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { installBackgroundWorkerProbe, verifyBackgroundDraft } from "./background-draft-checks.mjs";
 
 await withEditorBrowser(async ({ page }) => {
   await page.evaluate(async () => {
@@ -59,10 +60,13 @@ await withEditorBrowser(async ({ page }) => {
     const saved=await writeDraftSnapshot({store:{fileName:entry.name,nodes:[{id:'auto-page',data:{editorDoc:doc}}],editingNodeId:'auto-page'}});
     const file=decodeVooBinary((await loadDraftBytes(entry.id)).bytes);
     window.dispatchEvent(new CustomEvent('voo:workspace-changed'));
-    return {saved,preview:file.preview};
+    return {saved,preview:file.preview,operations:window.__backgroundWorkerProbe.requests.map(item=>item.operation),
+      results:window.__backgroundWorkerProbe.results.map(item=>item.type)};
   });
   assert.equal(draftPreview.saved,true);
   assert.ok(draftPreview.preview.startsWith('data:image/png'));
+  assert.deepEqual(draftPreview.operations,["cover","encode"]);
+  assert.deepEqual(draftPreview.results,["result","result"]);
   const auto=page.locator('[data-welcome-file-id]').filter({has:page.getByRole('button',{name:'AutoCover.voo',exact:true})});
   await auto.getByTestId('welcome-file-cover-image').waitFor();
   await page.evaluate(async()=>{await(await import('/src/shared/i18n.js')).setLocale('zh');});
@@ -72,5 +76,7 @@ await withEditorBrowser(async ({ page }) => {
   await heading.scrollIntoViewIfNeeded();
   assert.ok((await heading.boundingBox()).width<=390);
   await page.screenshot({path:editorArtifactPath('voo-welcome-covers-mobile.png')});
-},{openDocument:false,mcpLink:false});
+},{openDocument:false,mcpLink:false,preparePage:installBackgroundWorkerProbe});
 console.log('Welcome heading and real legacy/draft cover pixels, reload and read-only recovery passed.');
+
+await withEditorBrowser(verifyBackgroundDraft, { preparePage: installBackgroundWorkerProbe });

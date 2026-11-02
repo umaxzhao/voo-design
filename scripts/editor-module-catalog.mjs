@@ -10,7 +10,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/use_tab_bar_overflow.js", "src/canvas/components/use_prompt_attachments.js",
       "src/canvas/components/prompt_image_attachments.jsx", "tests/unit/prompt-attachments.test.js", "tests/unit/collab_core.test.js",
       "tests/unit/webrtc_transport_coverage.test.js", "tests/unit/collab_session.test.js", "tests/unit/collab_share_secret.test.js", "src/App.jsx",
-      "src/canvas/components/page_switcher.jsx", "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
+      "src/canvas/components/page_switcher.jsx", "src/canvas/previews/*", "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "tests/e2e/critical_flows.e2e.mjs", "tests/e2e/empty-canvas-checks.mjs", "tests/e2e/authored-frame-fixture.mjs", "tests/unit/workspace-background.test.js",
     ],
     related: [
@@ -32,11 +32,11 @@ export const EDITOR_MODULES = [
     id: "documents",
     title: "Documents, persistence and history",
     paths: [
-      "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*", "src/canvas/editor/editor_engine_history*",
+      "src/canvas/store/*", "tests/unit/voo-background-client.test.js", "tests/unit/draft-background-order.test.js", "tests/unit/live-project-cover.test.js", "tests/e2e/background-draft-checks.mjs", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*", "src/canvas/editor/editor_engine_history*",
       "src/canvas/undo*", "src/canvas/editor/editor-history-asset-pins.js", "tests/unit/editor-history-asset-pins.test.js",
       "src/canvas/editor/scene_model_serialization.js", "src/canvas/editor/scene-node-serialization.js",
       "tests/unit/scene-serialization-purity.test.js", "src/canvas/editor/scene_model_core.js", "src/canvas/editor/default-value-matcher.js",
-      "tests/unit/default-value-matcher.test.js", "src/canvas/editor/document-snapshot-state.js", "tests/unit/document-snapshot-state.test.js",
+      "tests/unit/default-value-matcher.test.js", "src/canvas/editor/document-snapshot-state.js", "src/canvas/components/editor_hooks/use_draft_autosave.js", "tests/unit/document-snapshot-state.test.js",
       "tests/e2e/document-dirty-state-checks.mjs", "src/canvas/editor/external-image-ingestion.js", "tests/unit/external-image-ingestion.test.js",
       "tests/e2e/external-image-history-checks.mjs", "tests/unit/scene-model-lint.test.js", "src/canvas/editor/editor_engine.js",
       "src/canvas/editor/editor_engine_assembly.js", "src/canvas/editor/page_to_canvas_root.js", "tests/unit/page-to-canvas-root.test.js", "tests/unit/startup_tab_bar.test.jsx", "tests/unit/pages_polish.test.js",
