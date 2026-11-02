@@ -99,6 +99,30 @@ await withEditorBrowser(async ({ page, tool }) => {
     checks.push(`${kind}: real pointer stroke changes pixels with exact undo/redo`);
   }
 
+  // UF25: zero-exposure Dodge with Protect tones on is a no-op on every RGBA byte.
+  {
+    const id = await seedImage();
+    const before = await pixels(id);
+    await page.evaluate(() => {
+      const e = window.__vooEditor; e.setBrushMode("normal"); e.setTool("dodge");
+      e.setBrushTonalRange("all"); e.setBrushProtectLuminosity(true); e.setBrushExposure(0);
+    });
+    await drag({ x: 140, y: 140 }, { x: 165, y: 165 });
+    await page.evaluate(() => window.__vooEditor.flushPaints());
+    assert.deepEqual(await pixels(id), before, "UF25: dodge at zero exposure with Protect tones must not change any byte");
+    checks.push("UF25 dodge zero exposure with Protect tones: RGBA byte-identical");
+    await page.evaluate(() => { window.__vooEditor.setBrushExposure(1); });
+    await drag({ x: 140, y: 140 }, { x: 165, y: 165 });
+    await page.evaluate(() => window.__vooEditor.flushPaints());
+    const lifted = await pixels(id);
+    assert.notDeepEqual(lifted, before, "UF25: positive-exposure dodge with Protect tones must change pixels");
+    await tool("undo");
+    assert.deepEqual(await pixels(id), before, "UF25: one Undo restores the pre-dodge pixels");
+    await tool("redo");
+    assert.deepEqual(await pixels(id), lifted, "UF25: one Redo restores the dodged pixels");
+    checks.push("UF25 dodge positive exposure with Protect tones: changes pixels, exact one-step undo/redo");
+  }
+
   const id = await seedImage();
   const before = await pixels(id);
   await page.evaluate(() => { const e = window.__vooEditor; e.setTool("healing"); e.setHealingMode("clone"); });

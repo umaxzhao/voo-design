@@ -182,18 +182,15 @@ export function stampRetouch(canvas, x, y, diameter, coverage, paintEdit) {
       ) {
         // Protect tones: dodge never blows a channel to full white, burn
         // never crushes one to full black.
-        source.data[index] =
-          paintEdit.mode === "dodge"
-            ? Math.min(235, source.data[index])
-            : Math.max(20, source.data[index]);
-        source.data[index + 1] =
-          paintEdit.mode === "dodge"
-            ? Math.min(235, source.data[index + 1])
-            : Math.max(20, source.data[index + 1]);
-        source.data[index + 2] =
-          paintEdit.mode === "dodge"
-            ? Math.min(235, source.data[index + 2])
-            : Math.max(20, source.data[index + 2]);
+        // The cap only stops the stroke from moving a channel further in its own
+        // direction. Dodge never darkens an already-bright channel; burn never
+        // lifts an already-dark one. Zero exposure therefore leaves the pixel as is.
+        for (let channel = 0; channel < 3; channel += 1) {
+          source.data[index + channel] =
+            paintEdit.mode === "dodge"
+              ? Math.max(original[index + channel], Math.min(235, source.data[index + channel]))
+              : Math.min(original[index + channel], Math.max(20, source.data[index + channel]));
+        }
       }
     }
   }
