@@ -91,7 +91,11 @@ export function createEngineInitController({
       current = reflowAutoLayout(changed ? { ...current, nodes } : current);
       if (!hasLayout) break;
       // Stable geometry and text need no second whole-document layout pass.
-      if (!changed && (pass > 0 || sameAutoLayoutGeometry(previous.nodes, current.nodes))) break;
+      if (
+        !changed &&
+        (pass > 0 || sameAutoLayoutGeometry(previous.nodes, current.nodes))
+      )
+        break;
       force = false;
     }
     return current;
@@ -135,6 +139,7 @@ export function createEngineInitController({
     },
     { fitView = true } = {},
   ) {
+    textMeasureSignatures.clear();
     let doc;
     let parsedSavedDoc = savedDoc;
     if (typeof parsedSavedDoc === "string") {
@@ -144,7 +149,9 @@ export function createEngineInitController({
         parsedSavedDoc = null;
       }
     }
-    const restored = ops.attachRegionsToHosts(deserialiseDocument(parsedSavedDoc));
+    const restored = ops.attachRegionsToHosts(
+      deserialiseDocument(parsedSavedDoc),
+    );
     if (restored) {
       doc = restored;
       const restoredGuides = Array.isArray(restored.guides)
@@ -162,6 +169,17 @@ export function createEngineInitController({
             node.src = src;
           }
         });
+      }
+      for (const node of doc.nodes) {
+        if (
+          node.kind === NODE_KIND.TEXT &&
+          Number.isFinite(node.width) &&
+          node.width > 0 &&
+          Number.isFinite(node.height) &&
+          node.height > 0
+        ) {
+          textMeasureSignatures.set(node.id, textMeasureSignature(node));
+        }
       }
     } else {
       const blankWidth = fallbackSize?.width ?? 1024;
