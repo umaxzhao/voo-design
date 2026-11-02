@@ -1,10 +1,27 @@
-import { useLayoutEffect, useMemo, useReducer, useRef } from "react";
+import { memo, useCallback, useLayoutEffect, useMemo, useReducer, useRef } from "react";
 import PropTypes from "prop-types";
 import EditorLayerRow from "./editor_layer_row.jsx";
 import { layerPanelModelType, layerRowType } from "./editor_layers_contract.js";
 const WINDOW_THRESHOLD = 200;
 const ESTIMATED_ROW_HEIGHT = 34;
 const OVERSCAN = 8;
+
+// Scrolling changes the window, not the retained rows. Keep their DOM refs and
+// subtree stable; real selection/drag edits still replace the model prop.
+const WindowedLayerRow = memo(function WindowedLayerRow({ model, row, observer, elements, measuredNodes }) {
+  const attach = useCallback(element => {
+    const previous = elements.current.get(row.node.id);
+    if (previous) observer.current?.unobserve(previous);
+    if (element) {
+      elements.current.set(row.node.id, element);
+      measuredNodes.current.set(element, row.node);
+      observer.current?.observe(element);
+    } else elements.current.delete(row.node.id);
+  }, [row.node, observer, elements, measuredNodes]);
+  return <div data-layer-window-id={row.node.id} className="shrink-0 pb-0.5" ref={attach}>
+    <EditorLayerRow model={model} row={row} />
+  </div>;
+});
 function viewportReducer(state, action) {
   if (action.type === "measure") return {
     ...state,
@@ -133,15 +150,8 @@ export default function EditorWindowedLayerRows({
     <div aria-hidden="true" className="shrink-0" style={{
       height: offsets[start]
     }} />
-    {rows.slice(start, end).map(row => <div key={row.node.id} data-layer-window-id={row.node.id} className="shrink-0 pb-0.5" ref={element => {
-      const previous = elements.current.get(row.node.id);
-      if (previous) observer.current?.unobserve(previous);
-      if (element) {
-        elements.current.set(row.node.id, element);
-        measuredNodes.current.set(element, row.node);
-        observer.current?.observe(element);
-      } else elements.current.delete(row.node.id);
-    }}><EditorLayerRow model={model} row={row} /></div>)}
+    {rows.slice(start, end).map(row => <WindowedLayerRow key={row.node.id} model={model} row={row}
+      observer={observer} elements={elements} measuredNodes={measuredNodes} />)}
     <div aria-hidden="true" className="shrink-0" style={{
       height: offsets.at(-1) - offsets[end]
     }} />
