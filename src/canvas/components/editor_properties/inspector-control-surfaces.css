@@ -21,11 +21,15 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] {
   --inspector-label: #525252;
 }
 
-[data-testid="editor-properties-panel"] :is(
-  [data-inspector-control="field"], .inspector-field, .inspector-row,
-  [data-transform-dimensions], [data-inspector-control="select"],
-  [data-typography-field] button[aria-haspopup="dialog"]
-) {
+[data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="field"],
+    .inspector-field,
+    .inspector-row,
+    [data-transform-dimensions],
+    [data-inspector-control="select"],
+    [data-typography-field] button[aria-haspopup="dialog"]
+  ) {
   box-sizing: border-box;
   height: var(--inspector-control-height) !important;
   min-height: var(--inspector-control-height) !important;
@@ -35,25 +39,51 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] {
   text-transform: none !important;
 }
 
-/* A filled field, an outlined choice and a light command have different jobs. */
-[data-testid="editor-properties-panel"] :is([data-inspector-control="field"], .inspector-field, .inspector-row, [data-transform-dimensions]),
-html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-control="field"], .inspector-field, .inspector-row, [data-transform-dimensions]) {
+/* Choices use a quiet fill and chevron; only floating panels need an edge. */
+[data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="field"],
+    .inspector-field,
+    .inspector-row,
+    [data-transform-dimensions]
+  ),
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="field"],
+    .inspector-field,
+    .inspector-row,
+    [data-transform-dimensions]
+  ) {
   background-color: var(--inspector-field-surface) !important;
 }
 
-[data-testid="editor-properties-panel"] :is([data-inspector-control="select"], [data-typography-field] button[aria-haspopup="dialog"]),
-html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-control="select"], [data-typography-field] button[aria-haspopup="dialog"]) {
-  border: 1px solid var(--inspector-control-border) !important;
+[data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="select"],
+    [data-typography-field] button[aria-haspopup="dialog"]
+  ),
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="select"],
+    [data-typography-field] button[aria-haspopup="dialog"]
+  ) {
+  border: 0 !important;
   background-color: var(--inspector-select-surface) !important;
   color: var(--inspector-value) !important;
 }
 
-[data-testid="editor-properties-panel"] :is([data-inspector-control="bare-field"], .inspector-row input),
-html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-control="bare-field"], .inspector-row input) {
+[data-testid="editor-properties-panel"]
+  :is([data-inspector-control="bare-field"], .inspector-row input),
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is([data-inspector-control="bare-field"], .inspector-row input) {
   background-color: transparent !important;
 }
 
-[data-testid="editor-properties-panel"] :is(input[type="number"], .inspector-row input, [data-inspector-part]) {
+[data-testid="editor-properties-panel"]
+  :is(input[type="number"], .inspector-row input, [data-inspector-part]) {
   font-family: var(--font-mono);
   font-size: 11px !important;
   font-variant-numeric: tabular-nums;
@@ -61,12 +91,17 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspe
 }
 
 [data-testid="editor-properties-panel"] input[type="number"],
-html[data-theme="light"] [data-testid="editor-properties-panel"] input[type="number"] {
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  input[type="number"] {
   color: var(--inspector-value) !important;
 }
 
-[data-testid="editor-properties-panel"] :is([data-inspector-part], .inspector-section-title),
-html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-part], .inspector-section-title) {
+[data-testid="editor-properties-panel"]
+  :is([data-inspector-part], .inspector-section-title),
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is([data-inspector-part], .inspector-section-title) {
   color: var(--inspector-label) !important;
 }
 
@@ -79,8 +114,17 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspe
   line-height: 16px;
 }
 
-[data-testid="editor-properties-panel"] :is([data-inspector-control="segments"], div:has(> [data-inspector-control="toggle"])),
-html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-control="segments"], div:has(> [data-inspector-control="toggle"])) {
+[data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="segments"],
+    div:has(> [data-inspector-control="toggle"])
+  ),
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="segments"],
+    div:has(> [data-inspector-control="toggle"])
+  ) {
   height: auto;
   min-height: var(--inspector-control-height);
   gap: 2px;
@@ -95,32 +139,51 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspe
   border-radius: var(--inspector-control-radius);
 }
 
-[data-testid="editor-properties-panel"] [data-inspector-control="toggle"][aria-pressed="true"],
-html[data-theme="light"] [data-testid="editor-properties-panel"] [data-inspector-control="toggle"][aria-pressed="true"] {
+[data-testid="editor-properties-panel"]
+  [data-inspector-control="toggle"][aria-pressed="true"],
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  [data-inspector-control="toggle"][aria-pressed="true"] {
   background-color: var(--inspector-active-surface) !important;
   color: var(--inspector-value) !important;
 }
 
-[data-testid="editor-properties-panel"] [data-inspector-control="toggle"][aria-pressed="false"],
-html[data-theme="light"] [data-testid="editor-properties-panel"] [data-inspector-control="toggle"][aria-pressed="false"] {
+[data-testid="editor-properties-panel"]
+  [data-inspector-control="toggle"][aria-pressed="false"],
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  [data-inspector-control="toggle"][aria-pressed="false"] {
   background-color: transparent !important;
   color: var(--inspector-label) !important;
 }
 
-[data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button) {
+[data-testid="editor-properties-panel"]
+  :is([data-inspector-control="action"], [data-transform-actions] button) {
   height: var(--inspector-control-height);
   min-height: var(--inspector-control-height);
   border: 1px solid var(--inspector-control-border);
   border-radius: var(--inspector-control-radius);
 }
 
-[data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button),
-html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button) {
+[data-testid="editor-properties-panel"]
+  :is([data-inspector-control="action"], [data-transform-actions] button),
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is([data-inspector-control="action"], [data-transform-actions] button) {
   background-color: transparent !important;
 }
 
-[data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button):hover:not(:disabled),
-html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button):hover:not(:disabled) {
+[data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="action"],
+    [data-transform-actions] button
+  ):hover:not(:disabled),
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="action"],
+    [data-transform-actions] button
+  ):hover:not(:disabled) {
   background-color: var(--inspector-field-surface) !important;
 }
 
@@ -146,7 +209,9 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspe
   [data-testid="editor-properties-panel"] [data-transform-dimensions] {
     height: auto !important;
   }
-  [data-testid="editor-properties-panel"] [data-transform-dimensions] > [data-inspector-control="bare-field"] {
+  [data-testid="editor-properties-panel"]
+    [data-transform-dimensions]
+    > [data-inspector-control="bare-field"] {
     min-height: var(--inspector-control-height);
   }
 }

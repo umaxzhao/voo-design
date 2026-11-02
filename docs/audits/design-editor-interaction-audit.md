@@ -1,5 +1,15 @@
 # Design editor interaction audit
 
+## Inspector dropdown surfaces · 2026-11-02
+
+- Capability: `inspector.control-hierarchy`, `inspector.menu-focus`, `selection.shortcuts`.
+- Reproduction: the common inspector skin forced a 1px border on every select and font-family trigger. The browser failed its zero-border assertion, and opening a blend menu with ArrowDown also nudged the selected rectangle from Y=100 to Y=101. Two keyboard-target unit cases failed before the common ownership fix.
+- Repair: remove only the inspector trigger border, retain the existing 12px corners and filled surfaces, and classify custom listboxes/triggers as non-text controls before global capture shortcuts run. Ctrl/Meta history remains available; the Layers navigation listbox stays outside this custom-choice rule.
+- Actual browser checks: four selected types (shape, Frame, text, image), English/Chinese, light/dark and 1440/390px; inspect all rendered dropdown/font triggers, hover and pointer-open, keyboard open/Escape/focus, selected-node equality and Delete/Backspace isolation. Floating menu borders remain 1px; keyboard focus remains visible. Existing inspector suite separately covers 320/390/768/1440px, field commit/cancel/history, typography and unified fills.
+- Evidence: `/private/tmp/voo-inspector-borders-reproduction/` plus `.log`, `/private/tmp/voo-dropdown-shortcuts-before.log`, `/private/tmp/voo-inspector-borders-fixed/` plus `.log`. An earlier baseline numeric Escape read failed before the new reproduction reached its target; retain `/private/tmp/voo-inspector-borders-before.log` without claiming it proved a border defect.
+- Execution: targeted 23 units and the real inspector suite passed before the final Delete/Backspace assertions were added. Final clean-revision release and production receipts will be appended after execution.
+- Limits: these representative states do not certify every dropdown option, native screen reader, physical touch/IME, other browser engines or signed desktop builds. No desktop publication in this task.
+
 审查日期：2026-10-26。审查对象：当前本地设计编辑器，不是静态截图。
 
 ## 方法与边界

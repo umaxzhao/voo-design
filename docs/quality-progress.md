@@ -1,5 +1,12 @@
 # 项目检查总进度
 
+## 右侧下拉框描边与键盘归属（2026-11-02）
+
+- `inspector.control-hierarchy`：定位到公共样式主动添加的 1px 描边，移除右侧面板下拉框和字体选择器的常驻边框；保留 12px 控件圆角、面板圆角、底色层级、键盘焦点及浮层边缘。
+- `inspector.menu-focus` / `selection.shortcuts`：实际下拉方向键曾把选中对象向下移动 1px；在共享键盘目标分类中隔离自定义 listbox 及其触发器，保留 Ctrl/⌘ 历史快捷键和普通画布操作。
+- 修复前浏览器描边失败与键盘归属单测失败均已保留；针对性 23 单测和完整 `ui-inspector-interaction` 通过，包含 32 组真实形状/Frame/文字/图片、深浅主题、中英文、桌面/移动面板状态，以及原有输入、填充、文字、撤销和响应式回归。完整干净版本门禁及线上交付证据待追加。
+- 进度与限制见[详细验收](audits/design-editor-interaction-audit.md#inspector-dropdown-surfaces--2026-11-02)。本轮不发布桌面安装包。
+
 ## 空文件默认 Frame（2026-11-02）
 
 - `documents.empty-canvas`：空文件、新建和载入前默认页面统一为空的无限画布，不自动增加 Frame；同时去掉根画布的绿色边界线。已有空 Frame、有内容的旧文件及其图层关系保留。

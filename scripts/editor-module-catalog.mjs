@@ -92,7 +92,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/selection*", "src/canvas/editor/transform*", "src/canvas/*shortcut*", "src/canvas/editor/drawing-gesture-*",
       "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*", "src/canvas/editor/editor_engine_tools.js",
       "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js",
-      "tests/unit/editor-module-audit-regressions.test.js", "src/canvas/components/editor_family_menu.jsx",
+      "tests/unit/editor-module-audit-regressions.test.js", "src/canvas/components/editor_family_menu.jsx", "src/shared/dom_targets.js", "tests/unit/dropdown-shortcut-ownership.test.js",
       "src/canvas/components/editor_select_menu.jsx", "src/canvas/components/editor_eraser_menu.jsx", "src/canvas/components/use_hover_menu.js",
       "tests/unit/toolbar_hover_menu.test.js", "tests/unit/move-gesture-start.test.js", "src/canvas/editor/chrome_design_issues.js",
       "tests/unit/node_at_point_spatial.test.js", "scripts/editor-module-catalog.mjs", "tests/unit/editor-check-plans.test.js",
@@ -279,7 +279,7 @@ export const EDITOR_MODULES = [
     title: "Inspector, menus and shared UI",
     paths: [
       "tests/unit/legacy-panel-effects.test.js",
-      "src/canvas/components/scrub_field.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs",
+      "src/canvas/components/scrub_field.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/inspector-dropdown-surfaces.mjs",
       "tests/e2e/context-submenu-checks.mjs", "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx",
       "tests/unit/properties_panel_restructure.test.jsx", "src/canvas/color_picker/*", "src/canvas/components/popover_scope.js",
       "tests/e2e/unified-fill-*.mjs", "tests/unit/unified-fill-picker.test.jsx", "tests/unit/fill-paint-values.test.js",

@@ -14,6 +14,8 @@
 
 ## 1.0.0
 
+- Restore borderless inspector dropdown and font-picker triggers while retaining large corners, keyboard focus and floating-menu edges. Keep custom-menu navigation and deletion keys from reaching selected canvas artwork.
+
 - Integrate Linux/Windows window controls into the editor title bar, hide the native frame/menu while preserving accelerators, retain macOS traffic lights and keep custom close requests behind the shared unsaved-work guard. Add actual Linux/X11 window interaction checks.
 
 - Move AI Repair inference into a cancellable Worker, preserve healing mode and prevent stale image writes. Probe real GPU support, retain compatible local inference and require valid hosted ORT module/WASM MIME responses before publishing the editor entry point.
