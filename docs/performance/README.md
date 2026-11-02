@@ -397,4 +397,4 @@ The implementation caches history image/mask sets and updates
 reference counts as scenes enter or leave. See [acceptance and measurements](history-asset-retention.md).
 Autosave scheduling, precise-pass index reuse and global bitmap budgets remain pending.
 
-The [layout/effect improvements](layout-sharing.md) retain unchanged nodes and stop settled passes; [dirty checkpoints](dirty-checkpoints.md) target remaining full-page edit serialization.
+The [layout/effect improvements](layout-sharing.md) retain unchanged nodes and stop settled passes; [dirty checkpoints](dirty-checkpoints.md) target remaining full-page edit serialization. [Native NBA camera evidence](canvas-fps-tiles.md#nba-free-workspace-picture-reuse-2026-11-02) covers bounded artwork reuse and remaining long stalls.

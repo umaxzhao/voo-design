@@ -64,9 +64,9 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_free*", "src/canvas/components/editor_full*", "src/canvas/components/editor_page*",
       "src/canvas/editor/*viewport*", "src/canvas/editor/*snapp*", "src/canvas/editor/*tile*", "src/canvas/page_camera.js",
       "src/canvas/editor/workspace-free-artwork.js", "src/canvas/editor/workspace-artwork-picture.js", "src/canvas/editor/workspace-spatial-index.js", "tests/unit/workspace-spatial-index.test.js", "scripts/bench-layer-scroll.mjs",
-      "src/canvas/editor/workspace-artwork-stamp.js", "tests/unit/workspace-artwork-picture.test.js", "tests/unit/workspace-artwork-stamp.test.js",
+      "src/canvas/editor/workspace-artwork-stamp.js", "src/canvas/editor/workspace-picture-bounds.js", "tests/unit/workspace-picture-bounds.test.js", "tests/unit/workspace-artwork-picture.test.js", "tests/unit/workspace-artwork-stamp.test.js",
       "src/canvas/components/editor_hooks/use_editor_page_engine.js", "src/canvas/editor/free-artwork-hit-regions.js",
-      "tests/unit/free-artwork-hit-regions.test.js", "src/canvas/editor/frame-canvas-labels.js", "tests/unit/frame-canvas-labels.test.js",
+      "tests/unit/free-artwork-hit-regions.test.js", "tests/unit/free-canvas-surface.test.js", "tests/e2e/complete-picture-checks.mjs", "src/canvas/editor/frame-canvas-labels.js", "tests/unit/frame-canvas-labels.test.js",
       "src/canvas/use_workspace_chrome.js", "tests/unit/workspace_selection_chrome.test.js", "src/canvas/components/artboard-body-gesture.js", "tests/unit/artboard-body-gesture.test.js", "tests/unit/viewport_notifications.test.js", "tests/e2e/canvas_fps.e2e.mjs",
     ],
     related: [

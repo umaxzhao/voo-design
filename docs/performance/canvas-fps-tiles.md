@@ -152,3 +152,103 @@ The first queued browser attempt could not start Vite because the host's
 inotify watcher limit was exhausted. The comparable retry uses
 `CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=10000` for Vite file watching, retaining
 the default benchmark scenarios, sample duration, viewport and browser flags.
+
+NBA free-workspace picture reuse (2026-11-02)
+-------------------------------------------
+
+This continuation concerns the free-workspace Canvas2D artwork fallback used
+by decoded-media documents, rather than the tile experiment above. Baseline
+is `4394dd81f20f86f20f032f3c09f5c055927c13a4`. The final task-only candidate
+is bound to per-source hashes in `verification-manifest.json`, production
+hashes in `build-final-hashes.json`, and the resulting commit in `revision.json`
+inside the private `canvas-motion-performance/` evidence artifact. Historical
+passes above do not certify this changed source.
+
+The read-only input is `NBA-Land-UI-V3.voo`, 31,900,716 bytes, SHA-256
+`8bf368d5c6b7cb1276f63f1dc262ec763fc266c404a4b97aee202914d929c4f8`.
+It contains 15,036 nodes and 150 assets under a 6400x8192 clipping Frame.
+Each native run imports a byte-identical copy into its own temporary profile
+and documents directory; it never opens the user's working profile.
+
+Three concrete defects were reproduced before repair:
+
+- Fractional artboard origins alternated the bitmap dimensions by one pixel,
+  invalidating an otherwise usable picture during almost every pan frame.
+- Zooming out rejected a picture even when it already contained every painted
+  pixel and the newly exposed area was provably empty workspace.
+- Subpixel camera input could leave floor-aligned geometry unchanged long
+  enough to trigger precise refinement in the middle of the gesture.
+
+The backing dimensions now depend only on viewport size, with one CSS pixel
+of coverage for the floor-aligned origin. A WeakMap keyed by immutable node
+arrays caches a conservative full-scene extent: every branch must reach an
+untransformed clipping Frame, IDs must be unique, and unknown kinds/effects,
+unbounded backdrop operations, loose content, cycles and orphans retain the
+ordinary viewport-coverage fallback. Frame strokes and a two-device-pixel
+antialiasing guard must fit inside the cached region before empty margins
+can be reused. Exact readback and document/asset invalidation remain enforced.
+
+Overscan can use up to 512 CSS pixels, solving the existing 32 MiB retained
+picture limit in device pixels instead of repeatedly halving useful padding.
+This is a per-picture retained bound, not a global/peak application-memory
+claim. Workspace passes request screen DPR explicitly, independently of the
+detached engine's draft density. Repeated same-surface motion also resets
+the 160 ms refinement quiet period; stopping still restores exact pixels.
+
+Final native comparison uses repository main/preload plus production output,
+Electron **43.4.0**, Chromium **150.0.7871.224**, Apple M4 Pro/ANGLE Metal,
+actual **1440x991 CSS pixels/DPR 1**, visible window, and identical imported
+content. Each mode records 120 rAF intervals with CPU sampling enabled in
+both versions. Baseline labels are `native-before-r8/r9/r10`; candidate labels
+are `native-final-r2/r3/r4`. These are scripted camera-domain operations,
+not physical-input-to-presentation latency or a direct Figma comparison.
+
+| Overview operation | Baseline P95 ms, three runs | Candidate P95 ms, three runs | Full artwork paints per run |
+| --- | --- | --- | --- |
+| Pan | 68.5 / 67.6 / 66.1 | 18.5 / 18.6 / 18.5 | 115 -> 0 |
+| Zoom out | 83.3 / 85.2 / 82.9 | 18.5 / 18.4 / 18.3 | 61 -> 0 |
+| Zoom in | 33.5 / 33.2 / 18.6 | 18.5 / 18.2 / 18.5 | 3 -> 0 |
+
+A separate single paired 50% detail-view diagnostic uses the same
+camera (`zoom=.5`, `panX=314`, `panY=-30.5`) in both builds. Zoom-out P95 is
+35.1 -> 18.4 ms and paints 61 -> 0; pan P95 is 18.6 -> 18.4 ms and paints
+115 -> 0. This is one diagnostic, not a repeated statistical estimate.
+
+Long stalls remain: candidate overview zoom-in maxima are 434.4 / 415.9 /
+400.1 ms; detail idle/zoom-in maxima are 414.7 / 418.4 ms. CPU sampling
+continues to show `projectCover`/`createProjectCover` and `encodeVooBinary`
+work. Inclusive module durations overlap and must not be summed. Saving,
+recovery and cover implementation were only inspected, not changed in this
+performance slice. Zero camera artwork paints does not eliminate this work.
+
+Validation and remaining contexts
+---------------------------------
+
+- Design lint, formatting, module registration and production build pass.
+  Full units pass **4,986 tests / 609 files**, with **four tests /
+  three files skipped**. The initial sandbox run failed on localhost EPERM
+  and file-watch limitations; the complete permitted rerun is retained
+  separately, rather than erasing the failed attempt.
+- The registered real-wheel regression keeps the original readback/edit/
+  undo checks and adds real decoded PNG, clipped vector overflow, partial
+  scene fractional pan, exact settled byte equality, unchanged document/
+  selection, and Frame undo/redo at DPR 1 and 2. All nine targeted suites
+  pass; detailed execution results are retained in `browser-results.json`.
+- Native strict fresh-reference comparison still **fails in both builds**:
+  36,250 differing channels, maximum delta 78. The baseline and candidate
+  actual 5,373,040-byte artwork hashes are identical, and reference hashes
+  are also identical. This proves no new difference at that pose; it does
+  not turn the existing reference discrepancy into a passing assertion.
+  An earlier synthetic text-reference failure is also retained and remains
+  unverified; no font/text implementation was changed.
+- The affected plan covers all 12 related modules/117 registered core suites;
+  nine targeted suites are execution evidence, not the full release gate.
+  Signed/installed desktop, physical input, native Retina, every font/effect/
+  page, complete editing latency and Figma parity remain unverified.
+
+The detailed raw runs, all maxima, CPU profiles, failed attempts, native
+input diagnostics, source/build hashes and scope exclusions are retained
+under private `canvas-motion-performance/`. The original input hash is
+rechecked before delivery. Work is local-only: no main-tree integration,
+push, merge, deployment, installer or Release is performed. `native_studio`,
+font/IME/keyboard and saving/recovery implementation remain outside scope.
