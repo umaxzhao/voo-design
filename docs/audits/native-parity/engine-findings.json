@@ -1,0 +1,26 @@
+{
+  "binaryDecodedAssets" : 1,
+  "binaryImageRenderedPixel" : [
+    1,
+    1,
+    1,
+    1
+  ],
+  "gradientExportCenterRGB" : [
+    0,
+    0,
+    0
+  ],
+  "gradientParsedByStage" : true,
+  "gradientStageCenterRGB" : [
+    0.50655442476272583,
+    0.50655442476272583,
+    0.50655442476272583
+  ],
+  "htmlImageHasSource" : false,
+  "loadedImageHasSource" : false,
+  "narrowEditorWidth" : 576,
+  "narrowToolRailFrame" : "{{-6, 482}, {589, 56}}",
+  "narrowToolRailWidth" : 589,
+  "numeric800WeightEqualsRegular" : true
+}

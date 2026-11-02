@@ -1,0 +1,1 @@
+zsh:2: no such file or directory: /Volumes/TD/Projects/voo_design/node_modules/.bin/prettier

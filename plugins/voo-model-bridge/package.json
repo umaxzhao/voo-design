@@ -1,0 +1,39 @@
+{
+  "name": "voo-model-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenAI-compatible loopback endpoint exposing the DeepSeek Harness profile's models to the VOO editor.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "openai-compatible",
+    "deepseek-harness",
+    "voo"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/model-bridge.js",
+  "exports": {
+    ".": "./lib/model-bridge.js",
+    "./lib/model-bridge.js": "./lib/model-bridge.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.png",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/model-bridge.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.png",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

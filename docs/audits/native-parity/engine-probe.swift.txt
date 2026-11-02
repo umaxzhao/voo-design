@@ -1,0 +1,73 @@
+import AppKit
+import CoreGraphics
+import Foundation
+
+let app = NSApplication.shared
+app.setActivationPolicy(.accessory)
+let directory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+let space = CGColorSpaceCreateDeviceRGB()
+let context = CGContext(data: nil, width: 2, height: 2, bitsPerComponent: 8, bytesPerRow: 8, space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+context.setFillColor(NSColor.red.cgColor)
+context.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+let image = context.makeImage()!
+let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!
+let source = "data:image/png;base64," + png.base64EncodedString()
+var imageNode = VOONode(id: "audit-image", kind: .image, name: "Audit image", x: 8, y: 8, width: 16, height: 16, style: LayerStyle(fill: "none"))
+imageNode.src = source
+var document = VOODocument(title: "Audit", canvas: CanvasFrame(width: 64, height: 64, backgroundColor: "#FFFFFF"), nodes: [imageNode])
+let html = ExportEngine.shared.exportHTML(document: document)
+try html.write(to: directory.appendingPathComponent("image-export.html"), atomically: true, encoding: .utf8)
+var findings: [String: Any] = ["htmlImageHasSource": html.contains("src=\"\(source)\"")]
+imageNode.src = nil
+imageNode.imageId = "audit-asset"
+document.nodes = [imageNode]
+let binary = try VOOBinaryContainer.encode(document: document, assets: ["audit-asset": (data: png, mime: "image/png")])
+let binaryURL = directory.appendingPathComponent("binary-image.voo")
+try binary.write(to: binaryURL)
+let decoded = try VOOBinaryContainer.decode(data: binary)
+let loaded = try DocumentIO.shared.loadDocument(from: binaryURL)
+findings["binaryDecodedAssets"] = decoded.assets.count
+findings["loadedImageHasSource"] = loaded.nodes.first?.src != nil
+let output = try ExportEngine.shared.renderImage(document: loaded, scale: 1)
+let rep = NSBitmapImageRep(cgImage: output)
+let pixel = rep.colorAt(x: 16, y: 16)!.usingColorSpace(.deviceRGB)!
+findings["binaryImageRenderedPixel"] = [pixel.redComponent, pixel.greenComponent, pixel.blueComponent, pixel.alphaComponent]
+try rep.representation(using: .png, properties: [:])!.write(to: directory.appendingPathComponent("binary-image-render.png"))
+let controller = WindowController()
+controller.window!.setContentSize(NSSize(width: 960, height: 600))
+let root = controller.mainContentView
+root.frame = CGRect(x: 0, y: 0, width: 960, height: 600)
+root.isWelcomeOpen = false
+controller.newDocument(nil)
+root.setAgentPanelOpen(true)
+root.layoutSubtreeIfNeeded()
+findings["narrowEditorWidth"] = root.editorShell.bounds.width
+findings["narrowToolRailWidth"] = root.toolRail.bounds.width
+findings["narrowToolRailFrame"] = NSStringFromRect(root.toolRail.frame)
+if let rep = root.bitmapImageRepForCachingDisplay(in: root.bounds) {
+    root.cacheDisplay(in: root.bounds, to: rep)
+    try rep.representation(using: .png, properties: [:])!.write(to: directory.appendingPathComponent("native-narrow-agent.png"))
+}
+let gradientNode = VOONode(id: "audit-gradient", kind: .rect, name: "Gradient", x: 0, y: 0, width: 64, height: 64, style: LayerStyle(fill: "linear-gradient(180deg, #FFFFFF 0%, #000000 100%)", stroke: "none", strokeWidth: 0))
+let gradientDocument = VOODocument(title: "Gradient", canvas: CanvasFrame(width: 64, height: 64, backgroundColor: "#FFFFFF"), nodes: [gradientNode])
+let gradientExport = NSBitmapImageRep(cgImage: try ExportEngine.shared.renderImage(document: gradientDocument, scale: 1))
+let gradientPixel = gradientExport.colorAt(x: 32, y: 32)!.usingColorSpace(.deviceRGB)!
+findings["gradientParsedByStage"] = CanvasStageView.parseGradient(from: gradientNode.fill) != nil
+findings["gradientExportCenterRGB"] = [gradientPixel.redComponent, gradientPixel.greenComponent, gradientPixel.blueComponent]
+let stage = CanvasStageView(frame: CGRect(x: 0, y: 0, width: 64, height: 64))
+stage.document = gradientDocument
+stage.zoom = 1
+stage.panOffset = .zero
+stage.showRulers = false
+stage.subviews.forEach { $0.isHidden = true }
+if let bitmap = stage.bitmapImageRepForCachingDisplay(in: stage.bounds) {
+    stage.cacheDisplay(in: stage.bounds, to: bitmap)
+    let sample = bitmap.colorAt(x: bitmap.pixelsWide / 2, y: bitmap.pixelsHigh / 2)!.usingColorSpace(.deviceRGB)!
+    findings["gradientStageCenterRGB"] = [sample.redComponent, sample.greenComponent, sample.blueComponent]
+    try bitmap.representation(using: .png, properties: [:])!.write(to: directory.appendingPathComponent("gradient-stage.png"))
+}
+try gradientExport.representation(using: .png, properties: [:])!.write(to: directory.appendingPathComponent("gradient-export.png"))
+findings["numeric800WeightEqualsRegular"] = TextStyleResolver.nsWeight(for: "800") == .regular
+let json = try JSONSerialization.data(withJSONObject: findings, options: [.prettyPrinted, .sortedKeys])
+try json.write(to: directory.appendingPathComponent("engine-findings.json"))
+FileHandle.standardOutput.write(json)

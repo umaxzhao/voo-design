@@ -1,0 +1,51 @@
+// Run under flock /tmp/voo-e2e.lock. Requires Vite at VOO_TEST_URL.
+import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const shotDir = process.env.VOO_SHOT_DIR || join(tmpdir(), "voo-design-tokens");
+await mkdir(shotDir, { recursive: true });
+await withEditorBrowser(async ({ page }) => {
+  // Use the existing Settings entry point.
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("voo:open-settings")));
+  await page.getByRole('tab', { name: /Design Systems|设计系统/ }).first().click();
+  await page.locator('input[aria-description="colors action"]:not([type=color])').fill('#7c3aed');
+  await page.locator('input[aria-description="colors canvas"][type=color]').fill('#faf9f6');
+  await page.locator('input[aria-description="typeScale 0"]').fill('13');
+  await page.locator('input[aria-description="radius control"]').fill('5');
+  await page.locator('input[aria-description="components button height"]').fill('20');
+  await page.getByRole('button', { name: 'Save as copy', exact: true }).click();
+  await page.getByRole('button', { name: 'Use for this document', exact: true }).click();
+  await page.waitForFunction(() => window.__vooEditor.serialise().designTokens?.colors.action === '#7c3aed');
+  await page.locator('[data-testid="settings-drawer"] main').evaluate(el => { el.scrollTop = 0; });
+  await page.screenshot({ path: `${shotDir}/tokens.png` });
+  await page.getByLabel('designMd', { exact: true }).fill('# Editorial system\n\nCalm surfaces, generous spacing, and clear type hierarchy.\n\n## Components\nUse the accent role for primary actions.');
+  await page.getByRole('button', { name: 'Save design system', exact: true }).click();
+  await page.getByRole('button', { name: 'Use for this document', exact: true }).click();
+  await page.getByLabel('designMd', { exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${shotDir}/design-md.png` });
+  await page.locator('input[aria-description="spacing 0"]').fill('-1');
+  await page.getByRole('button', { name: 'Save design system', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'non-negative' }).waitFor();
+  const stored = await page.evaluate(() => window.__vooEditor.serialise());
+  assert.equal(stored.designTokens.colors.action, '#7c3aed');
+  assert.equal(stored.designTokens.colors.canvas, '#faf9f6');
+  assert.equal(stored.designTokens.typeScale[0], 13);
+  assert.equal(stored.designTokens.radius.control, 5);
+  assert.equal(stored.designTokens.components.button.height, 20);
+  assert.ok(stored.designMd.includes('Editorial system'));
+  assert.ok(stored.designTokens.spacing.every(value => value >= 0));
+  // Reopen the tab to check that persisted values replace invalid drafts.
+  await page.getByRole('tab', { name: /Shortcuts|快捷键速查/ }).click();
+  await page.getByRole('tab', { name: /Design Systems|设计系统/ }).click();
+  await page.getByTestId('design-system-more').click();
+  await page.getByTestId('design-system-list').getByRole('tab').filter({ hasText: /copy/i }).click();
+  await page.waitForFunction(() => document.querySelector('textarea[aria-label="designMd"]')?.value.includes('Editorial system'));
+  assert.ok((await page.getByLabel('designMd', { exact: true }).inputValue()).includes('Editorial system'));
+  assert.ok(!(await page.locator('input[aria-description="spacing 0"]').inputValue()).includes('-1'));
+  await page.locator('input[aria-description="spacing 0"]').fill('');
+  await page.getByRole('button', { name: 'Save design system', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'non-negative' }).waitFor();
+  console.log(`Design system browser checks passed; screenshots: ${shotDir}/tokens.png, ${shotDir}/design-md.png`);
+});

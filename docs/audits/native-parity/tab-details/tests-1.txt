@@ -1,0 +1,60 @@
+=== [Integrated Mode] Compiling against production Sources/ ===
+=== 正在编译 VOO Design Native Studio E2E 测试套件 ===
+=== 正在执行 VOO Design Native Studio E2E 测试 ===
+2026-11-01 12:40:36.479 VOODesignE2ETests[13125:11552445] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+2026-11-01 12:40:37.442 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: creation.started
+2026-11-01 12:40:37.447 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: shape.created.rect
+2026-11-01 12:40:37.709 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:40:38.152 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: path.created
+2026-11-01 12:40:38.236 VOODesignE2ETests[13125:11552445] [VOO Design Native] 抓手工具：拖拽平移画布
+2026-11-01 12:40:38.236 VOODesignE2ETests[13125:11552445] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 12:40:38.237 VOODesignE2ETests[13125:11552445] [VOO Design Native] 魔棒选择：点击选中相同填充色的图层
+2026-11-01 12:40:38.499 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 12:40:38.511 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 12:40:38.597 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: paint.stroke.started
+2026-11-01 12:40:38.609 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: paint.stroke.committed
+2026-11-01 12:40:38.609 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: paint.erase.started
+2026-11-01 12:40:38.615 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: paint.erase.committed
+2026-11-01 12:40:38.798 VOODesignE2ETests[13125:11552445] [VOO Design Native] 已创建页面: Page 2
+2026-11-01 12:40:38.969 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:40:39.453 VOODesignE2ETests[13125:11552445] [VOO Design Native] canvas tool: text.insertion.requested
+2026-11-01 12:40:41.039 VOODesignE2ETests[13125:11552445] [VOO Design Native] Cropping is not implemented in the native editor yet.
+2026-11-01 12:40:41.039 VOODesignE2ETests[13125:11552445] [VOO Design Native] Image healing is not implemented in the native editor yet.
+2026-11-01 12:40:41.096 VOODesignE2ETests[13125:11552445] [VOO Design Native] 套索选择：拖拽圈选图层
+2026-11-01 12:40:42.416 VOODesignE2ETests[13125:11552445] [VOO Design Native] This effect format is preserved but cannot be edited here yet.
+================================================================================
+             VOO DESIGN NATIVE STUDIO — OPAQUE-BOX E2E TEST RUNNER
+================================================================================
+Target: VOO Design Native (Swift 6 + AppKit + CoreGraphics + Metal)
+Filter: Tier = All (1-4), Pattern = None
+Total registered test cases: 449 | Selected: 449
+--------------------------------------------------------------------------------
+
+  [31m[FAIL][0m (0.035s) [T1] [UIParity-TitleBar] test_UIParity_TitleBar_DefaultDocumentTitleField
+         [31m↳ [UIParityTests.swift:198] Default tab title must be Untitled.voo (expected <Untitled.voo>, got <Untitled>)[0m
+  [31m[FAIL][0m (0.002s) [T1] [UIParity-TitleBar] test_UIParity_TitleBar_SetDocumentTitleSyncsStateAndDisplay
+         [31m↳ [UIParityTests.swift:218] Assertion failed: expected <Landing.voo>, got <Landing>[0m
+  [31m[FAIL][0m (0.001s) [T1] [UIParity-TitleBar] test_UIParity_TitleBar_DashboardModeShowsUntitledAndHidesEditorActions
+         [31m↳ [UIParityTests.swift:231] Assertion failed: expected <Moon.voo>, got <Moon>[0m
+  [31m[FAIL][0m (0.001s) [T1] [UIParity-Spacing] test_UIParity_Spacing_TitleBar_IconAndActionSizes
+         [31m↳ [UIParityTests.swift:3279] Tab close width (expected ~<16.0>, got <28.0>)[0m
+  [31m[FAIL][0m (0.003s) [T3] [Native-TitleBar] test_TabTitlesKeepCaseStripExtensionAndRespectWebWidthCaps
+         [31m↳ [NativeTitleBarDetailTests.swift:24] Expected condition to be true, but got false[0m
+  [31m[FAIL][0m (0.002s) [T3] [Native-TitleBar] test_DirtyTabMarkReservesSpaceWithoutMovingTitleBaseline
+         [31m↳ [NativeTitleBarDetailTests.swift:74] Assertion failed: expected ~<200.0>, got <202.0> (diff 2.0 > 0.001)[0m
+
+================================================================================
+                             TEST RESULTS SUMMARY
+================================================================================
+Tier & Feature Category                   Total     Passed    Failed    Pass Rate
+--------------------------------------------------------------------------------
+Tier 1: Feature Coverage (F1-F18)         258       254       4           98.4%
+Tier 2: Boundary & Corner Cases           108       108       0          100.0%
+Tier 3: Cross-Feature Combinations        73        71        2           97.3%
+Tier 4: Real-World Scenarios              10        10        0          100.0%
+--------------------------------------------------------------------------------
+TOTAL                                     449       443       6           98.7%
+================================================================================
+Execution Time: 6.659 seconds
+[31m✗ TEST SUITE FAILED with 6 failure(s) (Exit Code 1)[0m
+

@@ -1,0 +1,1503 @@
+/**
+ * SVG → VOO node specs for the `generate_vector` agent tool.
+ *
+ * The model returns a raw SVG document; this module turns it into the flat
+ * `NodeSpec[]` the canvas tools (`create_path` / `create_shape`) can place.
+ * It is deliberately dependency-free and DOM-free: a hand-written scanner
+ * walks the markup, so the same code runs in the browser and under vitest's
+ * node environment (no `DOMParser`).
+ *
+ * Contract:
+ *   parseSvgToNodes(svgText, { targetWidth, targetHeight, maxNodes }) →
+ *     { width, height, viewBox, nodes, warnings }
+ *   NodeSpec = { kind: "path", name, d, fill, stroke, strokeWidth, opacity }
+ *            | { kind: "rect", name, x, y, width, height, rx, fill, stroke,
+ *                strokeWidth, opacity }
+ *
+ * Design decisions / limits (dirty LLM output must never throw):
+ * - Everything is emitted in target-canvas coordinates. viewBox + the transform
+ *   stack (translate/scale/matrix/rotate/skewX/skewY) are composed into one
+ *   affine matrix; path `d` is rewritten numerically (M/L/H/V/C/S/Q/T/A/Z are
+ *   converted to absolute commands, relative offsets resolved, arcs scaled by
+ *   sqrt(|det|) and rotated by the matrix angle). Under a non-uniform/skewed
+ *   matrix the arc radii can only be approximated — a warning is recorded.
+ *   If a `d` cannot be tokenized it is skipped with a warning rather than
+ *   emitted broken.
+ * - `<rect>` stays a rect only under axis-aligned transforms; rotated/skewed
+ *   rects become 4-corner paths (corner radius dropped) with a warning.
+ * - Paint (`fill`/`stroke`/`stroke-width`/`opacity`/`fill-opacity`/
+ *   `stroke-opacity`, presentation attribute + inline `style`) is inherited
+ *   through `<g>`/`<a>`/`<switch>`. `fill-opacity`/`stroke-opacity` are folded
+ *   into `rgba()` when the color is hex/rgb; otherwise a warning is recorded.
+ * - `url(...)` paint servers (gradients), `currentColor`, `<defs>`, `<use>`,
+ *   `<text>`, `<image>`, `<script>`, `<style>`, clip paths, masks, filters …
+ *   are ignored with a warning: defs/gradients are NOT flattened.
+ */
+
+const IDENTITY_MATRIX = Object.freeze([1, 0, 0, 1, 0, 0]);
+const DEFAULT_FILL = "#000000";
+const DEFAULT_SOURCE_SIZE = 100;
+const DEFAULT_MAX_NODES = 400;
+const EPSILON = 1e-9;
+/** Bezier constant for approximating a quarter circle with one cubic. */
+const KAPPA = 0.5522847498307936;
+
+const NUMBER_STICKY = /[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/y;
+const NUMBER_GLOBAL = /[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g;
+const NUMBER_ONLY = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/;
+const LENGTH_PATTERN =
+  /^([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*(px|pt|pc|cm|mm|in|%)?$/i;
+const COMMAND_LETTER = /^[MmLlHhVvCcSsQqTtAaZz]$/;
+
+/** Tags we never render. Subtrees are skipped: their content is not canvas. */
+const SKIP_SUBTREE_TAGS = new Set([
+  "image",
+  "script",
+  "style",
+  "title",
+  "desc",
+  "metadata",
+  "pattern",
+  "filter",
+  "symbol",
+  "marker",
+  "foreignobject",
+]);
+const CONTAINER_TAGS = new Set(["g", "a", "switch", "svg"]);
+const BASE_PAINT = Object.freeze({
+  fill: DEFAULT_FILL,
+  stroke: null,
+  strokeWidth: null,
+  opacity: 1,
+  fillOpacity: 1,
+  strokeOpacity: 1,
+});
+
+/** Argument count per absolute path command. */
+const COMMAND_ARG_COUNT = {
+  M: 2,
+  L: 2,
+  H: 1,
+  V: 1,
+  C: 6,
+  S: 4,
+  Q: 4,
+  T: 2,
+  A: 7,
+  Z: 0,
+};
+
+// ---------------------------------------------------------------------------
+// Small numeric / matrix helpers
+// ---------------------------------------------------------------------------
+
+function round(value, digits = 3) {
+  const factor = 10 ** digits;
+  const rounded = Math.round(value * factor) / factor;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+/** Formats a coordinate for `d` / node fields: stable, 3 decimals. */
+function fmt(value) {
+  if (!Number.isFinite(value)) return "0";
+  return String(round(value));
+}
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
+/** Parses a plain number (optionally with a px suffix). Returns null if unparsable. */
+function parseNumber(value) {
+  if (value == null) return null;
+  const match = /^\s*([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*(?:px)?\s*$/i.exec(
+    String(value),
+  );
+  if (!match) return null;
+  const number = Number(match[1]);
+  return Number.isFinite(number) ? number : null;
+}
+
+/** Parses an SVG length for the root width/height. Percentages are unusable. */
+function parseLength(value) {
+  if (value == null) return null;
+  const match = LENGTH_PATTERN.exec(String(value).trim());
+  if (!match) return null;
+  const number = Number(match[1]);
+  if (!Number.isFinite(number)) return null;
+  const unit = (match[2] || "px").toLowerCase();
+  switch (unit) {
+    case "%":
+      return null;
+    case "pt":
+      return (number * 4) / 3;
+    case "pc":
+      return number * 16;
+    case "in":
+      return number * 96;
+    case "cm":
+      return (number * 96) / 2.54;
+    case "mm":
+      return (number * 96) / 25.4;
+    default:
+      return number;
+  }
+}
+
+/** Parses `viewBox="minX minY width height"`; returns null when unusable. */
+function parseViewBox(value) {
+  if (value == null) return null;
+  const parts = String(value)
+    .trim()
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .map(Number);
+  if (parts.length !== 4 || parts.some((number) => !Number.isFinite(number))) return null;
+  if (parts[2] <= 0 || parts[3] <= 0) return null;
+  return parts;
+}
+
+/** Affine matrix [a, b, c, d, e, f]; composes left-to-right transform lists. */
+function multiplyMatrix(first, second) {
+  return [
+    first[0] * second[0] + first[2] * second[1],
+    first[1] * second[0] + first[3] * second[1],
+    first[0] * second[2] + first[2] * second[3],
+    first[1] * second[2] + first[3] * second[3],
+    first[0] * second[4] + first[2] * second[5] + first[4],
+    first[1] * second[4] + first[3] * second[5] + first[5],
+  ];
+}
+
+function isIdentityMatrix(matrix) {
+  for (let i = 0; i < 6; i++) {
+    const expected = IDENTITY_MATRIX[i];
+    if (Math.abs(matrix[i] - expected) > EPSILON) return false;
+  }
+  return true;
+}
+
+function applyMatrix(matrix, x, y) {
+  return {
+    x: matrix[0] * x + matrix[2] * y + matrix[4],
+    y: matrix[1] * x + matrix[3] * y + matrix[5],
+  };
+}
+
+function hasRotationOrSkew(matrix) {
+  return Math.abs(matrix[1]) > EPSILON || Math.abs(matrix[2]) > EPSILON;
+}
+
+/**
+ * Scale factor applied to stroke widths so they stay proportional to the
+ * geometry after the viewBox/transform mapping. sqrt(|det|) is exact for
+ * similarity transforms and the geometric mean for non-uniform ones.
+ */
+function strokeScaleFor(matrix) {
+  const det = matrix[0] * matrix[3] - matrix[1] * matrix[2];
+  const scale = Math.sqrt(Math.abs(det));
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
+
+// ---------------------------------------------------------------------------
+// Warnings / context
+// ---------------------------------------------------------------------------
+
+function createContext() {
+  const warnings = [];
+  const seen = new Set();
+  return {
+    warnings,
+    /** Records a message once per key so a bad gradient does not flood the list. */
+    warnOnce(key, message) {
+      if (seen.has(key)) return;
+      seen.add(key);
+      warnings.push(message);
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Lightweight XML scanner (no DOMParser)
+// ---------------------------------------------------------------------------
+
+/** Finds the closing `>` of a tag, skipping over quoted attribute values. */
+function findTagEnd(text, start) {
+  let quote = null;
+  for (let index = start + 1; index < text.length; index++) {
+    const char = text[index];
+    if (quote) {
+      if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === ">") return index;
+  }
+  return -1;
+}
+
+function parseAttributes(source) {
+  const attrs = {};
+  const pattern =
+    /([A-Za-z_:][\w:.-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  let match;
+  while ((match = pattern.exec(source))) {
+    const key = match[1];
+    const value = match[2] ?? match[3] ?? match[4];
+    if (value === undefined) continue;
+    if (!(key in attrs)) attrs[key] = value;
+  }
+  return attrs;
+}
+
+/**
+ * Builds a minimal element tree. Comments, XML declarations, doctypes and
+ * CDATA are skipped; `<script>`/`<style>` bodies are skipped wholesale so a
+ * `<` inside JS/CSS cannot derail the scanner. Malformed nesting never throws:
+ * a close tag pops to the first matching ancestor, an unterminated tag stops
+ * the scan with whatever was parsed so far.
+ */
+function parseMarkup(text) {
+  const root = { tag: "#root", attrs: {}, children: [] };
+  const stack = [root];
+  let index = 0;
+  while (index < text.length) {
+    const lt = text.indexOf("<", index);
+    if (lt < 0) {
+      if (index < text.length && stack.length > 0) {
+        const textChunk = text.slice(index).trim();
+        if (textChunk) {
+          const current = stack[stack.length - 1];
+          current.text = current.text ? `${current.text} ${textChunk}` : textChunk;
+        }
+      }
+      break;
+    }
+    if (lt > index && stack.length > 0) {
+      const textChunk = text.slice(index, lt).trim();
+      if (textChunk) {
+        const current = stack[stack.length - 1];
+        current.text = current.text ? `${current.text} ${textChunk}` : textChunk;
+      }
+    }
+    if (text.startsWith("<!--", lt)) {
+      const end = text.indexOf("-->", lt + 4);
+      index = end < 0 ? text.length : end + 3;
+      continue;
+    }
+    if (text.startsWith("<![CDATA[", lt)) {
+      const end = text.indexOf("]]>", lt + 9);
+      if (end >= 0 && stack.length > 0) {
+        const cdataText = text.slice(lt + 9, end).trim();
+        if (cdataText) {
+          const current = stack[stack.length - 1];
+          current.text = current.text ? `${current.text} ${cdataText}` : cdataText;
+        }
+      }
+      index = end < 0 ? text.length : end + 3;
+      continue;
+    }
+    if (text.startsWith("<?", lt)) {
+      const end = text.indexOf("?>", lt + 2);
+      index = end < 0 ? text.length : end + 2;
+      continue;
+    }
+    if (text.startsWith("<!", lt)) {
+      const end = text.indexOf(">", lt + 2);
+      index = end < 0 ? text.length : end + 1;
+      continue;
+    }
+    const gt = findTagEnd(text, lt);
+    if (gt < 0) break;
+    const raw = text.slice(lt + 1, gt).trim();
+    index = gt + 1;
+    if (raw.startsWith("/")) {
+      const name = raw.slice(1).trim().toLowerCase();
+      for (let depth = stack.length - 1; depth > 0; depth--) {
+        if (stack[depth].tag === name) {
+          stack.length = depth;
+          break;
+        }
+      }
+      continue;
+    }
+    const selfClosing = raw.endsWith("/");
+    const body = selfClosing ? raw.slice(0, -1) : raw;
+    const nameMatch = /^([^\s/>]+)/.exec(body);
+    if (!nameMatch) continue;
+    const fullName = nameMatch[1];
+    const tag = fullName.split(":").pop().toLowerCase();
+    const attrs = parseAttributes(body.slice(fullName.length));
+    const node = { tag, attrs, children: [] };
+    stack[stack.length - 1].children.push(node);
+    if (selfClosing) continue;
+    if (tag === "script" || tag === "style") {
+      const close = text.toLowerCase().indexOf(`</${tag}`, index);
+      if (close >= 0) {
+        const closeEnd = text.indexOf(">", close);
+        index = closeEnd < 0 ? text.length : closeEnd + 1;
+      }
+      continue;
+    }
+    stack.push(node);
+  }
+  return root;
+}
+
+function findElement(node, tag) {
+  for (const child of node.children) {
+    if (child.tag === tag) return child;
+    const found = findElement(child, tag);
+    if (found) return found;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Presentation attributes / paint inheritance
+// ---------------------------------------------------------------------------
+
+function parseStyle(value) {
+  const style = {};
+  if (!value) return style;
+  for (const part of String(value).split(";")) {
+    const colon = part.indexOf(":");
+    if (colon < 0) continue;
+    const key = part.slice(0, colon).trim().toLowerCase();
+    if (!key) continue;
+    style[key] = part.slice(colon + 1).trim();
+  }
+  return style;
+}
+
+const NAMED_COLORS = {
+  black: "#000000",
+  white: "#ffffff",
+  red: "#ff0000",
+  green: "#008000",
+  blue: "#0000ff",
+  yellow: "#ffff00",
+  cyan: "#00ffff",
+  magenta: "#ff00ff",
+  gray: "#808080",
+  grey: "#808080",
+  silver: "#c0c0c0",
+  maroon: "#800000",
+  olive: "#808000",
+  navy: "#000080",
+  purple: "#800080",
+  teal: "#008080",
+  orange: "#ffa500",
+  pink: "#ffc0cb",
+  gold: "#ffd700",
+};
+
+function normalizeColor(raw) {
+  if (!raw || typeof raw !== "string") return "#000000";
+  const s = raw.trim().toLowerCase();
+  if (NAMED_COLORS[s]) return NAMED_COLORS[s];
+  return raw.trim();
+}
+
+function parseCoordPercent(val, defaultVal = 0) {
+  if (val === undefined || val === null) return defaultVal;
+  const s = String(val).trim();
+  if (s.endsWith("%")) {
+    const num = parseFloat(s);
+    return Number.isFinite(num) ? num / 100 : defaultVal;
+  }
+  const num = parseFloat(s);
+  return Number.isFinite(num) ? num : defaultVal;
+}
+
+function resolveGradient(def, defsMap) {
+  if (!def) return null;
+  const tag = def.tag;
+  if (tag !== "lineargradient" && tag !== "radialgradient") return null;
+
+  let stops = [];
+  let current = def;
+  const visited = new Set();
+  while (current && !visited.has(current)) {
+    visited.add(current);
+    const stopElements = (current.children || []).filter((c) => c.tag === "stop");
+    if (stopElements.length > 0 && stops.length === 0) stops = stopElements;
+    const href = current.attrs.href || current.attrs["xlink:href"];
+    if (href && href.startsWith("#")) current = defsMap?.get(href.slice(1));
+    else break;
+  }
+  if (stops.length === 0) return null;
+
+  const parsedStops = stops.map((stop, index) => {
+    const style = parseStyle(stop.attrs.style);
+    const rawColor = stop.attrs["stop-color"] || style["stop-color"] || "#000000";
+    const rawOpacity = stop.attrs["stop-opacity"] || style["stop-opacity"];
+    let color = normalizeColor(rawColor);
+    const opacity = rawOpacity !== undefined ? Math.max(0, Math.min(1, parseFloat(rawOpacity))) : 1;
+    if (opacity < 1 && color.startsWith("#") && (color.length === 7 || color.length === 4)) {
+      if (color.length === 4) {
+        color = `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
+      }
+      const alphaHex = Math.round(opacity * 255).toString(16).padStart(2, "0");
+      color = `${color}${alphaHex}`.toUpperCase();
+    }
+    let offset = stop.attrs.offset;
+    let pos = 0;
+    if (offset !== undefined) {
+      const offsetStr = String(offset).trim();
+      if (offsetStr.endsWith("%")) pos = parseFloat(offsetStr) || 0;
+      else {
+        const num = parseFloat(offsetStr);
+        pos = Number.isFinite(num) ? (num <= 1 && num >= 0 ? num * 100 : num) : 0;
+      }
+    } else {
+      pos = stops.length > 1 ? (index / (stops.length - 1)) * 100 : 0;
+    }
+    return { color, position: Math.max(0, Math.min(100, pos)) };
+  });
+
+  const stopStrings = parsedStops
+    .sort((a, b) => a.position - b.position)
+    .map((s) => `${s.color} ${Math.round(s.position)}%`);
+
+  if (tag === "radialgradient") {
+    const cx = Math.round(parseCoordPercent(def.attrs.cx ?? def.attrs.fx, 0.5) * 100);
+    const cy = Math.round(parseCoordPercent(def.attrs.cy ?? def.attrs.fy, 0.5) * 100);
+    if (cx !== 50 || cy !== 50) {
+      return `radial-gradient(circle at ${cx}% ${cy}%, ${stopStrings.join(", ")})`;
+    }
+    return `radial-gradient(circle, ${stopStrings.join(", ")})`;
+  }
+
+  const x1 = parseCoordPercent(def.attrs.x1, 0);
+  const y1 = parseCoordPercent(def.attrs.y1, 0);
+  const x2 = parseCoordPercent(def.attrs.x2, 1);
+  const y2 = parseCoordPercent(def.attrs.y2, 0);
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  let angle = 90;
+  if (dx !== 0 || dy !== 0) {
+    angle = Math.round(((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360);
+  }
+  return `linear-gradient(${angle}deg, ${stopStrings.join(", ")})`;
+}
+
+function buildDefsMap(tree) {
+  const map = new Map();
+  function scan(node) {
+    if (node.attrs && node.attrs.id) {
+      map.set(String(node.attrs.id).trim(), node);
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        scan(child);
+      }
+    }
+  }
+  scan(tree);
+  return map;
+}
+
+/** Normalizes a paint value; degrades unsupported paint servers instead of throwing. */
+function resolvePaintColor(value, fallback, role, ctx, defsMap = null) {
+  if (value == null) return fallback;
+  const raw = String(value).trim();
+  if (!raw) return fallback;
+  const lower = raw.toLowerCase();
+  if (lower === "none") return "none";
+  if (lower === "transparent") return "none";
+  if (lower === "currentcolor") {
+    ctx.warnOnce("paint:currentcolor", "currentColor is unsupported; using #000000");
+    return DEFAULT_FILL;
+  }
+  if (lower.startsWith("url(")) {
+    const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(raw);
+    if (match && defsMap) {
+      const def = defsMap.get(match[1]);
+      if (def && (def.tag === "lineargradient" || def.tag === "radialgradient")) {
+        const gradient = resolveGradient(def, defsMap);
+        if (gradient) return gradient;
+      }
+    }
+    ctx.warnOnce(
+      `paint:${role}:url`,
+      `${role}="${raw}" references a paint server (gradient/pattern), which is unsupported; using ${fallback ?? "none"}`,
+    );
+    return fallback;
+  }
+  if (/^(inherit|initial|unset|revert)$/.test(lower)) return fallback;
+  return raw;
+}
+
+/** Folds a paint opacity into the color when it is hex/rgb, otherwise warns. */
+function withAlpha(color, alpha, role, ctx) {
+  if (color == null || color === "none") return color;
+  if (!(alpha < 1)) return color;
+  if (color.startsWith("linear-gradient") || color.startsWith("radial-gradient")) {
+    return color;
+  }
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
+  if (hex) {
+    const digits = hex[1];
+    const pairs =
+      digits.length === 3
+        ? digits.split("").map((digit) => digit + digit)
+        : [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 6)];
+    const channels = pairs.map((pair) => Number.parseInt(pair, 16));
+    return `rgba(${channels.join(",")},${round(alpha)})`;
+  }
+  const rgb = /^rgba?\(([^)]*)\)$/i.exec(color);
+  if (rgb) {
+    const parts = rgb[1].split(/[\s,/]+/).filter(Boolean);
+    if (parts.length >= 3) {
+      const channels = parts.slice(0, 3).map((part) => Number(part));
+      if (channels.every((channel) => Number.isFinite(channel))) {
+        return `rgba(${channels.join(",")},${round(alpha)})`;
+      }
+    }
+  }
+  ctx.warnOnce(
+    `alpha:${role}:${color}`,
+    `cannot apply ${role}-opacity ${alpha} to "${color}"; color kept as-is`,
+  );
+  return color;
+}
+
+function resolvePaint(attrs, inherited, ctx, parsedStyle = parseStyle(attrs.style), defsMap = null) {
+  const lookup = (key) => parsedStyle[key] ?? attrs[key];
+  const rawFill = lookup("fill");
+  const fill = rawFill === undefined ? inherited.fill : resolvePaintColor(rawFill, inherited.fill, "fill", ctx, defsMap);
+  const rawStroke = lookup("stroke");
+  const stroke = rawStroke === undefined ? inherited.stroke : resolvePaintColor(rawStroke, null, "stroke", ctx, defsMap);
+  const rawWidth = lookup("stroke-width");
+  const parsedWidth = rawWidth === undefined ? null : parseNumber(rawWidth);
+  const strokeWidth = stroke === null ? null : (parsedWidth ?? inherited.strokeWidth ?? 1);
+  const rawOpacity = lookup("opacity");
+  const ownOpacity = rawOpacity === undefined ? 1 : clamp01(parseNumber(rawOpacity) ?? 1);
+  const rawFillOpacity = lookup("fill-opacity");
+  const fillOpacity =
+    rawFillOpacity === undefined
+      ? inherited.fillOpacity
+      : clamp01(parseNumber(rawFillOpacity) ?? inherited.fillOpacity);
+  const rawStrokeOpacity = lookup("stroke-opacity");
+  const strokeOpacity =
+    rawStrokeOpacity === undefined
+      ? inherited.strokeOpacity
+      : clamp01(parseNumber(rawStrokeOpacity) ?? inherited.strokeOpacity);
+  return {
+    fill,
+    stroke,
+    strokeWidth,
+    opacity: clamp01(inherited.opacity * ownOpacity),
+    fillOpacity,
+    strokeOpacity,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Transforms
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses a transform list into one matrix. Lists compose in document order:
+ * `translate(a) scale(b)` maps p → translate(a) · scale(b) · p.
+ * Unknown functions are ignored with one warning per function name.
+ */
+function parseTransformMatrix(value, ctx) {
+  if (value == null) return IDENTITY_MATRIX;
+  const text = String(value).trim();
+  if (!text || text.toLowerCase() === "none") return IDENTITY_MATRIX;
+  let matrix = IDENTITY_MATRIX;
+  let matched = false;
+  const pattern = /([a-zA-Z]+)\s*\(([^)]*)\)/g;
+  let match;
+  while ((match = pattern.exec(text))) {
+    matched = true;
+    const name = match[1].toLowerCase();
+    const numbers = (match[2].match(NUMBER_GLOBAL) ?? []).map(Number);
+    let operation = null;
+    switch (name) {
+      case "translate":
+        operation = [1, 0, 0, 1, numbers[0] ?? 0, numbers[1] ?? 0];
+        break;
+      case "scale": {
+        const scaleX = numbers[0] ?? 1;
+        const scaleY = numbers[1] ?? scaleX;
+        operation = [scaleX, 0, 0, scaleY, 0, 0];
+        break;
+      }
+      case "matrix":
+        if (numbers.length >= 6) operation = numbers.slice(0, 6);
+        else ctx.warnOnce(`transform:matrix:${match[2]}`, `invalid matrix() ignored: ${match[0]}`);
+        break;
+      case "rotate": {
+        const radians = ((numbers[0] ?? 0) * Math.PI) / 180;
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        const centerX = numbers[1] ?? 0;
+        const centerY = numbers[2] ?? 0;
+        operation = [
+          cos,
+          sin,
+          -sin,
+          cos,
+          centerX - cos * centerX + sin * centerY,
+          centerY - sin * centerX - cos * centerY,
+        ];
+        break;
+      }
+      case "skewx":
+        operation = [1, 0, Math.tan(((numbers[0] ?? 0) * Math.PI) / 180), 1, 0, 0];
+        break;
+      case "skewy":
+        operation = [1, Math.tan(((numbers[0] ?? 0) * Math.PI) / 180), 0, 1, 0, 0];
+        break;
+      default:
+        ctx.warnOnce(`transform:${name}`, `unsupported transform function ${name}() ignored`);
+    }
+    if (operation) matrix = multiplyMatrix(matrix, operation);
+  }
+  if (!matched) {
+    ctx.warnOnce(`transform:${text}`, `unparsable transform attribute ignored: ${text}`);
+    return IDENTITY_MATRIX;
+  }
+  return matrix;
+}
+
+// ---------------------------------------------------------------------------
+// Path data parsing / rewriting
+// ---------------------------------------------------------------------------
+
+/**
+ * Tokenizes SVG path data into absolute commands with raw (untransformed)
+ * argument values plus a `relative` flag. Returns null when the data cannot be
+ * fully tokenized (unknown letters, truncated argument lists, …).
+ */
+function parsePathCommands(data) {
+  const commands = [];
+  const length = data.length;
+  let index = 0;
+  const isSeparator = (char) =>
+    char === " " ||
+    char === "\t" ||
+    char === "\n" ||
+    char === "\r" ||
+    char === "\f" ||
+    char === ",";
+  const skipSeparators = () => {
+    while (index < length && isSeparator(data[index])) index++;
+  };
+  const isNumberStart = (char) =>
+    (char >= "0" && char <= "9") || char === "." || char === "+" || char === "-";
+  const readNumber = () => {
+    skipSeparators();
+    NUMBER_STICKY.lastIndex = index;
+    const match = NUMBER_STICKY.exec(data);
+    if (!match) return null;
+    index = NUMBER_STICKY.lastIndex;
+    const number = Number(match[0]);
+    return Number.isFinite(number) ? number : null;
+  };
+  const readFlag = () => {
+    skipSeparators();
+    const char = data[index];
+    if (char === "0" || char === "1") {
+      index++;
+      return char === "1";
+    }
+    return null;
+  };
+  const readArguments = (upper) => {
+    const args = [];
+    for (let argIndex = 0; argIndex < COMMAND_ARG_COUNT[upper]; argIndex++) {
+      const isArcFlag = upper === "A" && (argIndex === 3 || argIndex === 4);
+      const value = isArcFlag ? readFlag() : readNumber();
+      if (value === null) return null;
+      args.push(value);
+    }
+    return args;
+  };
+  while (index < length) {
+    skipSeparators();
+    if (index >= length) break;
+    const letter = data[index];
+    if (!COMMAND_LETTER.test(letter)) return null;
+    index++;
+    const upper = letter.toUpperCase();
+    if (upper === "Z") {
+      commands.push({ cmd: "Z", args: [], relative: false });
+      continue;
+    }
+    const relative = letter !== upper;
+    let firstSet = true;
+    while (true) {
+      const args = readArguments(upper);
+      if (!args) return null;
+      // Repeated moveto argument pairs are implicit linetos.
+      commands.push({ cmd: firstSet ? upper : upper === "M" ? "L" : upper, args, relative });
+      firstSet = false;
+      skipSeparators();
+      if (index >= length || !isNumberStart(data[index])) break;
+    }
+  }
+  return commands;
+}
+
+/**
+ * Rewrites absolute/relative path commands into absolute commands transformed
+ * by `matrix`. Arcs: radii scale by sqrt(|det|) (exact for similarity
+ * transforms), the x-axis rotation advances by the matrix angle, and the sweep
+ * flag flips under a mirrored matrix. Requires pre-validated commands.
+ */
+function transformPathCommands(commands, matrix, ctx) {
+  if (isIdentityMatrix(matrix)) return null;
+  const [a, b, c, d, e, f] = matrix;
+  const det = a * d - b * c;
+  const scale = Math.sqrt(Math.abs(det));
+  const rotationDegrees = (Math.atan2(b, a) * 180) / Math.PI;
+  const mirrored = det < 0;
+  const scaleX = Math.hypot(a, b);
+  const scaleY = Math.hypot(c, d);
+  const similarity = Math.abs(scaleX - scaleY) <= 1e-6 * Math.max(1, scaleX);
+  const point = (x, y) => applyMatrix(matrix, x, y);
+  const segments = [];
+  let cursorX = 0;
+  let cursorY = 0;
+  let startX = 0;
+  let startY = 0;
+  for (const { cmd, args, relative } of commands) {
+    const baseX = cursorX;
+    const baseY = cursorY;
+    switch (cmd) {
+      case "M": {
+        const x = relative ? baseX + args[0] : args[0];
+        const y = relative ? baseY + args[1] : args[1];
+        const transformed = point(x, y);
+        segments.push(`M ${fmt(transformed.x)} ${fmt(transformed.y)}`);
+        cursorX = x;
+        cursorY = y;
+        startX = x;
+        startY = y;
+        break;
+      }
+      case "L": {
+        const x = relative ? baseX + args[0] : args[0];
+        const y = relative ? baseY + args[1] : args[1];
+        const transformed = point(x, y);
+        segments.push(`L ${fmt(transformed.x)} ${fmt(transformed.y)}`);
+        cursorX = x;
+        cursorY = y;
+        break;
+      }
+      case "H": {
+        const x = relative ? baseX + args[0] : args[0];
+        const transformed = point(x, baseY);
+        segments.push(`L ${fmt(transformed.x)} ${fmt(transformed.y)}`);
+        cursorX = x;
+        break;
+      }
+      case "V": {
+        const y = relative ? baseY + args[0] : args[0];
+        const transformed = point(baseX, y);
+        segments.push(`L ${fmt(transformed.x)} ${fmt(transformed.y)}`);
+        cursorY = y;
+        break;
+      }
+      case "C": {
+        const points = [
+          relative ? baseX + args[0] : args[0],
+          relative ? baseY + args[1] : args[1],
+          relative ? baseX + args[2] : args[2],
+          relative ? baseY + args[3] : args[3],
+          relative ? baseX + args[4] : args[4],
+          relative ? baseY + args[5] : args[5],
+        ];
+        const p1 = point(points[0], points[1]);
+        const p2 = point(points[2], points[3]);
+        const p3 = point(points[4], points[5]);
+        segments.push(
+          `C ${fmt(p1.x)} ${fmt(p1.y)} ${fmt(p2.x)} ${fmt(p2.y)} ${fmt(p3.x)} ${fmt(p3.y)}`,
+        );
+        cursorX = points[4];
+        cursorY = points[5];
+        break;
+      }
+      case "S": {
+        const points = [
+          relative ? baseX + args[0] : args[0],
+          relative ? baseY + args[1] : args[1],
+          relative ? baseX + args[2] : args[2],
+          relative ? baseY + args[3] : args[3],
+        ];
+        const p1 = point(points[0], points[1]);
+        const p2 = point(points[2], points[3]);
+        segments.push(`S ${fmt(p1.x)} ${fmt(p1.y)} ${fmt(p2.x)} ${fmt(p2.y)}`);
+        cursorX = points[2];
+        cursorY = points[3];
+        break;
+      }
+      case "Q": {
+        const points = [
+          relative ? baseX + args[0] : args[0],
+          relative ? baseY + args[1] : args[1],
+          relative ? baseX + args[2] : args[2],
+          relative ? baseY + args[3] : args[3],
+        ];
+        const p1 = point(points[0], points[1]);
+        const p2 = point(points[2], points[3]);
+        segments.push(`Q ${fmt(p1.x)} ${fmt(p1.y)} ${fmt(p2.x)} ${fmt(p2.y)}`);
+        cursorX = points[2];
+        cursorY = points[3];
+        break;
+      }
+      case "T": {
+        const x = relative ? baseX + args[0] : args[0];
+        const y = relative ? baseY + args[1] : args[1];
+        const transformed = point(x, y);
+        segments.push(`T ${fmt(transformed.x)} ${fmt(transformed.y)}`);
+        cursorX = x;
+        cursorY = y;
+        break;
+      }
+      case "A": {
+        const radiusX = Math.abs(args[0]);
+        const radiusY = Math.abs(args[1]);
+        const x = relative ? baseX + args[5] : args[5];
+        const y = relative ? baseY + args[6] : args[6];
+        const transformed = point(x, y);
+        if (radiusX === 0 || radiusY === 0) {
+          segments.push(`L ${fmt(transformed.x)} ${fmt(transformed.y)}`);
+        } else {
+          if (!similarity) {
+            ctx.warnOnce(
+              "path:arc:nonuniform",
+              "arc command under a non-uniform/skewed transform approximated (radii scaled by sqrt(|det|))",
+            );
+          }
+          const largeArc = args[3] ? 1 : 0;
+          // A mirrored (negative determinant) matrix reverses the sweep direction.
+          const sweep = Boolean(args[4]) !== mirrored ? 1 : 0;
+          segments.push(
+            `A ${fmt(radiusX * scale)} ${fmt(radiusY * scale)} ${fmt(args[2] + rotationDegrees)} ${largeArc} ${sweep} ${fmt(transformed.x)} ${fmt(transformed.y)}`,
+          );
+        }
+        cursorX = x;
+        cursorY = y;
+        break;
+      }
+      case "Z":
+        segments.push("Z");
+        cursorX = startX;
+        cursorY = startY;
+        break;
+      default:
+        break;
+    }
+  }
+  return segments.join(" ");
+}
+
+// ---------------------------------------------------------------------------
+// Shape → user-space path data
+// ---------------------------------------------------------------------------
+
+function circlePathData(centerX, centerY, radiusX, radiusY) {
+  const offsetX = radiusX * KAPPA;
+  const offsetY = radiusY * KAPPA;
+  return [
+    `M ${fmt(centerX + radiusX)} ${fmt(centerY)}`,
+    `C ${fmt(centerX + radiusX)} ${fmt(centerY + offsetY)} ${fmt(centerX + offsetX)} ${fmt(centerY + radiusY)} ${fmt(centerX)} ${fmt(centerY + radiusY)}`,
+    `C ${fmt(centerX - offsetX)} ${fmt(centerY + radiusY)} ${fmt(centerX - radiusX)} ${fmt(centerY + offsetY)} ${fmt(centerX - radiusX)} ${fmt(centerY)}`,
+    `C ${fmt(centerX - radiusX)} ${fmt(centerY - offsetY)} ${fmt(centerX - offsetX)} ${fmt(centerY - radiusY)} ${fmt(centerX)} ${fmt(centerY - radiusY)}`,
+    `C ${fmt(centerX + offsetX)} ${fmt(centerY - radiusY)} ${fmt(centerX + radiusX)} ${fmt(centerY - offsetY)} ${fmt(centerX + radiusX)} ${fmt(centerY)}`,
+    "Z",
+  ].join(" ");
+}
+
+function pointsToPathData(points, close) {
+  if (points.length < 2) return null;
+  const commands = [`M ${fmt(points[0][0])} ${fmt(points[0][1])}`];
+  for (let index = 1; index < points.length; index++) {
+    commands.push(`L ${fmt(points[index][0])} ${fmt(points[index][1])}`);
+  }
+  if (close) commands.push("Z");
+  return commands.join(" ");
+}
+
+function readPoints(value, ctx) {
+  if (value == null) return [];
+  const numbers = (String(value).match(NUMBER_GLOBAL) ?? []).map(Number).filter(Number.isFinite);
+  if (numbers.length % 2 !== 0) {
+    ctx.warnOnce("points:odd", "points attribute has an odd number of coordinates; last value ignored");
+    numbers.pop();
+  }
+  const points = [];
+  for (let index = 0; index + 1 < numbers.length; index += 2) {
+    points.push([numbers[index], numbers[index + 1]]);
+  }
+  return points;
+}
+
+// ---------------------------------------------------------------------------
+// Node builders
+// ---------------------------------------------------------------------------
+
+function buildPathNode(d, paint, ctx, matrix = IDENTITY_MATRIX) {
+  return {
+    kind: "path",
+    d,
+    fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+    stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+    strokeWidth:
+      paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+    opacity: round(paint.opacity),
+  };
+}
+
+/** Builds a path node from user-space `d`, applying the transform matrix if any. */
+function pathNodeFromUserData(userData, paint, matrix, ctx) {
+  const commands = parsePathCommands(userData);
+  if (!commands) return null;
+  if (isIdentityMatrix(matrix)) return buildPathNode(userData, paint, ctx, matrix);
+  const transformed = transformPathCommands(commands, matrix, ctx);
+  if (!transformed) return null;
+  return buildPathNode(transformed, paint, ctx, matrix);
+}
+
+function buildPathElement(attrs, paint, matrix, ctx) {
+  const rawData = attrs.d;
+  if (typeof rawData !== "string" || rawData.trim() === "") {
+    ctx.warnOnce("path:empty", "<path> without a non-empty d attribute skipped");
+    return null;
+  }
+  const commands = parsePathCommands(rawData);
+  if (!commands) {
+    ctx.warnOnce("path:invalid", `invalid path data skipped: ${rawData.slice(0, 80)}`);
+    return null;
+  }
+  if (isIdentityMatrix(matrix)) return buildPathNode(rawData, paint, ctx, matrix);
+  const transformed = transformPathCommands(commands, matrix, ctx);
+  if (!transformed) return null;
+  return buildPathNode(transformed, paint, ctx, matrix);
+}
+
+function buildRectElement(attrs, paint, matrix, ctx) {
+  const x = parseNumber(attrs.x) ?? 0;
+  const y = parseNumber(attrs.y) ?? 0;
+  const width = parseNumber(attrs.width);
+  const height = parseNumber(attrs.height);
+  if (width == null || height == null || width <= 0 || height <= 0) {
+    ctx.warnOnce("rect:size", "<rect> without a positive width/height skipped");
+    return null;
+  }
+  const rawRadius = parseNumber(attrs.rx) ?? parseNumber(attrs.ry) ?? 0;
+  const radius = Math.max(0, Math.min(rawRadius, width / 2, height / 2));
+  if (!hasRotationOrSkew(matrix)) {
+    const [a, b, c, d, e, f] = matrix;
+    const cornerOneX = a * x + c * y + e;
+    const cornerTwoX = a * (x + width) + c * (y + height) + e;
+    const cornerOneY = b * x + d * y + f;
+    const cornerTwoY = b * (x + width) + d * (y + height) + f;
+    return {
+      kind: "rect",
+      x: round(Math.min(cornerOneX, cornerTwoX)),
+      y: round(Math.min(cornerOneY, cornerTwoY)),
+      width: round(Math.abs(a) * width),
+      height: round(Math.abs(d) * height),
+      rx: round(radius * Math.min(Math.abs(a), Math.abs(d))),
+      fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+      stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+      strokeWidth:
+        paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+      opacity: round(paint.opacity),
+    };
+  }
+  ctx.warnOnce(
+    "rect:rotated",
+    "rotated/skewed <rect> emitted as a 4-corner path (corner radius ignored)",
+  );
+  const corners = pointsToPathData(
+    [
+      [x, y],
+      [x + width, y],
+      [x + width, y + height],
+      [x, y + height],
+    ],
+    true,
+  );
+  if (!corners) return null;
+  return pathNodeFromUserData(corners, paint, matrix, ctx);
+}
+
+function buildCircleElement(attrs, paint, matrix, ctx) {
+  const centerX = parseNumber(attrs.cx) ?? 0;
+  const centerY = parseNumber(attrs.cy) ?? 0;
+  const radius = parseNumber(attrs.r);
+  if (radius == null || radius <= 0) {
+    ctx.warnOnce("circle:radius", "<circle> without a positive r skipped");
+    return null;
+  }
+  const userData = circlePathData(centerX, centerY, radius, radius);
+  return pathNodeFromUserData(userData, paint, matrix, ctx);
+}
+
+function buildEllipseElement(attrs, paint, matrix, ctx) {
+  const centerX = parseNumber(attrs.cx) ?? 0;
+  const centerY = parseNumber(attrs.cy) ?? 0;
+  const radiusX = parseNumber(attrs.rx);
+  const radiusY = parseNumber(attrs.ry);
+  if (radiusX == null || radiusY == null || radiusX <= 0 || radiusY <= 0) {
+    ctx.warnOnce("ellipse:radius", "<ellipse> without positive rx/ry skipped");
+    return null;
+  }
+  const userData = circlePathData(centerX, centerY, radiusX, radiusY);
+  return pathNodeFromUserData(userData, paint, matrix, ctx);
+}
+
+function buildLineElement(attrs, paint, matrix, ctx) {
+  const x1 = parseNumber(attrs.x1) ?? 0;
+  const y1 = parseNumber(attrs.y1) ?? 0;
+  const x2 = parseNumber(attrs.x2) ?? 0;
+  const y2 = parseNumber(attrs.y2) ?? 0;
+  const userData = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x2)} ${fmt(y2)}`;
+  return pathNodeFromUserData(userData, paint, matrix, ctx);
+}
+
+function buildPointsElement(close) {
+  return (attrs, paint, matrix, ctx) => {
+    const points = readPoints(attrs.points, ctx);
+    if (points.length < 2) {
+      ctx.warnOnce("points:empty", `<${close ? "polygon" : "polyline"}> with fewer than 2 points skipped`);
+      return null;
+    }
+    const userData = pointsToPathData(points, close);
+    if (!userData) return null;
+    return pathNodeFromUserData(userData, paint, matrix, ctx);
+  };
+}
+
+function collectElementText(element) {
+  let result = element.text || "";
+  if (element.children && element.children.length > 0) {
+    for (const child of element.children) {
+      if (child.tag === "tspan" || child.tag === "text") {
+        const childText = collectElementText(child);
+        if (childText) {
+          result = result ? `${result} ${childText}` : childText;
+        }
+      }
+    }
+  }
+  return result.trim();
+}
+
+function estimateSvgTextWidth(text, fontSize = 16, letterSpacing = 0) {
+  const size = fontSize > 0 ? fontSize : 16;
+  const lSpacing = Number(letterSpacing) || 0;
+  const rawLines = String(text ?? "").split("\n");
+  let maxWidth = 0;
+  for (const line of rawLines) {
+    let width = 0;
+    for (const ch of line) {
+      const isWide = /[ᄀ-ᅟ⺀-꓏ꫀ-힣豈-﫿︰-﹏＀-￯぀-ヿ一-鿿]/.test(ch);
+      width += (isWide ? 1.0 : 0.55) * size + lSpacing;
+    }
+    if (width > maxWidth) maxWidth = width;
+  }
+  return maxWidth;
+}
+
+function calculateSvgTextAnchorOffset(textAnchor, textWidth) {
+  const anchor = String(textAnchor ?? "").toLowerCase().trim();
+  if (anchor === "middle") return -textWidth / 2;
+  if (anchor === "end") return -textWidth;
+  return 0;
+}
+
+function normalizeSvgFontWeight(rawWeight) {
+  if (rawWeight == null) return undefined;
+  const str = String(rawWeight).trim().toLowerCase();
+  if (!str) return undefined;
+  if (str === "bold") return 700;
+  if (str === "normal") return 400;
+  if (str === "bolder") return 800;
+  if (str === "lighter") return 300;
+  const num = parseInt(str, 10);
+  return Number.isFinite(num) ? num : 400;
+}
+
+function buildTextElement(attrs, paint, matrix, ctx, element) {
+  const positionedTspans = (element?.children || []).filter(
+    (c) => c.tag === "tspan" && (c.attrs.x !== undefined || c.attrs.y !== undefined),
+  );
+  if (positionedTspans.length > 0) {
+    const nodes = [];
+    for (const tspan of element.children.filter((c) => c.tag === "tspan")) {
+      const tContent = (tspan.text || "").trim();
+      if (!tContent) continue;
+      const tAttrs = { ...attrs, ...tspan.attrs };
+      const tStyle = parseStyle(tAttrs.style);
+      const tx = parseNumber(tAttrs.x) ?? (parseNumber(attrs.x) ?? 0);
+      const ty = parseNumber(tAttrs.y) ?? (parseNumber(attrs.y) ?? 0);
+      const tFontSize = parseNumber(tAttrs["font-size"] ?? tStyle["font-size"] ?? tAttrs.fontSize ?? tStyle.fontSize) ?? 16;
+      const fontFamily = tAttrs["font-family"] ?? tStyle["font-family"] ?? tAttrs.fontFamily ?? tStyle.fontFamily;
+      const fontWeight = normalizeSvgFontWeight(tAttrs["font-weight"] ?? tStyle["font-weight"] ?? tAttrs.fontWeight ?? tStyle.fontWeight);
+      const fontStyle = tAttrs["font-style"] ?? tStyle["font-style"] ?? tAttrs.fontStyle ?? tStyle.fontStyle;
+      const letterSpacing = parseNumber(tAttrs["letter-spacing"] ?? tStyle["letter-spacing"] ?? tAttrs.letterSpacing ?? tStyle.letterSpacing) ?? 0;
+      const textAnchor =
+        tAttrs["text-anchor"] ??
+        tAttrs.textAnchor ??
+        tAttrs.textanchor ??
+        tStyle["text-anchor"] ??
+        tStyle.textAnchor ??
+        tStyle.textanchor;
+
+      const textWidth = estimateSvgTextWidth(tContent, tFontSize, letterSpacing);
+      const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
+      const tpt = applyMatrix(matrix, tx + anchorOffsetX, ty - tFontSize);
+      nodes.push({
+        kind: "text",
+        x: round(tpt.x),
+        y: round(tpt.y),
+        width: Math.ceil(Math.round(textWidth * 1000) / 1000),
+        height: Math.ceil(tFontSize * 1.25),
+        text: tContent,
+        fontSize: round(tFontSize),
+        fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+        stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+        strokeWidth:
+          paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+        opacity: round(paint.opacity),
+        ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
+        ...(fontWeight != null ? { fontWeight } : {}),
+        ...(fontStyle ? { fontStyle } : {}),
+        ...(fontStyle === "italic" ? { italic: true } : {}),
+        ...(letterSpacing ? { letterSpacing } : {}),
+        ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
+      });
+    }
+    return nodes.length > 0 ? nodes : null;
+  }
+
+  const style = parseStyle(attrs.style);
+  const content = (element ? collectElementText(element) : "") || attrs["aria-label"] || "";
+  if (!content.trim()) return null;
+  const x = parseNumber(attrs.x) ?? 0;
+  const y = parseNumber(attrs.y) ?? 0;
+  const fontSize = parseNumber(attrs["font-size"] ?? style["font-size"] ?? attrs.fontSize ?? style.fontSize) ?? 16;
+  const fontFamily = attrs["font-family"] ?? style["font-family"] ?? attrs.fontFamily ?? style.fontFamily;
+  const fontWeight = normalizeSvgFontWeight(attrs["font-weight"] ?? style["font-weight"] ?? attrs.fontWeight ?? style.fontWeight);
+  const fontStyle = attrs["font-style"] ?? style["font-style"] ?? attrs.fontStyle ?? style.fontStyle;
+  const letterSpacing = parseNumber(attrs["letter-spacing"] ?? style["letter-spacing"] ?? attrs.letterSpacing ?? style.letterSpacing) ?? 0;
+  const textAnchor =
+    attrs["text-anchor"] ??
+    attrs.textAnchor ??
+    attrs.textanchor ??
+    style["text-anchor"] ??
+    style.textAnchor ??
+    style.textanchor;
+
+  const textWidth = estimateSvgTextWidth(content, fontSize, letterSpacing);
+  const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
+  const pt = applyMatrix(matrix, x + anchorOffsetX, y - fontSize);
+  return {
+    kind: "text",
+    x: round(pt.x),
+    y: round(pt.y),
+    width: Math.ceil(Math.round(textWidth * 1000) / 1000),
+    height: Math.ceil(fontSize * 1.25),
+    text: content,
+    fontSize: round(fontSize),
+    fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+    stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+    strokeWidth:
+      paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+    opacity: round(paint.opacity),
+    ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
+    ...(fontWeight != null ? { fontWeight } : {}),
+    ...(fontStyle ? { fontStyle } : {}),
+    ...(fontStyle === "italic" ? { italic: true } : {}),
+    ...(letterSpacing ? { letterSpacing } : {}),
+    ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
+  };
+}
+
+const SHAPE_BUILDERS = {
+  path: buildPathElement,
+  rect: buildRectElement,
+  circle: buildCircleElement,
+  ellipse: buildEllipseElement,
+  line: buildLineElement,
+  polyline: buildPointsElement(false),
+  polygon: buildPointsElement(true),
+  text: buildTextElement,
+};
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Converts a raw SVG document into VOO node specs.
+ *
+ * @param {string} svgText Raw SVG markup from the model.
+ * @param {{ targetWidth?: number, targetHeight?: number, maxNodes?: number }} [options]
+ *   targetWidth/targetHeight define the destination frame; when only one is
+ *   given the other is derived from the source aspect ratio, and when neither
+ *   is given the svg viewport (width/height, else viewBox size) is used.
+ *   maxNodes caps the emitted node count (default 400).
+ * @returns {{ width: number, height: number, viewBox: number[] | null,
+ *   nodes: object[], warnings: string[] }} Never throws.
+ */
+export function parseSvgToNodes(svgText, options = {}) {
+  const safeOptions = options && typeof options === "object" ? options : {};
+  const { targetWidth, targetHeight, maxNodes = DEFAULT_MAX_NODES } = safeOptions;
+  const ctx = createContext();
+  const emptyResult = (width = 0, height = 0, viewBox = null) => ({
+    width,
+    height,
+    viewBox,
+    nodes: [],
+    warnings: ctx.warnings,
+  });
+
+  if (typeof svgText !== "string" || svgText.trim() === "") {
+    ctx.warnings.push("empty or invalid SVG input: expected a non-empty string");
+    return emptyResult();
+  }
+
+  try {
+    const markup = parseMarkup(svgText);
+    const svg = findElement(markup, "svg");
+    if (!svg) {
+      ctx.warnings.push("no <svg> root element found");
+      return emptyResult();
+    }
+
+    const viewBoxRaw = svg.attrs.viewBox ?? svg.attrs.viewbox;
+    const viewBox = parseViewBox(viewBoxRaw);
+    if (viewBoxRaw != null && !viewBox) {
+      ctx.warnOnce("viewbox:invalid", `invalid viewBox ignored: ${JSON.stringify(viewBoxRaw)}`);
+    }
+    const svgWidth = parseLength(svg.attrs.width);
+    const svgHeight = parseLength(svg.attrs.height);
+    const sourceWidth = viewBox ? viewBox[2] : svgWidth && svgWidth > 0 ? svgWidth : DEFAULT_SOURCE_SIZE;
+    const sourceHeight = viewBox
+      ? viewBox[3]
+      : svgHeight && svgHeight > 0
+        ? svgHeight
+        : DEFAULT_SOURCE_SIZE;
+    // Default destination when no target is requested: the svg viewport
+    // (width/height attributes) or, absent those, the viewBox size.
+    const intrinsicWidth = svgWidth && svgWidth > 0 ? svgWidth : sourceWidth;
+    const intrinsicHeight = svgHeight && svgHeight > 0 ? svgHeight : sourceHeight;
+
+    let width = Number.isFinite(targetWidth) && targetWidth > 0 ? targetWidth : null;
+    let height = Number.isFinite(targetHeight) && targetHeight > 0 ? targetHeight : null;
+    if (width === null && height === null) {
+      width = intrinsicWidth;
+      height = intrinsicHeight;
+    } else if (width === null) {
+      width = (height * sourceWidth) / sourceHeight;
+    } else if (height === null) {
+      height = (width * sourceHeight) / sourceWidth;
+    }
+
+    const scale = Math.min(width / sourceWidth, height / sourceHeight);
+    const offsetX = (width - sourceWidth * scale) / 2 - (viewBox ? viewBox[0] : 0) * scale;
+    const offsetY = (height - sourceHeight * scale) / 2 - (viewBox ? viewBox[1] : 0) * scale;
+    const viewBoxMatrix = [scale, 0, 0, scale, offsetX, offsetY];
+    const outerMatrix = parseTransformMatrix(svg.attrs.transform, ctx);
+    const rootMatrix = multiplyMatrix(outerMatrix, viewBoxMatrix);
+
+    const defsMap = buildDefsMap(svg);
+    const limit = Number.isFinite(maxNodes)
+      ? Math.max(0, Math.floor(maxNodes))
+      : DEFAULT_MAX_NODES;
+    const nodes = [];
+    let limitWarned = false;
+
+    const addNode = (tag, attrs, node) => {
+      if (nodes.length >= limit) {
+        if (!limitWarned) {
+          limitWarned = true;
+          ctx.warnings.push(`node limit reached (maxNodes=${limit}); remaining shapes skipped`);
+        }
+        return false;
+      }
+      const rawId = typeof attrs.id === "string" ? attrs.id.trim() : "";
+      node.name = rawId || `${tag}-${nodes.length + 1}`;
+      nodes.push(node);
+      return true;
+    };
+
+    function resolveMaskOrClip(refAttr, elemMatrix, parentClipId = null) {
+      if (!refAttr || !defsMap) return null;
+      const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(String(refAttr).trim());
+      if (!match) return null;
+      const def = defsMap.get(match[1]);
+      if (!def || !def.children || def.children.length === 0) return null;
+
+      const currentTransform = parseTransformMatrix(def.attrs?.transform, ctx);
+      const defMatrix = elemMatrix && currentTransform ? multiplyMatrix(elemMatrix, currentTransform) : currentTransform || elemMatrix;
+
+      const shapes = [];
+      for (const child of def.children) {
+        const childTransform = parseTransformMatrix(child.attrs?.transform, ctx);
+        const childMatrix = defMatrix && childTransform ? multiplyMatrix(defMatrix, childTransform) : childTransform || defMatrix;
+        const childPaint = resolvePaint(child.attrs || {}, BASE_PAINT, ctx, parseStyle(child.attrs?.style), defsMap);
+        const b = SHAPE_BUILDERS[child.tag];
+        if (b) {
+          const shapeNode = b(child.attrs || {}, childPaint, childMatrix, ctx, child);
+          if (shapeNode) {
+            const arr = Array.isArray(shapeNode) ? shapeNode : [shapeNode];
+            for (const s of arr) shapes.push({ tag: child.tag, attrs: child.attrs || {}, node: s });
+          }
+        }
+      }
+      if (shapes.length === 0) return null;
+
+      if (def.tag === "clippath") {
+        if (shapes.length === 1) {
+          const { tag, attrs, node: base } = shapes[0];
+          base.maskBase = true;
+          base.fill = "#ffffff";
+          if (parentClipId) base.clipTo = parentClipId;
+          addNode(tag, attrs, base);
+          return base.name;
+        }
+        const booleanClip = {
+          kind: "boolean",
+          op: "union",
+          operation: "union",
+          name: typeof def.attrs?.id === "string" ? def.attrs.id.trim() : `clip-${nodes.length + 1}`,
+          maskBase: true,
+          fill: "#ffffff",
+          children: shapes.map((s) => s.node),
+          ...(parentClipId ? { clipTo: parentClipId } : {}),
+        };
+        addNode("boolean", def.attrs || {}, booleanClip);
+        return booleanClip.name;
+      }
+
+      if (def.tag === "mask") {
+        const { tag, attrs, node: base } = shapes[0];
+        base.maskBase = true;
+        base.maskType = def.attrs?.["mask-type"] || "luminance";
+        if (!base.fill || base.fill === "transparent" || base.fill === "none") {
+          base.fill = "#ffffff";
+        }
+        if (parentClipId) {
+          const parentNode = ctx.nodes?.find((n) => n.name === parentClipId || n.id === parentClipId);
+          if (parentNode && base.kind === "rect") {
+            base.x = parentNode.x;
+            base.y = parentNode.y;
+            base.width = parentNode.width;
+            base.height = parentNode.height;
+            base.cornerRadius = parentNode.cornerRadius;
+          }
+        }
+        if (parentClipId) base.clipTo = parentClipId;
+        addNode(tag, attrs, base);
+        return base.name;
+      }
+      return null;
+    }
+
+    const walk = (element, inheritedPaint, inheritedMatrix, currentClipId = null) => {
+      const tag = element.tag;
+      if (["defs", "lineargradient", "radialgradient", "stop", "clippath", "mask"].includes(tag)) {
+        return true;
+      }
+      if (SKIP_SUBTREE_TAGS.has(tag)) {
+        ctx.warnOnce(`tag:${tag}`, `unsupported element <${tag}> ignored`);
+        return true;
+      }
+      const parsedStyle = parseStyle(element.attrs.style);
+      const display = String(parsedStyle.display ?? element.attrs.display ?? "")
+        .trim()
+        .toLowerCase();
+      const visibility = String(parsedStyle.visibility ?? element.attrs.visibility ?? "")
+        .trim()
+        .toLowerCase();
+      if (display === "none" || visibility === "hidden") {
+        ctx.warnOnce(`hidden:${tag}`, `hidden element <${tag}> skipped (display:none / visibility:hidden)`);
+        return true;
+      }
+      const paint = resolvePaint(element.attrs, inheritedPaint, ctx, parsedStyle, defsMap);
+      const matrix = multiplyMatrix(
+        inheritedMatrix,
+        parseTransformMatrix(element.attrs.transform, ctx),
+      );
+      const clipAttr = element.attrs["clip-path"] || parsedStyle["clip-path"];
+      const maskAttr = element.attrs.mask || parsedStyle.mask;
+      const elemClipId = resolveMaskOrClip(clipAttr, matrix, currentClipId);
+      const elemMaskId = resolveMaskOrClip(maskAttr, matrix, elemClipId || currentClipId);
+      const effectiveClipId = elemMaskId || elemClipId || currentClipId;
+
+      if (tag === "use") {
+        const href = element.attrs.href || element.attrs["xlink:href"];
+        if (href && href.startsWith("#") && defsMap) {
+          const target = defsMap.get(href.slice(1));
+          if (target) {
+            const useX = parseNumber(element.attrs.x) ?? 0;
+            const useY = parseNumber(element.attrs.y) ?? 0;
+            let useMatrix = matrix;
+            if (useX !== 0 || useY !== 0) {
+              useMatrix = multiplyMatrix(useMatrix, [1, 0, 0, 1, useX, useY]);
+            }
+            return walk(target, paint, useMatrix, effectiveClipId);
+          }
+        }
+        return true;
+      }
+
+      if (CONTAINER_TAGS.has(tag)) {
+        for (const child of element.children) {
+          if (!walk(child, paint, matrix, effectiveClipId)) return false;
+        }
+        return true;
+      }
+      const builder = SHAPE_BUILDERS[tag];
+      if (!builder) {
+        ctx.warnOnce(`tag:${tag}`, `unsupported element <${tag}> ignored`);
+        for (const child of element.children) {
+          if (!walk(child, paint, matrix, effectiveClipId)) return false;
+        }
+        return true;
+      }
+      const node = builder(element.attrs, paint, matrix, ctx, element);
+      if (!node) return true;
+      if (Array.isArray(node)) {
+        for (const n of node) {
+          if (effectiveClipId) n.clipTo = effectiveClipId;
+          if (!addNode(tag, element.attrs, n)) return false;
+        }
+        return true;
+      }
+      if (effectiveClipId) node.clipTo = effectiveClipId;
+      return addNode(tag, element.attrs, node);
+    };
+
+    const rootPaint = resolvePaint(svg.attrs, BASE_PAINT, ctx, parseStyle(svg.attrs.style), defsMap);
+    for (const child of svg.children) {
+      if (!walk(child, rootPaint, rootMatrix, null)) break;
+    }
+
+    return {
+      width: round(width),
+      height: round(height),
+      viewBox: viewBox ? viewBox.map((value) => round(value)) : null,
+      nodes,
+      warnings: ctx.warnings,
+    };
+  } catch (error) {
+    ctx.warnings.push(`unexpected SVG parser error: ${error?.message || String(error)}`);
+    return emptyResult();
+  }
+}

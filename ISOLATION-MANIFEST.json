@@ -1,0 +1,10 @@
+{
+  "sourceRepo": "/Volumes/TD/Projects/voo_design",
+  "sourceCommit": "7d3ad4d3366edf39310e0dac03ae263bc70bb0d9",
+  "sourceTree": "7d106f7a75c6593ec735880f718ac06718844386",
+  "copyBaseCommit": "7bf31b12e0e77098958821955d50ef9b1b932637",
+  "copyBranch": "isolated/t02-ui-7d3ad4d3",
+  "archivedFileCount":     3434,
+  "createdUtc": "2026-11-02T19:02:05Z",
+  "notes": ["plain copy via git archive; own .git created by git init; no git worktree; original refs/index/stash untouched", "product changes limited to this copy"]
+}

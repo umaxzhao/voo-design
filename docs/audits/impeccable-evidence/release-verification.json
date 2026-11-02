@@ -1,0 +1,66 @@
+{
+  "fullRelease": {
+    "revision": "6008dfa6fcd78e02abf14a27597fb0c1d584e770",
+    "complete": true,
+    "passedSteps": 89,
+    "failedSteps": 0,
+    "browserSuites": 85,
+    "unitAssertions": {
+      "passed": 4534,
+      "skipped": 4
+    },
+    "reportSha256": "cd9c86eb9d024139b162c75ea8ae1321cff979b939c327e9f93943242c0ac5a3",
+    "reportPath": "/tmp/voo-impeccable-verified-6008.json"
+  },
+  "incrementalVerification": {
+    "revision": "9c5a063e874aaa5346a1804171d414740463032a",
+    "checks": [
+      "build",
+      "design lint",
+      "module registration",
+      "shell syntax",
+      "git diff --check"
+    ],
+    "unitAssertions": {
+      "passed": 169,
+      "skipped": 4
+    },
+    "browserSuites": [
+      "settings-i18n",
+      "comments-lifecycle",
+      "impeccable-polish"
+    ],
+    "fullReleaseRerun": false
+  },
+  "production": {
+    "revision": "9c5a063e874aaa5346a1804171d414740463032a",
+    "url": "https://voo.run/editor/",
+    "assets": [
+      "https://voo.run/editor/assets/index-D4KokDq_.js",
+      "https://voo.run/editor/assets/react-vendor-DsaJt3qt.js",
+      "https://voo.run/editor/assets/vendor-DFk7Sf5D.js",
+      "https://voo.run/editor/assets/state-vendor-Cv7FyaFo.js",
+      "https://voo.run/editor/assets/index-C7_WV2ti.css"
+    ],
+    "localServicesBlocked": true,
+    "checkedAt": "2026-10-31T11:08:20.180Z",
+    "passed": [
+      "canonical HTML and assets",
+      "real right-click submenus and keyboard",
+      "900px Agent layout",
+      "welcome focus isolation"
+    ],
+    "errors": []
+  },
+  "coverage": {
+    "functional": "partial",
+    "standaloneChecksNotRun": 21,
+    "externalImageProviderBlockersNotExecuted": 5,
+    "excluded": [
+      "native_studio",
+      "real accounts and paid inference",
+      "physical devices",
+      "signed installers"
+    ]
+  }
+}

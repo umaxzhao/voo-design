@@ -1,0 +1,98 @@
+{
+  "revision": "2a4c98c18e7d3621c1565e3dfe90395dddfd886f",
+  "date": "2026-11-02",
+  "status": "scoped-pass-overall-partial",
+  "capabilities": [
+    "platform.native-view-aids",
+    "platform.native-text-box",
+    "platform.native-responsive-toolbar"
+  ],
+  "execution": {
+    "nativeOnone": {
+      "passed": 485,
+      "total": 485
+    },
+    "nativeOsizeWmo": {
+      "passed": 485,
+      "total": 485
+    },
+    "modulePlanning": {
+      "passed": 11,
+      "total": 11
+    },
+    "catalog": {
+      "modules": 12,
+      "features": 91
+    },
+    "productionBinaryBytes": 4930032,
+    "adHocSignature": "passed",
+    "textSectionSha256": "c5ac636f0d0fd640a2420891221220efa3fa2924ba6ae5f905c2c08f7a547aef",
+    "format": "new Swift files strict check passed",
+    "lint": {
+      "additional": 0,
+      "legacyBefore": 1555,
+      "legacyAfter": 1542,
+      "fullLint": "failed-existing-diagnostics"
+    }
+  },
+  "logs": {
+    "tests-final.txt": {
+      "path": "/tmp/voo-native-continuation/tests-final.txt",
+      "sha256": "22ed2af9db74594f9831a5ef5ac96695f28d356132e7d87518c69a609e44e5f1"
+    },
+    "tests-wmo-final.txt": {
+      "path": "/tmp/voo-native-continuation/tests-wmo-final.txt",
+      "sha256": "2befacc923d556f0cd102eeb3a2a97afd93eec74ae5e423b104b04504316c77d"
+    },
+    "build-final.txt": {
+      "path": "/tmp/voo-native-continuation/build-final.txt",
+      "sha256": "544317a0a5cd95862da66c2574ab1a184f9241c80a4e071418d46784218905c6"
+    },
+    "catalog.txt": {
+      "path": "/tmp/voo-native-continuation/catalog.txt",
+      "sha256": "ede020184849f76223788393b28591a0302262d086b93fae77ba0650ddddbb47"
+    },
+    "registration.txt": {
+      "path": "/tmp/voo-native-continuation/registration.txt",
+      "sha256": "9ba84cb1a35ab8de29922b3fbb6e50938a01543d3dcadc552a6e2bddbe51e4ce"
+    },
+    "tests-first.txt": {
+      "path": "/tmp/voo-native-continuation/tests-first.txt",
+      "sha256": "3bf46fe97cd9d9e9bfe5112e8cec11244e0589de456f94a0f3e1a145b925d46f"
+    },
+    "tests-layout-loop.txt": {
+      "path": "/tmp/voo-native-continuation/tests-layout-loop.txt",
+      "sha256": "3161d5a6f229c4862136d88ee03cbde07b84b2a888a93032f9d2119458696eb6"
+    },
+    "tests-detached-ab.txt": {
+      "path": "/tmp/voo-native-continuation/tests-detached-ab.txt",
+      "sha256": "395d1a8de95a3d2f17bccee40616f36ef6f2284e8831fdd582b0bcfe360ec42c"
+    },
+    "tests-placement-ab.txt": {
+      "path": "/tmp/voo-native-continuation/tests-placement-ab.txt",
+      "sha256": "b789d3537833219a751a390dad30eec42fbbaf7bb5ab3b9042db718222f16155"
+    }
+  },
+  "ui": {
+    "finalBinary": [
+      "960x600 preserved when Agent opens",
+      "vertical wheel reaches last toolbar tool and returns",
+      "no document edits by Agent open/close"
+    ],
+    "intermediateBinary": [
+      "independent guides/rulers visible states",
+      "Number auto109/fixed182/width80 two lines and undo restore182x37"
+    ],
+    "knownFailedEvidence": "final-narrow-agent-left.jpg is intermediate 986x600 failure, retained; verified-* are final 960x600",
+    "inputLimitation": "CUA horizontal scroll did not move viewport; vertical wheel passed"
+  },
+  "remaining": [
+    "compact inspector/layers can overlap canvas; whole compact UI not accepted",
+    "other tool families, all effect menus and light theme",
+    "advanced typography, IME, VoiceOver, RTL, emoji and complex CJK pixel parity",
+    "inline kern at zoom != 1, imported lineHeight < 0.8, boxWidth > 8192",
+    "AutoLayout parent reflow and keyboard focus auto-scroll",
+    "full prototype, multiselection, multi-document and actual GUI default watcher events"
+  ],
+  "publication": "native app only; hosted editor not deployed"
+}

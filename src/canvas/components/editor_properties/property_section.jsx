@@ -1,0 +1,219 @@
+import PropTypes from "prop-types";
+import { Children } from "react";
+
+/** Shared input skin for every field in the panel. */
+export const fieldClass =
+  "inspector-field h-7 w-full rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono tabular-nums text-neutral-100 outline-none transition-colors hover:bg-neutral-800/80";
+
+/**
+ * Section titles share a scope hook; the inspector applies readable label
+ * typography without changing other surfaces that reuse these primitives.
+ */
+export const sectionTitleClass =
+  "inspector-section-title max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
+
+
+/** The header row shared by static and collapsible sections. */
+export const sectionHeaderClass =
+  "mb-2 flex min-h-6 min-w-0 items-center justify-between gap-2 px-1 select-none";
+const emptySectionHeaderClass =
+  "flex min-h-6 min-w-0 items-center justify-between gap-2 px-1 select-none";
+
+/** The child wrapper shared by every section, so all rows share one inset. */
+export const sectionBodyClass = "space-y-2 px-0.5";
+
+/**
+ * A full-width input row: the same height and horizontal inset as the fields
+ * built on `ScrubField`, so paint rows and transform rows line up exactly.
+ */
+export const sectionRowClass =
+  "inspector-row flex h-7 w-full min-w-0 items-center gap-2 rounded-xl bg-neutral-800 px-2.5 transition-colors hover:bg-neutral-800/80";
+
+/** Header "+" and row "−" actions share one quiet, compact shape. */
+export const sectionActionClass =
+  "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
+
+export function SectionAddButton({ label, onClick, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={`${sectionActionClass} text-[12px] font-mono ${className}`}
+    >
+      +
+    </button>
+  );
+}
+
+SectionAddButton.propTypes = {
+  label: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+  className: PropTypes.string,
+};
+
+/**
+ * A full-width "nothing here yet" row: the empty state for a paint/effect
+ * section, so the section shows a clear action instead of a bare header.
+ */
+export function SectionEmptyRow({
+  label,
+  onClick,
+  icon = null,
+  testId = undefined,
+  showPlus = true,
+  variant = "action",
+  ariaLabel = null,
+}) {
+  const isPlaceholder = variant === "empty";
+  // The placeholder states that nothing is here yet; it has no action to take.
+  if (isPlaceholder)
+    return (
+      <div
+        data-testid={testId}
+        className="flex h-7 w-full items-center justify-center rounded-xl bg-white/[0.02] text-[10px] font-mono tracking-wide text-neutral-500"
+      >
+        <span className="truncate">{label}</span>
+      </div>
+    );
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-inspector-control="action"
+      aria-label={ariaLabel ?? label}
+      data-testid={testId}
+      className={
+        isPlaceholder
+          ? "flex h-7 w-full items-center justify-center rounded-xl bg-white/[0.02] text-[10px] font-mono tracking-wide text-neutral-500 transition-colors hover:bg-white/[0.05] hover:text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          : `${sectionRowClass} justify-start text-[11px] text-neutral-400 hover:text-neutral-200`
+      }
+    >
+      {isPlaceholder ? (
+        <span className="truncate">{label}</span>
+      ) : (
+        <>
+          {icon ? (
+            <span
+              className="flex h-4 w-4 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
+              {icon}
+            </span>
+          ) : null}
+          <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+          {showPlus ? (
+            <span
+              aria-hidden="true"
+              className="text-[12px] font-mono text-neutral-500"
+            >
+              +
+            </span>
+          ) : null}
+        </>
+      )}
+    </button>
+  );
+}
+
+SectionEmptyRow.propTypes = {
+  label: PropTypes.string.isRequired,
+  onClick: PropTypes.func,
+  icon: PropTypes.node,
+  testId: PropTypes.string,
+  /** Hide the trailing "+" when the section header already exposes the add action. */
+  showPlus: PropTypes.bool,
+  /** "empty" renders a centred, nearly transparent placeholder instead of an add row. */
+  variant: PropTypes.oneOf(["action", "empty"]),
+  /** Accessible action label when the visible text is just "Empty". */
+  ariaLabel: PropTypes.string,
+};
+
+/**
+ * A panel group whose body is always shown. Modules are expanded by default
+ * and never fold into a dropdown: the panel is one scannable list, and every
+ * setting stays reachable without a toggle. The name is kept so existing call
+ * sites keep working; it renders exactly like StaticSection.
+ */
+export function CollapsibleSection({
+  title,
+  children = null,
+  extra = null,
+  storageKey = null,
+  testId = undefined,
+}) {
+  return (
+    <StaticSection
+      title={title}
+      extra={extra}
+      storageKey={storageKey}
+      testId={testId}
+    >
+      {children}
+    </StaticSection>
+  );
+}
+
+CollapsibleSection.propTypes = {
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node,
+  extra: PropTypes.node,
+  storageKey: PropTypes.string,
+  testId: PropTypes.string,
+};
+
+/**
+ * A panel group with a static title and an always-visible body. Empty groups
+ * render only their title row, so every empty module has the same height.
+ */
+export function StaticSection({
+  title,
+  children = null,
+  extra = null,
+  storageKey = null,
+  testId = undefined,
+  hideHeader = false,
+  bodyClassName = sectionBodyClass,
+  emptyState = false,
+}) {
+  // Core property groups are always open: the panel is a scannable list like
+  // Figma's, not a set of drawers. Empty groups show an explicit action row
+  // instead of hiding their body behind a chevron.
+  void storageKey;
+  const isEmpty = emptyState || Children.toArray(children).length === 0;
+  return (
+    // The hairline between groups is a structural line (design/structural-lines.cjs);
+    // the first group has no line above it.
+    <div
+      data-inspector-section
+      data-ui-structure="divider"
+      className="border-t border-white/10 py-2 first:border-t-0 first:pt-0"
+      data-testid={testId}
+    >
+      {hideHeader ? null : (
+        <div className={isEmpty ? emptySectionHeaderClass : sectionHeaderClass}>
+          <div
+            className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}
+          >
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+              {title}
+            </span>
+          </div>
+          {extra ? (
+            <div className="flex shrink-0 items-center gap-2">{extra}</div>
+          ) : null}
+        </div>
+      )}
+      {isEmpty ? null : <div className={bodyClassName}>{children}</div>}
+    </div>
+  );
+}
+
+StaticSection.propTypes = {
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node,
+  extra: PropTypes.node,
+  storageKey: PropTypes.string,
+  emptyState: PropTypes.bool,
+};
