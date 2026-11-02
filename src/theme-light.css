@@ -174,9 +174,17 @@ html[data-theme="light"] .welcome-type-accent-line {
 }
 
 /* Hairlines, rings and dividers */
-html[data-theme="light"] [class*="border-white/"],
-html[data-theme="light"] [class*="divide-white/"] {
+/* Base border-white/* and divide-white/* utilities only. A hover:border-white/* variant must not paint a
+   resting frame (it matched the substring before, so border-transparent at rest showed a 0.12 frame). */
+html[data-theme="light"] [class*=" border-white/"],
+html[data-theme="light"] [class^="border-white/"],
+html[data-theme="light"] [class*=" divide-white/"],
+html[data-theme="light"] [class^="divide-white/"] {
   border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+html[data-theme="light"] [class*="hover:border-white/"]:hover {
+  border-color: rgba(0, 0, 0, 0.18) !important;
 }
 
 html[data-theme="light"] [class*="border-neutral-"] {
