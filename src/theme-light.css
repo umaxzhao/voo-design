@@ -28,6 +28,11 @@ html[data-theme="light"] .editor-shell {
   border-color: #a7ffd4 !important;
 }
 
+/* Editor pages: light margin uses the light body neutral (#f5f5f5), matching the title bar surface. */
+html[data-theme="light"] .app-root-frame[data-editor-page="true"] {
+  background: #f5f5f5;
+}
+
 html[data-theme="light"] .app-title-bar {
   background: #fafafa !important;
   border-bottom-color: rgba(0, 0, 0, 0.1) !important;

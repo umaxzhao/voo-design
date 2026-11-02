@@ -402,6 +402,11 @@
   border-radius: 0;
 }
 
+/* Editor pages: the 4px root margin around the green frame is neutral on both sides (dark: black). */
+.app-root-frame[data-editor-page="true"] {
+  background: #000;
+}
+
 .editor-shell-inner {
   box-sizing: border-box;
   height: 100%;

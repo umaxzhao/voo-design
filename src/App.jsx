@@ -143,15 +143,17 @@ export default function App() {
     };
   }, [firstRunOpen]);
 
-  // The root's 4px padding is the margin around the green editor frame. Editor pages paint it
-  // neutral black on both sides; the Welcome page keeps the root gradient.
+  // The root's 4px padding is the margin around the green editor frame. Editor pages take
+  // their neutral margin colour from the theme stylesheet (index.css / theme-light.css); the
+  // Welcome page keeps the root gradient.
   return (
     <main
       data-embed={isEmbed ? "true" : undefined}
+      data-editor-page={welcomeOpen || isEmbed ? undefined : "true"}
       className="app-root-frame relative flex h-full w-full select-none flex-col"
-      style={isEmbed || !welcomeOpen ? { background: "#000" } : {
+      style={isEmbed ? { background: "#000" } : welcomeOpen ? {
         background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
-      }}
+      } : undefined}
     >
       {!isEmbed && <CrashRecoveryPrompt />}
       {!isEmbed && <ImageSizeNotice />}
