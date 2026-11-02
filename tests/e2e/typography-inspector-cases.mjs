@@ -6,7 +6,9 @@ export async function runTypographyCases({ page, tool, mark, evidence }) {
   const section = page.getByTestId("text-typography-section");
   const node = (id = "type-title") => page.evaluate(id => window.__vooEditor.getNode(id), id);
   const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const metric = name => section.getByRole("spinbutton", { name: new RegExp(`^${name}`) });
+  // Single values use expression textboxes; mixed selections retain MixedField numbers.
+  const metric = name => section.getByRole("textbox", { name: new RegExp(`^${name}`) })
+    .or(section.getByRole("spinbutton", { name: new RegExp(`^${name}`) }));
   const change = async (name, value) => {
     const field = metric(name); await field.fill(String(value)); await field.press("Enter"); await settle();
   };
@@ -100,7 +102,7 @@ export async function runTypographyCases({ page, tool, mark, evidence }) {
   const defaults = page.getByTestId("text-tool-typography");
   await defaults.waitFor();
   for (const [name, value] of [["Font size", "48"], ["Line height", "150"], ["Letter spacing", "1.5"]]) {
-    const field = defaults.getByRole("spinbutton", { name: new RegExp(`^${name}`) });
+    const field = defaults.getByRole("textbox", { name: new RegExp(`^${name}`) });
     await field.fill(value); await field.press("Enter"); await settle();
   }
   await defaults.getByRole("button", { name: "Font weight", exact: true }).click();
@@ -152,7 +154,8 @@ export async function runTypographyCases({ page, tool, mark, evidence }) {
         const box = await caption.boundingBox();
         assert.ok(box.width > 0 && box.x >= bounds.x && box.x + box.width <= bounds.x + bounds.width);
         assert.ok(await caption.evaluate(element => parseFloat(getComputedStyle(element).fontSize) >= 11));
-        const sizes = await section.locator('input[type="number"]').evaluateAll(elements => elements.filter(element => element.getClientRects().length).map(element => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height })));
+        const sizes = await section.locator('input[inputmode="decimal"], input[type="number"]').evaluateAll(elements => elements.filter(element => element.getClientRects().length).map(element => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height })));
+        assert.ok(sizes.length > 0, "Visible typography metrics must be measured");
         assert.ok(sizes.every(size => size.width >= 24 && size.height >= (width < 768 ? 48 : 32)), `${width}/${theme}/${locale} numeric fields need usable space`);
         await panel.screenshot({ path: `${evidence}/typography-${width}-${theme}-${locale}.png` });
       }

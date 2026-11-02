@@ -326,8 +326,9 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
         const rim = await form.evaluate((el) => ({
           before: getComputedStyle(el, "::before").backgroundImage,
           border: getComputedStyle(el).borderTopWidth,
+          shadow: getComputedStyle(el).boxShadow,
         }));
-        assert.deepEqual(rim, { before: "none", border: "0px" });
+        assert.deepEqual(rim, { before: "none", border: "0px", shadow: "none" });
       }
     await configure(1440, "dark", "en");
     await page.getByRole("button", { name: "Settings", exact: true }).click();

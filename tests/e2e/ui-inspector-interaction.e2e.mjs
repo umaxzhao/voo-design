@@ -91,7 +91,8 @@ await withEditorBrowser(async ({ page, tool }) => {
     assert.equal(await exportAction.count(), 0, "redo removing export hides it again");
     mark("export is opt-in for shapes, Frames, text and images; add/remove persist per layer and undo/redo immediately follow document state");
 
-    const x = panel.getByRole("spinbutton", { name: "X", exact: true });
+    // Expression-capable BoundedNumberInput exposes a decimal textbox.
+    const x = panel.getByRole("textbox", { name: "X", exact: true });
     await x.fill("150"); await x.press("Enter");
     assert.equal((await node()).x, 150);
     await x.fill("222"); await x.press("Escape");
@@ -99,7 +100,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     assert.equal(await x.inputValue(), "150");
     await tool("undo");
     assert.equal((await node()).x, 100, "one undo must skip the cancelled draft");
-    const y = panel.getByRole("spinbutton", { name: "Y", exact: true });
+    const y = panel.getByRole("textbox", { name: "Y", exact: true });
     await y.fill("140"); await y.blur();
     assert.equal((await node()).y, 140);
     await tool("undo"); assert.equal((await node()).y, 100);
@@ -135,7 +136,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await panel.getByRole("button", { name: "Fill visible", exact: true }).click();
     assert.equal((await node()).fills[0].visible, false);
     await tool("undo");
-    const strokeWidth = panel.getByRole("spinbutton", { name: "Outline width", exact: true });
+    const strokeWidth = panel.getByRole("textbox", { name: "Outline width", exact: true });
     await strokeWidth.fill("8"); await strokeWidth.press("Enter");
     assert.equal((await node()).strokeWidth, 8);
     await panel.getByRole("button", { name: "Inside", exact: true }).click();
@@ -179,7 +180,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await select(["audit-frame"]);
     mark("alignment has one grouped quickbar home; single child aligns to its parent and root Frame to the canvas, each undoing once");
 
-    const width = panel.getByRole("spinbutton", { name: "W", exact: true });
+    const width = panel.getByRole("textbox", { name: "W", exact: true });
     await width.fill("720"); await width.press("Enter");
     assert.equal((await node("audit-frame")).width, 720);
     await tool("undo"); assert.equal((await node("audit-frame")).width, 700);
@@ -206,8 +207,8 @@ await withEditorBrowser(async ({ page, tool }) => {
 
     await seed();
     await select(["audit-text"]);
-    assert.equal(await panel.getByRole("spinbutton", { name: /^Font size/ }).inputValue(), "30");
-    const fontSize = panel.getByRole("spinbutton", { name: /^Font size/ });
+    assert.equal(await panel.getByRole("textbox", { name: /^Font size/ }).inputValue(), "30");
+    const fontSize = panel.getByRole("textbox", { name: /^Font size/ });
     await fontSize.fill("45"); await fontSize.press("Enter");
     assert.equal((await node("audit-text")).fontSize, 45);
     await tool("undo"); assert.equal((await node("audit-text")).fontSize, 30);
@@ -217,7 +218,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     assert.equal(await panel.getByRole("button", { name: "Align left", exact: true }).count(), 0);
     assert.equal(await panel.getByRole("button", { name: "Group", exact: true }).count(), 0);
     await select([]);
-    assert.equal(await panel.getByRole("spinbutton", { name: "X", exact: true }).count(), 0);
+    assert.equal(await panel.getByRole("textbox", { name: "X", exact: true }).count(), 0);
     mark("text/image/multi/no-selection inspector contexts switch without duplicate grouping/alignment quick actions");
 
     await row("audit-rect").getByText("Audit Rectangle", { exact: true }).click();

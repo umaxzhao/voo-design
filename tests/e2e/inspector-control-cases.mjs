@@ -17,7 +17,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
       fontSize: parseFloat(style.fontSize), font: style.fontFamily };
   });
   await select("audit-rect");
-  const x = panel.getByRole("spinbutton", { name: "X", exact: true });
+  const x = panel.getByRole("textbox", { name: "X", exact: true });
   const field = x.locator("..");
   assert.equal((await styles(field)).radius, 12, "Numeric fields keep the original large corner radius");
   assert.equal((await styles(field)).height, 32);
@@ -72,7 +72,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal(dropdownStyle.height, 32);
   assert.equal(dropdownStyle.radius, 12);
   assert.notEqual(dropdownStyle.background, (await styles(field)).background, "A dropdown has a distinct surface");
-  assert.equal(dropdownStyle.borderWidth, "1px");
+  assert.equal(dropdownStyle.borderWidth, "0px", "Dropdowns must stay borderless");
   await dropdown.focus(); await dropdown.press("ArrowDown");
   await page.getByRole("listbox", { name: "Blend mode", exact: true }).waitFor();
   await dropdown.press("Escape");
@@ -89,13 +89,13 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal((await styles(strip)).radius, 12);
   await horizontal.click(); await settle();
   assert.equal(await horizontal.getAttribute("aria-pressed"), "true");
-  assert.equal((await styles(panel.getByRole("spinbutton", { name: "W", exact: true }).locator("../.."))).radius, 12);
+  assert.equal((await styles(panel.getByRole("textbox", { name: "W", exact: true }).locator("../.."))).radius, 12);
   assert.equal((await styles(horizontal)).radius, 12);
   const inactive = panel.getByRole("button", { name: "Vertical", exact: true });
   assert.notEqual((await styles(horizontal)).background, (await styles(inactive)).background);
   await tool("undo"); await settle();
   assert.equal(await horizontal.getAttribute("aria-pressed"), "false");
-  mark("inspector fields, outlined dropdowns, grouped toggles and quiet commands are visually distinct; typed commit/cancel, keyboard dropdown focus, layout and one-step undo remain real");
+  mark("inspector fields, borderless dropdowns, grouped toggles and quiet commands are visually distinct; typed commit/cancel, keyboard dropdown focus, layout and one-step undo remain real");
 
   for (const width of [1440, 768, 390, 320]) {
     await page.setViewportSize({ width, height: width >= 768 ? 1000 : 844 });
@@ -112,7 +112,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
       await x.scrollIntoViewIfNeeded();
       assert.equal((await styles(field)).radius, 12);
       assert.equal((await styles(field)).height, width < 768 ? 48 : 32);
-      assert.ok((await styles(x)).fontSize >= 11, "Readable numeric values at every width");
+      assert.ok((await styles(x)).fontSize >= 11, `${width}/${theme}/${locale}: readable numeric values at every width`);
       const anchorOverlaps = await panel.locator("[data-transform-position]").evaluate(el => {
         const anchor = el.querySelector('[role="radiogroup"]').getBoundingClientRect();
         const fields = el.querySelector('[data-transform-position-fields]').getBoundingClientRect();

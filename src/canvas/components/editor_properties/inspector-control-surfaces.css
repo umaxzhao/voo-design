@@ -81,17 +81,23 @@ html[data-theme="light"]
 }
 
 [data-testid="editor-properties-panel"]
-  :is(input[type="number"], .inspector-row input, [data-inspector-part]) {
+  :is(
+    input[type="number"],
+    input[inputmode="decimal"],
+    .inspector-row input,
+    [data-inspector-part]
+  ) {
   font-family: var(--font-mono);
   font-size: 11px !important;
   font-variant-numeric: tabular-nums;
   letter-spacing: normal;
 }
 
-[data-testid="editor-properties-panel"] input[type="number"],
+[data-testid="editor-properties-panel"]
+  :is(input[type="number"], input[inputmode="decimal"]),
 html[data-theme="light"]
   [data-testid="editor-properties-panel"]
-  input[type="number"] {
+  :is(input[type="number"], input[inputmode="decimal"]) {
   color: var(--inspector-value) !important;
 }
 
