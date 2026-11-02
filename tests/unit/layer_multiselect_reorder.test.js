@@ -137,6 +137,22 @@ describe("Layer multi-selection reorder (same parent / root / siblings)", () => 
     expect(reorderNodeTo(doc, ["c"], 4, "c")).toBe(doc);
   });
 
+  it("refuses batch reorder when any secondary selected node would cross a locked barrier", () => {
+    const doc = document([
+      shape("a"),
+      shape("b"),
+      shape("locked", { locked: true }),
+      shape("c"),
+      shape("d"),
+    ]);
+
+    // Dragging b + d before a: b's path does not cross locked, but secondary d would cross locked
+    expect(reorderNodeTo(doc, ["b", "d"], 0, "b")).toBe(doc);
+
+    // Dragging a + c after d: c's path does not cross locked, but secondary a would cross locked
+    expect(reorderNodeTo(doc, ["a", "c"], 4, "c")).toBe(doc);
+  });
+
   it("refuses to move locked roots or cross intermediate locked layers", () => {
     const docWithLockedTarget = document([
       shape("a"),

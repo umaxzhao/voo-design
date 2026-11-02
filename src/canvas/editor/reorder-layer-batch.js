@@ -74,7 +74,9 @@ export function reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId) {
 
   const roots = groupingRoots(doc, ids);
   if (!roots.length) return null;
-  if (roots.some(n => n.locked || isLockedByGroup(doc, n) || isRegionNode(n))) return null;
+
+  const isLocked = n => Boolean(n?.locked || isLockedByGroup(doc, n));
+  if (roots.some(n => isLocked(n) || isRegionNode(n))) return null;
 
   const target = Math.max(0, Math.min(doc.nodes.length - 1, Math.round(targetIndex)));
   const targetNode = doc.nodes[target];
@@ -82,21 +84,13 @@ export function reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId) {
 
   const blockIds = new Set(moveAffectedIds(doc, roots.map(n => n.id)));
   if (blockIds.has(targetNode.id)) return null;
+  if (doc.nodes.some(n => blockIds.has(n.id) && isLocked(n))) return null;
 
   const leadId = primaryId && blockIds.has(primaryId)
     ? primaryId
     : (roots.find(r => r.id === primaryId)?.id ?? roots[0].id);
   const draggedIndex = doc.nodes.findIndex(n => n.id === leadId);
   if (draggedIndex < 0 || draggedIndex === target) return null;
-
-  const lo = Math.min(draggedIndex, target);
-  const hi = Math.max(draggedIndex, target);
-  for (let i = lo; i <= hi; i += 1) {
-    const node = doc.nodes[i];
-    if (!blockIds.has(node.id) && (node.locked || isLockedByGroup(doc, node))) {
-      return null;
-    }
-  }
 
   const rest = doc.nodes.filter(n => !blockIds.has(n.id));
   const targetInRest = rest.findIndex(n => n.id === targetNode.id);
@@ -105,10 +99,29 @@ export function reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId) {
   let insertAt = target > draggedIndex ? targetInRest + 1 : targetInRest;
 
   // The locked base image keeps the bottom slot: nothing can be pushed under it.
-  if (insertAt === 0 && (rest[0]?.locked || isLockedByGroup(doc, rest[0]))) {
+  if (insertAt === 0 && isLocked(rest[0])) {
     insertAt = 1;
   }
   insertAt = Math.max(0, Math.min(rest.length, insertAt));
+
+  // The locked-layer travel barrier applies to every moved root/descendant in the batch,
+  // preventing any selected node (primary or secondary) from crossing a locked boundary.
+  const origIndex = new Map(doc.nodes.map((n, i) => [n.id, i]));
+  const blockOrigIndices = doc.nodes.filter(n => blockIds.has(n.id)).map(n => origIndex.get(n.id));
+  const minBlock = Math.min(...blockOrigIndices);
+  const maxBlock = Math.max(...blockOrigIndices);
+
+  for (let i = 0; i < rest.length; i += 1) {
+    const r = rest[i];
+    if (isLocked(r)) {
+      const rOrig = origIndex.get(r.id);
+      if (i < insertAt) {
+        if (rOrig > minBlock) return null;
+      } else {
+        if (rOrig < maxBlock) return null;
+      }
+    }
+  }
 
   const block = doc.nodes.filter(n => blockIds.has(n.id));
   return [

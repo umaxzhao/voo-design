@@ -822,4 +822,27 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
    - 真实浏览器矩阵实测：运行 `editor-browser-fixture` 真实 Chromium E2E 矩阵（12/12 项全部通过，含 `unrelated-later-lock-1` 与 `unrelated-later-lock-2` 及 8 项 root/siblings 连续与非连续拖拽，附带 Undo/Redo 完备还原验证）；
    - 门禁合规：`npm run lint:design`（1,478 文件 0 违规），`npm run check:modules`（12 模块有效注册，`unmapped: []`）。
 
+## 多选批次副选对象跨锁屏障拦截修复（Batch Reorder Secondary Node Lock Crossing Barrier）— 2026-11-02
+
+针对独立 QA 补充验收发现的非连续副选对象跨锁拦截缺口（`msg_a88923be55d4`）进行根因定位与算法闭环：
+
+1. **缺陷表现与根因分析**：
+   - 场景：文档顺序包含 `['a', 'b', 'locked', 'c', 'd']`，仅 `locked` 锁定；
+     - 正向测试：多选 `['b', 'd']`，拖拽主选 `b` 到 `a` 之前；主选 `b` 的拖动路径不穿过 `locked`，但作为批次成员一同移动的副选 `d` 必须穿越 `locked` 才能到达 `a` 之前；
+     - 反向测试：多选 `['a', 'c']`，拖拽主选 `c` 到 `d` 之后；主选 `c` 的路径不跨锁，但副选 `a` 越过了 `locked`；
+   - 现象：批次移动未被拦截，导致 `d` 或 `a` 穿过锁定层；
+   - 根因：`reorder-layer-batch.js` 此前仅计算 `leadId`（主选指针节点）的拖拽起点与目标终点 `[lo, hi]`，仅校验了主指针的行进区间，未将整批被移动集合中所有副选对象（及其子树/后代）的移动跨越区间纳入锁屏障约束。
+2. **全选区批次原子锁屏障约束重构**：
+   - 遍历 `rest` 中所有锁定节点 `r`（含 `r.locked` 或祖先组锁 `isLockedByGroup(doc, r)`），将其在原文档的绝对索引 `rOrig` 与被移动批次 `block` 的原始索引极值 `[minBlock, maxBlock]` 进行拓扑校验：
+     - 若 `r` 在目标插入点之前（`i < insertAt`，即 `r` 最终位于整个批次下方）：批次中绝不允许存在任何原本位于 `r` 下方的节点，即若 `rOrig > minBlock` 则判定存在跨锁，立即返回 `null`（拒绝整批移动）；
+     - 若 `r` 在目标插入点之后（`i >= insertAt`，即 `r` 最终位于整个批次上方）：批次中绝不允许存在任何原本位于 `r` 上方的节点，即若 `rOrig < maxBlock` 则判定存在跨锁，立即返回 `null`（拒绝整批移动）；
+   - 同时校验被选批次自身任何节点（`blockIds`）不得为锁定或组锁定；
+   - 该算法兼具完整对称性：主指针跨锁、副选跨锁、批次被锁层跨分割三类场景全部在单一原子约束下拦截，同时完全不误伤范围外合法放置。
+3. **测试覆盖与双重验证证据**：
+   - 新增定向单测：`tests/unit/layer_multiselect_reorder.test.js` 增加 `refuses batch reorder when any secondary selected node would cross a locked barrier`，断言 `['b', 'd']` 移至 `a` 前及 `['a', 'c']` 移至 `d` 后均返回原文档对象 `doc`（拒绝移动，无脏变更）；
+   - 单元测试运行：`layer_multiselect_reorder.test.js`（11/11 项全部通过），图层及历史模块测试（31/31 全部通过）；
+   - 真实 Chromium 浏览器端到端实测：运行 `closure-acceptance-evidence/lock-cross-secondary.mjs` 场景实测全部通过，验证真实鼠标拖动后文档保持原顺序、历史索引未增加；原 12 组矩阵重测全部通过；
+   - 门禁合规：`npm run lint:design`（1,478 文件 0 违规），`node scripts/editor-checks.mjs --check` 注册有效，单文件行数严格在 400 行以内（`reorder-layer-batch.js` 126 行）。
+
+
 
