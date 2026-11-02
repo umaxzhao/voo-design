@@ -106,7 +106,6 @@ export default function SelectionActions({
       {onModifySelection && (
         <CollapsibleSection
           title={t("editor.selection.modify")}
-          defaultOpen={false}
         >
           <div className="space-y-1.5">
             <ToolSliderField

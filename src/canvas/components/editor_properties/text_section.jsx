@@ -14,7 +14,7 @@ export default function TextSection({ object, edit, editAndCommit, commitNow, se
   const mixedBaselineShift = selectedNodes.length > 1 && commonValue(selectedNodes, "baselineShift") === MIXED;
   const metricProps = { onCommit: commitNow, scrubHint: t("editor.props.dragToAdjust") };
   return (
-    <CollapsibleSection title={t("editor.props.textStyle")} defaultOpen storageKey={`textStyle.${object.kind}`}>
+    <CollapsibleSection title={t("editor.props.textStyle")} storageKey={`textStyle.${object.kind}`}>
       <div className="flex flex-col gap-3" data-testid="text-typography-section">
         <TypographyBasics
           object={object}

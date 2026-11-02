@@ -10,12 +10,12 @@ import {
 import { PROPERTIES_PANEL_CONTENT_CLASS } from "../../src/canvas/components/editor_properties/index.jsx";
 
 describe("properties panel spacing and sections", () => {
-  it("renders sections expanded by default with a keyboard-operable button", () => {
+  it("renders module bodies directly, with no fold toggle", () => {
     const html = renderToStaticMarkup(
       <CollapsibleSection title="Fill">Fill controls</CollapsibleSection>,
     );
-    expect(html).toContain('type="button"');
-    expect(html).toContain('aria-expanded="true"');
+    expect(html).not.toContain("aria-expanded");
+    expect(html).not.toContain('type="button"');
     expect(html).toContain("Fill controls");
   });
 
@@ -27,20 +27,14 @@ describe("properties panel spacing and sections", () => {
     expect(loadEditorPanelSectionState()[key]).toBe(true);
   });
 
-  it("restores a persisted collapsed state on the next render and expands again", () => {
+  it("ignores a previously persisted collapsed state so no module hides its settings", () => {
     const key = `test.restore.${Date.now()}`;
     toggleEditorPanelSectionState(key, true);
-    const collapsed = renderToStaticMarkup(
+    const html = renderToStaticMarkup(
       <CollapsibleSection title="Stroke" storageKey={key}>Stroke controls</CollapsibleSection>,
     );
-    expect(collapsed).toContain('aria-expanded="false"');
-    expect(collapsed).not.toContain("Stroke controls");
-    toggleEditorPanelSectionState(key, false);
-    const expanded = renderToStaticMarkup(
-      <CollapsibleSection title="Stroke" storageKey={key}>Stroke controls</CollapsibleSection>,
-    );
-    expect(expanded).toContain('aria-expanded="true"');
-    expect(expanded).toContain("Stroke controls");
+    expect(html).toContain("Stroke controls");
+    expect(html).not.toContain("aria-expanded");
   });
 
   it("renders the real opt-in Export heading without a fixed action", () => {

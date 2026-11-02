@@ -232,7 +232,6 @@ export default function CircularArraySection({
   return (
     <CollapsibleSection
       title={t("editor.circularArray.title")}
-      defaultOpen={true}
       testId="editor-circular-array-section"
       storageKey="circularArray.section"
     >

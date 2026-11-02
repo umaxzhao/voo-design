@@ -292,7 +292,6 @@ export default function LinearArraySection({
   return (
     <CollapsibleSection
       title={t("editor.linearArray.title")}
-      defaultOpen={true}
       testId="editor-linear-array-section"
       storageKey="linearArray.section"
     >

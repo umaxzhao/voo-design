@@ -1,10 +1,5 @@
 import PropTypes from "prop-types";
-import { Children, useState } from "react";
-import { IconChevronDown } from "../../icons.jsx";
-import {
-  loadEditorPanelSectionState,
-  toggleEditorPanelSectionState,
-} from "../editor_panel_preferences.js";
+import { Children } from "react";
 
 /** Shared input skin for every field in the panel. */
 export const fieldClass =
@@ -129,78 +124,41 @@ SectionEmptyRow.propTypes = {
 };
 
 /**
- * One collapsible group in the property panel.
- *
- * Folding keeps the panel short; the body also scrolls inside its container.
- * The fold is remembered across sessions through editor_panel_preferences;
- * callers key it per object kind where needed, e.g. `textStyle.<kind>`.
+ * A panel group whose body is always shown. Modules are expanded by default
+ * and never fold into a dropdown: the panel is one scannable list, and every
+ * setting stays reachable without a toggle. The name is kept so existing call
+ * sites keep working; it renders exactly like StaticSection.
  */
 export function CollapsibleSection({
   title,
-  defaultOpen = true,
   children = null,
   extra = null,
   storageKey = null,
   testId = undefined,
 }) {
-  // Callers should pass a stable `storageKey`; the title fallback is
-  // locale-dependent, so a language switch would reset that section's fold.
-  const sectionStorageKey =
-    storageKey ??
-    `panel.${title
-      .trim()
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}]+/gu, ".")}`;
-  const [open, setOpen] = useState(
-    loadEditorPanelSectionState()[sectionStorageKey] ?? defaultOpen,
-  );
-  const toggle = () => {
-    setOpen(toggleEditorPanelSectionState(sectionStorageKey, open));
-  };
   return (
-    <div
-      data-inspector-section
-      className={sectionRhythmClass}
-      data-testid={testId}
+    <StaticSection
+      title={title}
+      extra={extra}
+      storageKey={storageKey}
+      testId={testId}
     >
-      <div className={open ? sectionHeaderClass : emptySectionHeaderClass}>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={open}
-          className={`relative flex min-w-0 items-center gap-1.5 ${sectionTitleClass} before:absolute before:-inset-x-2 before:-inset-y-1.5 before:content-[''] hover:text-neutral-200 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 rounded-md`}
-        >
-          <IconChevronDown
-            size={12}
-            className={`shrink-0 transition-transform duration-200 ${open ? "" : "-rotate-90 text-neutral-500"}`}
-          />
-          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-            {title}
-          </span>
-        </button>
-        {extra ? (
-          <div className="flex shrink-0 items-center gap-2">{extra}</div>
-        ) : null}
-      </div>
-      {open ? <div className={sectionBodyClass}>{children}</div> : null}
-    </div>
+      {children}
+    </StaticSection>
   );
 }
 
 CollapsibleSection.propTypes = {
   title: PropTypes.string.isRequired,
-  defaultOpen: PropTypes.bool,
   children: PropTypes.node,
   extra: PropTypes.node,
-  /** Key of this section's fold state in the `voo.editor.panelSections` setting. */
   storageKey: PropTypes.string,
   testId: PropTypes.string,
 };
 
 /**
- * A panel group that shares CollapsibleSection's header, spacing and fold
- * persistence (it is expanded by default). Kept as a separate name so call
- * sites read as "fixed group" versus "opt-in fold".
+ * A panel group with a static title and an always-visible body. Empty groups
+ * render only their title row, so every empty module has the same height.
  */
 export function StaticSection({
   title,

@@ -310,7 +310,6 @@ export default function GridArraySection({
   return (
     <CollapsibleSection
       title={t("editor.gridArray.title")}
-      defaultOpen={true}
       testId="editor-grid-array-section"
       storageKey="gridArray.section"
     >
