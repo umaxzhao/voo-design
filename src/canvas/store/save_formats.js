@@ -1,7 +1,8 @@
 /**
  * The file formats a design can be saved as, and what each save would lose.
  * A document saves back to the format its file name carries; `.voo` is the
- * native format and loses nothing.
+ * native format and loses nothing. Explicit export format overrides leave the
+ * working document's name and dirty state untouched.
  */
 import { NODE_KIND } from "../editor/scene_doc_factory.js";
 import { isSvgFileName, svgSaveLosses } from "./svg_document_io.js";

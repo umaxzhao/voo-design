@@ -13,12 +13,7 @@ import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { runAgentTurn } from "../agent/canvas_agent.js";
 import { errorText } from "../error_text.js";
 import { abortable } from "../agent/abortable.js";
-import {
-  AGENT_DEFAULTS,
-  AGENT_SETTING,
-  CANVAS_TOOL_SCHEMAS,
-  executeCanvasTool,
-} from "../agent/canvas_tools.js";
+import { AGENT_DEFAULTS, AGENT_SETTING, CANVAS_TOOL_SCHEMAS, executeCanvasTool } from "../agent/canvas_tools.js";
 import { CHAT_ERROR, streamChatTurn } from "../agent/chat_stream.js";
 import { isCliAgentModel, streamCliStep } from "../agent/cli_agent_step.js";
 import {
@@ -30,11 +25,7 @@ import {
   upsertSession,
 } from "../agent/session_history.js";
 import { createUnmountGuard } from "./agent-panel/unmount_guard.js";
-import {
-  CLI_MODEL_GROUPS,
-  getModelDisplayLabel,
-  getModelDisplayParts,
-} from "./agent-panel/model_catalog.js";
+import { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts } from "./agent-panel/model_catalog.js";
 import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import { useSelectionContext } from "./agent-panel/use_selection_context.js";
 import { contextLabel, promptWithSelection } from "./agent-panel/selection_context.js";
@@ -42,7 +33,44 @@ import { getDiscoveredModels } from "./agent-panel/model_discovery.js";
 import { getCodexReasoningSettings } from "../../shared/codex-reasoning.js";
 import { useReasoningEffort } from "./agent-panel/use_reasoning_effort.js";
 import { useSessionRename } from "./agent-panel/use_session_rename.js";
+import { workspaceStorage, guessCategory } from "../../services/workspace_storage.js";
+import { addRecentFile, getRecentFiles } from "../store/recent_files.js";
+import { buildProjectVooFile } from "../store/project_io.js";
+import { encodeVooBinary } from "../store/voo_binary.js";
 export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
+
+async function persistGenerationIfHasLayers(generationIntent) {
+  const store = useDesignStore.getState();
+  if (store.filePath) return;
+  const editor = typeof window !== "undefined" ? window.__vooEditor : null;
+  const currentDoc = editor?.getDocument?.() ?? editor?.getDoc?.() ?? store.nodes?.[0]?.data?.editorDoc;
+  const nodes = currentDoc?.nodes ?? [];
+  const hasLayers = nodes.length > 1 || (nodes.length === 1 && (!nodes[0]?.isCanvasRoot && (!nodes[0]?.isFrame || (nodes[0]?.children?.length ?? 0) > 0)));
+  if (!hasLayers) return;
+  try {
+    const baseLabel = generationIntent?.label || store.fileName?.replace(/\.voo$/i, "") || "Design 1";
+    const baseName = baseLabel.replace(/\s+/gu, "").replace(/\.voo$/i, "") || "Design";
+    let existingNames = new Set();
+    try {
+      const [scanned, recents] = await Promise.all([workspaceStorage.scanFiles().catch(() => []), Promise.resolve(getRecentFiles())]);
+      existingNames = new Set([...scanned, ...recents].map((f) => f.name));
+    } catch {}
+    let uniqueName = `${baseName}.voo`, counter = 1;
+    while (existingNames.has(uniqueName)) uniqueName = `${baseName}${++counter}.voo`;
+    const category = generationIntent?.category || guessCategory(uniqueName);
+    const enginesMap = new Map();
+    if (editor && store.editingNodeId) enginesMap.set(store.editingNodeId, { engine: editor, ready: true });
+    const { vooFile, primaryPreview } = await buildProjectVooFile({ store, enginesRef: { current: enginesMap } });
+    const bytes = encodeVooBinary(vooFile);
+    const saved = await workspaceStorage.writeFileBytes(uniqueName, bytes, { category });
+    const savedPath = saved?.path || null, savedName = saved?.name || uniqueName;
+    store.setFilePath?.(savedPath); store.setFileName?.(savedName); store.setIsDirty?.(false);
+    addRecentFile({ name: savedName, path: savedPath, category, preview: primaryPreview, isDraft: false });
+  } catch (persistErr) {
+    console.warn("[VOO] Failed to persist generated project:", persistErr);
+  }
+}
+
 /** Chat panel beside the editor frame: text in, canvas changes out, saved history. */
 export default function CanvasAgentPanel({ onClose }) {
   const { t } = useI18n();
@@ -193,55 +221,39 @@ export default function CanvasAgentPanel({ onClose }) {
       useDesignStore.setState({ agentGenerating: true });
       setInput("");
       if (overrideText === undefined) clearAttachments();
-      setError(null);
-      setConfigError(false);
-      setCancelled(false);
+      setError(null); setConfigError(false); setCancelled(false);
       setLastRequest(recoveryRequest ?? { text, context: targetContext, generation: generationIntent ?? null, attachments: images });
-      setBusy(true);
-      setStreamingText("");
-      setCandidates([]);
+      setBusy(true); setStreamingText(""); setCandidates([]);
       const variantCount = Math.max(1, Math.min(3, Number(generationIntent?.candidates) || 1));
       const sessionId = activeId ?? createSessionId();
       setActiveId(sessionId);
       const userItem = {
-        kind: "text",
-        role: "user",
-        content: text,
-        contextBadge: generationIntent
-          ? { label: generationBadgeText(generationIntent), modelId: model }
-          : (targetContext ? `@${contextLabel(targetContext, t)}` : undefined),
+        kind: "text", role: "user", content: text,
+        contextBadge: generationIntent ? { label: generationBadgeText(generationIntent), modelId: model } : (targetContext ? `@${contextLabel(targetContext, t)}` : undefined),
       };
       setTranscript((prev) => [...prev, userItem]);
       try {
-        let promptWithContext = text;
-        if (generationIntent) {
-          promptWithContext = `${generationContextText(generationIntent)}\n${text}`;
-          const referenceNote = referenceImageContext(images);
-          if (referenceNote) promptWithContext += `\n${referenceNote}`;
-          controller.signal.throwIfAborted();
-        } else {
-          promptWithContext = promptWithSelection(text, targetContext);
-          const referenceNote = referenceImageContext(images);
-          if (referenceNote) promptWithContext += `\n${referenceNote}`;
-        }
+        const referenceNote = referenceImageContext(images);
+        let promptWithContext = generationIntent ? `${generationContextText(generationIntent)}\n${text}` : promptWithSelection(text, targetContext);
+        if (referenceNote) promptWithContext += `\n${referenceNote}`;
+        controller.signal.throwIfAborted();
         const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
-        if (model.startsWith("codex:")) {
-          const { reasoningEffort } = getCodexReasoningSettings(model, getDiscoveredModels("codex") ?? []);
+        if (model?.startsWith("codex:")) {
+          const codexModels = getDiscoveredModels("codex") ?? [];
+          const { reasoningEffort } = getCodexReasoningSettings(model, codexModels);
           if (reasoningEffort) provider.config = { ...provider.config, reasoningEffort };
         }
         const external = await abortable(() => externalMcpTools(), controller.signal);
         controller.signal.throwIfAborted();
         const reply = await runAgentTurn({
-          signal: controller.signal,
-          ...provider,
+          signal: controller.signal, ...provider,
           maxSteps: Number(getSetting(AGENT_SETTING.MAX_STEPS)) || AGENT_DEFAULTS.maxSteps,
           styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
           styleId: generationIntent?.styleId ?? null,
           sceneKind: generationIntent?.kind ?? null,
           designSystem: generationIntent?.designSystemContract ?? null,
           frame: generationIntent?.frame ?? null,
-          visualReferences: images
-            ?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
+          visualReferences: images?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
             .map((attachment) => ({ name: attachment.name, dataUrl: attachment.dataUrl })) ?? [],
           variantCount,
           onVariant: (variant) => setCandidates((current) => [...current, variant]),
@@ -252,8 +264,7 @@ export default function CanvasAgentPanel({ onClose }) {
           onText: (text) => { if (!controller.signal.aborted) setStreamingText(text); },
           onProgress: setPipelineProgress,
           chooseDirection: variantCount > 1
-            ? (choices, { variantIndex = 0 } = {}) =>
-                Promise.resolve(choices[variantIndex % choices.length]?.id ?? "auto")
+            ? (choices, { variantIndex = 0 } = {}) => Promise.resolve(choices[variantIndex % choices.length]?.id ?? "auto")
             : (choices, { signal } = {}) => new Promise((resolve, reject) => {
                 setDirections(choices);
                 const finish = choice => { clearTimeout(timer); signal?.removeEventListener('abort', abort); directionChoice.current = null; setDirections([]); resolve(choice); };
@@ -266,6 +277,7 @@ export default function CanvasAgentPanel({ onClose }) {
           onToolEvent: updateToolItem,
         });
         controller.signal.throwIfAborted();
+        if (generationIntent) await persistGenerationIfHasLayers(generationIntent);
         const replyItem = { kind: "text", role: "assistant", content: reply };
         historyRef.current = [
           ...historyRef.current,
@@ -281,6 +293,7 @@ export default function CanvasAgentPanel({ onClose }) {
           createdAt: Date.now(),
         });
       } catch (caught) {
+        if (generationIntent) await persistGenerationIfHasLayers(generationIntent);
         if (!controller.signal.aborted) {
           const code = caught?.code ?? caught?.message;
           const wantsConfig =
@@ -347,18 +360,12 @@ export default function CanvasAgentPanel({ onClose }) {
   useEffect(() => {
     const handleAgentPrompt = (event) => {
       const { prompt, context } = event.detail || {};
-      if (context) {
-        setActiveContext(context);
-      }
-      if (prompt && prompt.trim()) {
-        send(prompt, context);
-      }
+      if (context) setActiveContext(context);
+      if (prompt && prompt.trim()) send(prompt, context);
     };
     const handleOpenPanel = (event) => {
       const { context } = event.detail || {};
-      if (context) {
-        setActiveContext(context);
-      }
+      if (context) setActiveContext(context);
     };
     window.addEventListener("voo:agent-prompt", handleAgentPrompt);
     window.addEventListener("voo:open-agent-panel", handleOpenPanel);
@@ -367,10 +374,7 @@ export default function CanvasAgentPanel({ onClose }) {
       window.removeEventListener("voo:open-agent-panel", handleOpenPanel);
     };
   }, [send]);
-  const onSubmit = (event) => {
-    event.preventDefault();
-    send();
-  };
+  const onSubmit = (event) => { event.preventDefault(); send(); };
   const onKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing) {
       event.preventDefault();

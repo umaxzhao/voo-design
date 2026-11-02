@@ -1,7 +1,7 @@
 
 /** Return true when this ordered shortcut stage owns the event. */
 export function handleViewShortcut(event, context) {
-  const { engine, onToggleRulers, onToggleGuides, onClearGuides, onToggleSnapToGrid, onToggleComments, onToggleCommentMode, onCreateComponent, onDetachInstance } = context;
+  const { engine, onToggleRulers, onToggleGuides, onClearGuides, onToggleSnapToGrid, onToggleComments, onToggleCommentMode, onCreateComponent, onDetachInstance, onToggleAgent } = context;
   // Canvas view aids. Bindings avoid the browser's own ⌘R reload and the
   // grid/snap pair already taken by ⌘' and ⇧⌘':
   //   ⇧R        show/hide rulers          (Figma's binding)
@@ -76,6 +76,22 @@ export function handleViewShortcut(event, context) {
     ) {
       event.preventDefault();
       onToggleComments();
+      return true;
+    }
+    // Agent panel: ⌥⌘A or ⇧⌘A toggles the AI Agent panel cleanly without conflicting with layer duplicate or fill
+    if (
+      modifier &&
+      (
+        (event.altKey && !event.shiftKey && event.code === "KeyA") ||
+        (!event.altKey && event.shiftKey && event.code === "KeyA")
+      )
+    ) {
+      event.preventDefault();
+      if (onToggleAgent) {
+        onToggleAgent();
+      } else if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("voo:toggle-agent-panel"));
+      }
       return true;
     }
   }

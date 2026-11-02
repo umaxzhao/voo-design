@@ -113,7 +113,7 @@ export async function exportEditorImage({
 }) {
   signal?.throwIfAborted();
   const { mime } = mediaExportFormat(format);
-  if (!mime.startsWith("image/") && format !== "pdf")
+  if (!mime.startsWith("image/") && format !== "pdf" && format !== "fig")
     throw new Error("EXPORT_FORMAT_UNSUPPORTED");
   if (engine.getSelectionTransform?.())
     await engine.applySelectionTransform?.();
@@ -256,6 +256,15 @@ export async function exportEditorImage({
         width: exported.bounds.width,
         height: exported.bounds.height,
       });
+    } else if (format === "fig") {
+      const selectedNodes = selectedExportNodes(editorDocument, selectedIds);
+      const [{ createFigmaExportTemplate }, { buildFigContainer }, { serializeFigArchive }] =
+        await Promise.all([import("../../figma/figma-schema.js"), import("../../figma/voo-to-fig.js"), import("../../figma/fig-file.js")]);
+      const template = await createFigmaExportTemplate();
+      const targetName = exportTargetName(name, range, editorDocument.nodes, selectedIds);
+      const container = buildFigContainer({ ...editorDocument, nodes: selectedNodes }, template, { pageName: targetName });
+      const bytes = await serializeFigArchive(container, { name: targetName });
+      dataUrl = bytesToDataUrl(new Uint8Array(bytes), "application/octet-stream");
     } else {
       const exported = await (
         engine.exportSelectionPngAsync ?? engine.exportSelectionPng
@@ -291,6 +300,19 @@ export async function exportEditorImage({
     const bytes = new Uint8Array(await engine.exportPsd());
     signal?.throwIfAborted();
     dataUrl = bytesToDataUrl(bytes, "image/vnd.adobe.photoshop");
+  } else if (format === "fig") {
+    let bytes;
+    if (typeof engine.exportFig === "function") {
+      bytes = await engine.exportFig();
+    } else {
+      const [{ createFigmaExportTemplate }, { buildFigContainer }, { serializeFigArchive }] =
+        await Promise.all([import("../../figma/figma-schema.js"), import("../../figma/voo-to-fig.js"), import("../../figma/fig-file.js")]);
+      const template = await createFigmaExportTemplate();
+      const container = buildFigContainer(editorDocument, template, { pageName: name || "Page 1" });
+      bytes = await serializeFigArchive(container, { name });
+    }
+    signal?.throwIfAborted();
+    dataUrl = bytesToDataUrl(new Uint8Array(bytes), "application/octet-stream");
   } else if (format === "svg") {
     const { bitmapOf, bitmapSizeOf, maskOf, rasterOf, rasterSceneOf } = createSvgAssetResolvers(
       editorDocument,

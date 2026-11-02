@@ -116,10 +116,36 @@ html[data-theme="light"] [class*="text-neutral-600"] {
   color: #737373 !important;
 }
 
-/* Brand mint is unreadable on white: darker green keeps the hue. */
+/* Translucent white text on dark surfaces maps to dark neutrals on light surfaces. */
+html[data-theme="light"] [class*="text-white/"] {
+  color: #525252 !important;
+}
+
+html[data-theme="light"] [class*="text-white/90"],
+html[data-theme="light"] [class*="text-white/85"],
+html[data-theme="light"] [class*="text-white/80"] {
+  color: #171717 !important;
+}
+
+html[data-theme="light"] [class*="text-white/75"],
+html[data-theme="light"] [class*="text-white/70"] {
+  color: #262626 !important;
+}
+
+html[data-theme="light"] [class*="text-white/65"],
+html[data-theme="light"] [class*="text-white/60"] {
+  color: #525252 !important;
+}
+
+html[data-theme="light"] [class*="text-white/55"],
+html[data-theme="light"] [class*="text-white/50"] {
+  color: #737373 !important;
+}
+
+/* Brand mint is unreadable on white: darker green keeps the hue with >= 4.5:1 contrast. */
 html[data-theme="light"] [class*="text-[#a7ffd4]"],
 html[data-theme="light"] [class*="text-[#b2ffd6]"] {
-  color: #a7ffd4 !important;
+  color: #0d7647 !important;
 }
 
 /* Design-type icon accents: brand mint vanishes on white; like

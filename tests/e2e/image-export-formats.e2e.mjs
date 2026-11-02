@@ -2,28 +2,42 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { readPsd } from "ag-psd";
 import { inflateSync } from "node:zlib";
+import { parseFigFile } from "../../src/canvas/figma/fig-file.js";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
 await withEditorBrowser(async ({
   page
 }) => {
   const audit = imageAudit(page, "export-formats");
-  for (const [format, label] of [["png", "PNG"], ["jpeg", "JPEG"], ["webp", "WebP"], ["svg", "SVG"], ["psd", "PSD"], ["pdf", "PDF"]]) {
+  for (const [format, label] of [["png", "PNG"], ["jpeg", "JPEG"], ["webp", "WebP"], ["svg", "SVG"], ["fig", "Figma"], ["psd", "PSD"], ["pdf", "PDF"]]) {
     await audit.record(format, async () => {
       const node = await audit.seed();
-      await page.keyboard.press("Control+k");
-      const palette = page.getByRole("dialog").filter({
-        has: page.getByRole("combobox")
-      });
-      await palette.getByRole("combobox").waitFor();
-      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      const ids = await palette.getByRole("option").evaluateAll(elements => elements.map(element => element.id));
-      assert.equal(new Set(ids).size, ids.length, "Recent commands must not duplicate rows or keyboard IDs");
-      await palette.getByRole("combobox").fill("Export");
-      await palette.getByRole("option").filter({
-        hasText: /^Export$/
-      }).click();
+      if (format === "fig") {
+        await page.getByTestId("titlebar-export").click();
+      } else {
+        await page.keyboard.press("Control+k");
+        const palette = page.getByRole("dialog").filter({
+          has: page.getByRole("combobox")
+        });
+        await palette.getByRole("combobox").waitFor();
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const ids = await palette.getByRole("option").evaluateAll(elements => elements.map(element => element.id));
+        assert.equal(new Set(ids).size, ids.length, "Recent commands must not duplicate rows or keyboard IDs");
+        await palette.getByRole("combobox").fill("Export");
+        await palette.getByRole("option").filter({
+          hasText: /^Export$/
+        }).click();
+      }
       const dialog = page.getByTestId("design-export-dialog");
+      const beforeExport = format === "fig" ? await page.evaluate(async () => {
+        const { useDesignStore } = await import("/src/store/design_store.js");
+        return { fileName: useDesignStore.getState().fileName, isDirty: useDesignStore.getState().isDirty };
+      }) : null;
+      if (format === "fig") {
+        await page.evaluate(() => Object.defineProperty(window, "showSaveFilePicker", {
+          configurable: true, value: undefined,
+        }));
+      }
       await dialog.getByRole("button", {
         name: new RegExp(`^${label}(?: |$)`)
       }).click();
@@ -39,7 +53,15 @@ await withEditorBrowser(async ({
       const download = await ready;
       const bytes = await readFile(await download.path());
       assert.ok(bytes.length > 100);
-      if (format === "psd") {
+      if (format === "fig") {
+        assert.deepEqual([...bytes.subarray(0, 4)], [0x50, 0x4b, 0x03, 0x04]);
+        const parsed = await parseFigFile(new Uint8Array(bytes));
+        assert.ok(parsed.message.nodeChanges.some(entry => entry.type === "CANVAS"));
+        assert.deepEqual(await page.evaluate(async () => {
+          const { useDesignStore } = await import("/src/store/design_store.js");
+          return { fileName: useDesignStore.getState().fileName, isDirty: useDesignStore.getState().isDirty };
+        }), beforeExport, "Figma export must not change the working VOO document state");
+      } else if (format === "psd") {
         assert.equal(bytes.subarray(0, 4).toString(), "8BPS");
         const psd = readPsd(bytes, {
           skipLayerImageData: true,

@@ -80,6 +80,7 @@ export default function App() {
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
     const handleOpenAgent = () => setAgentOpen(true);
+    const handleToggleAgent = () => setAgentOpen(!useDesignStore.getState().agentPanelOpen);
     const handleOpenFirstRun = () => {
       if (firstRunOpen) return;
       setFirstRunReopened(true); setFirstRunOpen(true);
@@ -88,6 +89,7 @@ export default function App() {
     const handleOpenOnboarding = () => setOnboardingOpen(true);
     const handleOpenBrowser = () => setBrowserDrawerOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
+    window.addEventListener("voo:toggle-agent-panel", handleToggleAgent);
     window.addEventListener("voo:agent-prompt", handleOpenAgent);
     window.addEventListener("voo:open-browser", handleOpenBrowser);
     window.addEventListener("voo:open-onboarding", handleOpenOnboarding);
@@ -135,6 +137,7 @@ export default function App() {
     return () => {
       window.removeEventListener("voo:open-first-run", handleOpenFirstRun);
       window.removeEventListener("voo:open-agent-panel", handleOpenAgent);
+      window.removeEventListener("voo:toggle-agent-panel", handleToggleAgent);
       window.removeEventListener("voo:agent-prompt", handleOpenAgent);
       window.removeEventListener("voo:open-onboarding", handleOpenOnboarding);
       window.removeEventListener("voo:open-browser", handleOpenBrowser);

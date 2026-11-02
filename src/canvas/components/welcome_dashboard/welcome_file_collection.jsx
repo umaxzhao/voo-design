@@ -182,9 +182,24 @@ export function WelcomeFileCollection({
               <div
                 key={item.id}
                 data-welcome-file-id={item.id}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveMenuId(item.id);
+                }}
                 className="group relative flex flex-col rounded-2xl bg-neutral-900/40 hover:bg-neutral-900/90 transition-all cursor-pointer"
               >
-                <button type="button" aria-label={item.name} onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))} className="absolute inset-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-mint" />
+                <button
+                  type="button"
+                  aria-label={item.name}
+                  onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveMenuId(item.id);
+                  }}
+                  className="absolute inset-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-mint"
+                />
                 {/* Thumbnail Preview Area */}
                 <div className="pointer-events-none relative aspect-[16/10] bg-neutral-900 rounded-t-2xl flex items-center justify-center">
                   <WelcomeFileCover item={item} />
@@ -301,6 +316,11 @@ export function WelcomeFileCollection({
                 key={item.id}
                 data-welcome-file-id={item.id}
                 onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveMenuId(item.id);
+                }}
                 className="group grid grid-cols-12 gap-3 px-4 py-2.5 items-center hover:bg-neutral-900/60 transition-colors cursor-pointer text-xs"
               >
                 {/* Column 1: Star, Icon & Name */}

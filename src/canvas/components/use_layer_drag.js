@@ -6,6 +6,8 @@ import {
   slotToDocTarget,
 } from "../editor/layer_order.js";
 import { computeDropSlot } from "../editor/layer_drag_math.js";
+import { moveAffectedIds } from "../editor/doc_ops_move.js";
+import { isContainerNode } from "../editor/scene_model.js";
 
 /** Movement that distinguishes a drag from a click, in px. */
 export const DRAG_THRESHOLD_PX = 4;
@@ -31,7 +33,9 @@ const AUTOSCROLL_STEP_PX = 10;
  * into the target — Photoshop's drag-a-layer-onto-another gesture. Dropping
  * between rows calls `onDrop(id, docIndex)` as before.
  */
-export default function useLayerDrag({ listRef, nodes, onDrop }) {
+export default function useLayerDrag({
+  listRef, nodes, objects = nodes, selectedIds = [], selectedGroupId, onDrop,
+}) {
   const [drag, setDrag] = useState(null); // { id, from, slot } while active
   const [overId, setOverId] = useState(null); // row hovered as a clip target
   const sessionRef = useRef(null);
@@ -40,6 +44,9 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
     (commit) => {
       const session = sessionRef.current;
       if (!session) return;
+      if (commit) {
+        session.measure?.();
+      }
       sessionRef.current = null;
       window.removeEventListener("pointermove", session.onMove);
       window.removeEventListener("pointerup", session.onUp);
@@ -68,7 +75,7 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
       // Dropped on a row: clip the dragged layer into it. Dropped between
       // rows: the ordinary reorder.
       if (session.overId && session.overId !== session.id) {
-        onDrop?.(session.id, null, session.overId, session.scope);
+        onDrop?.(session.id, null, session.overId, session.scope, session.ids);
         return;
       }
       if (session.isChild && session.scope === "siblings") {
@@ -78,7 +85,7 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
           session.slot,
         );
         if (target !== session.siblingDocIndex)
-          onDrop?.(session.id, target, null, "siblings");
+          onDrop?.(session.id, target, null, "siblings", session.ids);
         return;
       }
       // A group member dropped on a root slot maps straight to a root-plane
@@ -88,7 +95,7 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
         ? childSlotToRootIndex(nodes.length, session.slot)
         : slotToDocTarget(nodes.length, session.from, session.slot);
       if (target !== session.fromDocIndex)
-        onDrop?.(session.id, target, null, "root");
+        onDrop?.(session.id, target, null, "root", session.ids);
     },
     [nodes.length, onDrop],
   );
@@ -118,12 +125,19 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
         siblingNodes = [],
       } = opts;
       if (!node || node.locked) return;
+      const liveSelectedIds = (typeof window !== "undefined" && window.__vooEditor?.getSelectedIds?.()) || selectedIds;
+      const effectiveSelectedIds = liveSelectedIds?.includes(node.id) ? liveSelectedIds : selectedIds;
+      const ids = selectedGroupId === node.id ? [node.id]
+        : effectiveSelectedIds.includes(node.id) ? [...effectiveSelectedIds] : [node.id];
+      const excludedTargets = new Set(moveAffectedIds({ nodes: objects }, ids));
+      const containerIds = new Set(objects.filter(isContainerNode).map(candidate => candidate.id));
       const slotRange = isChild ? range : allowedSlotRange(nodes, node.id);
       if (!slotRange) return;
       const fromDocIndex = isChild ? -1 : nodes.length - 1 - position;
 
       const session = {
         id: node.id,
+        ids,
         isChild,
         parentId,
         siblingNodes,
@@ -193,13 +207,16 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
         // near a gap still reorders instead of clipping by surprise, while a
         // drop anywhere on the row body (not just its centre line) clips.
         let over = null;
-        for (const row of rects) {
-          if (insideSiblingPlane && row.parentId === session.parentId) continue;
-          const inset = Math.min(10, row.height * 0.25);
+        for (const row of allRects) {
+          const container = containerIds.has(row.id);
+          if (!container && (row.parentId !== null || insideSiblingPlane)) continue;
+          const inset = container
+            ? Math.min(3, row.height * 0.1)
+            : Math.min(10, row.height * 0.25);
           if (
             session.pointerY >= row.top + inset &&
             session.pointerY <= row.top + row.height - inset &&
-            row.id !== session.id
+            !excludedTargets.has(row.id)
           ) {
             over = row.id;
             break;
@@ -210,6 +227,7 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
           setOverId(over);
         }
       };
+      session.measure = measure;
 
       const tick = () => {
         const list = listRef.current;
@@ -240,7 +258,12 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
         }
         measure();
       };
-      session.onUp = () => finishRef.current(true);
+      session.onUp = (upEvent) => {
+        if (upEvent && typeof upEvent.clientY === "number") {
+          session.pointerY = upEvent.clientY;
+        }
+        finishRef.current(true);
+      };
       session.onCancel = () => finishRef.current(false);
       session.onKey = (keyEvent) => {
         if (keyEvent.key !== "Escape") return;
@@ -254,7 +277,7 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
       window.addEventListener("pointercancel", session.onCancel);
       window.addEventListener("keydown", session.onKey, true);
     },
-    [nodes, listRef],
+    [nodes, objects, selectedIds, selectedGroupId, listRef],
   );
 
   return {

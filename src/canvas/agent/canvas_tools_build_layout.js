@@ -6,12 +6,16 @@ import { createPath } from "./canvas_tools_geometry.js";
 import { normalizeAutoLayout } from "../editor/scene_auto_layout.js";
 import { parseSvgPath } from "../editor/editor_svg_parse.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
+import { ICONS } from "./html_pipeline/lucide.js";
+import { parseSvgToNodes } from "./svg_to_nodes.js";
 
-const strings = ["name", "fill", "stroke", "text", "fontFamily", "color", "d"];
+const strings = ["name", "fill", "stroke", "text", "fontFamily", "color", "d", "id", "backgroundColor"];
 const numbers = ["x", "y", "width", "height", "strokeWidth", "cornerRadius", "opacity", "fontSize", "lineHeight", "letterSpacing"];
 const DISTRIBUTIONS = ["start", "center", "end", "space-between", "space-around", "space-evenly"];
 const nodeProperties = {
-  type: { type: "string", enum: ["frame", "rect", "ellipse", "text", "line", "path"] },
+  type: { type: "string", enum: ["frame", "rect", "ellipse", "text", "line", "path", "icon"] },
+  icon: { type: "string", description: "Canonical Lucide icon name, e.g. user-plus, user, settings, search, bell, heart, check, x, plus, home" },
+  layout: { type: "string", enum: ["none", "horizontal", "vertical"] },
   ...Object.fromEntries(strings.map(key => [key, { type: "string" }])),
   ...Object.fromEntries(numbers.map(key => [key, { type: "number" }])),
   textSizing: { type: "string", enum: ["auto", "fixed"] },
@@ -47,7 +51,7 @@ export const BUILD_LAYOUT_SCHEMA = {
   type: "function",
   function: {
     name: "build_layout",
-    description: "Create a complete tree of up to 200 editable layers in one undoable batch. Supported types: frame, rect, ellipse, text, line and path (path requires SVG d data). For one poster, screen or composed page, make one top-level frame and put its artwork, vector paths and text in that frame's children so the result moves as one composition; use type=text for editable copy. Text defaults to auto sizing from its content; set textSizing:'fixed' only when a text layer should wrap to its width. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Frame autoLayout supports direction, wrapping, item/cross gaps, per-side padding, alignment, distribution, fixed/hug sizing and min/max. Child layoutWidth/layoutHeight accept fixed, hug or fill; layoutPosition accepts flow or absolute. Text is measured after its typography is applied. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
+    description: "Create a complete tree of up to 200 editable layers in one undoable batch. Supported types: frame, rect, ellipse, text, line, path (path requires SVG d data) and icon (Lucide icon name). For one poster, screen or composed page, make one top-level frame and put its artwork, vector paths, icons and text in that frame's children so the result moves as one composition; use type=text for editable copy. Text defaults to auto sizing from its content; set textSizing:'fixed' only when a text layer should wrap to its width. Text lineHeight supports font-size multiplier (e.g. 1.5) or pixel values (e.g. 24). Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Frame autoLayout supports direction, wrapping, item/cross gaps, per-side padding, alignment, distribution, fixed/hug sizing and min/max. Child layoutWidth/layoutHeight accept fixed, hug or fill; layoutPosition accepts flow or absolute. Text is measured after its typography is applied. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
     parameters: {
       type: "object",
       properties: { parentId: { type: "string" }, nodes: { type: "array", minItems: 1, maxItems: 200, items: { $ref: "#/$defs/node" } } },
@@ -100,7 +104,14 @@ function validate(args) {
       if (++count > 200) invalid("nodes must contain at most 200 nodes in total");
       if (!node || typeof node !== "object" || Array.isArray(node)) invalid(`${at} must be a node object`);
       for (const key of Object.keys(node)) if (!(key in nodeProperties)) invalid(`${at}.${key} is unsupported`);
-      if (!nodeProperties.type.enum.includes(node.type)) invalid(`${at}.type must be frame, rect, ellipse, text, line or path`);
+      if (!nodeProperties.type.enum.includes(node.type)) invalid(`${at}.type must be frame, rect, ellipse, text, line, path or icon`);
+      if (node.layout !== undefined && !nodeProperties.layout.enum.includes(node.layout)) invalid(`${at}.layout must be none, horizontal or vertical`);
+      if (node.icon !== undefined && typeof node.icon !== "string") invalid(`${at}.icon must be a string`);
+      if (node.type === "icon") {
+        const iconName = String(node.icon ?? node.name ?? "").toLowerCase().trim();
+        if (!iconName) invalid(`${at}.icon is required for icon nodes`);
+        if (!ICONS[iconName]) invalid(`${at}.icon '${iconName}' is not a recognized Lucide icon`);
+      }
       if (typeof node.name !== "string" || !node.name.trim()) invalid(`${at}.name must be a non-empty string`);
       for (const key of ["x", "y", "width", "height"]) if (!Number.isFinite(node[key])) invalid(`${at}.${key} must be a finite number`);
       for (const key of strings) if (node[key] !== undefined && typeof node[key] !== "string") invalid(`${at}.${key} must be a string`);
@@ -152,31 +163,68 @@ function validate(args) {
   visit(args.nodes, "nodes");
 }
 
+function iconToPathD(iconData, width, height, stroke, strokeWidth, fill) {
+  const body = iconData.node.map(([tag, attrs]) => `<${tag} ${Object.entries(attrs).filter(([k]) => k !== "key").map(([k, v]) => `${k}="${v}"`).join(" ")}></${tag}>`).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 24 24" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const parsed = parseSvgToNodes(svg, { targetWidth: width, targetHeight: height });
+  return parsed.nodes.map(n => {
+    if (n.kind === "path") return n.d;
+    if (n.kind === "rect") {
+      const { x = 0, y = 0, width: w = 0, height: h = 0, rx = 0 } = n;
+      const r = Math.min(rx, w / 2, h / 2);
+      return r <= 0 ? `M ${x} ${y} H ${x + w} V ${y + h} H ${x} Z` : `M ${x + r} ${y} H ${x + w - r} A ${r} ${r} 0 0 1 ${x + w} ${y + r} V ${y + h - r} A ${r} ${r} 0 0 1 ${x + w - r} ${y + h} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + h - r} V ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
+    }
+    return "";
+  }).filter(Boolean).join(" ");
+}
+
 /** Shared native creation path for bulk layout and HTML streaming. */
 export function createLayoutNode(editor, node, parentId) {
   const {
     type, children, autoLayout, color, d, textSizing,
     key, htmlKey, htmlSource, parentKey, imagePrompt,
     layoutPosition, layoutWidth, layoutHeight, fillOpacity, strokeOpacity,
+    layout: nodeLayout, id: nodeId, backgroundColor, icon: nodeIcon,
     ...style
   } = node;
-  // HTML uses the scene's direction/per-side padding, while create_frame's
-  // public arguments use layout/scalar padding. Preserve the full scene config
-  // in the post-creation patch without passing objects to numeric arguments.
-  const direction = autoLayout?.direction ?? autoLayout?.layout;
+  if (backgroundColor !== undefined && style.fill === undefined) {
+    style.fill = backgroundColor;
+  }
+  const direction = autoLayout?.direction ?? autoLayout?.layout ?? (["horizontal", "vertical"].includes(nodeLayout) ? nodeLayout : undefined);
   const layout = ["horizontal", "vertical"].includes(direction) ? direction : "none";
   const frameLayout = {
     layout,
     ...(autoLayout?.gap !== undefined ? { gap: Number(autoLayout.gap) } : {}),
     ...(typeof autoLayout?.padding === "number" ? { padding: autoLayout.padding } : {}),
   };
+  const iconName = String(nodeIcon ?? node.name ?? "").toLowerCase().trim();
+  const iconData = ICONS[iconName];
+  const iconD = type === "icon" && iconData ? iconToPathD(
+    iconData,
+    Math.max(1, Number(node.width) || 24),
+    Math.max(1, Number(node.height) || 24),
+    style.stroke ?? color ?? style.fill ?? "#000000",
+    Number.isFinite(Number(style.strokeWidth)) ? Number(style.strokeWidth) : 2,
+    style.fill && style.stroke ? style.fill : "none",
+  ) : "";
   const result = type === "frame" ? createFrame({ ...style, ...frameLayout }, editor)
     : type === "path" ? createPath({ ...style, d }, editor)
     : type === "line" ? createPath({ ...style, fill: "none", d: `M 0 0 L ${node.width} ${node.height}` }, editor)
+    : type === "icon" ? createPath({
+        ...style,
+        d: iconD,
+        fill: (style.fill && style.stroke) ? style.fill : "none",
+        stroke: style.stroke ?? color ?? style.fill ?? "#000000",
+        strokeWidth: Number.isFinite(Number(style.strokeWidth)) ? Number(style.strokeWidth) : 2,
+      }, editor)
     : createShape({ ...style, kind: type }, editor);
   const patch = { ...style, ...(parentId ? { parentId } : {}) };
   for (const [field, value] of Object.entries({ layoutPosition, layoutWidth, layoutHeight, fillOpacity, strokeOpacity })) {
     if (value !== undefined) patch[field] = value;
+  }
+  if (type === "icon" || nodeIcon !== undefined) {
+    node.icon = iconName;
+    patch.icon = iconName;
   }
   if (type === "frame" && layout !== "none") {
     patch.autoLayout = normalizeAutoLayout({ ...autoLayout, direction: layout });
@@ -187,6 +235,12 @@ export function createLayoutNode(editor, node, parentId) {
       ? node.width
       : Number.isFinite(importedBoxWidth) && importedBoxWidth > 0 ? importedBoxWidth : 0;
     if (color !== undefined) patch.fill = color;
+    if (node.lineHeight !== undefined) {
+      const rawLh = Number(node.lineHeight);
+      const fs = Number(node.fontSize ?? style.fontSize ?? 16);
+      patch.lineHeight = rawLh > 3 && fs > 0 ? rawLh / fs : rawLh;
+      node.lineHeight = patch.lineHeight;
+    }
   }
   editor.updateNode(result.layerId, patch);
   return result.layerId;

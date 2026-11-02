@@ -8,6 +8,7 @@ import ImageContextActions from "./image_context_actions.jsx";
 import AlignSection from "./align_section.jsx";
 import ColourSection from "./colour_section.jsx";
 import ShapeSection from "./shape_section.jsx";
+import CombineSection from "./combine_section.jsx";
 import TextSection from "./text_section.jsx";
 import TransformSection from "./transform_section.jsx";
 import LayerEffectsSection from "./layer_effects_section.jsx";
@@ -218,6 +219,14 @@ export default function PropertiesPanelSections({
           commitNow={commitNow}
         />
       )}
+      {!isWarpTool && object.kind === "boolean" ? (
+        <CombineSection
+          currentOperation={object.operation}
+          onCombine={(operation) => {
+            editAndCommit({ operation });
+          }}
+        />
+      ) : null}
       {!isWarpTool && isMedia ? (
         <MediaSection
           object={object}

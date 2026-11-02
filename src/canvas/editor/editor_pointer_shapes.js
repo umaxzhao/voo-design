@@ -14,6 +14,14 @@ import {
 import { normaliseRect } from "./scene_geometry.js";
 import { TOOL } from "./editor_constants.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
+import {
+  isSnapToGridActive,
+  getShapeGridSize,
+  snapPointToGrid,
+  snapBoxToGrid,
+  insideFrame,
+  calculateArrowEndpoints,
+} from "./shape_snapping.js";
 import { commitEditorAction } from "../undo-action-contracts.js";
 import {
   drawingRollbackState,
@@ -56,12 +64,6 @@ export function textBoxDrag(start, point, { zoom = 1 } = {}) {
   };
 }
 
-/** A node drawn from `point` joins the frame the drag starts inside. */
-function insideFrame(doc, node, point) {
-  const frame = ops.frameAtPoint(doc, point);
-  return frame ? { ...node, parentId: frame.id } : node;
-}
-
 export function createShapesPointerGestures({
   api,
   getGesture,
@@ -69,7 +71,10 @@ export function createShapesPointerGestures({
 }) {
   function startArrow(event, { line = false } = {}) {
     const drawingRollback = drawingRollbackState(api);
-    const point = api.toDocPoint(event.clientX, event.clientY);
+    const rawPoint = api.toDocPoint(event.clientX, event.clientY);
+    const snapActive = isSnapToGridActive(api, event);
+    const gridSize = getShapeGridSize(api);
+    const point = snapActive ? snapPointToGrid(rawPoint, gridSize) : rawPoint;
     const node = createPathNode({
       points: [
         [point.x, point.y],
@@ -92,29 +97,30 @@ export function createShapesPointerGestures({
       { commit: false },
     );
     selectDrawingDraft(api, node.id);
-    setGesture({ kind: "arrow", id: node.id, start: point, node, line, drawingRollback });
+    setGesture({ kind: "arrow", id: node.id, start: point, rawStart: rawPoint, node, line, drawingRollback });
   }
 
   function dragArrow(event) {
     const gesture = getGesture();
-    const point = api.toDocPoint(event.clientX, event.clientY);
-    let dx = point.x - gesture.start.x;
-    let dy = point.y - gesture.start.y;
-    // Shift snaps the arrow to the eight compass directions.
-    if (event.shiftKey) {
-      const angle = Math.atan2(dy, dx);
-      const snapped = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-      const length = Math.hypot(dx, dy);
-      dx = Math.cos(snapped) * length;
-      dy = Math.sin(snapped) * length;
-    }
-    const startX = event.altKey ? gesture.start.x - dx : gesture.start.x;
-    const startY = event.altKey ? gesture.start.y - dy : gesture.start.y;
+    const rawPoint = api.toDocPoint(event.clientX, event.clientY);
+    const snapActive = isSnapToGridActive(api, event);
+    const gridSize = getShapeGridSize(api);
+    const start = snapActive
+      ? snapPointToGrid(gesture.rawStart ?? gesture.start, gridSize)
+      : (gesture.rawStart ?? gesture.start);
+    const point = snapActive
+      ? snapPointToGrid(rawPoint, gridSize)
+      : rawPoint;
+    const points = calculateArrowEndpoints({
+      start,
+      point,
+      shiftKey: event.shiftKey,
+      altKey: event.altKey,
+      snapActive,
+      gridSize,
+    });
     const next = createPathNode({
-      points: [
-        [startX, startY],
-        [gesture.start.x + dx, gesture.start.y + dy],
-      ],
+      points,
       stroke: gesture.node.stroke,
       strokeWidth: gesture.node.strokeWidth,
       strokeDash: gesture.node.strokeDash,
@@ -160,7 +166,10 @@ export function createShapesPointerGestures({
 
   function startShape(event) {
     const drawingRollback = drawingRollbackState(api);
-    const point = api.toDocPoint(event.clientX, event.clientY);
+    const rawPoint = api.toDocPoint(event.clientX, event.clientY);
+    const snapActive = isSnapToGridActive(api, event);
+    const gridSize = getShapeGridSize(api);
+    const point = snapActive ? snapPointToGrid(rawPoint, gridSize) : rawPoint;
     // The colour wheel is the fill; stroke colour/weight and opacity are the
     // shape tool's other paint axes (Pen-style).
     const style = {
@@ -178,14 +187,28 @@ export function createShapesPointerGestures({
           ? api.addEllipseAt(point, style)
           : api.addRectAt(point, style);
     selectDrawingDraft(api, node.id);
-    setGesture({ kind: "shape", id: node.id, start: point, drawingRollback });
+    setGesture({
+      kind: "shape",
+      id: node.id,
+      start: point,
+      rawStart: rawPoint,
+      drawingRollback,
+    });
   }
 
   function dragShape(event) {
     const gesture = getGesture();
-    const point = api.toDocPoint(event.clientX, event.clientY);
-    let width = point.x - gesture.start.x;
-    let height = point.y - gesture.start.y;
+    const rawPoint = api.toDocPoint(event.clientX, event.clientY);
+    const snapActive = isSnapToGridActive(api, event);
+    const gridSize = getShapeGridSize(api);
+    const start = snapActive
+      ? snapPointToGrid(gesture.rawStart ?? gesture.start, gridSize)
+      : (gesture.rawStart ?? gesture.start);
+    const point = snapActive
+      ? snapPointToGrid(rawPoint, gridSize)
+      : rawPoint;
+    let width = point.x - start.x;
+    let height = point.y - start.y;
     const shape = api.getTool();
     if (
       event.shiftKey &&
@@ -197,23 +220,26 @@ export function createShapesPointerGestures({
     }
     let box = event.altKey
       ? {
-        x: gesture.start.x - Math.abs(width),
-        y: gesture.start.y - Math.abs(height),
+        x: start.x - Math.abs(width),
+        y: start.y - Math.abs(height),
         width: Math.abs(width) * 2,
         height: Math.abs(height) * 2,
       }
       : normaliseRect({
-        x: gesture.start.x,
-        y: gesture.start.y,
+        x: start.x,
+        y: start.y,
         width,
         height,
       });
+    if (snapActive) {
+      box = snapBoxToGrid(box, gridSize);
+    }
     if (shape === TOOL.FRAME) {
       const snapDisabled =
         Boolean(event.metaKey || event.ctrlKey) ||
         api.getSnappingEnabled?.() === false;
-      const handleX = point.x < gesture.start.x ? "w" : "e";
-      const handleY = point.y < gesture.start.y ? "n" : "s";
+      const handleX = point.x < start.x ? "w" : "e";
+      const handleY = point.y < start.y ? "n" : "s";
       const snap = snapDisabled
         ? null
         : snapNodeBounds({
@@ -224,7 +250,7 @@ export function createShapesPointerGestures({
           handle: `${handleX}${handleY}`,
           options: {
             ...editorSnapOptions({
-              grid: api.getGrid?.() ?? null,
+              grid: api.getGrid?.() ?? { size: gridSize },
               activeSnap: Boolean(gesture.activeSnap),
             }),
             spatialIndex: api.getSpatialIndex?.(),
@@ -239,6 +265,9 @@ export function createShapesPointerGestures({
           width: snap.width,
           height: snap.height,
         };
+        if (snapActive) {
+          box = snapBoxToGrid(box, gridSize);
+        }
       }
     }
     if (shape === TOOL.POLYGON || shape === TOOL.STAR) {
@@ -282,7 +311,10 @@ export function createShapesPointerGestures({
 
   function startPolyShape(event) {
     const drawingRollback = drawingRollbackState(api);
-    const point = api.toDocPoint(event.clientX, event.clientY);
+    const rawPoint = api.toDocPoint(event.clientX, event.clientY);
+    const snapActive = isSnapToGridActive(api, event);
+    const gridSize = getShapeGridSize(api);
+    const point = snapActive ? snapPointToGrid(rawPoint, gridSize) : rawPoint;
     const fill = api.getColor();
     const stroke = api.getShapeStrokeColor?.() ?? fill;
     const strokeWidth = api.getStrokeWidth?.() ?? 0;
@@ -306,6 +338,7 @@ export function createShapesPointerGestures({
       drawingRollback,
       id: node.id,
       start: point,
+      rawStart: rawPoint,
       fill,
       stroke,
       strokeWidth,

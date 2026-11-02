@@ -9,10 +9,7 @@ import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
-import {
-  requestWelcomeNew,
-  WELCOME_MENU_ACTION_EVENT,
-} from "./canvas/components/welcome_dashboard/welcome_events.js";
+import { WELCOME_MENU_ACTION_EVENT } from "./canvas/components/welcome_dashboard/welcome_events.js";
 import { moveEditorMenuFocus } from "./canvas/components/editor_menu_navigation.js";
 import { useWindowControls } from "./canvas/use_window_controls.js";
 import DesktopWindowControls from "./canvas/components/desktop_window_controls.jsx";
@@ -49,11 +46,6 @@ export default function AppTitleBar() {
         { detail: welcomeOpen ? { action: "open-file" } : undefined },
       ),
     );
-
-  const handleNewOrExport = () => {
-    if (welcomeOpen) requestWelcomeNew();
-    else window.dispatchEvent(new CustomEvent("voo:file-export-snapshot"));
-  };
 
   useEffect(() => {
     if (!moreOpen) return undefined;
@@ -166,20 +158,28 @@ export default function AppTitleBar() {
           >
             <span className="app-title-action-label">{t("titlebar.open")}</span>
           </button>
-          {/* Documents autosave; the primary action exports a portable snapshot. */}
+          {/* Documents autosave; export opens the supported design-file formats. */}
           <button
             className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
-            onClick={handleNewOrExport}
+            data-testid="titlebar-export"
+            disabled={welcomeActionsPending}
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent(
+                  welcomeOpen ? WELCOME_NEW_EVENT : "voo:editor-export",
+                ),
+              )
+            }
             title={
               welcomeOpen
                 ? t("welcome.header.new")
-                : t("titlebar.snapshotTitle")
+                : t("editor.export")
             }
             aria-label={
               welcomeOpen
                 ? t("welcome.header.new")
-                : t("titlebar.snapshotTitle")
+                : t("editor.export")
             }
           >
             <span className="app-title-action-label">
@@ -229,6 +229,7 @@ export default function AppTitleBar() {
               >
                 <button
                   type="button"
+                  data-testid="titlebar-export-mobile"
                   role="menuitem"
                   disabled={welcomeActionsPending}
                   onClick={() => {
@@ -246,7 +247,13 @@ export default function AppTitleBar() {
                   disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
-                    handleNewOrExport();
+                    window.dispatchEvent(
+                      new CustomEvent(
+                        welcomeOpen
+                          ? WELCOME_NEW_EVENT
+                          : "voo:editor-export",
+                      ),
+                    );
                   }}
                   className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-neutral-200 hover:bg-white/10"
                 >

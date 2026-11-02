@@ -15,6 +15,7 @@ import { saveVooProject, openVooProject } from "../../src/canvas/store/project_i
 import { isValidVooFile } from "../../electron/voo_format.js";
 import { decodeVooBinary, isVooBinary } from "../../src/canvas/store/voo_binary.js";
 import { useEditorAutosave } from "../../src/canvas/components/editor_hooks/use_editor_autosave.js";
+import { parseFigFile } from "../../src/canvas/figma/fig-file.js";
 
 describe("Photoshop-style .voo File Save Mechanism", () => {
   beforeEach(() => {
@@ -174,6 +175,44 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
     );
     expect(useDesignStore.getState().filePath).toBe("/Users/test/Documents/Copy.voo");
     expect(useDesignStore.getState().fileName).toBe("Copy.voo");
+  });
+
+  it("exports a Figma file without changing the working VOO path or dirty state", async () => {
+    const page = useDesignStore.getState().nodes[0];
+    useDesignStore.setState({
+      nodes: [{ ...page, data: { ...page.data, sceneDoc: { ...page.data.sceneDoc, nodes: [] } } }],
+      filePath: "/Users/test/Documents/Working.voo",
+      fileName: "Working.voo",
+      isDirty: true,
+    });
+    let writtenBytes = null;
+    window.electronAPI = {
+      saveFileDialog: vi.fn().mockResolvedValue("/Users/test/Documents/Working.fig"),
+      writeFileBytes: vi.fn().mockImplementation(async (_path, bytes) => {
+        writtenBytes = bytes;
+      }),
+    };
+
+    const res = await saveVooProject({
+      store: useDesignStore.getState(),
+      saveAs: true,
+      formatOverride: "fig",
+    });
+
+    expect(window.electronAPI.saveFileDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        defaultPath: "Working.fig",
+        filters: [{ name: "Figma", extensions: ["fig"] }],
+      }),
+    );
+    expect(res).toMatchObject({ success: true, fileName: "Working.fig" });
+    expect(writtenBytes.subarray(0, 4)).toEqual(new Uint8Array([0x50, 0x4b, 0x03, 0x04]));
+    expect((await parseFigFile(writtenBytes)).message.nodeChanges.some((node) => node.type === "CANVAS")).toBe(true);
+    expect(useDesignStore.getState()).toMatchObject({
+      filePath: "/Users/test/Documents/Working.voo",
+      fileName: "Working.voo",
+      isDirty: true,
+    });
   });
 
   it("opens a .voo file and hydrates multi-page document cleanly", async () => {

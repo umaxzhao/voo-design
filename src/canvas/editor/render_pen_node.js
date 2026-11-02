@@ -61,6 +61,7 @@ function buildPenOutline(node) {
     while (i < points.length) {
       const from = points[i - 1];
       const to = points[i];
+      if (to.moveTo) break;
       if (from.out || to.in) {
         const c1 = P(from, from.out) ?? P(from);
         const c2 = P(to, to.in) ?? P(to);
@@ -212,7 +213,11 @@ export function drawPenNode(ctx, node) {
   const fillAlpha = node.fillOpacity ?? 1;
   const strokeAlpha = node.strokeOpacity ?? 1;
   const fill =
-    node.fill && node.fill !== "transparent" && fillAlpha > 0
+    node.fill &&
+    node.fill !== "transparent" &&
+    node.fill !== "none" &&
+    !node.fillHidden &&
+    fillAlpha > 0
       ? node.fill
       : null;
   if (fill) {

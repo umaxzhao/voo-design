@@ -60,6 +60,20 @@ export default function EditorContextObjectItems({ model }) {
       <button
         type="button"
         role="menuitem"
+        data-testid="editor-menu-frame-selection"
+        className={(engine.canFrameSelection?.() ?? true) ? itemClass : disabledClass}
+        disabled={!(engine.canFrameSelection?.() ?? true)}
+        onClick={() => run(() => engine.frameSelection?.())}
+      >
+        <span>{t("editor.menu.frameSelection")}</span>
+        <span className="text-[9px] text-neutral-500">
+          {formatShortcut("⌥⌘G", isMac)}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        role="menuitem"
         className={canGroup ? itemClass : disabledClass}
         disabled={!canGroup}
         onClick={() => run(() => engine.groupSelection())}
@@ -220,9 +234,6 @@ export default function EditorContextObjectItems({ model }) {
               onClick={() => run(() => engine.createClippingMask?.())}
             >
               <span>{t("editor.menu.createClipMask")}</span>
-              <span className="text-[9px] text-neutral-500">
-                {formatShortcut("⌥⌘G", isMac)}
-              </span>
             </button>
             <button
               type="button"

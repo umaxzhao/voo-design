@@ -238,6 +238,19 @@ export const COMMAND_DEFINITIONS_PART2 = {
     approvalLevel: "canvas-mutation",
     requires: { selection: true },
   },
+  frame_selection: {
+    id: "frame_selection",
+    kind: "action",
+    summary: "Frame selected layers",
+    description: "Wrap selected roots in a transparent Frame fitted to their transformed bounds. Preserves child geometry and shared parent; Alt+Cmd/Ctrl+G.",
+    params: { type: "object", properties: {}, required: [], additionalProperties: false },
+    errors: [],
+    mutates: true,
+    undoable: true,
+    historyLabel: "editor.history.entry.action",
+    approvalLevel: "canvas-mutation",
+    requires: { selection: true },
+  },
   ungroup_selection: {
     id: "ungroup_selection",
     kind: "action",
@@ -262,7 +275,7 @@ export const COMMAND_DEFINITIONS_PART2 = {
     kind: "action",
     summary: "Create clipping mask",
     description:
-      "Make the selected layers a clipping mask clipped into the layer beneath them; consecutive selected layers share that base. This is the editor's Create Clipping Mask / ⌥⌘G / Ctrl+Alt+G action.",
+      "Make the selected layers a clipping mask clipped into the layer beneath them; consecutive selected layers share that base. Available from the editor's Create Clipping Mask context-menu action.",
     params: {
       type: "object",
       properties: {},

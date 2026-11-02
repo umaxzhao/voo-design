@@ -35,8 +35,18 @@ await withEditorBrowser(async ({ page }) => {
     assert.equal(await f.pixel({ x: 240, y: 210 }), "#0000ff");
     assert.equal(await f.pixel({ x: 165, y: 190 }), "#ffffff");
     expected = { imageId: image.id, nodes: projection((await f.snapshot()).nodes), pixels: await paintedFrame(page) };
-    const [download] = await Promise.all([page.waitForEvent("download"),
-      page.getByRole("button", { name: "Export project as a portable .zip snapshot", exact: true }).click()]);
+    const triggerSnapshot = async () => {
+      const button = page.getByRole("button", { name: "Export project as a portable .zip snapshot", exact: true });
+      if (await button.count()) {
+        await button.click();
+        return;
+      }
+      await page.keyboard.press("Control+k");
+      const palette = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
+      await palette.getByRole("combobox").fill("portable .zip snapshot");
+      await palette.getByRole("option").filter({ hasText: /portable \.zip snapshot/i }).click();
+    };
+    const [download] = await Promise.all([page.waitForEvent("download"), triggerSnapshot()]);
     archive = await readFile(await download.path());
     assert.equal(archive.subarray(0, 2).toString(), "PK");
     return { actualDownload: true, nestedHierarchy: true, maskPixels: true, archiveBytes: archive.length };

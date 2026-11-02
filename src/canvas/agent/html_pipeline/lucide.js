@@ -42,6 +42,7 @@ import { __iconData as icon39 } from 'lucide-react/dist/esm/icons/file.mjs';
 import { __iconData as icon40 } from 'lucide-react/dist/esm/icons/folder.mjs';
 import { __iconData as icon41 } from 'lucide-react/dist/esm/icons/circle-question-mark.mjs';
 import { __iconData as icon42 } from 'lucide-react/dist/esm/icons/info.mjs';
+import { __iconData as icon43 } from 'lucide-react/dist/esm/icons/user-plus.mjs';
 export const ICONS = {
   'search': icon0,
   'menu': icon1,
@@ -85,7 +86,8 @@ export const ICONS = {
   'file': icon39,
   'folder': icon40,
   'circle-help': icon41,
-  'info': icon42
+  'info': icon42,
+  'user-plus': icon43
 };
 const escape = value => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 export function expandLucideIcons(html) {

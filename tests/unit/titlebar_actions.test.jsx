@@ -51,7 +51,7 @@ describe("title bar actions", () => {
   });
   it.each([
     [true, 3, ["titlebar.openTitle", "welcome.header.new", "titlebar.browser"], ["voo:welcome-menu-action", "voo:welcome-new"]],
-    [false, 4, ["titlebar.openTitle", "titlebar.snapshotTitle", "titlebar.browser", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-export-snapshot"]],
+    [false, 4, ["titlebar.openTitle", "editor.export", "titlebar.browser", "titlebar.prefsTitle"], ["voo:file-open", "voo:editor-export"]],
   ])("places welcome settings in the bottom-left and keeps editor settings on the right (welcome=%s)", (welcomeOpen, count, titles, events) => {
     state.welcomeOpen = welcomeOpen;
     const dispatchEvent = vi.fn();
@@ -82,7 +82,7 @@ describe("title bar actions", () => {
       expect(settings).toHaveLength(1);
       expect(settings[0].props.onClick.toString()).toContain("setSettingsOpen(true)");
       expect(settings[0].props.className.includes("fixed bottom-3 left-6")).toBe(welcomeOpen);
-      for (const event of ["voo:open-about", "voo:open-onboarding", "voo:editor-export", "voo:open-first-run"]) {
+      for (const event of ["voo:open-about", "voo:open-onboarding", "voo:open-first-run"]) {
         expect(source("../../src/app_title_bar.jsx")).not.toContain(event);
       }
     } finally {

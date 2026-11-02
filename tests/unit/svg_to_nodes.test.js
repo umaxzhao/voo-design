@@ -357,11 +357,20 @@ describe("parseSvgToNodes: paint and style", () => {
     expect(firstNode(result).strokeWidth).toBeCloseTo(20, 5);
   });
 
-  it("degrades gradient paint servers to the fallback color with a warning", () => {
+  it("resolves linearGradient paint servers to gradient fill", () => {
     const result = parseSvgToNodes(
       '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">' +
         '<defs><linearGradient id="g"><stop offset="0" stop-color="#ffffff"/></linearGradient></defs>' +
         '<rect width="10" height="10" fill="url(#g)"/></svg>',
+    );
+    const node = firstNode(result);
+    expect(node.fill).toBe("linear-gradient(90deg, #ffffff 0%)");
+  });
+
+  it("degrades unresolvable gradient paint servers to the fallback color with a warning", () => {
+    const result = parseSvgToNodes(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">' +
+        '<rect width="10" height="10" fill="url(#missing)"/></svg>',
     );
     const node = firstNode(result);
     expect(node.fill).toBe("#000000");
@@ -381,7 +390,7 @@ describe("parseSvgToNodes: paint and style", () => {
 });
 
 describe("parseSvgToNodes: dirty / unsupported input", () => {
-  it("ignores defs, gradients, text, script and style content with warnings", () => {
+  it("supports defs, gradients and text, while ignoring script and style content with warnings", () => {
     const result = parseSvgToNodes(
       '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">' +
         "<defs><linearGradient id=\"g\"><stop offset=\"0\"/></linearGradient><clipPath id=\"c\"><rect width=\"1\" height=\"1\"/></clipPath></defs>" +
@@ -391,11 +400,13 @@ describe("parseSvgToNodes: dirty / unsupported input", () => {
         '<rect x="5" y="5" width="10" height="10"/>' +
         "</svg>",
     );
-    expect(result.nodes).toHaveLength(1);
-    expect(result.nodes[0].x).toBe(5);
+    expect(result.nodes).toHaveLength(2);
+    expect(result.nodes[0].kind).toBe("text");
+    expect(result.nodes[0].text).toBe("hello");
+    expect(result.nodes[1].x).toBe(5);
     const joined = result.warnings.join("\n");
-    expect(joined).toContain("<defs>");
-    expect(joined).toContain("<text>");
+    expect(joined).not.toContain("<defs>");
+    expect(joined).not.toContain("<text>");
     expect(joined).toContain("<script>");
     expect(joined).toContain("<style>");
   });
@@ -403,10 +414,24 @@ describe("parseSvgToNodes: dirty / unsupported input", () => {
   it("warns once per unsupported element even when repeated", () => {
     const result = parseSvgToNodes(
       `${SVG_OPEN} width="10" height="10">` +
-        '<use href="#a"/><use href="#b"/><rect width="1" height="1"/></svg>',
+        '<marker id="a"/><marker id="b"/><rect width="1" height="1"/></svg>',
     );
-    const useWarnings = result.warnings.filter((warning) => warning.includes("<use>"));
-    expect(useWarnings).toHaveLength(1);
+    const markerWarnings = result.warnings.filter((warning) => warning.includes("<marker>"));
+    expect(markerWarnings).toHaveLength(1);
+  });
+
+  it("supports <use> element instantiating referenced shapes", () => {
+    const result = parseSvgToNodes(
+      `${SVG_OPEN} width="100" height="100">` +
+        '<defs><rect id="box" width="20" height="20"/></defs>' +
+        '<use href="#box" x="10" y="10"/>' +
+        "</svg>",
+    );
+    expect(result.nodes).toHaveLength(1);
+    expect(result.nodes[0].x).toBe(10);
+    expect(result.nodes[0].y).toBe(10);
+    expect(result.nodes[0].width).toBe(20);
+    expect(result.nodes[0].height).toBe(20);
   });
 
   it("skips invalid path data with a warning instead of throwing", () => {

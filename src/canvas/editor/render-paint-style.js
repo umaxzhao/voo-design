@@ -115,7 +115,12 @@ export function isImagePaint(style) {
 
 export function resolvePaintStyle(ctx, style, x, y, width, height, alpha = 1) {
   if (typeof style === "object" && style !== null) return style;
-  if (typeof style !== "string" || !style || style === "transparent") {
+  if (
+    typeof style !== "string" ||
+    !style ||
+    style === "transparent" ||
+    style === "none"
+  ) {
     return "transparent";
   }
   if (!isCssGradient(style)) {

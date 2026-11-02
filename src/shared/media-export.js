@@ -5,6 +5,7 @@ const FORMATS = Object.freeze({
   jpg: { extension: "jpg", mime: "image/jpeg" },
   webp: { extension: "webp", mime: "image/webp" },
   svg: { extension: "svg", mime: "image/svg+xml" },
+  fig: { extension: "fig", mime: "application/octet-stream" },
   psd: { extension: "psd", mime: "image/vnd.adobe.photoshop" },
   pdf: { extension: "pdf", mime: "application/pdf" },
   html: { extension: "html", mime: "text/html" },
@@ -26,7 +27,7 @@ export function mediaExportFilename(name, format) {
   const basename = String(name || "export")
     .split(/[\\/]/)
     .pop();
-  return `${basename.replace(/\.(?:png|jpe?g|webp|svg|psd|pdf|html|glb|pptx)$/i, "")}.${extension}`;
+  return `${basename.replace(/\.(?:voo|png|jpe?g|webp|svg|fig|psd|pdf|html|glb|pptx)$/i, "")}.${extension}`;
 }
 
 export function bytesToDataUrl(bytes, mime) {

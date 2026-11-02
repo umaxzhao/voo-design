@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, safeStorage } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { windowChromeOptions, attachWindowChrome, registerWindowControls } = require("./window-chrome.cjs");
@@ -90,6 +90,31 @@ function dispatchMenuAction(action) {
 
 ipcMain.handle("app:version", () => app.getVersion());
 registerWindowControls({ ipcMain, getWindow: () => mainWindow });
+
+// SafeStorage IPC Handlers for credential encryption
+ipcMain.handle("safeStorage:isAvailable", () => {
+  try {
+    return Boolean(safeStorage && safeStorage.isEncryptionAvailable());
+  } catch {
+    return false;
+  }
+});
+
+ipcMain.handle("safeStorage:encryptString", async (_, plainText) => {
+  if (!safeStorage || !safeStorage.isEncryptionAvailable()) {
+    throw new Error("safeStorage encryption is not available");
+  }
+  const buffer = safeStorage.encryptString(plainText);
+  return buffer.toString("base64");
+});
+
+ipcMain.handle("safeStorage:decryptString", async (_, encryptedBase64) => {
+  if (!safeStorage || !safeStorage.isEncryptionAvailable()) {
+    throw new Error("safeStorage encryption is not available");
+  }
+  const buffer = Buffer.from(encryptedBase64, "base64");
+  return safeStorage.decryptString(buffer);
+});
 
 // IPC Handlers
 ipcMain.handle("dialog:openFile", async (_, options = {}) => {

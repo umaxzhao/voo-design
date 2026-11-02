@@ -20,6 +20,7 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 }));
 
 import EditorProperties from "../../src/canvas/components/editor_properties/index.jsx";
+import TextToolProperties from "../../src/canvas/components/editor_properties/text_tool_properties.jsx";
 import { TOOL } from "../../src/canvas/editor/editor_constants.js";
 
 describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
@@ -63,7 +64,7 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.brushWidth");
     // The width control is one combined field, not a range bar + number box.
     expect(html).not.toContain('type="range"');
-    expect(html).toContain('type="number"');
+    expect(html).toContain('inputMode="decimal"');
     expect(html).not.toContain("editor.props.size");
     expect(html).not.toMatch(/<button[^>]*>\s*(?:4|8|16|24|48|96|160)\s*<\/button>/);
 
@@ -173,7 +174,10 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.props.fontWeight");
     expect(html).toContain("editor.props.fontSize");
     expect(html).toContain('value="32"');
-    expect(html).toContain('min="6"');
+    // Text inputs do not emit native min attributes; verify TextToolProperties configures minFontSize=6.
+    const textSection = TextToolProperties({ fontSize: 32, onFontSize: vi.fn() });
+    expect(textSection.props.children.props.children.props.minFontSize).toBe(6);
+    expect(html).toContain('inputMode="decimal"');
     expect(html).toContain("editor.props.align.center");
     expect(html).toContain("lucide-a-large-small");
     expect(html).not.toMatch(/<button[^>]*>\s*(?:12|14|16|20|24|32|48|64)\s*<\/button>/);

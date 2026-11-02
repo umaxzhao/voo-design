@@ -181,3 +181,20 @@ activation paths, one rail and nine-point hit tests, draft cancellation,
 previous-history restore, mobile touch close and unchanged document/selection
 with no page errors (`comments-panel-production-proof.json`). No comment was
 posted, room joined or existing user project changed by these isolated checks.
+
+## Layer panel batch reparent — 2026-11-02
+
+- Capability: `layers.reparent`; owner: `layers`; shared operation: `moveIntoGroup` accepts a single ID or selected root IDs and commits once through the engine.
+- Reproduction: the real layer-panel drag moved `first` but left selected `second` outside the target Frame. The retained assertion failed before the fix (`parentId: null`, expected `target`).
+- Browser evidence: `tests/e2e/frame-reparent-contracts.e2e.mjs`, root and nested Frame targets; actual tree clicks with Meta multi-selection and pointer drag; exact geometry, selected IDs and one-step document/selection undo/redo. `tests/e2e/editor-layers-composition.e2e.mjs` retains the existing reorder and layer interaction regressions. Logs: `/tmp/voo-multi-reparent-before.log`, `/tmp/voo-multi-reparent-final.log`, `/tmp/voo-layers-composition.log`.
+- Domain evidence: `container-command-boundaries.test.js` checks selected ancestor/descendant deduplication, paint order, a member already in the destination, cycle rejection and inherited source/target locks. Invalid batches leave the complete document unchanged.
+- Escape cancellation preserves the document; the existing global Escape action clears selection, so the test explicitly reselects before the next drag. Selection preservation during cancellation remains unresolved.
+- Remaining: cold save/reopen after the new panel gesture, large virtualized-list multi-selection, touch/pointer cancellation other than Escape, cross-canvas dragging and installed Release are not certified. Dropping between rows and clipping onto ordinary artwork retain their single-row behavior; batch Frame/Group membership is the implemented scope.
+- Revision and full-gate blockers are maintained in `docs/quality-progress.md`. Browser evidence is Chromium, not a signed desktop installer acceptance.
+
+## Frame selection shortcut — 2026-11-02
+
+- Capability `layers.frame-selection`: keyboard Alt+Cmd/Ctrl+G, context-menu Frame selection and `frame_selection` command share `engine.frameSelection()`. Ordinary Group/Ungroup remain Cmd/Ctrl+G and Shift+Cmd/Ctrl+G. Clipping creation remains in its context-menu/command entry; release retains Shift+Alt+Cmd/Ctrl+G. Alt+Cmd/Ctrl+M remains owned by comments after a rejected reassignment exposed that conflict in the browser test.
+- Browser regression in `container-command-boundaries.e2e.mjs` fails before the fix because Alt+Cmd/Ctrl+G creates a clipping mask instead of a Frame. The retained scenario verifies both modifier combinations, nearest shared parent, exact unchanged child geometry, Frame bounds, visible red/blue pixels and single-step history. Additional scenarios exercise single-object context-menu wrapping and the common command entry.
+- `nested-group-commands.test.js` checks single rotated-object wrapping, zero/locked selections, ancestor/descendant deduplication and serialization. No background fill or clipping is introduced by the new wrapper, preserving authored artwork and overflow.
+- Remaining and exact execution status live in `docs/quality-progress.md`; Chromium modifier events do not certify physical macOS/Windows keyboard layouts or the installed Release. Only the listed grouping shortcuts have been aligned; this does not certify all Figma shortcuts.

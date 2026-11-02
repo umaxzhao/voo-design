@@ -17,7 +17,7 @@ await withEditorBrowser(async ({ page }) => {
       x, y, width, height, parentId, fill: "#eeeeee", visible: true, opacity: 1,
     });
     editor.setDoc({ ...editor.getDocument(), isCanvasRoot: true, nodes: [
-      frame("label-frame-a", "FORM — Design Culture", 40, 50, 240, 220),
+      { ...frame("label-frame-a", "FORM — Design Culture", 40, 50, 240, 220), frame: true, isFrame: false },
       { id: "label-child", kind: "rect", parentId: "label-frame-a", x: 80, y: 90,
         width: 40, height: 40, fill: "#ff0000", visible: true, opacity: 1 },
       frame("label-nested", "Nested frame", 140, 150, 80, 60, "label-frame-a"),

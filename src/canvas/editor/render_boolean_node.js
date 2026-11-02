@@ -11,7 +11,13 @@ export function drawBooleanNode(ctx, node) {
   const outline = penOutlinePath(merged);
   const paint = (value, opacity) => resolvePaintStyle(ctx, value,
     node.x, node.y, node.width, node.height, opacity);
-  if (node.fill && node.fill !== "transparent" && (node.fillOpacity ?? 1) > 0) {
+  if (
+    node.fill &&
+    node.fill !== "transparent" &&
+    node.fill !== "none" &&
+    !node.fillHidden &&
+    (node.fillOpacity ?? 1) > 0
+  ) {
     ctx.fillStyle = paint(node.fill, node.fillOpacity ?? 1);
     ctx.fill(outline, "evenodd");
   }

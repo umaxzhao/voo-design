@@ -280,7 +280,7 @@ export function useEditorApply({
    * Saves this editor document as a self-contained `.voo` file on computer (Photoshop-like).
    */
   const saveVooDocument = useCallback(
-    async ({ saveAs = false } = {}) => {
+    async ({ saveAs = false, formatOverride = null } = {}) => {
       try {
         setBusy(true);
         setApplyError(false);
@@ -289,6 +289,7 @@ export function useEditorApply({
           enginesRef,
           snapshotsRef,
           saveAs,
+          formatOverride,
           pageTitle,
         });
         if (res?.success) {
@@ -306,6 +307,12 @@ export function useEditorApply({
     },
     [enginesRef, snapshotsRef, pageTitle, setBusy, setApplyError, setSavedNotice],
   );
+
+  const exportProjectFormat = useCallback(async (format) => {
+    const result = await saveVooDocument({ saveAs: true, formatOverride: format });
+    if (result === "ok") setExportOpen(false);
+    return result;
+  }, [saveVooDocument, setExportOpen]);
 
   const openVooDocument = useCallback(
     async (fileOrPath = null) => {
@@ -454,6 +461,7 @@ export function useEditorApply({
     openVooDocument,
     newVooDocument,
     exportImage,
+    exportProjectFormat,
     cancelExport,
     requestExit,
     dirtyIds,

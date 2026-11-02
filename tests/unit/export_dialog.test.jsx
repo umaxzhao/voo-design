@@ -33,4 +33,20 @@ describe("export dialog transparency default", () => {
     const checkbox = html.match(/<input[^>]*type="checkbox"[^>]*>/)[0];
     expect(checkbox.includes('checked=""')).toBe(transparent);
   });
+
+  it("offers native Figma export without raster-only range and scale controls", () => {
+    vi.stubGlobal("document", { body: {} });
+    const html = renderToStaticMarkup(
+      <EditorExportDialog
+        doc={{ nodes: [] }} format="fig" exportName="Design.voo" quality={1} scale={1}
+        documentWidth={100} documentHeight={100}
+        onExportRange={() => {}} onFormat={() => {}} onQuality={() => {}}
+        onScale={() => {}} onExport={() => {}} onClose={() => {}}
+      />,
+    );
+    expect(html).toContain("editor.exportFigma");
+    expect(html).not.toContain('aria-label="editor.exportScale"');
+    expect(html).not.toContain('aria-label="editor.exportRange"');
+    expect(html).toContain("Design.fig");
+  });
 });

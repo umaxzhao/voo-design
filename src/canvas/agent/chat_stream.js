@@ -1,4 +1,5 @@
 import { abortable } from "./abortable.js";
+import { supportsVision } from "../../shared/providers.js";
 
 /**
  * Streams one OpenAI-compatible chat completion and folds it into the reply
@@ -89,6 +90,65 @@ function mergeToolCalls(calls, deltas) {
 }
 
 /**
+ * Reorders any interleaved user messages after assistant tool_calls so all
+ * corresponding tool responses immediately follow the assistant message.
+ */
+export function normalizeToolMessageOrder(messages) {
+  if (!Array.isArray(messages)) return messages;
+  const hasMultiTool = messages.some((m) => m?.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 1);
+  if (!hasMultiTool) return messages;
+  const result = [];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    result.push(msg);
+    if (msg?.role === "assistant" && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 1) {
+      const toolIds = new Set(msg.tool_calls.map((c) => c.id));
+      const tools = [];
+      const others = [];
+      let j = i + 1;
+      while (j < messages.length && (messages[j]?.role === "tool" || messages[j]?.role === "user")) {
+        if (messages[j]?.role === "tool" && toolIds.has(messages[j]?.tool_call_id)) {
+          tools.push(messages[j]);
+        } else {
+          others.push(messages[j]);
+        }
+        if (tools.length === toolIds.size) {
+          j++;
+          break;
+        }
+        j++;
+      }
+      if (tools.length > 0) {
+        result.push(...tools, ...others);
+        i = j - 1;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Strips or converts image_url blocks in messages if the model does not support vision.
+ */
+export function sanitizeMessagesForModel(messages, model) {
+  if (!Array.isArray(messages)) return messages;
+  const ordered = normalizeToolMessageOrder(messages);
+  if (supportsVision(model)) return ordered;
+  return ordered.map((msg) => {
+    if (!msg || !Array.isArray(msg.content)) return msg;
+    const sanitizedContent = [];
+    for (const part of msg.content) {
+      if (part && (part.type === "image_url" || part.image_url)) {
+        sanitizedContent.push({ type: "text", text: "[image attached]" });
+      } else {
+        sanitizedContent.push(part);
+      }
+    }
+    return { ...msg, content: sanitizedContent };
+  });
+}
+
+/**
  * @param {{ config: {apiKey: string, baseUrl: string, model: string},
  *           messages: object[], tools: object[], signal?: AbortSignal,
  *           onText?: (text: string) => void }} options
@@ -101,20 +161,40 @@ export async function streamChatTurn({ config, messages, tools, signal, onText }
     });
   }
   signal?.throwIfAborted();
-  const response = await fetch(`${config.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: buildChatHeaders(config),
-    body: JSON.stringify({
-      model: config.model,
-      messages,
-      tools,
-      stream: true,
-    }),
-    signal,
-  });
+  const sanitizedMessages = sanitizeMessagesForModel(messages, config.model);
+  let response;
+  try {
+    response = await fetch(`${config.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: buildChatHeaders(config),
+      body: JSON.stringify({
+        model: config.model,
+        messages: sanitizedMessages,
+        tools,
+        stream: true,
+      }),
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    const detail = error?.message || String(error);
+    throw Object.assign(
+      new Error(`Network error calling ${config.model} at ${config.baseUrl}: ${detail}`),
+      { code: "agentNetworkError", cause: error, originalMessage: detail },
+    );
+  }
   if (!response.ok || !response.body) {
-    throw Object.assign(new Error(`${CHAT_ERROR.HTTP}: ${response.status}`), {
+    let errorDetail = "";
+    try {
+      errorDetail = await response.text();
+    } catch {}
+    const message = errorDetail
+      ? `${CHAT_ERROR.HTTP}: ${response.status} - ${errorDetail}`
+      : `${CHAT_ERROR.HTTP}: ${response.status}`;
+    throw Object.assign(new Error(message), {
       code: CHAT_ERROR.HTTP,
+      status: response.status,
+      details: errorDetail,
     });
   }
   let text = "";
