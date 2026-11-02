@@ -43,7 +43,7 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspe
 
 [data-testid="editor-properties-panel"] :is([data-inspector-control="select"], [data-typography-field] button[aria-haspopup="dialog"]),
 html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspector-control="select"], [data-typography-field] button[aria-haspopup="dialog"]) {
-  border: 1px solid var(--inspector-control-border) !important;
+  border: 1px solid transparent !important;
   background-color: var(--inspector-select-surface) !important;
   color: var(--inspector-value) !important;
 }
@@ -110,8 +110,13 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] [data-inspector
 [data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button) {
   height: var(--inspector-control-height);
   min-height: var(--inspector-control-height);
-  border: 1px solid var(--inspector-control-border);
+  border: 1px solid transparent;
   border-radius: var(--inspector-control-radius);
+}
+
+/* Resting controls carry no outline; the frame appears on hover or keyboard focus. */
+[data-testid="editor-properties-panel"] :is([data-inspector-control="select"], [data-inspector-control="action"], [data-transform-actions] button):is(:hover, :focus-visible) {
+  border-color: var(--inspector-control-border) !important;
 }
 
 [data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button),

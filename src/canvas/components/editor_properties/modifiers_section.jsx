@@ -15,10 +15,9 @@ const kinds = [
   { type: "circularArray", title: "editor.circularArray.title", Editor: CircularArraySection, ops: circular, name: "Circular" },
 ];
 
-export default function ModifiersSection({ object, engine, t, revealed = false }) {
+export default function ModifiersSection({ object, engine, t }) {
   const [, refresh] = useState(0);
-  // Revealed from the panel's add menu: open straight onto the kind picker.
-  const [picker, setPicker] = useState(revealed);
+  const [picker, setPicker] = useState(false);
   const [expanded, setExpanded] = useState(true);
   useEffect(() => engine?.subscribeRender?.(() => refresh(n => n + 1), { documentOnly: true }), [engine]);
   const modifier = engine?.getDocument?.()?.modifiers?.find(m => m.targetId === object.id && kinds.some(k => k.type === m.type));
@@ -37,8 +36,6 @@ export default function ModifiersSection({ object, engine, t, revealed = false }
     setExpanded(true);
   };
   const Editor = kind?.Editor;
-  // No modifier and nothing being added: the section does not exist in the panel.
-  if (!modifier && !picker && !revealed) return null;
   return <CollapsibleSection title={t("editor.props.modifiers")} storageKey="modifiers.section" testId="editor-modifiers-section"
     extra={<span data-testid="editor-modifiers-add"><SectionAddButton label={t("editor.modifiers.add")} onClick={() => setPicker(value => !value)} /></span>}>
     {picker ? <div data-testid="editor-modifiers-picker" className="rounded-xl border border-white/10 bg-neutral-900 p-1" onKeyDown={event => { if (event.key === "Escape") setPicker(false); }}>
@@ -54,4 +51,4 @@ export default function ModifiersSection({ object, engine, t, revealed = false }
     </div>}
   </CollapsibleSection>;
 }
-ModifiersSection.propTypes = { object: PropTypes.object.isRequired, engine: PropTypes.object, t: PropTypes.func.isRequired, revealed: PropTypes.bool };
+ModifiersSection.propTypes = { object: PropTypes.object.isRequired, engine: PropTypes.object, t: PropTypes.func.isRequired };

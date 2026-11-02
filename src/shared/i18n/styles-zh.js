@@ -5,6 +5,7 @@
  */
 export default {
   "styles.title": "样式",
+  "styles.add": "显示全部样式类型",
   "styles.type.paint": "颜色",
   "styles.type.text": "文字",
   "styles.type.effect": "效果",

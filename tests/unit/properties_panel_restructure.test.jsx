@@ -109,18 +109,23 @@ describe("core sections are always visible; advanced extras hide behind one add 
     ]) {
       expect(html, shown).toContain(shown);
     }
+    // Export is a relevant core group: its title and add entry show while unconfigured.
+    expect(html).toContain("editor.props.exportTitle");
+    expect(html).toContain("editor.props.addExportSettings");
+    // Modifiers is relevant to a single non-frame shape: header and add entry show, body stays closed.
+    expect(html).toContain('data-testid="editor-modifiers-section"');
+    expect(html).toContain('data-testid="editor-modifiers-add"');
     for (const hidden of [
-      "editor.props.exportTitle",
-      "editor.props.addExportSettings",
       "editor-live-filter-section",
-      "editor-modifiers-section",
+      "editor-modifiers-picker",
       "editor-style-section",
       "editor.variables.title",
       "editor.layers.noEffects",
     ]) {
       expect(html, hidden).not.toContain(hidden);
     }
-    expect(html.match(/data-testid="properties-add-menu"/g)).toHaveLength(1);
+    // Every relevant optional group is already present, so no add menu is offered.
+    expect(html).not.toContain('data-testid="properties-add-menu"');
   });
 
   it("keeps the Effects header even with an empty stack", () => {

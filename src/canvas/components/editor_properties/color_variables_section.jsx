@@ -35,8 +35,6 @@ export default function ColorVariablesSection({
    */
   variablesV2 = null,
   variableActions = null,
-  /** Show the section while the layer is unbound (set by the panel's add menu). */
-  revealed = false,
 }) {
   const { t } = useI18n();
   const [managerOpen, setManagerOpen] = useState(false);
@@ -125,9 +123,6 @@ export default function ColorVariablesSection({
   useLayoutEffect(() => {
     if (nameInputRef.current) nameInputRef.current.value = activeName;
   }, [documentId, activeId, activeName]);
-
-  // An unbound layer has no variables section until the add menu reveals it.
-  if (!active && !revealed) return null;
 
   return (
     <>
@@ -262,7 +257,7 @@ export default function ColorVariablesSection({
           data-testid="editor-color-variable-create"
           disabled={!canCreate}
           onClick={onCreate}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/[0.08] py-1.5 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-transparent py-1.5 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <span className="text-xs">＋</span>
           <span>{t("editor.variables.create")}</span>
@@ -295,5 +290,4 @@ ColorVariablesSection.propTypes = {
     activeModeByCollection: PropTypes.object,
   }),
   variableActions: PropTypes.object,
-  revealed: PropTypes.bool,
 };

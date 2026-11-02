@@ -203,6 +203,7 @@ export const EDITOR_MODULES = [
     suites: [
       "editor-effects", "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls",
       "editor-document-aids", "constraints-pin-regression", "constraint-hit-targets",
+      "constraint-cross-continuity", "t02-panel-visual-audit", "t02-empty-groups-interaction",
     ],
     remaining: [
       "All component/variable alias cycles, nested layout combinations and every design-system preset are not exhausted.",

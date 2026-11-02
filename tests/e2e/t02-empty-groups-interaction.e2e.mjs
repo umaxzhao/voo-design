@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { seedResponsiveDocument, settlePanels } from "./ui-responsive-editor-helpers.mjs";
 
-// T02 real-UI interaction: empty Styles and Modifiers groups are header-only (41px, like
+// T02 real-UI interaction: empty Styles and Modifiers groups are header-only (57px measured, the same as
 // Stroke/Effects/Export). Clicking the title add entry must reveal content, adding a
 // modifier must leave the empty state, and one Undo / Redo must round-trip it.
-const EMPTY_HEIGHT = 41;
+const EMPTY_HEIGHT = 57;
 
 const sectionBox = (page, testId) =>
   page.getByTestId(testId).evaluate((element) => {
@@ -23,7 +23,7 @@ await withEditorBrowser(async ({ page, errors }) => {
 
   // Styles: header-only when nothing is applied; the + entry expands the type list.
   assert.equal(await sectionBox(page, "editor-style-section"), EMPTY_HEIGHT, "Styles empty must be header-only");
-  await page.getByTestId("editor-style-section").getByRole("button").first().click();
+  await page.getByTestId("editor-style-section").getByRole("button", { name: /^(Show all style types|显示全部样式类型)$/ }).click();
   await settlePanels(page);
   const styleExpanded = await sectionBox(page, "editor-style-section");
   assert.ok(styleExpanded > EMPTY_HEIGHT, `Styles + must reveal content (height ${styleExpanded})`);

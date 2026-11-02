@@ -15,17 +15,15 @@ export const sectionTitleClass =
   "inspector-section-title max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
 
 /** The separator and vertical rhythm every section in the panel shares. */
-// One vertical rhythm for every group: the divider sits centred between the
-// previous group's last row and the next group's header (12px on each side).
+// One vertical rhythm for every group, empty or not: the divider sits centred
+// between the previous group's last row and the next group's header (12px on
+// each side). Empty groups share this class, so their spacing matches exactly.
 const sectionRhythmClass =
-  "border-t border-white/10 pb-3 pt-1.5 first:border-t-0 first:pt-0";
-const emptySectionRhythmClass = "border-t border-white/10 py-3";
+  "border-t border-white/10 py-3 first:border-t-0 first:pt-0";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
   "flex min-w-0 items-center justify-between gap-2 px-1 pb-2 select-none";
-const emptySectionHeaderClass =
-  "flex min-w-0 items-center justify-between gap-2 px-1 select-none";
 
 /** The child wrapper shared by every section, so all rows share one inset. */
 export const sectionBodyClass = "space-y-2 px-0.5";
@@ -191,19 +189,14 @@ export function StaticSection({
   testId = undefined,
   hideHeader = false,
   bodyClassName = sectionBodyClass,
-  emptyState = false,
 }) {
   // Core property groups are always open: the panel is a scannable list like
-  // Figma's, not a set of drawers. Empty groups show an explicit action row
-  // instead of hiding their body behind a chevron.
+  // Figma's, not a set of drawers. Empty groups keep their header and add entry.
   void storageKey;
   return (
-    <div
-      className={emptyState ? emptySectionRhythmClass : sectionRhythmClass}
-      data-testid={testId}
-    >
+    <div className={sectionRhythmClass} data-testid={testId}>
       {hideHeader ? null : (
-        <div className={emptyState ? emptySectionHeaderClass : sectionHeaderClass}>
+        <div className={sectionHeaderClass}>
           <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
             <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
           </div>
@@ -220,5 +213,4 @@ StaticSection.propTypes = {
   children: PropTypes.node,
   extra: PropTypes.node,
   storageKey: PropTypes.string,
-  emptyState: PropTypes.bool,
 };

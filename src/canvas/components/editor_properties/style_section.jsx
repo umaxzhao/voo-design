@@ -13,7 +13,7 @@
 import PropTypes from "prop-types";
 import { useMemo, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
-import { CollapsibleSection } from "./property_section.jsx";
+import { CollapsibleSection, SectionAddButton } from "./property_section.jsx";
 import {
   IconAdd,
   IconClose,
@@ -246,9 +246,10 @@ StyleTypeRow.propTypes = {
  *   create(type, name?), apply(type, styleId), detach(type),
  *   update(type, styleId), rename(type, styleId, name), delete(type, styleId).
  */
-export default function StyleSection({ object, styles = null, styleActions = null, revealed = false }) {
+export default function StyleSection({ object, styles = null, styleActions = null }) {
   const tv = usePanelText();
   const [creating, setCreating] = useState(null);
+  const [showAll, setShowAll] = useState(false);
   const library = normalizeStyles(styles);
   const styleIds = object?.styleIds ?? {};
 
@@ -261,19 +262,19 @@ export default function StyleSection({ object, styles = null, styleActions = nul
     return true;
   });
 
-  // Only types with an applied style show by default; the add menu reveals the
-  // rest (so a layer with no styles has no Styles section at all).
+  // Applied types show by default; the title "+" reveals every type. With nothing
+  // applied the group is header-only: title and add entry, no placeholder body.
   const appliedTypes = types.filter((type) => object?.styleIds?.[STYLE_TYPE_KEYS[type]]);
-  if (appliedTypes.length === 0 && !revealed) return null;
-  const shownTypes = revealed ? types : appliedTypes;
+  const shownTypes = showAll ? types : appliedTypes;
 
   return (
     <CollapsibleSection
       title={tv("styles.title")}
       storageKey="editor.styles"
       testId="editor-style-section"
+      extra={<SectionAddButton label={tv("styles.add")} onClick={() => setShowAll((value) => !value)} />}
     >
-      <div className="flex flex-col gap-2">
+      {shownTypes.length === 0 ? null : <div className="flex flex-col gap-2">
         {shownTypes.map((type) => {
           const list = library[type];
           const activeId = styleIds[STYLE_TYPE_KEYS[type]];
@@ -298,12 +299,12 @@ export default function StyleSection({ object, styles = null, styleActions = nul
             />
           );
         })}
-        {revealed ? (
+        {showAll ? (
           <p className="px-0.5 text-[9px] leading-relaxed text-neutral-500">
             {tv("styles.hint")}
           </p>
         ) : null}
-      </div>
+      </div>}
     </CollapsibleSection>
   );
 }
@@ -312,5 +313,4 @@ StyleSection.propTypes = {
   object: PropTypes.object.isRequired,
   styles: PropTypes.object,
   styleActions: PropTypes.object,
-  revealed: PropTypes.bool,
 };

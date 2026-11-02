@@ -4,6 +4,7 @@
  */
 export default {
   "styles.title": "Styles",
+  "styles.add": "Show all style types",
   "styles.type.paint": "Paint",
   "styles.type.text": "Text",
   "styles.type.effect": "Effect",
