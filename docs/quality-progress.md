@@ -11,8 +11,12 @@
 - 本地解包可测试构建产物方案验证：
   - 执行 `npm run prebuild`（同步 canvaskit/ort wasm 及 notices）、`npx vite build --mode electron`（3,479 模块编译通过，用时 6.96s）、`node scripts/build-connector-resource.mjs` 及 `node scripts/signing-env.mjs --dir`；
   - 成功生成本地未签名、不发布的测试解包产物：`release/mac-arm64/VOO Design.app`；公证跳过，无远端交互，严禁发布。
+- 视觉设计 Lint 门禁闭环（lint:design PASSED）：
+  - 针对此前全库唯一未关闭违规 `src/canvas/components/font_picker.jsx:571:25`（缺字体提示 badge 裸 `rounded`），经 QA 补充核验无其他分支占用后，完成最小梯度 token 修正：将 `rounded` 替换为符合设计系统梯度阶梯的最小 token `rounded-md`（6px，对应 tags/badges 规范）；
+  - 保留 `isMissing` 与 `data-testid="missing-font-warning"` 全部语义，不扩展其他功能；
+  - 执行 `npm run lint:design`，1,478 个文件全量通过，0 违规，退出码 0。
+  - 定向单测 `tests/unit/mac_qa_interaction_fixes.test.jsx`（11 项全过，含缺字体徽标断言）及 `tests/unit/affinity_tool_properties_panel.test.jsx`（12 项全过）验证通过。
 - 任务边界与持续保留项：
-  - `src/canvas/components/font_picker.jsx:571:25`（裸 `rounded` 违规）核实属于 `codex/nba-font-fidelity` 分支草稿，按红线未越界覆盖；`lint:design` 保持未过（exit code 1）。
   - 2,000 层虚拟化列表滚动长帧由 Codex 性能团队在独立工作树归因分析，主树未触碰 `editor_windowed_layer_rows.jsx`。
   - 键盘焦点/IME 由 Codex 司令部工作树负责，主树未触碰。
   - 实体触控板/触控笔/Linux 原生环境认证保持硬件环境受阻标记，Mac 结果不继承为 Linux。

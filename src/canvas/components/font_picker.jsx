@@ -568,7 +568,7 @@ export function CustomFontPicker({ value, onChange, defaultOpen = false, initial
           {isMissing ? (
             <span
               data-testid="missing-font-warning"
-              className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-sans text-amber-300"
+              className="shrink-0 rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-sans text-amber-300"
             >
               Missing font
             </span>
