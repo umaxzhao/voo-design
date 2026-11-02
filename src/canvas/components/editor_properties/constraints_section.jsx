@@ -75,8 +75,8 @@ export default function ConstraintsSection({ object, editAndCommit }) {
           {pin("top", "vertical", "top", v === "top" || v === "topBottom", "left-[18px] top-0 h-[18px] w-6", "h-[2px] w-[18px]")}
           {pin("bottom", "vertical", "bottom", v === "bottom" || v === "topBottom", "bottom-0 left-[18px] h-[18px] w-6", "h-[2px] w-[18px]")}
           {/* Split the centre into adjacent targets; crossing strokes cannot own the same point. */}
-          {pin("center-vertical", "vertical", "center", v === "center", "left-[18px] top-[18px] h-6 w-3", "h-[18px] w-[2px]", "centerVertical")}
-          {pin("center-horizontal", "horizontal", "center", h === "center", "left-[30px] top-[18px] h-6 w-3", "h-[2px] w-[10px]", "centerHorizontal")}
+          {pin("center-vertical", "vertical", "center", v === "center", "left-[18px] top-[18px] h-6 w-3", "h-[18px] w-[2px] translate-x-[6px]", "centerVertical")}
+          {pin("center-horizontal", "horizontal", "center", h === "center", "left-[30px] top-[18px] h-6 w-3", "h-[2px] w-[18px] -translate-x-[6px]", "centerHorizontal")}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           {selectRow(
