@@ -9,7 +9,10 @@ import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
-import { WELCOME_MENU_ACTION_EVENT } from "./canvas/components/welcome_dashboard/welcome_events.js";
+import {
+  WELCOME_MENU_ACTION_EVENT,
+  WELCOME_NEW_EVENT,
+} from "./canvas/components/welcome_dashboard/welcome_events.js";
 import { moveEditorMenuFocus } from "./canvas/components/editor_menu_navigation.js";
 import { useWindowControls } from "./canvas/use_window_controls.js";
 import DesktopWindowControls from "./canvas/components/desktop_window_controls.jsx";
@@ -163,7 +166,7 @@ export default function AppTitleBar() {
             className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
             data-testid="titlebar-export"
-            disabled={welcomeActionsPending}
+            disabled={!welcomeOpen && welcomeActionsPending}
             onClick={() =>
               window.dispatchEvent(
                 new CustomEvent(
