@@ -1,0 +1,25 @@
+{
+  "canvas" : {
+    "backgroundColor" : "#171717",
+    "colorVariables" : [
+
+    ],
+    "guides" : [
+
+    ],
+    "height" : 800,
+    "width" : 1200,
+    "x" : 0,
+    "y" : 0
+  },
+  "canvasType" : "design",
+  "id" : "CC64FD00-9350-441C-9C86-FC2F3EC5AA3E",
+  "nodes" : [
+
+  ],
+  "selectedNodeIds" : [
+
+  ],
+  "title" : "Untitled",
+  "version" : 2
+}

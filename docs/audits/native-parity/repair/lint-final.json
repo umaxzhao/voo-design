@@ -1,0 +1,91 @@
+{
+  "revision": "d5720aac5669970c2b311def4e9f6cb8ac6c38dc",
+  "scope": "New files strict lint; existing-file diagnostic counts compared by file, rule and message",
+  "baselineDiagnostics": 3346,
+  "currentLegacyFileDiagnostics": 3163,
+  "newDiagnosticCounts": [],
+  "newFiles": [
+    {
+      "path": "native_studio/Sources/Engine/export-markup.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/boolean-models.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/document-codable.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/effect-models.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/geometry-models.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/legacy-value-decoders.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/node-codable.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/paint-models.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/pen-anchor.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/portable-json.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/Models/portable-paint-sync.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/UI/document-lifecycle.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/UI/layer-search.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/UI/native-brush-settings.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/UI/native-copy.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/UI/native-inspect-code.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/UI/native-status-banner.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/Sources/UI/new-document.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/tests/NativeWorkflowParityTests.swift",
+      "exitCode": 0
+    },
+    {
+      "path": "native_studio/tests/PortableParityTests.swift",
+      "exitCode": 0
+    }
+  ],
+  "differentialExecution": "passed",
+  "fullLegacyLint": "failed"
+}

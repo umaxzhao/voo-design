@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>VOO Design — Repository cover</title>
+    <style>
+      @font-face {
+        font-family: "Intel One Mono";
+        src: url("../../public/fonts/intel-one-mono-regular.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 400;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: transparent; }
+      body { color: #f4f2e9; font-family: "Intel One Mono", monospace; }
+      main {
+        position: relative;
+        width: 1800px;
+        height: 1896px;
+        overflow: hidden;
+        border-radius: 32px;
+        background: linear-gradient(125deg, #173d30 0%, #352448 100%);
+      }
+      .brand {
+        position: absolute;
+        top: 144px;
+        left: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .brand img { width: 192px; height: 192px; }
+      h1 {
+        position: absolute;
+        top: 432px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        font-size: 112px;
+        line-height: 1.15;
+        font-weight: 400;
+        letter-spacing: -2px;
+        white-space: nowrap;
+      }
+      .subtitle {
+        position: absolute;
+        top: 592px;
+        left: 0;
+        width: 100%;
+        justify-content: center;
+        display: flex;
+        gap: 32px;
+        margin: 0;
+        font-size: 44px;
+        color: #d5d1dd;
+        line-height: 1.6;
+      }
+      .editor {
+        position: absolute;
+        top: 800px;
+        left: 100px;
+        display: block;
+        width: 1600px;
+        height: 1000px;
+        border-radius: 24px;
+        box-shadow: 0 16px 56px #32244826;
+      }
+      @media (max-width: 1280px) {
+        main { width: 1280px; height: 640px; border-radius: 24px; }
+        .brand { top: 20px; left: 0; }
+        .brand img { width: 128px; height: 128px; }
+        h1 { top: 172px; left: 0; font-size: 64px; letter-spacing: -1.5px; }
+        .subtitle { top: 276px; left: 0; display: flex; font-size: 24px; line-height: 1.6; }
+        .editor { top: 352px; left: 448px; width: 384px; height: 240px; border-radius: 12px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand"><img src="../../build/icon.png" alt="VOO App Icon" /></div>
+      <h1>VOO Design</h1>
+      <p class="subtitle">AI Agent Driven Design Editor</p>
+      <img class="editor" src="ui-editor.png" alt="VOO editing a music interface with a text layer selected" />
+    </main>
+  </body>
+</html>

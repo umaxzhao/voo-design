@@ -1,0 +1,99 @@
+Window: "VOO Design Native", App: VOO Design Native.
+0 standard window VOO Design Native, Description: VOO Design Native Main Window, ID: main_window, Secondary Actions: Raise
+	1 button title_bar_brand_logo
+	2 text field Description: Document Title, Value: form-poster, ID: AppTitleBar.DocTitle
+	3 button Description: Close Document, ID: TitleBar.TabClose
+	4 button Description: New Document, ID: TitleBar.TabNew
+	5 button 保存, ID: title_bar_save_button
+	6 button 打开, ID: title_bar_open_button
+	7 button Description: Live Collaboration, ID: title_bar_collab_button
+	8 button Description: Settings, ID: title_bar_settings_button
+	9 button Description: Browser, ID: title_bar_browser_button
+	10 button Description: Select (Move), Help: Select (Move) (V), ID: ToolRail.Move
+	11 button Description: Hand (Pan), ID: ToolRail.Hand
+	12 button Description: Frame, Help: Frame (F), ID: ToolRail.Artboard
+	13 button Description: Edit nodes, Help: Edit nodes (A), ID: ToolRail.Node
+	14 button Description: Lasso Select, ID: ToolRail.Lasso
+	15 button Description: Brush, Help: Brush (B), ID: ToolRail.Brush
+	16 button Description: Eraser, Help: Eraser (E), ID: ToolRail.Eraser
+	17 button Description: Text, Help: Text (T), ID: ToolRail.Text
+	18 button Description: Pen, Help: Pen (P), ID: ToolRail.Pen
+	19 button Description: Shapes, Help: Shapes (R), ID: ToolRail.Shapes
+	20 button Description: Magic Wand, ID: ToolRail.Wand
+	21 button Description: VOO Assistant, Help: VOO 智能助手, ID: ToolRail.BrandAvatar
+	22 radio button Description: Layers, ID: Layers.Tab.Layers
+	23 radio button Description: Assets, ID: Layers.Tab.Assets
+	24 button Description: Search layers, ID: Layers.Search
+	25 button Description: Sort layers, ID: Layers.Sort
+	26 button Description: Layer opacity, Value: 100 percent, ID: Layers.Opacity
+	27 button Description: Blend mode, Value: Normal, ID: Layers.Blend
+	28 scroll area
+		29 table Inspector.LayersTree
+			30 row (selectable)
+				31 cell
+					32 button Collapse layer
+					33 button Toggle visibility
+					34 text FORM — Design Culture
+			35 row (selected)
+				36 cell (selected)
+					37 button Toggle visibility
+					38 text Circle
+	39 button Description: Add mask, ID: Layers.Mask
+	40 button Description: Add adjustment, ID: Layers.Contrast
+	41 button Description: Add layer, ID: Layers.Add
+	42 button Description: Delete layer, ID: Layers.Delete
+	43 scroll area
+		44 container Description: Properties inspector, ID: Inspector.Properties
+			45 scroll area Secondary Actions: Scroll Up, Scroll Down
+				46 text entry area ID: Inspector.Code.Source, Value: /* CSS */
+position: absolute;
+left: 116px;
+top: 416px;
+width: 294px;
+height: 294px;
+background: #191919;
+
+/* Tailwind */
+absolute left-[116px] top-[416px] w-[294px] h-[294px] bg-[#191919]
+				47 scroll bar (disabled, settable, float) 0
+			48 Description: Design or code, Value: code, ID: Inspector.Properties.HeaderTabs
+	49 button Description: Page switcher. Design 1, page 1 of 1, Help: Opens the page list, ID: Editor.PageSwitcher
+	50 toolbar Description: Canvas zoom and history, ID: Editor.ZoomBar
+		51 button (disabled) Description: Undo, Help: Undo the last action, ID: Editor.ZoomBar.Undo
+		52 button (disabled) Description: Redo, Help: Redo the last undone action, ID: Editor.ZoomBar.Redo
+		53 button Description: Toggle visibility, Help: Show or hide canvas overlays, Value: Off, ID: Editor.ZoomBar.VisibilityToggle
+		54 button Description: Zoom in, Help: Zoom the canvas in, ID: Editor.ZoomBar.ZoomIn
+		55 button Description: Zoom out, Help: Zoom the canvas out, ID: Editor.ZoomBar.ZoomOut
+		56 button Description: Zoom level. Reset to 100%, Help: Resets the canvas zoom to 100%, Value: 86%, ID: Editor.ZoomBar.ZoomReset
+		57 button Description: More options, Help: Grid and snapping options, ID: Editor.ZoomBar.More
+	58 toolbar Description: Selection actions and AI prompt, ID: Editor.IslandBar
+		59 button Description: Fill colour, Help: Change the selection fill colour, ID: Editor.IslandBar.Fill
+		60 button Description: Stroke colour, Help: Change the selection stroke colour, ID: Editor.IslandBar.Stroke
+		61 button Description: Align centre, Help: Align the selection to its horizontal centre, ID: Editor.IslandBar.AlignCenterH
+		62 button Description: Distribute horizontally, Help: Distribute the selection horizontally, ID: Editor.IslandBar.DistributeH
+		63 button Description: Align left, Help: Align the selection to the left, ID: Editor.IslandBar.AlignLeftH
+		64 button Description: Move up, Help: Move the selection up one layer, ID: Editor.IslandBar.MoveUp
+		65 button Description: Move down, Help: Move the selection down one layer, ID: Editor.IslandBar.MoveDown
+		66 button Description: Duplicate, Help: Duplicate the selection, ID: Editor.IslandBar.Duplicate
+		67 button Description: Lock, Help: Lock or unlock the selection, ID: Editor.IslandBar.Lock
+		68 button Description: Toggle visibility, Help: Show or hide the selection, ID: Editor.IslandBar.Visibility
+		69 button Description: Delete, Help: Delete the selection, ID: Editor.IslandBar.Delete
+		70 button Description: Ask VOO AI Agent, Help: Ask the AI agent to work on the selection, ID: Editor.IslandBar.AISparkle
+	71 button Description: VOO AI Assistant, Help: Open the VOO AI agent panel, ID: Editor.AIAssistantButton
+	72 button Description: Add artboard, Help: Add a new artboard to the canvas, ID: Editor.AddArtboard
+	73 close button
+	74 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	75 minimize button
+76 menu bar
+	77 VOO Design Native
+	78 文件 (File)
+	79 编辑 (Edit)
+	80 图层与几何 (Geometry)
+	81 视图 (View)
+	82 窗口 (Window)
+	83 帮助 (Help)
+
+Selected:
+	35 row (selected)
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

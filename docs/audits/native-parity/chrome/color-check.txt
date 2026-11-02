@@ -1,0 +1,6 @@
+image space=<CGColorSpace 0x100afd6b0> (kCGColorSpaceICCBased; kCGColorSpaceModelRGB; sRGB IEC61966-2.1)
+bitmap space=sRGB IEC61966-2.1 colorspace name=NSColorSpaceName(_rawValue: NSCalibratedRGBColorSpace)
+color=NSCalibratedRGBColorSpace 0.498039 0 0.501961 1
+RGB=Device RGB colorspace hdrm(1) 0.577331 0.128137 0.574533 1
+sRGB=sRGB IEC61966-2.1 colorspace hdrm(1) 0.577331 0.128137 0.574533 1
+bytes=[127, 0, 128, 255, 127, 0, 128, 255]

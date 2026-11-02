@@ -1,0 +1,353 @@
+// Polyfill window & Element for Node environment (must precede imports)
+if (typeof globalThis.window === "undefined") {
+  globalThis.window = new EventTarget();
+}
+if (typeof globalThis.Element === "undefined") {
+  globalThis.Element = class Element {};
+}
+
+import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+
+// Mock useI18n
+vi.mock("../../src/canvas/use_i18n.js", () => ({
+  useI18n: () => ({
+    t: (key) => key,
+    locale: "zh",
+    toggleLocale: () => {},
+  }),
+}));
+
+import EditorProperties from "../../src/canvas/components/editor_properties/index.jsx";
+import TextToolProperties from "../../src/canvas/components/editor_properties/text_tool_properties.jsx";
+import { TOOL } from "../../src/canvas/editor/editor_constants.js";
+
+describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("renders brush width and pressure dynamics without quick size presets", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.BRUSH}
+        toolProps={{
+          color: "#00ffcc",
+          onColor: () => {},
+          brushWidth: 24,
+          onBrushWidth: () => {},
+          brushHardness: 0.5,
+          onBrushHardness: () => {},
+          brushOpacity: 1,
+          onBrushOpacity: () => {},
+          brushFlow: 0.8,
+          onBrushFlow: () => {},
+          brushSmoothing: 0.2,
+          onBrushSmoothing: () => {},
+          brushMode: "normal",
+          brushPreset: "medium_round",
+          onBrushPreset: () => {},
+          pressureSize: true,
+          onPressureSize: () => {},
+          pressureOpacity: false,
+          onPressureOpacity: () => {},
+        }}
+      />
+    );
+
+    // Tool controls stay in the right inspector; the extra canvas toolbar is gone.
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).not.toContain("image-context-toolbar");
+    expect(html).toContain("editor.tool.brush");
+
+    expect(html).toContain("editor.brushWidth");
+    // The width control is one combined field, not a range bar + number box.
+    expect(html).not.toContain('type="range"');
+    expect(html).toContain('inputMode="decimal"');
+    expect(html).not.toContain("editor.props.size");
+    expect(html).not.toMatch(/<button[^>]*>\s*(?:4|8|16|24|48|96|160)\s*<\/button>/);
+
+    // Dynamics live in the preset details popover; keep the resting inspector compact.
+    expect(html).not.toContain("editor.pressureSize");
+    expect(html).not.toContain("editor.pressureOpacity");
+    expect(html).toContain("editor.brushPreset.medium_round");
+
+    // Brush presets
+    expect(html).toContain("editor.brushes");
+    expect(html).toContain("editor.brushPreset.soft_round");
+    expect(html).toContain("editor.brushPreset.medium_round");
+    expect(html).toContain("editor.brushPreset.hard_round");
+    expect(html).toContain("+ .ABR");
+  });
+
+  it("keeps the brush inspector focused on brush controls while a layer is selected", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.BRUSH}
+        object={{ id: "layer-1", kind: "rect", x: 10, y: 20, width: 80, height: 40 }}
+        toolProps={{
+          brushWidth: 24,
+          onBrushWidth: () => {},
+          brushHardness: 0.5,
+          onBrushHardness: () => {},
+          brushOpacity: 1,
+          onBrushOpacity: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.tool.brush");
+    expect(html).toContain("editor.brushWidth");
+    expect(html).not.toContain("editor.props.transform");
+    expect(html).not.toContain('aria-label="X"');
+    expect(html).not.toContain('aria-label="Y"');
+  });
+
+  it("shows image actions inside the inspector while Select is active", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.SELECT}
+        object={{
+          id: "image-1",
+          kind: "image",
+          x: 10,
+          y: 20,
+          width: 80,
+          height: 40,
+          adjustments: {},
+        }}
+        engine={{}}
+      />
+    );
+
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).toContain('data-testid="image-context-actions"');
+    expect(html).not.toContain('data-testid="image-context-toolbar"');
+    expect(html).toContain("editor.props.transform");
+    expect(html).toContain("editor.props.anchorPoint");
+  });
+
+  it("keeps pen edit modes inside the properties panel instead of adding a top bar", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.PEN}
+        object={{ id: "path-1", kind: "path", pen: true, x: 0, y: 0, width: 20, height: 20 }}
+        engine={{ getPenSubTool: () => "move", setPenSubTool: () => {}, endEdit: () => {} }}
+        penEditing
+        onConvertAnchor={() => {}}
+        onDeleteAnchor={() => {}}
+      />
+    );
+
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).toContain('data-testid="editor-pen-subbar"');
+    expect(html).not.toContain('role="toolbar"');
+  });
+
+  it("renders the shared labelled typography controls when Text tool is active", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.TEXT}
+        toolProps={{
+          color: "#ffffff",
+          onColor: () => {},
+          fontFamily: "Inter",
+          onFontFamily: () => {},
+          fontWeight: 600,
+          onFontWeight: () => {},
+          fontSize: 32,
+          onFontSize: () => {},
+          align: "center",
+          onAlign: () => {},
+          lineHeight: 1.4,
+          onLineHeight: () => {},
+          letterSpacing: 0.05,
+          onLetterSpacing: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.tool.text");
+    expect(html).toContain("editor.props.textStyle");
+    expect(html).toContain(">editor.props.font</span>");
+    expect(html).toContain("editor.props.fontWeight");
+    expect(html).toContain("editor.props.fontSize");
+    expect(html).toContain('value="32"');
+    // Text inputs do not emit native min attributes; verify TextToolProperties configures minFontSize=6.
+    const textSection = TextToolProperties({ fontSize: 32, onFontSize: vi.fn() });
+    expect(textSection.props.children.props.children.props.minFontSize).toBe(6);
+    expect(html).toContain('inputMode="decimal"');
+    expect(html).toContain("editor.props.align.center");
+    expect(html).toContain("lucide-a-large-small");
+    expect(html).not.toMatch(/<button[^>]*>\s*(?:12|14|16|20|24|32|48|64)\s*<\/button>/);
+  });
+
+  it("renders shape geometry properties (Corner radius, Weight slider) when Rect tool is active", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.RECT}
+        toolProps={{
+          color: "#ffffff",
+          onColor: () => {},
+          strokeWidth: 2,
+          onStrokeWidth: () => {},
+          cornerRadius: 12,
+          onCornerRadius: () => {},
+          cornerType: "round",
+          onCornerType: () => {},
+          strokeStyle: "solid",
+          onStrokeStyle: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.shape.rect");
+    expect(html).toContain("editor.strokeStyle.weight");
+    expect(html).toContain("editor.props.cornerRadius");
+    expect(html).toContain("editor.shape.cornerRound");
+    expect(html).toContain("editor.shape.cornerStraight");
+  });
+
+  it("renders Star/Polygon geometry properties (Sides & Ratio) when Star tool is active", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.STAR}
+        toolProps={{
+          color: "#ffffff",
+          onColor: () => {},
+          strokeWidth: 1,
+          onStrokeWidth: () => {},
+          sides: 5,
+          onSides: () => {},
+          starRatio: 0.45,
+          onStarRatio: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.shape.star");
+    expect(html).toContain("editor.shape.points");
+    // Star keeps its Ratio row (label renamed from innerRadius); polygon hides it.
+    expect(html).toContain("editor.shape.ratio");
+  });
+
+  it("renders Arrow tool properties (Arrowhead start, end, size) when Arrow tool is active", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.ARROW}
+        toolProps={{
+          color: "#ffffff",
+          onColor: () => {},
+          strokeWidth: 3,
+          onStrokeWidth: () => {},
+          arrowStart: false,
+          onArrowStart: () => {},
+          arrowEnd: true,
+          onArrowEnd: () => {},
+          arrowSize: 24,
+          onArrowSize: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.tool.arrow");
+    expect(html).toContain("editor.shape.arrowStart");
+    expect(html).toContain("editor.shape.arrowEnd");
+  });
+
+  it("renders Gradient properties (Linear, Radial, Angular, Reverse) when Gradient tool is active", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.GRADIENT}
+        toolProps={{
+          color: "#ffffff",
+          onColor: () => {},
+          gradientType: "radial",
+          onGradientType: () => {},
+          onReverseGradient: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.tool.gradient");
+    expect(html).toContain("editor.props.gradient.linear");
+    expect(html).toContain("editor.props.gradient.radial");
+    expect(html).toContain("editor.props.gradient.angular");
+    expect(html).toContain("editor.gradient.reverse");
+  });
+
+  it("renders Selection tools (Marquee/Lasso/Wand) with modes and action shortcuts", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.MARQUEE}
+        toolProps={{
+          selectionMode: "replace",
+          onSelectionMode: () => {},
+          selectionFeather: 4,
+          onFeatherSelection: () => {},
+          hasSelection: true,
+          onInvertSelection: () => {},
+          onClearSelection: () => {},
+          onSelectSubject: () => {},
+        }}
+      />
+    );
+
+    // The panel title names the active marquee sub-mode (default rect).
+    expect(html).toContain("editor.selection.rect");
+    expect(html).toContain("editor.selection.modeNew");
+    expect(html).toContain("editor.selection.invert");
+    expect(html).toContain("editor.selection.deselect");
+    // Quick feather pills were removed on purpose; the Feather slider stays.
+    expect(html).toContain("editor.selection.feather");
+    expect(html).not.toContain("20px");
+  });
+
+  it("renders dedicated pen properties with the Weight slider", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.PEN}
+        toolProps={{
+          penMode: "shape",
+          onPenMode: () => {},
+          penStrokeWidth: 4,
+          onPenStrokeWidth: () => {},
+          penAnchorType: "smooth",
+          onPenAnchorType: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.tool.pen");
+    expect(html).toContain("editor.pen.mode");
+    // Quick stroke width pills were removed on purpose; the Weight slider stays.
+    expect(html).toContain("editor.strokeStyle.weight");
+    expect(html).not.toContain("16px");
+  });
+
+  it("prioritizes dedicated tool properties even when isBackground is true", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.BRUSH}
+        isBackground={true}
+        backgroundColor="#121212"
+        toolProps={{
+          brushWidth: 32,
+          onBrushWidth: () => {},
+          brushHardness: 0.8,
+          onBrushHardness: () => {},
+          brushOpacity: 1,
+          onBrushOpacity: () => {},
+          onPressureSize: () => {},
+        }}
+      />
+    );
+
+    // Shows brush tool properties, not background inspector
+    expect(html).toContain("editor.tool.brush");
+    expect(html).toContain("editor.brushWidth");
+    expect(html).toContain("editor.brushPreset.medium_round");
+    expect(html).not.toContain("editor.layer.canvasBackground");
+  });
+});

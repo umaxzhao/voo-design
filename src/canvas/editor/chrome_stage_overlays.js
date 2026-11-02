@@ -1,0 +1,398 @@
+// Stage overlays for crop, marquee, text draft, selection transform, and alignment guides.
+
+import { effectivePage } from "./scene_model.js";
+import { SELECTION_COLOR } from "./render_nodes.js";
+import { docToScreenRect } from "./chrome_coords.js";
+import { drawSelection } from "./chrome_selection.js";
+
+/** Dims everything outside the crop rectangle and outlines it. */
+export function drawCrop(ctx, cropRect, doc, viewport) {
+  const page = docToScreenRect(effectivePage(doc), viewport);
+  const screen = docToScreenRect(cropRect, viewport);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(page.x, page.y, page.width, page.height);
+  ctx.rect(screen.x, screen.y, screen.width, screen.height);
+  // Even-odd leaves the crop rectangle unpainted, so only the outside dims.
+  ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+  ctx.fill("evenodd");
+  ctx.restore();
+
+  ctx.save();
+  // A thin solid rule just inside the crop edge; the outside stays flat dim.
+  ctx.strokeStyle = "#b2ffd6";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(screen.x + 0.5, screen.y + 0.5, screen.width - 1, screen.height - 1);
+  ctx.restore();
+
+  // Rule-of-thirds grid: two vertical and two horizontal guides at the 1/3
+  // marks, drawn inside the crop frame while it is being composed. Faint so
+  // the picture stays the focus; only while a crop is armed (drawCrop is
+  // stage chrome, never part of an export).
+  if (screen.width > 24 && screen.height > 24) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let third = 1; third <= 2; third += 1) {
+      const gx = screen.x + (screen.width * third) / 3;
+      ctx.moveTo(gx, screen.y);
+      ctx.lineTo(gx, screen.y + screen.height);
+      const gy = screen.y + (screen.height * third) / 3;
+      ctx.moveTo(screen.x, gy);
+      ctx.lineTo(screen.x + screen.width, gy);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawSelection(ctx, cropRect, viewport, true);
+}
+
+export { drawMarquee } from "./chrome-marquee.js";
+
+/**
+ * The dashed preview of a text-box drag, in screen space.
+ *
+ * The box the user is drawing is not a document node yet — it becomes one only
+ * when they start typing — so the chrome shows it as the marquee shows its
+ * rect: a hairline dashed outline over a faint fill. The dash is what
+ * separates "still drawing" from "committed text", Figma's distinction.
+ */
+export function drawTextDraftRect(ctx, rect, viewport) {
+  const box = docToScreenRect(rect, viewport);
+  if (box.width <= 0 || box.height <= 0) return;
+  ctx.save();
+  ctx.strokeStyle = SELECTION_COLOR;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(box.x + 0.5, box.y + 0.5, box.width, box.height);
+  ctx.restore();
+}
+
+/**
+ * The transform-selection chrome: a dashed box for the dragged target rect,
+ * four corner resize handles, and a rotation grip above the top edge.
+ */
+export function drawSelectionTransformBox(ctx, box, viewport) {
+  const { rotation = 0, rect = box } = box ?? {};
+  if (!rect) return;
+  ctx.save();
+  ctx.translate(viewport.panX, viewport.panY);
+  ctx.scale(viewport.zoom, viewport.zoom);
+
+  const cx = rect.x + rect.width / 2;
+  const cy = rect.y + rect.height / 2;
+
+  // Real-time live pixel preview of transformed selection while dragging
+  if (box.extractedCanvas && box.initialRect && box.node) {
+    const { initialRect, node } = box;
+    const oldCx = initialRect.x + initialRect.width / 2;
+    const oldCy = initialRect.y + initialRect.height / 2;
+    const sX = rect.width / Math.max(initialRect.width, 1);
+    const sY = rect.height / Math.max(initialRect.height, 1);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+    ctx.scale(sX, sY);
+    ctx.translate(-oldCx, -oldCy);
+    ctx.drawImage(
+      box.extractedCanvas,
+      0,
+      0,
+      box.extractedCanvas.width,
+      box.extractedCanvas.height,
+      node.x,
+      node.y,
+      node.width,
+      node.height,
+    );
+    ctx.restore();
+  }
+
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  ctx.translate(-cx, -cy);
+
+  ctx.strokeStyle = SELECTION_COLOR;
+  ctx.lineWidth = 1 / viewport.zoom;
+  ctx.setLineDash([6 / viewport.zoom, 4 / viewport.zoom]);
+  ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+  ctx.setLineDash([]);
+
+  // Rotation grip: a small line above the top edge with a dot.
+  const gripY = rect.y - 24 / viewport.zoom;
+  ctx.beginPath();
+  ctx.moveTo(cx, rect.y);
+  ctx.lineTo(cx, gripY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, gripY - 6 / viewport.zoom, 5 / viewport.zoom, 0, Math.PI * 2);
+  ctx.fillStyle = SELECTION_COLOR;
+  ctx.fill();
+
+  // Four corner handles, matching object-selection chrome.
+  const size = 7 / viewport.zoom;
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = SELECTION_COLOR;
+  ctx.lineWidth = 1 / viewport.zoom;
+  const points = [
+    [rect.x, rect.y],
+    [rect.x + rect.width, rect.y],
+    [rect.x + rect.width, rect.y + rect.height],
+    [rect.x, rect.y + rect.height],
+  ];
+  for (const [hx, hy] of points) {
+    ctx.fillRect(hx - size / 2, hy - size / 2, size, size);
+    ctx.strokeRect(hx - size / 2, hy - size / 2, size, size);
+  }
+  ctx.restore();
+}
+
+export const SPACING_GUIDE_COLOR = "#e056fd";
+export const GAP_GUIDE_COLOR = SPACING_GUIDE_COLOR;
+
+/**
+ * Draws a single smart spacing gap guide with perpendicular tick marks and measurement pill badges.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} guide Gap guide object (type: "gap", "gap_h", or "gap_v")
+ * @param {Object} viewport Canvas viewport { zoom, panX, panY }
+ */
+export function drawGapGuide(ctx, guide, viewport) {
+  drawGapGuides(ctx, [guide], viewport);
+}
+
+/**
+ * Draws smart spacing gap guides with perpendicular tick marks and measurement pill badges.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Array<Object>|Object} gapGuides Array of gap guide objects (or single guide)
+ * @param {Object} viewport Canvas viewport { zoom, panX, panY }
+ */
+export function drawGapGuides(ctx, gapGuides, viewport) {
+  if (!ctx || !gapGuides) return;
+  const list = Array.isArray(gapGuides) ? gapGuides : [gapGuides];
+  if (list.length === 0) return;
+
+  const zoom = viewport?.zoom ?? 1;
+  const panX = viewport?.panX ?? 0;
+  const panY = viewport?.panY ?? 0;
+  const tickLength = 4; // 4px each side = 8px perpendicular tick
+
+  const fillRoundRect = (rx, ry, rw, rh, radius) => {
+    if (typeof ctx.roundRect === "function") {
+      ctx.beginPath();
+      ctx.roundRect(rx, ry, rw, rh, radius);
+      ctx.fill();
+    } else {
+      ctx.fillRect(rx, ry, rw, rh);
+    }
+  };
+
+  const drawSpanH = (start, end, cross, spanLabel) => {
+    const sX1 = Math.round(start * zoom + panX) + 0.5;
+    const sX2 = Math.round(end * zoom + panX) + 0.5;
+    const sY = Math.round(cross * zoom + panY) + 0.5;
+
+    // 1. Magenta hairline & end tick marks
+    ctx.beginPath();
+    ctx.strokeStyle = SPACING_GUIDE_COLOR;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.moveTo(sX1, sY);
+    ctx.lineTo(sX2, sY);
+
+    // 8px perpendicular ticks at both endpoints
+    ctx.moveTo(sX1, sY - tickLength);
+    ctx.lineTo(sX1, sY + tickLength);
+    ctx.moveTo(sX2, sY - tickLength);
+    ctx.lineTo(sX2, sY + tickLength);
+    ctx.stroke();
+
+    // 2. Centered measurement pill badge
+    const midX = (sX1 + sX2) / 2;
+    let textWidth = 24;
+    if (typeof ctx.measureText === "function") {
+      const metrics = ctx.measureText(spanLabel);
+      if (metrics && typeof metrics.width === "number") textWidth = metrics.width;
+    }
+    const pillWidth = Math.max(24, textWidth + 8);
+    const pillHeight = 16;
+    const pillX = midX - pillWidth / 2;
+    let pillY = sY - pillHeight / 2;
+
+    if (Math.abs(sX2 - sX1) < pillWidth + 4) {
+      pillY = sY - pillHeight - 3;
+    }
+
+    ctx.fillStyle = SPACING_GUIDE_COLOR;
+    fillRoundRect(pillX, pillY, pillWidth, pillHeight, 3);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(spanLabel, midX, pillY + pillHeight / 2);
+  };
+
+  const drawSpanV = (start, end, cross, spanLabel) => {
+    const sY1 = Math.round(start * zoom + panY) + 0.5;
+    const sY2 = Math.round(end * zoom + panY) + 0.5;
+    const sX = Math.round(cross * zoom + panX) + 0.5;
+
+    // 1. Magenta hairline & end tick marks
+    ctx.beginPath();
+    ctx.strokeStyle = SPACING_GUIDE_COLOR;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.moveTo(sX, sY1);
+    ctx.lineTo(sX, sY2);
+
+    // 8px perpendicular ticks at both endpoints
+    ctx.moveTo(sX - tickLength, sY1);
+    ctx.lineTo(sX + tickLength, sY1);
+    ctx.moveTo(sX - tickLength, sY2);
+    ctx.lineTo(sX + tickLength, sY2);
+    ctx.stroke();
+
+    // 2. Centered measurement pill badge
+    const midY = (sY1 + sY2) / 2;
+    let textWidth = 24;
+    if (typeof ctx.measureText === "function") {
+      const metrics = ctx.measureText(spanLabel);
+      if (metrics && typeof metrics.width === "number") textWidth = metrics.width;
+    }
+    const pillWidth = Math.max(24, textWidth + 8);
+    const pillHeight = 16;
+    let pillX = sX - pillWidth / 2;
+    const pillY = midY - pillHeight / 2;
+
+    if (Math.abs(sY2 - sY1) < pillHeight + 4) {
+      pillX = sX + 6;
+    }
+
+    ctx.fillStyle = SPACING_GUIDE_COLOR;
+    fillRoundRect(pillX, pillY, pillWidth, pillHeight, 3);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(spanLabel, pillX + pillWidth / 2, midY);
+  };
+
+  ctx.save();
+  ctx.font = "bold 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  const hasSpecificGaps = list.some(
+    (g) => g.type === "gap_h" || g.type === "gap_v",
+  );
+
+  for (const guide of list) {
+    if (!guide) continue;
+    if (guide.type === "gap" && hasSpecificGaps) continue;
+
+    const gapValue = guide.gap ?? 0;
+    const label = guide.label || `${Math.round(gapValue)}px`;
+
+    if (guide.type === "gap_h") {
+      const start = Math.min(guide.x1, guide.x2);
+      const end = Math.max(guide.x1, guide.x2);
+      drawSpanH(start, end, guide.y, label);
+    } else if (guide.type === "gap_v") {
+      const start = Math.min(guide.y1, guide.y2);
+      const end = Math.max(guide.y1, guide.y2);
+      drawSpanV(start, end, guide.x, label);
+    } else if (guide.type === "gap") {
+      const isV = guide.axis === "v" || guide.axis === "y";
+      if (Array.isArray(guide.spans)) {
+        for (const span of guide.spans) {
+          const spanGap = span.gap ?? guide.gap ?? Math.abs(span.end - span.start);
+          const spanText = span.label || `${Math.round(spanGap)}px`;
+          if (isV) {
+            drawSpanV(Math.min(span.start, span.end), Math.max(span.start, span.end), span.cross, spanText);
+          } else {
+            drawSpanH(Math.min(span.start, span.end), Math.max(span.start, span.end), span.cross, spanText);
+          }
+        }
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
+/** Draws alignment snapping guide lines (vertical & horizontal) and smart spacing gap guides. */
+export function drawGuides(ctx, guides, viewport, dpr = 1) {
+  if (!guides || guides.length === 0) return;
+  const { canvas } = ctx;
+  // The canvas backing store is sized at the render dpr (1 during a draft
+  // stroke), so the logical extent must divide by that — not the display's.
+  const width = canvas ? canvas.width / dpr : 1000;
+  const height = canvas ? canvas.height / dpr : 800;
+
+  const standardGuides = [];
+  const gapGuides = [];
+
+  for (const guide of guides) {
+    if (guide.type === "v" || guide.type === "h") {
+      standardGuides.push(guide);
+    } else if (
+      guide.type === "gap_h" ||
+      guide.type === "gap_v" ||
+      guide.type === "gap"
+    ) {
+      gapGuides.push(guide);
+    }
+  }
+
+  // 1. Draw standard alignment guides (cyan / selection color)
+  if (standardGuides.length > 0) {
+    ctx.save();
+    ctx.strokeStyle = SELECTION_COLOR;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+
+    for (const guide of standardGuides) {
+      ctx.beginPath();
+      if (guide.type === "v") {
+        const screenX =
+          Math.round(guide.pos * viewport.zoom + viewport.panX) + 0.5;
+        // Segment-bounded guides between aligned objects; full height otherwise.
+        const top =
+          guide.startY !== undefined
+            ? Math.round(guide.startY * viewport.zoom + viewport.panY)
+            : 0;
+        const bottom =
+          guide.endY !== undefined
+            ? Math.round(guide.endY * viewport.zoom + viewport.panY)
+            : height;
+        ctx.moveTo(screenX, Math.max(0, top));
+        ctx.lineTo(screenX, Math.min(height, bottom));
+      } else if (guide.type === "h") {
+        const screenY =
+          Math.round(guide.pos * viewport.zoom + viewport.panY) + 0.5;
+        const left =
+          guide.startX !== undefined
+            ? Math.round(guide.startX * viewport.zoom + viewport.panX)
+            : 0;
+        const right =
+          guide.endX !== undefined
+            ? Math.round(guide.endX * viewport.zoom + viewport.panX)
+            : width;
+        ctx.moveTo(Math.max(0, left), screenY);
+        ctx.lineTo(Math.min(width, right), screenY);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 2. Draw smart spacing gap guides (magenta hairline + ticks + pill badge)
+  if (gapGuides.length > 0) {
+    drawGapGuides(ctx, gapGuides, viewport);
+  }
+}
+
+export { setAgentCursor, getAgentCursor, clearAgentCursor, setAgentFocusNode, getAgentFocusNode, clearAgentFocusNode, drawAgentFocusOverlay, drawAgentCursorOverlay } from "./chrome-agent-feedback.js";

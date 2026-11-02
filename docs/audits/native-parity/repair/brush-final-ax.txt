@@ -1,0 +1,170 @@
+Window: "VOO Design Native", App: VOO Design Native.
+0 standard window VOO Design Native, Description: VOO Design Native Main Window, ID: main_window, Secondary Actions: Raise
+	1 button title_bar_brand_logo
+	2 text field Description: Document Title, Value: form-poster, ID: AppTitleBar.DocTitle
+	3 button Description: Close Document, ID: TitleBar.TabClose
+	4 button Description: New Document, ID: TitleBar.TabNew
+	5 button 保存, ID: title_bar_save_button
+	6 button 打开, ID: title_bar_open_button
+	7 button Description: Live Collaboration, ID: title_bar_collab_button
+	8 button Description: Settings, ID: title_bar_settings_button
+	9 button Description: Browser, ID: title_bar_browser_button
+	10 button Description: Select (Move), Help: Select (Move) (V), ID: ToolRail.Move
+	11 button Description: Hand (Pan), ID: ToolRail.Hand
+	12 button Description: Frame, Help: Frame (F), ID: ToolRail.Artboard
+	13 button Description: Edit nodes, Help: Edit nodes (A), ID: ToolRail.Node
+	14 button Description: Lasso Select, ID: ToolRail.Lasso
+	15 button Description: Brush, Help: Brush (B), ID: ToolRail.Brush
+		16 popover Secondary Actions: Cancel
+			17 text Size
+			18 slider (settable, float) Description: Size, Value: 24, ID: Brush.Settings.brushSize
+				19 value indicator (settable, float) 24
+			20 text Opacity
+			21 slider (settable, float) Description: Opacity, Value: 1, ID: Brush.Settings.brushOpacity
+				22 value indicator (settable, float) 1
+			23 text Colour
+			24 color well Description: Colour, Value: rgb 0.698039 1 0.839216 1, ID: Brush.Settings.brushColor, Secondary Actions: Show color panel
+	25 button Description: Eraser, Help: Eraser (E), ID: ToolRail.Eraser
+	26 button Description: Text, Help: Text (T), ID: ToolRail.Text
+	27 button Description: Pen, Help: Pen (P), ID: ToolRail.Pen
+	28 button Description: Shapes, Help: Shapes (R), ID: ToolRail.Shapes
+	29 button Description: Magic Wand, ID: ToolRail.Wand
+	30 button Description: VOO Assistant, Help: VOO 智能助手, ID: ToolRail.BrandAvatar
+	31 radio button Description: Layers, ID: Layers.Tab.Layers
+	32 radio button Description: Assets, ID: Layers.Tab.Assets
+	33 button Description: Search layers, ID: Layers.Search
+	34 button Description: Sort layers, ID: Layers.Sort
+	35 button Description: Layer opacity, Value: 100 percent, ID: Layers.Opacity
+	36 button Description: Blend mode, Value: Normal, ID: Layers.Blend
+	37 scroll area
+		38 table Inspector.LayersTree
+			39 row (selectable)
+				40 cell
+					41 button Collapse layer
+					42 button Toggle visibility
+					43 text FORM — Design Culture
+			44 row (selected)
+				45 cell (selected)
+					46 button Toggle visibility
+					47 text Circle
+	48 button Description: Add mask, ID: Layers.Mask
+	49 button Description: Add adjustment, ID: Layers.Contrast
+	50 button Description: Add layer, ID: Layers.Add
+	51 button Description: Delete layer, ID: Layers.Delete
+	52 scroll area
+		53 container Description: Properties inspector, ID: Inspector.Properties
+			54 button Description: Switch panels, ID: Inspector.Properties.Settings
+			55 button Description: Swap fill and stroke, ID: Inspector.Properties.Swap
+			56 pop up button Description: Fill type, Value: Solid, ID: Inspector.Properties.PaintType
+			57 text field Description: Corner radius, Value: 0px, ID: Inspector.Properties.Radius
+			58 text TRANSFORM
+			59 container Description: Transform, ID: Inspector.Properties.Transform
+				60 button Description: Lock aspect ratio, ID: Inspector.Properties.LockRatio
+				61 button Description: Link corner radii, ID: Inspector.Properties.CornerRadiiLink
+				62 text field Description: Transform X, Value: 116
+					63 text X
+				64 text field Description: Transform Y, Value: 416
+					65 text Y
+				66 text field Description: Transform W, Value: 294
+					67 text W
+				68 text field Description: Transform H, Value: 294
+					69 text H
+				70 text field Description: Transform R, Value: 0
+					71 text R
+				72 text field Description: Transform S, Value: 0, ID: Inspector.Properties.Scale
+					73 text S
+				74 button Description: Rotate 90 degrees counter-clockwise, ID: Inspector.Properties.RotateCCW
+				75 button Description: Rotate 90 degrees clockwise, ID: Inspector.Properties.RotateCW
+			76 text APPEARANCE
+			77 text field Description: Stroke width, Value: 0, ID: Inspector.Properties.StrokeWidth
+			78 text field Description: Opacity, Value: 100%, ID: Inspector.Properties.Opacity
+			79 pop up button Description: Blend mode, Value: Normal, ID: Inspector.Properties.BlendMode
+			80 container Description: Effects, ID: Inspector.Properties.Effects
+				81 text EFFECTS
+				82 checkbox Gaussian Blur, Value: 0, ID: Inspector.Properties.BlurCheckbox
+				83 text field Description: R, Value: 0, ID: Inspector.Properties.BlurRadius
+					84 text R
+				85 checkbox Drop Shadow, Value: 0, ID: Inspector.Properties.DropShadowCheckbox
+				86 text field Description: Hex color, Value: #000000, ID: Inspector.Properties.DropShadowHex
+				87 text field Description: Op, Value: 100%
+					88 text Op
+				89 text field Description: Bl, Value: 0
+					90 text Bl
+				91 text field Description: X, Value: 0
+					92 text X
+				93 text field Description: Y, Value: 0
+					94 text Y
+				95 checkbox Inner Shadow, Value: 0, ID: Inspector.Properties.InnerShadowCheckbox
+				96 text field Description: Hex color, Value: #000000, ID: Inspector.Properties.InnerShadowHex
+				97 text field Description: Op, Value: 100%
+					98 text Op
+				99 text field Description: Bl, Value: 0
+					100 text Bl
+				101 text field Description: X, Value: 0
+					102 text X
+				103 text field Description: Y, Value: 0
+					104 text Y
+			105 Description: Design or code, Value: design, ID: Inspector.Properties.HeaderTabs
+			106 text CIRCLE ELLIPSE
+			107 button Description: Select only, ID: Inspector.Properties.SelectOnly
+			108 text CONSTRAINTS
+			109 button Description: Constraints, ID: Inspector.Properties.ConstraintsDiagram
+			110 text HORIZONTAL VERTICAL
+			111 pop up button Description: Horizontal constraint, Value: Left, ID: Inspector.Properties.HorizontalConstraint
+			112 pop up button Description: Vertical constraint, Value: Top, ID: Inspector.Properties.VerticalConstraint
+			113 text FILL
+			114 button Description: Fill visible, ID: Inspector.Properties.FillVisible
+			115 button Colour swatch
+			116 text #191919 100 %
+			117 button Description: Toggle fill visibility, ID: Inspector.Properties.FillEye
+			118 button Description: Remove fill, ID: Inspector.Properties.FillRemove
+			119 text STROKE
+			120 button
+			121 button Colour swatch
+			122 text #FFFFFF 100 %
+			123 button Description: Stroke visible, ID: Inspector.Properties.StrokeVisible
+			124 button Description: Remove stroke, ID: Inspector.Properties.StrokeRemove
+			125 button Inspector.Properties.StrokeAlign
+			126 button Inspector.Properties.StrokeCap
+			127 button Inspector.Properties.StrokeJoin
+			128 button Inspector.Properties.StrokeDash
+	129 button Description: Page switcher. Design 1, page 1 of 1, Help: Opens the page list, ID: Editor.PageSwitcher
+	130 toolbar Description: Canvas zoom and history, ID: Editor.ZoomBar
+		131 button (disabled) Description: Undo, Help: Undo the last action, ID: Editor.ZoomBar.Undo
+		132 button (disabled) Description: Redo, Help: Redo the last undone action, ID: Editor.ZoomBar.Redo
+		133 button Description: Toggle visibility, Help: Show or hide canvas overlays, Value: Off, ID: Editor.ZoomBar.VisibilityToggle
+		134 button Description: Zoom in, Help: Zoom the canvas in, ID: Editor.ZoomBar.ZoomIn
+		135 button Description: Zoom out, Help: Zoom the canvas out, ID: Editor.ZoomBar.ZoomOut
+		136 button Description: Zoom level. Reset to 100%, Help: Resets the canvas zoom to 100%, Value: 86%, ID: Editor.ZoomBar.ZoomReset
+		137 button Description: More options, Help: Grid and snapping options, ID: Editor.ZoomBar.More
+	138 toolbar Description: Selection actions and AI prompt, ID: Editor.IslandBar
+		139 button Description: Fill colour, Help: Change the selection fill colour, ID: Editor.IslandBar.Fill
+		140 button Description: Stroke colour, Help: Change the selection stroke colour, ID: Editor.IslandBar.Stroke
+		141 button Description: Align centre, Help: Align the selection to its horizontal centre, ID: Editor.IslandBar.AlignCenterH
+		142 button Description: Distribute horizontally, Help: Distribute the selection horizontally, ID: Editor.IslandBar.DistributeH
+		143 button Description: Align left, Help: Align the selection to the left, ID: Editor.IslandBar.AlignLeftH
+		144 button Description: Move up, Help: Move the selection up one layer, ID: Editor.IslandBar.MoveUp
+		145 button Description: Move down, Help: Move the selection down one layer, ID: Editor.IslandBar.MoveDown
+		146 button Description: Duplicate, Help: Duplicate the selection, ID: Editor.IslandBar.Duplicate
+		147 button Description: Lock, Help: Lock or unlock the selection, ID: Editor.IslandBar.Lock
+		148 button Description: Toggle visibility, Help: Show or hide the selection, ID: Editor.IslandBar.Visibility
+		149 button Description: Delete, Help: Delete the selection, ID: Editor.IslandBar.Delete
+		150 button Description: Ask VOO AI Agent, Help: Ask the AI agent to work on the selection, ID: Editor.IslandBar.AISparkle
+	151 button Description: VOO AI Assistant, Help: Open the VOO AI agent panel, ID: Editor.AIAssistantButton
+	152 button Description: Add artboard, Help: Add a new artboard to the canvas, ID: Editor.AddArtboard
+	153 close button
+	154 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	155 minimize button
+156 menu bar
+	157 VOO Design Native
+	158 文件 (File)
+	159 编辑 (Edit)
+	160 图层与几何 (Geometry)
+	161 视图 (View)
+	162 窗口 (Window)
+	163 帮助 (Help)
+
+Selected:
+	44 row (selected)
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

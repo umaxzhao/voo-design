@@ -1,0 +1,9 @@
+{
+  "revision": "b740009e9dcb86fb74bdcd4ac8bba0f60e03ed63",
+  "scope": "Differential lint diagnostics by file and rule/message; all new Swift files also strictly linted",
+  "baselineDiagnostics": 3346,
+  "currentLegacyFileDiagnostics": 3163,
+  "newDiagnosticCounts": [],
+  "execution": "passed",
+  "fullLegacyLint": "failed"
+}

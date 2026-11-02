@@ -1,0 +1,73 @@
+{
+  "sourceRevision": "f02b76427347fa587cf0a681ccdc709cf370c7bb",
+  "baselineRevision": "7c730c931dc04f2cb384f8a096d74df210b59443",
+  "execution": {
+    "nativeAssertions": {
+      "passed": 449,
+      "failed": 0,
+      "optimization": "-Onone"
+    },
+    "modulePlanning": {
+      "passed": 11,
+      "failed": 0
+    },
+    "productionBuild": "passed",
+    "adHocSignature": "passed",
+    "legacyLint": "failed: 920 existing diagnostics; zero additional",
+    "newFileStrictLint": "passed"
+  },
+  "functionalCoverage": "partial; scoped titlebar details only",
+  "visualMeasurements": {
+    "native-before": [
+      237,
+      15,
+      327,
+      23
+    ],
+    "native-after": [
+      237,
+      19,
+      328,
+      27
+    ],
+    "electron-reference": [
+      622,
+      19,
+      712,
+      27
+    ]
+  },
+  "realUI": [
+    "1920x990 same-title before/after and Electron reference",
+    "Chinese long title visible with truncation",
+    "editing draft Temporary title cancelled by Escape restores form-reference",
+    "white canvas preset shows dirty dot; Command-Z removes dot and restores background"
+  ],
+  "limitations": [
+    "Electron reference is existing local app against dirty original workspace, not a release certification",
+    "different tab position and underlying gradient prevent raw background pixel equality claim",
+    "full application parity, multi-document behavior, light theme, narrow windows, IME and VoiceOver not verified this round"
+  ],
+  "binary": {
+    "bytes": 5122608,
+    "sha256": "31cadfbe0b5554e5064dcf2133542829391d071d6cc768633a98687c7cb00cc7",
+    "textSectionSha256": "cd2f205354f54c1f2746503b6e7aa512e7e3c9759a9ce6d57a0730dfac8a1f8a",
+    "runningQATextSectionMatchesProduction": true
+  },
+  "evidenceSha256": {
+    "native-before.jpg": "a083bc4cf709fa84f0e39b6255196b0b0843e908f975c8333e387b6962277c1a",
+    "electron-reference.jpg": "30815cdc87fc196d0a0a2be15f93304f4a5e3816a13e21bb4bfdf71de75cfd38",
+    "native-after.jpg": "b4d42c7e9f5c18d8a6455c31ccdf5e54b3ee20064885724c9534ec9df5409dd1",
+    "native-long-title.jpg": "493d37f1be5c99b3ef8662f436cbba268d806e7dfe0c7839913eaa1685411949",
+    "native-dirty.jpg": "4affbfe1be7fc6fb0b9cade98f38f9676602ecfc0cfc6ed63f4baf14ae5a08e0",
+    "native-restored.jpg": "9eafa822514b50499acced461dde28ffb24f996264c7597d12b60396b0edae89",
+    "after-measurement.json": "3984afea6c39a11495ea5028436607f6cbe1a12a16ba6f887bb8bafd37ee2db7",
+    "build-final.txt": "3e1bfd4925fdf6926c26e9ed70cae81c7323983ca9feb7d3f31ec536833112aa",
+    "tests-final.txt": "44c75345c1eeae3a9d0fe82d95e61b30ef1a704c6736525944a92196791217d4",
+    "tests-1.txt": "b91f5fad34432b03adde16e3c5472c3faa0120fb15e3cffb92c66bc3ab9071af",
+    "catalog.txt": "56794e6a2b50dbb91df73701b231b5809cbab9ccc9e2955ac6892fafe90672fb",
+    "lint-final.json": "43daca8c6bdc03982084ba4c496192b1911d364cc08ab9fcf8584249b1a4fb6e",
+    "registration.json": "ab8695c03ba4e09a639f650a6900694febadedd2118d6a5d95d450165d350232",
+    "check-plan.json": "19928379d51743513709343baf2e74d23986f1b07a1a24f33dc5d24393aed388"
+  }
+}
