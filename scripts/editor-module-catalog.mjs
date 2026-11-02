@@ -39,7 +39,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow",
-      "nested-project-roundtrip", "pages_dnd",
+      "nested-project-roundtrip", "pages_dnd", "browser-html-root-background", "browser-html-root-background-cold-reopen",
     ],
     remaining: [
       "Interrupted native writes, signed installer recovery and every legacy document version are not certified by browser round trips.",
@@ -230,7 +230,7 @@ export const EDITOR_MODULES = [
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction",
       "settings-i18n", "locale-lifecycle", "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu",
-      "impeccable-polish", "mobile-control-targets",
+      "impeccable-polish", "mobile-control-targets", "export-preview-bounds",
     ],
     remaining: [
       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",
