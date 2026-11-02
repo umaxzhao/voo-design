@@ -51,8 +51,9 @@ describe("welcome home actions", () => {
     const handler = source.slice(source.indexOf("const handlePromptSubmit"), source.indexOf("return { handlePromptSubmit }"));
     expect(handler).toContain("buildGenerationIntent({");
     expect(handler).toContain("await resolveAgentProvider(intent.modelId)");
-    expect(handler.indexOf("await resolveAgentProvider")).toBeLessThan(handler.indexOf("await handleCreateNew"));
-    expect(handler.indexOf("await handleCreateNew")).toBeLessThan(handler.indexOf("setPendingGeneration(intent)"));
+    expect(handler.indexOf("await resolveAgentProvider")).toBeLessThan(handler.indexOf("store.newVooProject"));
+    expect(handler.indexOf("store.newVooProject")).toBeLessThan(handler.indexOf("store.setPendingGeneration(intent)"));
+    expect(handler).toContain("await handleCreateNew");
     expect(handler).not.toContain("dispatchToAgent(");
     expect(handler).not.toContain("setTimeout");
   });

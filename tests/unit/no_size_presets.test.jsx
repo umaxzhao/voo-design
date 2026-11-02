@@ -29,7 +29,7 @@ describe("brush size controls", () => {
     expect(html).not.toContain("editor.props.size");
     // One combined scrubbable field: no separate range bar beside a number box.
     expect(html).not.toContain('type="range"');
-    expect(html).toContain('type="number"');
+    expect(html).toContain('inputMode="decimal"');
     expect(html).toContain("editor.brushWidth");
   });
 });

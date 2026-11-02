@@ -1,3 +1,4 @@
+import fs from "node:fs";
 // Polyfill window & Element for Node environment (must precede imports)
 if (typeof globalThis.window === "undefined") {
   globalThis.window = new EventTarget();
@@ -63,7 +64,7 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.brushWidth");
     // The width control is one combined field, not a range bar + number box.
     expect(html).not.toContain('type="range"');
-    expect(html).toContain('type="number"');
+    expect(html).toContain('inputMode="decimal"');
     expect(html).not.toContain("editor.props.size");
     expect(html).not.toMatch(/<button[^>]*>\s*(?:4|8|16|24|48|96|160)\s*<\/button>/);
 
@@ -173,7 +174,9 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.props.fontWeight");
     expect(html).toContain("editor.props.fontSize");
     expect(html).toContain('value="32"');
-    expect(html).toContain('min="6"');
+    // Text inputs do not emit native min attributes; retain the text-tool lower-bound contract.
+    expect(fs.readFileSync(new URL("../../src/canvas/components/editor_properties/text_tool_properties.jsx", import.meta.url), "utf8")).toContain("minFontSize={6}");
+    expect(html).toContain('inputMode="decimal"');
     expect(html).toContain("editor.props.align.center");
     expect(html).toContain("lucide-a-large-small");
     expect(html).not.toMatch(/<button[^>]*>\s*(?:12|14|16|20|24|32|48|64)\s*<\/button>/);
