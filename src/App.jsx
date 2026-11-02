@@ -143,11 +143,13 @@ export default function App() {
     };
   }, [firstRunOpen]);
 
+  // The root's 4px padding is the margin around the green editor frame. Editor pages paint it
+  // neutral black on both sides; the Welcome page keeps the root gradient.
   return (
     <main
       data-embed={isEmbed ? "true" : undefined}
       className="app-root-frame relative flex h-full w-full select-none flex-col"
-      style={isEmbed ? { background: "#000" } : {
+      style={isEmbed || !welcomeOpen ? { background: "#000" } : {
         background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
       }}
     >
