@@ -3,6 +3,7 @@ import { NODE_KIND, newId } from "./scene_model_core.js";
 
 import { BASE_DEFAULTS } from "./scene_model_geometry.js";
 import { normalizePathHardness } from "./scene_model_node_builders.js";
+import { penAnchorToWorld } from "./pen_join_world.js";
 
 export function createPathNode({ points, stroke, strokeWidth, hardness, arrow, arrowSize, arrowStart, arrowEnd, arrowCap, line, poly, polyKind, sides, spikes, innerRatio, closed, fill, strokeDash }) {
   const bounds = pathBounds(points, strokeWidth);
@@ -403,13 +404,8 @@ export function toggleClosePenPoints(points) {
  */
 export function joinPenNodes(nodeA, nodeB) {
   if (!nodeA?.points?.length || !nodeB?.points?.length) return null;
-  const toWorld = (node, p) => ({
-    x: node.x + (p.x * (node.baseWidth ? node.width / node.baseWidth : 1)),
-    y: node.y + (p.y * (node.baseHeight ? node.height / node.baseHeight : 1)),
-    in: p.in ? [p.in[0] * (node.baseWidth ? node.width / node.baseWidth : 1), p.in[1] * (node.baseHeight ? node.height / node.baseHeight : 1)] : null,
-    out: p.out ? [p.out[0] * (node.baseWidth ? node.width / node.baseWidth : 1), p.out[1] * (node.baseHeight ? node.height / node.baseHeight : 1)] : null,
-    close: false,
-  });
+  // Anchors are baked into world space with the node's rotation, flip and shear (UF13).
+  const toWorld = penAnchorToWorld;
 
   const ptsA = nodeA.points.map((p) => toWorld(nodeA, p));
   const ptsB = nodeB.points.map((p) => toWorld(nodeB, p));
@@ -465,6 +461,7 @@ export function joinPenNodes(nodeA, nodeB) {
   const bounds = penAnchorsBounds(combined, nodeA.strokeWidth || 1);
   const rebased = combined.map((p) => normalisePenAnchor(p, bounds.x, bounds.y));
 
+  // The anchors are already in world space, so the joined node carries no transform.
   return {
     ...nodeA,
     x: bounds.x,
@@ -473,6 +470,10 @@ export function joinPenNodes(nodeA, nodeB) {
     height: bounds.height,
     baseWidth: bounds.width,
     baseHeight: bounds.height,
+    rotation: 0,
+    shear: 0,
+    flipH: false,
+    flipV: false,
     points: rebased,
   };
 }
