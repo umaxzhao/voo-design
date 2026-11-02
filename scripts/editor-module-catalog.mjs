@@ -12,6 +12,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/canvas_tab_label.js", "src/canvas/components/use_tab_bar_overflow.js",
       "src/canvas/use_window_controls.js", "tests/unit/workspace_platform_badge.test.js",
       "tests/unit/settings_workspace.test.js", "tests/unit/close_project_tab.test.jsx",
+      "tests/unit/welcome_home_actions.test.js",
     ],
     related: ["documents","inspector","platform"],
     features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry","workspace.project-tabs"],

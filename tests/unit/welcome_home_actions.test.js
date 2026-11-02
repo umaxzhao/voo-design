@@ -6,6 +6,8 @@ vi.mock("../../src/canvas/components/dispatch_to_agent.js", () => ({ dispatchToA
 import { htmlToDocument } from "../../src/canvas/editor/html_import.js";
 import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, openWelcomeBrowser } from "../../src/canvas/components/welcome_home_actions.js";
 import { handleExportShortcut } from "../../src/canvas/editor/export_shortcut.js";
+import { useWelcomePromptSubmit } from "../../src/canvas/components/welcome_dashboard/use_welcome_prompt_submit.js";
+import { useDesignStore } from "../../src/store/design_store.js";
 const read = (path) => fs.readFileSync(new URL(`../../src/${path}`, import.meta.url), "utf8");
 // The welcome dashboard was split into focused modules; assertions about its
 // behaviour read the dashboard entry plus every module it is composed from.
@@ -56,6 +58,96 @@ describe("welcome home actions", () => {
     expect(handler).toContain("await handleCreateNew");
     expect(handler).not.toContain("dispatchToAgent(");
     expect(handler).not.toContain("setTimeout");
+  });
+
+  it("opens settings when agent provider is unconfigured, avoiding document creation", async () => {
+    const store = { newVooProject: vi.fn(), setPendingGeneration: vi.fn() };
+    const prevGetState = useDesignStore.getState;
+    useDesignStore.getState = () => store;
+    const setConfigNotice = vi.fn();
+    const openAgentSettings = vi.fn();
+    const handleCreateNew = vi.fn();
+    const setSubmitting = vi.fn();
+    const setPromptText = vi.fn();
+    const clearAttachments = vi.fn();
+
+    const { handlePromptSubmit } = useWelcomePromptSubmit({
+      promptText: "Build a landing page",
+      setPromptText,
+      activePill: "web",
+      attachments: [],
+      references: { isReading: false, clearAttachments },
+      submitting: false,
+      setSubmitting,
+      setConfigNotice,
+      styleId: "minimal",
+      designSystemId: null,
+      modelId: "api:unconfigured-provider:gpt-4",
+      size: { width: 1440, height: 900 },
+      candidates: 1,
+      locale: "en",
+      t: (k) => k,
+      openAgentSettings,
+      handleCreateNew,
+    });
+
+    await handlePromptSubmit({ preventDefault: vi.fn() });
+
+    expect(setConfigNotice).toHaveBeenCalledWith("welcome.prompt.configNeeded");
+    expect(openAgentSettings).toHaveBeenCalled();
+    expect(store.newVooProject).not.toHaveBeenCalled();
+    expect(store.setPendingGeneration).not.toHaveBeenCalled();
+    expect(handleCreateNew).not.toHaveBeenCalled();
+    useDesignStore.getState = prevGetState;
+  });
+
+  it("creates project in memory and dispatches single generation intent on valid submit", async () => {
+    const store = { newVooProject: vi.fn(), setPendingGeneration: vi.fn() };
+    const prevGetState = useDesignStore.getState;
+    useDesignStore.getState = () => store;
+    const setConfigNotice = vi.fn();
+    const openAgentSettings = vi.fn();
+    const handleCreateNew = vi.fn();
+    const setSubmitting = vi.fn();
+    const setPromptText = vi.fn();
+    const clearAttachments = vi.fn();
+
+    const { handlePromptSubmit } = useWelcomePromptSubmit({
+      promptText: "Modern portfolio website",
+      setPromptText,
+      activePill: "web",
+      attachments: [],
+      references: { isReading: false, clearAttachments },
+      submitting: false,
+      setSubmitting,
+      setConfigNotice,
+      styleId: "minimal",
+      designSystemId: null,
+      modelId: "claude-code:default",
+      size: { width: 1440, height: 900 },
+      candidates: 1,
+      locale: "en",
+      t: (k) => k,
+      openAgentSettings,
+      handleCreateNew,
+    });
+
+    await handlePromptSubmit({ preventDefault: vi.fn() });
+
+    expect(store.newVooProject).toHaveBeenCalledWith(
+      expect.objectContaining({ width: 1440, height: 900 })
+    );
+    expect(store.setPendingGeneration).toHaveBeenCalledTimes(1);
+    expect(store.setPendingGeneration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: "Modern portfolio website",
+        prompt: expect.stringContaining("Modern portfolio website"),
+      })
+    );
+    expect(setPromptText).toHaveBeenCalledWith("");
+    expect(clearAttachments).toHaveBeenCalled();
+    expect(handleCreateNew).not.toHaveBeenCalled();
+    useDesignStore.getState = prevGetState;
   });
 
 });
