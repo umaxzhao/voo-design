@@ -29,6 +29,7 @@ export function createEngineToolsController({
   let regionMode = "object";
   let regionTarget = "all";
   let healingMode = "aiRepair";
+  let patchDirection = "source";
   let aiRepairDownload = null;
   let regionHint = null;
   let regionHintTone = null;
@@ -175,6 +176,15 @@ export function createEngineToolsController({
       if (healingMode !== "patch") {
         onLeavePatch?.();
       }
+      notify();
+    },
+    getPatchDirection: () => patchDirection,
+    setPatchDirection(direction) {
+      // Fail fast: an unknown direction must not silently fall back to Source.
+      if (direction !== "source" && direction !== "destination") {
+        throw new Error(`Unknown patch direction: ${direction}`);
+      }
+      patchDirection = direction;
       notify();
     },
     getAiRepairDownload: () => aiRepairDownload,

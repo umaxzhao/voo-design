@@ -786,6 +786,7 @@ export default {
   "editor.patch.source": "源",
   "editor.patch.destination": "目标",
   "editor.patch.diffusion": "扩散",
+  "editor.patch.diffusionUnavailable": "暂不可用",
   "editor.wand.sample3x3": "3×3平均",
   "editor.wand.sample5x5": "5×5平均",
   "editor.toolOptions": "工具选项",

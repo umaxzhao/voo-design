@@ -79,6 +79,8 @@ export default function ToolPropertiesSection({
   brushAngle = 0,
   onBrushAngle,
   healingMode = "aiRepair",
+  patchDirection = "source",
+  onPatchDirection,
   cloneAligned = false,
   onCloneAligned,
   cloneSource = null,
@@ -455,6 +457,8 @@ export default function ToolPropertiesSection({
             brushAngle={brushAngle}
             onBrushAngle={onBrushAngle}
             healingMode={healingMode}
+            patchDirection={patchDirection}
+            onPatchDirection={onPatchDirection}
             cloneAligned={cloneAligned}
             onCloneAligned={onCloneAligned}
             cloneSource={cloneSource}

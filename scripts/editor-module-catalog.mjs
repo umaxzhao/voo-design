@@ -178,14 +178,15 @@ export const EDITOR_MODULES = [
       "src/canvas/raster/*",
     ],
     related: ["selection","compositing","documents","inspector"],
-    features: ["images.retouch","images.pixel-selections","images.adjustments","images.local-models"],
+    features: ["images.retouch","images.pixel-selections","images.adjustments","images.local-models","images.patch-direction"],
     suites: [
-      "drawing-retouch", "raster-loading", "image-action-loading", "image-interaction-boundaries",
+      "drawing-retouch", "patch-direction", "raster-loading", "image-action-loading", "image-interaction-boundaries",
       "image-adjustments-complete", "image-selections-warp", "image-toolbar-complete", "image-agent-complete",
       "image-inspector-core", "gl-spatial-parity", "generated-output", "image-export-formats", "dodge-burn-panel-controls",
     ],
     remaining: [
       "Real model/network and hardware memory/FPS gates are separate from offline browser checks; video is excluded from this audit.",
+      "Patch Tool Diffusion is shown as unavailable: no engine behaviour is defined for it yet, so it has no regression check.",
     ],
   },
   {

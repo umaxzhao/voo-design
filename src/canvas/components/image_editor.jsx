@@ -2232,6 +2232,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onBrushAngle: (next) => engine?.setBrushAngle?.(next),
               healingMode: engine?.getHealingMode?.() ?? "aiRepair",
               onHealingMode: (mode) => engine?.setHealingMode?.(mode),
+              patchDirection: engine?.getPatchDirection?.() ?? "source",
+              onPatchDirection: (direction) => engine?.setPatchDirection?.(direction),
               cloneAligned: engine?.getCloneAligned?.() ?? false,
               onCloneAligned: (next) => engine?.setCloneAligned?.(next),
               cloneSource: engine?.getCloneSource?.() ?? null,

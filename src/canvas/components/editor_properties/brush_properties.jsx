@@ -121,6 +121,8 @@ export default function BrushProperties({
   brushAngle = 0,
   onBrushAngle,
   healingMode = "aiRepair",
+  patchDirection = "source",
+  onPatchDirection,
   cloneAligned = false,
   onCloneAligned,
   cloneSource = null,
@@ -344,7 +346,12 @@ export default function BrushProperties({
           onCloneAligned={onCloneAligned}
         />
         {tool === TOOL.HEALING ? (
-          <HealingModeControls healingMode={healingMode} cloneSource={cloneSource} />
+          <HealingModeControls
+            healingMode={healingMode}
+            cloneSource={cloneSource}
+            patchDirection={patchDirection}
+            onPatchDirection={onPatchDirection}
+          />
         ) : null}
       </div>
     </StaticSection>
@@ -391,6 +398,8 @@ BrushProperties.propTypes = {
   brushAngle: PropTypes.number,
   onBrushAngle: PropTypes.func,
   healingMode: PropTypes.oneOf(["spot", "aiRepair", "patch", "clone"]),
+  patchDirection: PropTypes.oneOf(["source", "destination"]),
+  onPatchDirection: PropTypes.func,
   cloneAligned: PropTypes.bool,
   onCloneAligned: PropTypes.func,
   cloneSource: PropTypes.object,

@@ -801,6 +801,7 @@ export default {
   "editor.patch.source": "Source",
   "editor.patch.destination": "Destination",
   "editor.patch.diffusion": "Diffusion",
+  "editor.patch.diffusionUnavailable": "Not available yet",
   "editor.wand.sample3x3": "3×3 Average",
   "editor.wand.sample5x5": "5×5 Average",
   "editor.toolOptions": "Tool options",
