@@ -142,6 +142,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
       "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js", "tests/unit/pen_curve_math.test.js",
       "tests/unit/fill_none_and_svg_fidelity.test.js",
+      "tests/unit/svg_text_anchor.test.js",
     ],
     related: ["selection","compositing","documents","inspector"],
     features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
