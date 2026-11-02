@@ -90,6 +90,22 @@ describe("joinPenNodes on transformed paths (UF13)", () => {
     expectSameWorldAnchors(joined, expected);
   });
 
+  it("moves no anchor off its input world position, independent of welding (pre-fix drift check)", () => {
+    const a = openPath("a", 100, 100, 80, 40, [{ x: 0, y: 0 }, { x: 80, y: 40 }], { rotation: 30 });
+    const b = openPath("b", 300, 120, 60, 60, [{ x: 0, y: 0 }, { x: 60, y: 0 }], { rotation: -45 });
+    const endA = toWorldAnchor(a, a.points[1]);
+    const startB = toWorldAnchor(b, b.points[0]);
+    const movedB = { ...b, x: b.x + (endA.x - startB.x), y: b.y + (endA.y - startB.y) };
+    const joined = joinPenNodes(a, movedB);
+    expect(joined).not.toBeNull();
+    // Welding may drop a duplicate, but every joined anchor must equal an input world anchor.
+    const inputs = [...worldAnchors(a), ...worldAnchors(movedB)];
+    worldAnchors(joined).forEach((point) => {
+      const nearest = Math.min(...inputs.map((q) => Math.hypot(q.x - point.x, q.y - point.y)));
+      expect(nearest).toBeLessThan(1e-6);
+    });
+  });
+
   it("returns an unrotated joined node so the baked anchors are not transformed twice", () => {
     const a = openPath("a", 0, 0, 40, 40, [{ x: 0, y: 0 }, { x: 40, y: 0 }], { rotation: 15 });
     const b = openPath("b", 40, 0, 40, 40, [{ x: 0, y: 0 }, { x: 40, y: 0 }]);
