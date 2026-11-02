@@ -34,7 +34,10 @@ import {
   extractComponent,
 } from "../editor/component_extract.js";
 import { effectivePage } from "../editor/scene_model_geometry.js";
-import { selectionBounds } from "../editor/editor_export_bounds.js";
+import {
+  selectedExportBounds,
+  selectedExportNodes,
+} from "../editor/editor_export_selection.js";
 import { alignNodes, distributeNodes } from "../editor/align_ops.js";
 import EditorPage from "./editor_page.jsx";
 import LoadingModal from "./loading_modal.jsx";
@@ -1220,13 +1223,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   if (nodeIds.length === 0) return null;
   const exportDocument = exportOpen ? engine?.getDocument?.() : null;
   const exportPage = exportDocument ? effectivePage(exportDocument) : null;
-  const exportSelectedNodes =
-    exportDocument && selectedIds.length
-      ? exportDocument.nodes.filter((node) => selectedIds.includes(node.id))
-      : [];
+  // The preview must use the same bounds as the real selection export
+  // (tight layer union, no ordinary-group padding, descendants expanded).
   const exportSelectionBounds =
-    exportSelectedNodes.length > 0
-      ? selectionBounds(exportSelectedNodes)
+    exportDocument && selectedIds.length
+      ? selectedExportBounds(selectedExportNodes(exportDocument, selectedIds))
       : null;
 
   const aiProgressLabel = (progress) => describeAiProgress(progress, t);
