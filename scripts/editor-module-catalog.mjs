@@ -149,7 +149,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["selection","compositing","documents","inspector"],
     features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
-    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity","uf13-pen-join-world-matrix"],
+    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity","uf13-pen-join-world-matrix","uf13-pen-join-curve-handles"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
     ],
