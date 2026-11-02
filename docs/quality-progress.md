@@ -1,5 +1,14 @@
 # 项目检查总进度
 
+## Codex 独立 Mac 原生复测：6d7b3cfa（核心验收未通过）
+
+- **绑定版本与证据**：`6d7b3cfa2b7f5f8aae8c00bd4d879d4f0e9edb97`，Electron 43.4.0 darwin/arm64，Apple M4 Pro / macOS 26.5.2；Ning profile 的独立副本，独立开发源 5187；[完整报告](/Users/tt/Desktop/voo-mac-retest/REPORT.md)、[机器结果](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/results.json)、[证据清单](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/evidence.json)。
+- **documents / text / layout：失败**。历史 Profile Card 原生打开→File 保存→⌘S 保存→全退出冷重开后，Name Block / Name 宽度各 −3px、Role −1px、Meta +2px；其余指定节点几何不变，17 节点完整，`strictLossless: false`。4 文件 60 定向单测通过，但不能替代该原生复测失败。[对比](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/cold-after-restart.json)。
+- **inspector / documents / platform：限定通过**。标题栏独立 Save 为 As Designed（按设计不做）；File 菜单与 ⌘S 实际落盘通过。显式启用自动草稿后，SIGKILL 重启恢复 3/3 节点且正式文件 SHA256 不变；仅 null clipTo 字段省略，恢复草稿 filePath 为空。[恢复](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/draft-after-restore.json)。
+- **layers / selection / layout：部分覆盖**。嵌套 Auto Layout 原生检查器尺寸重排及根级画布多选 (+80,+80) 通过；快速列表多选拖入 Frame 只移出一个子节点，根级列表对照无动作，落点/悬停时序范围待确认，不能继承历史 D10 通过。[拖拽](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/multi-after.json)。
+- **canvas / images / vectors / compositing：部分覆盖**。原生 D04 像素选区反选、画笔像素及一次撤销、32px 网格新建矩形通过；SVG 圆角 clip、mask、径向渐变、文本 middle/end（最大 1px）域导入/渲染采样通过，未覆盖原生 picker。1000 矩形导航约 6.07s、59.999fps、p95 17.6ms；初始 17 节点短样本有 99.9ms 帧，不能认证全场景 60fps。100 次区域导出内存短时趋稳，长期泄漏未验证；独立切片 UI 未找到，只验了区域导出 API。[性能](/Users/tt/Desktop/voo-mac-retest/codex-6d7b3cfa-evidence/performance.json)。
+- **执行状态**：模块注册检查通过；4 文件 60 定向单测通过；设计 lint 失败于既有 font_picker.jsx:571 裸 rounded（未改字体任务文件）。未跑全量发布门禁。本轮无 push、无 deploy、无 la 访问。
+
 ## 本轮：Linux v1.0.0-beta.2 缺陷与补充清单集中修复与分支合入（源码完成，未推送未发布）
 
 - **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `4a5cfe98`，未 push，未部署）。
