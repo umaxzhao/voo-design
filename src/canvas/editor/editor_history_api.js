@@ -84,16 +84,19 @@ export function createHistoryApi({
       await maskTools.flushMasks();
       await paintTools.flushPaints();
       restore(history.undo(), { fromHistory: true });
+      onCommit?.();
     },
     async redo() {
       await maskTools.flushMasks();
       await paintTools.flushPaints();
       restore(history.redo(), { fromHistory: true });
+      onCommit?.();
     },
     async jumpToHistory(index) {
       await maskTools.flushMasks();
       await paintTools.flushPaints();
       restore(history.jumpTo(index), { fromHistory: true });
+      onCommit?.();
     },
     // Publication/retention consumes detached canonical nodes, including undo/redo media.
     getAssetRetentionNodes() {
