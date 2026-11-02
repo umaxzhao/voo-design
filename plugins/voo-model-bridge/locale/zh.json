@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "VOO 模型桥",
+    "description": "以 OpenAI 兼容格式在 http://127.0.0.1:4399/v1 暴露 DeepSeek Harness 当前使用的模型，让 VOO 编辑器内置 Agent 直接用同一份模型与凭据，无需另配密钥。"
+  }
+}

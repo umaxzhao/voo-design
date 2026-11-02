@@ -1,0 +1,42 @@
+[
+  {
+    "fixture": "docs/examples/f1-grand-prix.voo",
+    "sourceNodes": 131,
+    "nativeNodes": 131,
+    "sourcePages": 1,
+    "nativeHasPages": false,
+    "frameFlaggedGroups": 7,
+    "numericWeightTextNodes": 45,
+    "nativeTitle": "Untitled"
+  },
+  {
+    "fixture": "docs/examples/form-poster.voo",
+    "sourceNodes": 14,
+    "nativeNodes": 14,
+    "sourcePages": 1,
+    "nativeHasPages": false,
+    "frameFlaggedGroups": 2,
+    "numericWeightTextNodes": 4,
+    "nativeTitle": "Untitled"
+  },
+  {
+    "fixture": "docs/examples/music-discovery.voo",
+    "sourceNodes": 175,
+    "nativeNodes": 175,
+    "sourcePages": 1,
+    "nativeHasPages": false,
+    "frameFlaggedGroups": 73,
+    "numericWeightTextNodes": 40,
+    "nativeTitle": "Untitled"
+  },
+  {
+    "fixture": "docs/examples/pulse-dashboard.voo",
+    "sourceNodes": 75,
+    "nativeNodes": 75,
+    "sourcePages": 1,
+    "nativeHasPages": false,
+    "frameFlaggedGroups": 2,
+    "numericWeightTextNodes": 16,
+    "nativeTitle": "Untitled"
+  }
+]

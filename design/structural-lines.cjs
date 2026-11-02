@@ -1,0 +1,121 @@
+/**
+ * Structural lines: the only borders the interface may paint on purpose.
+ *
+ * Design.md's borderless rule removes decorative control outlines. It does not
+ * remove the outer green frame or the hairlines that separate module content.
+ * This registry names every such line, so the lint can keep it, and a guard
+ * test can notice when one is removed by accident.
+ *
+ * - CSS entries are exact `file + selector` pairs. A declaration outside this
+ *   list is still decorative, however close its selector is.
+ * - JSX dividers carry `data-ui-structure="divider"` on the element that owns
+ *   the line itself. The lint accepts only one or two single-side borders there,
+ *   and only on non-interactive elements. `STRUCTURAL_JSX_COUNTS` pins how many
+ *   markers each file must contain.
+ */
+
+/** Exact CSS declarations that make up structural lines. */
+const STRUCTURAL_CSS = [
+  {
+    file: "src/index.css",
+    selector: ".editor-shell",
+    role: "outer-frame",
+    declaration: "border: 2px solid #b2ffd6",
+  },
+  {
+    file: "src/theme-light.css",
+    selector: 'html[data-theme="light"] .editor-shell',
+    role: "outer-frame",
+    declaration: "border-color: #a7ffd4 !important",
+  },
+  {
+    file: "src/shared/app-error-boundary.module.css",
+    selector: ".details",
+    role: "divider",
+    declaration: "border-top: 1px solid var(--recovery-line)",
+  },
+  {
+    file: "src/canvas/components/browser_drawer/browser-drawer.css",
+    selector: ".voo-browser-drawer",
+    role: "divider",
+    declaration: "border-top: 1px solid rgb(255 255 255 / 10%)",
+  },
+  {
+    file: "src/canvas/components/desktop-window-controls.module.css",
+    selector: ".controls",
+    role: "divider",
+    declaration: "border-left: 1px solid rgb(255 255 255 / 10%)",
+  },
+  {
+    file: "src/canvas/components/editor_mobile_layout.css",
+    selector: '.relative.flex[data-agent-open="true"] > aside > section',
+    role: "divider",
+    declaration: "border: 1px solid rgb(255 255 255 / 10%)",
+  },
+];
+
+/** Number of `data-ui-structure="divider"` markers each JSX file must keep. */
+const STRUCTURAL_JSX_COUNTS = {
+  "src/app_title_bar.jsx": 2,
+  "src/App.jsx": 0,
+  "src/canvas/components/canvas_tab_bar.jsx": 2,
+  "src/canvas/components/welcome_dashboard/welcome_sidebar.jsx": 2,
+  "src/canvas/components/editor_zoom.jsx": 2,
+  "src/canvas/components/editor_zoom_grid_menu.jsx": 1,
+  "src/canvas/components/editor_layers_footer.jsx": 1,
+  "src/canvas/components/editor_command_palette.jsx": 2,
+  "src/canvas/components/settings_drawer.jsx": 1,
+  "src/canvas/components/shortcut_reference_modal.jsx": 1,
+  "src/canvas/components/editor_code_export_dialog.jsx": 1,
+  "src/canvas/components/SvgEditModal.jsx": 1,
+  "src/canvas/color_picker/PickerHeader.jsx": 1,
+  "src/canvas/components/browser_drawer/browser-drawer-view.jsx": 5,
+  "src/canvas/components/editor_canvas_presets.jsx": 3,
+  "src/canvas/components/editor_history_panel.jsx": 2,
+  "src/canvas/components/editor_layers_controls.jsx": 1,
+  "src/canvas/components/editor_properties/adjustment_popover.jsx": 1,
+  "src/canvas/components/editor_properties/affinity_adjustment_section.jsx": 1,
+  "src/canvas/components/editor_properties/colour_stroke_section.jsx": 1,
+  "src/canvas/components/editor_properties/fill_paint_row.jsx": 1,
+  "src/canvas/components/editor_properties/instance_section.jsx": 1,
+  "src/canvas/components/editor_properties/panel_add_menu.jsx": 1,
+  "src/canvas/components/editor_properties/property_section.jsx": 1,
+  "src/canvas/components/editor_properties/prototype_runner.jsx": 2,
+  "src/canvas/components/editor_rulers.jsx": 3,
+  "src/canvas/components/first_run_workspace.jsx": 1,
+  "src/canvas/components/provider_card.jsx": 1,
+};
+
+/** Normalises a path to the repo-relative form used by the registry. */
+function normaliseFile(filename) {
+  return String(filename).replace(/\\/g, "/").replace(/^.*?(?=src\/)/, "");
+}
+
+/** Normalises a selector the way `scanCss` reports it (single spaces). */
+function normaliseSelector(selector) {
+  return String(selector).trim().replace(/\s+/g, " ");
+}
+
+/**
+ * True only when this exact declaration (`prop: value`) in this exact selector
+ * of this file is a registered structural line. A same-named block elsewhere,
+ * or the same selector with a different colour, stays decorative.
+ */
+function isStructuralCssDeclaration(filename, selector, prop, value) {
+  const file = normaliseFile(filename);
+  const wanted = normaliseSelector(selector);
+  const declared = normaliseSelector(`${prop}: ${value}`);
+  return STRUCTURAL_CSS.some(
+    (entry) =>
+      entry.file === file &&
+      entry.selector === wanted &&
+      normaliseSelector(entry.declaration) === declared,
+  );
+}
+
+module.exports = {
+  STRUCTURAL_CSS,
+  STRUCTURAL_JSX_COUNTS,
+  isStructuralCssDeclaration,
+  normaliseFile,
+};

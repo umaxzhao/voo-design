@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "VOO Model Bridge",
+    "description": "Serves the DeepSeek Harness profile's current model at http://127.0.0.1:4399/v1 in the OpenAI-compatible format the VOO editor uses, so its built-in agent runs on the same model and credentials as the Harness."
+  }
+}

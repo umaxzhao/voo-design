@@ -1,0 +1,155 @@
+import { describe, expect, it, vi } from "vitest";
+import { insertGroup } from "../../src/canvas/editor/doc_ops_groups.js";
+import { createEngineGroups } from "../../src/canvas/editor/editor_engine_groups.js";
+import { frameSelectionUnit } from "../../src/canvas/editor/frame-selection-unit.js";
+import { alignNodes } from "../../src/canvas/editor/align_ops.js";
+import { deserialiseDocument, serialiseDocument } from "../../src/canvas/editor/scene_model.js";
+
+const frame = (id, parentId = null) => ({ id, kind: "group", isFrame: true, parentId,
+  x: 0, y: 0, width: 500, height: 400, visible: true });
+const rect = (id, parentId) => ({ id, kind: "rect", parentId, x: 50, y: 50, width: 40, height: 30, visible: true });
+const fixture = (nodes, ids) => {
+  let doc = { width: 600, height: 500, nodes };
+  const select = vi.fn(), setDoc = vi.fn(next => { doc = next; });
+  const api = createEngineGroups({ getDoc: () => doc, setDoc, select, selectMany: vi.fn(),
+    selection: { getIds: () => ids },
+    clickUnitOf: node => frameSelectionUnit(doc, node),
+    selectionUnits: () => [...new Set(ids.map(id => frameSelectionUnit(doc, doc.nodes.find(n => n.id === id))))],
+  });
+  return { api, select, setDoc, doc: () => doc };
+};
+
+describe("group commands inside Frames", () => {
+  it("wraps a single layer in a transparent Frame without changing its artwork", () => {
+    const child = { ...rect("a", "outer"), rotation: 30 };
+    const f = fixture([frame("outer"), child], ["a"]);
+    const id = f.api.frameSelection();
+    expect(f.doc().nodes.find(node => node.id === id)).toMatchObject({
+      kind: "group", isFrame: true, frame: true, parentId: "outer", fill: "transparent", clipContent: false,
+    });
+    expect(f.doc().nodes.find(node => node.id === "a")).toEqual({ ...child, parentId: id });
+    expect(f.select).toHaveBeenCalledWith(id);
+    expect(f.setDoc).toHaveBeenCalledTimes(1);
+  });
+  it("refuses frame wrapping for empty or inherited-locked selections", () => {
+    const empty = fixture([], []);
+    expect(empty.api.frameSelection()).toBeUndefined();
+    expect(empty.setDoc).not.toHaveBeenCalled();
+    const locked = fixture([{ ...frame("outer"), locked: true }, rect("a", "outer")], ["a"]);
+    locked.api.frameSelection();
+    expect(locked.setDoc).not.toHaveBeenCalled();
+  });
+  it("keeps selected descendants attached to their selected Frame when wrapping", () => {
+    const inner = { ...frame("inner", "outer"), x: 60, y: 60, width: 100, height: 100 };
+    const child = rect("child", "inner");
+    const f = fixture([frame("outer"), inner, child], ["inner", "child"]);
+    const id = f.api.frameSelection();
+    expect(f.doc().nodes.find(node => node.id === "inner")).toEqual({ ...inner, parentId: id });
+    expect(f.doc().nodes.find(node => node.id === "child")).toEqual(child);
+    const restored = deserialiseDocument(serialiseDocument(f.doc()));
+    expect(restored.nodes.find(node => node.id === id)).toMatchObject({ isFrame: true, parentId: "outer" });
+    expect(restored.nodes.find(node => node.id === "child").parentId).toBe("inner");
+  });
+  it("keeps a new sibling group inside the shared parent Frame", () => {
+    const doc = { width: 600, height: 500, nodes: [frame("frame"), rect("a", "frame"), rect("b", "frame")] };
+    const next = insertGroup(doc, { id: "group", kind: "group", parentId: null, x: 50, y: 50, width: 40, height: 30 }, ["a", "b"]);
+    expect(next.nodes.find(n => n.id === "group").parentId).toBe("frame");
+    expect(next.nodes.filter(n => ["a", "b"].includes(n.id)).every(n => n.parentId === "group")).toBe(true);
+  });
+  it("selects the newly created group as the next movement unit", () => {
+    const f = fixture([frame("frame"), rect("a", "frame"), rect("b", "frame")], ["a", "b"]);
+    f.api.groupSelection();
+    const group = f.doc().nodes.find(n => n.kind === "group" && !n.isFrame);
+    expect(f.select).toHaveBeenCalledWith(group.id);
+  });
+  it("creates a named non-frame Section around selected layers", () => {
+    const f = fixture([rect("a", null), { ...rect("b", null), x: 120 }], ["a", "b"]);
+    f.api.createSection("Hero assets");
+    const section = f.doc().nodes.find(node => node.section === true);
+    expect(section).toMatchObject({ kind: "group", name: "Hero assets", section: true });
+    expect(section.isFrame).not.toBe(true);
+    expect(f.doc().nodes.filter(node => ["a", "b"].includes(node.id)).every(node => node.parentId === section.id)).toBe(true);
+    expect(f.select).toHaveBeenCalledWith(section.id);
+    const restored = deserialiseDocument(serialiseDocument(f.doc()));
+    expect(restored.nodes.find(node => node.id === section.id)).toMatchObject({ section: true, name: "Hero assets" });
+  });
+  it("ungroups the selected ordinary unit without dissolving either ancestor Frame", () => {
+    const f = fixture([frame("outer"), frame("inner", "outer"),
+      { ...frame("folder", "inner"), isFrame: false }, rect("a", "folder"), rect("b", "folder")], ["a", "b"]);
+    f.api.ungroupSelection();
+    expect(f.doc().nodes.filter(n => n.isFrame).map(n => n.id)).toEqual(["outer", "inner"]);
+    expect(f.doc().nodes.find(n => n.id === "folder")).toBeUndefined();
+    expect(f.doc().nodes.find(n => n.id === "a").parentId).toBe("inner");
+  });
+  it("does not offer or execute ungroup on a loose child of a Frame", () => {
+    const f = fixture([frame("outer"), rect("a", "outer")], ["a"]);
+    expect(f.api.canUngroupSelection()).toBe(false);
+    f.api.ungroupSelection(); expect(f.setDoc).not.toHaveBeenCalled();
+  });
+  it("does not dissolve a locked selected container", () => {
+    const f = fixture([{ ...frame("folder"), isFrame: false, locked: true }, rect("a", "folder")], ["folder"]);
+    f.api.ungroupSelection(); expect(f.setDoc).not.toHaveBeenCalled();
+  });
+  it("does not offer grouping for one Frame plus its already-contained selected leaf", () => {
+    const f = fixture([frame("frame"), rect("a", "frame")], ["frame", "a"]);
+    expect(f.api.canGroupSelection()).toBe(false); f.api.groupSelection();
+    expect(f.setDoc).not.toHaveBeenCalled();
+  });
+  it("uses selected subtree roots for an Auto Layout wrapper's initial bounds", () => {
+    const f = fixture([frame("frame"), { ...rect("a", "frame"), x: 900 }, { ...rect("loose", null), x: 550 }], ["frame", "a", "loose"]);
+    f.api.toggleAutoLayoutSelection();
+    const wrapper = f.doc().nodes.find(node => node.autoLayout);
+    expect(wrapper.width).toBe(590);
+    expect(f.doc().nodes.find(node => node.id === "a").parentId).toBe("frame");
+  });
+  it("does not double-move a selected descendant when aligning its parent Frame", () => {
+    const f = fixture([
+      { ...frame("frame"), x: 100, y: 40, width: 200, height: 150 },
+      { ...rect("child", "frame"), x: 130, y: 60 },
+      { ...rect("peer", null), x: 10, y: 60 },
+    ], ["frame", "child", "peer"]);
+    f.api.layoutSelection((nodes) => nodes.map((n) => ({ id: n.id, patch: { x: 10, y: n.y } })), "left");
+    expect(f.doc().nodes.find((n) => n.id === "frame").x).toBe(10);
+    expect(f.doc().nodes.find((n) => n.id === "child").x).toBe(40);
+  });
+  it("moves clipped followers together with their mask base during layout alignment", () => {
+    const f = fixture([
+      { ...rect("base", null), x: 120, y: 50, maskBase: true },
+      { ...rect("clipped", null), x: 135, y: 65, clipTo: "base" },
+      { ...rect("peer", null), x: 20, y: 50 },
+    ], ["base", "peer"]);
+    f.api.layoutSelection((nodes) => nodes.map((n) => ({ id: n.id, patch: { x: 20, y: n.y } })), "left");
+    expect(f.doc().nodes.find((n) => n.id === "base").x).toBe(20);
+    expect(f.doc().nodes.find((n) => n.id === "clipped").x).toBe(35);
+  });
+  it("does not double-move a clipped follower when it is selected with its mask base", () => {
+    const f = fixture([
+      { ...rect("base", null), x: 120, y: 50, maskBase: true },
+      { ...rect("clipped", null), x: 135, y: 65, clipTo: "base" },
+      { ...rect("anchor", null), x: 500, y: 50 },
+    ], ["base", "clipped", "anchor"]);
+    f.api.layoutSelection(alignNodes, "right");
+    const nodes = f.doc().nodes;
+    const base = nodes.find((n) => n.id === "base");
+    const clipped = nodes.find((n) => n.id === "clipped");
+    const anchor = nodes.find((n) => n.id === "anchor");
+    // The clip base is the single layout unit: it aligns to the anchor's right
+    // edge (540) and its follower is carried exactly once, keeping offset 15.
+    expect(base.x).toBe(500);
+    expect(anchor.x).toBe(500);
+    expect(clipped.x).toBe(515);
+    expect(clipped.x - base.x).toBe(15);
+  });
+  it("still aligns a clipped follower on its own when its base is not selected", () => {
+    const f = fixture([
+      { ...rect("base", null), x: 120, y: 50, maskBase: true },
+      { ...rect("clipped", null), x: 135, y: 65, clipTo: "base" },
+      { ...rect("anchor", null), x: 500, y: 50 },
+    ], ["clipped", "anchor"]);
+    f.api.layoutSelection(alignNodes, "right");
+    const nodes = f.doc().nodes;
+    expect(nodes.find((n) => n.id === "clipped").x).toBe(500);
+    expect(nodes.find((n) => n.id === "anchor").x).toBe(500);
+    expect(nodes.find((n) => n.id === "base").x).toBe(120);
+  });
+});

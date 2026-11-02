@@ -1,0 +1,8 @@
+2026-11-01 10:57:22.735 run[12699:10915760] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+{
+  "hiddenFillDoesNotPaint" : false,
+  "hidingPreservesGradient" : false,
+  "oneFillVisibilityEntry" : false,
+  "stackPaintOrderAndAlpha" : false,
+  "unusedEffectsCollapsed" : false
+}

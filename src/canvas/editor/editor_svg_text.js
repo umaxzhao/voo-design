@@ -1,0 +1,211 @@
+/**
+ * Text layers in SVG export: one <text> per node, with a <tspan> per further
+ * wrapped or typed line so the export breaks lines where the canvas does.
+ */
+import { textLines } from "./scene_model.js";
+import { layoutTextLines, textLineHeight } from "./text_metrics.js";
+import { escapeXml, number, svgNodeTransform } from "./editor_svg_xml.js";
+import { textOnPathToSvg } from "./text_on_path.js";
+import { importedTextCache } from "./imported-text-cache.js";
+import { estimateTextSize } from "./text_fidelity.js";
+
+let cachedMeasureCtx = null;
+
+function getMeasurementContext() {
+  if (cachedMeasureCtx) return cachedMeasureCtx;
+  if (typeof document !== "undefined" && typeof document.createElement === "function") {
+    try {
+      const canvas = document.createElement("canvas");
+      cachedMeasureCtx = canvas.getContext("2d");
+      if (cachedMeasureCtx) return cachedMeasureCtx;
+    } catch {
+      // Fall through to OffscreenCanvas or estimate
+    }
+  }
+  if (typeof OffscreenCanvas !== "undefined") {
+    try {
+      const canvas = new OffscreenCanvas(1, 1);
+      cachedMeasureCtx = canvas.getContext("2d");
+      if (cachedMeasureCtx) return cachedMeasureCtx;
+    } catch {
+      // Fall through to estimate
+    }
+  }
+  return null;
+}
+
+/**
+ * Measures text width for SVG text importing.
+ * In browser/Electron environments with Canvas2D, uses ctx.measureText.
+ * In headless Node environments without DOM, falls back to estimateTextSize.
+ */
+export function measureSvgTextWidth(
+  text,
+  fontSize = 16,
+  fontFamily = "sans-serif",
+  fontWeight = "normal",
+  letterSpacing = 0,
+) {
+  const fSize = Number(fontSize) > 0 ? Number(fontSize) : 16;
+  const fFam = fontFamily ? String(fontFamily).replace(/['"]/g, "").trim() : "sans-serif";
+  const fWeight = fontWeight ? String(fontWeight).trim() : "normal";
+  const lSpacing = Number(letterSpacing) || 0;
+
+  const ctx = getMeasurementContext();
+  if (ctx && typeof ctx.measureText === "function") {
+    try {
+      ctx.save();
+      ctx.font = `${fWeight} ${fSize}px ${fFam}`;
+      if ("letterSpacing" in ctx && lSpacing) {
+        ctx.letterSpacing = `${lSpacing}px`;
+      }
+      const rawLines = String(text ?? "").split("\n");
+      let maxWidth = 0;
+      for (const line of rawLines) {
+        let w = ctx.measureText(line || " ").width;
+        if (lSpacing && (!("letterSpacing" in ctx) || ctx.letterSpacing !== `${lSpacing}px`)) {
+          w += lSpacing * line.length;
+        }
+        if (w > maxWidth) maxWidth = w;
+      }
+      ctx.restore();
+      if (Number.isFinite(maxWidth) && maxWidth > 0) {
+        return maxWidth;
+      }
+    } catch {
+      // Fall back to heuristic below
+    }
+  }
+
+  const estimated = estimateTextSize(text, fSize, 0, { letterSpacing: lSpacing });
+  return estimated.width;
+}
+
+/**
+ * Calculates the horizontal offset to add to the anchor coordinate
+ * based on SVG text-anchor ('middle', 'end', or 'start'/default).
+ */
+export function calculateSvgTextAnchorOffset(textAnchor, textWidth) {
+  const anchor = String(textAnchor ?? "").toLowerCase().trim();
+  if (anchor === "middle") {
+    return -textWidth / 2;
+  }
+  if (anchor === "end") {
+    return -textWidth;
+  }
+  return 0;
+}
+
+/** The lines a text node exports: wrap when a metric source is available. */
+function svgTextLines(node, measureCtx) {
+  if (node.boxWidth > 0 && measureCtx) return layoutTextLines(measureCtx, node);
+  return textLines(node);
+}
+
+function textTransformAttr(node) {
+  const attr = svgNodeTransform(node);
+  return attr ? ` ${attr}` : "";
+}
+
+/**
+ * One <text> (or one line bearing one <tspan> per wrapped line) — a bare
+ * <text> flattens every newline and wrap into a single horizontal run, the
+ * canvas this exports never draws it that way.
+ */
+export function textElement(node, measureCtx, idOf = () => null) {
+  // A CSS url(data:image/svg+xml,...) is not an SVG paint server. Resolve
+  // fill and stroke through the same local definitions used by vector shapes.
+  const cache = importedTextCache(node);
+  const paintBox = cache ? { ...node, x: 0, y: 0, width: cache.width, height: cache.height } : node;
+  const fill = idOf(node.fill, paintBox) ?? node.fill ?? "#000000";
+  const stroke = idOf(node.stroke) ?? node.stroke;
+  if (node.textPath) {
+    const svg = textOnPathToSvg({ ...node, fill, stroke }, measureCtx);
+    if (svg) {
+      const transform = textTransformAttr(node);
+      return transform ? `<g${transform}>${svg}</g>` : svg;
+    }
+  }
+  const anchor =
+    { left: "start", center: "middle", right: "end" }[node.align] ?? "start";
+  const x =
+    anchor === "middle"
+      ? node.x + node.width / 2
+      : anchor === "end"
+        ? node.x + node.width
+        : node.x;
+  const spacing = node.letterSpacing ?? 0;
+  const strokeParts =
+    node.stroke && (node.strokeWidth ?? 0) > 0
+      ? ` stroke="${escapeXml(stroke)}" stroke-width="${number(node.strokeWidth)}" stroke-linejoin="round" paint-order="stroke fill"`
+      : "";
+  const shadow = node.shadow?.enabled ? node.shadow : null;
+  const filterPart = shadow
+    ? ` style="filter:drop-shadow(${number(shadow.offsetX ?? 0)}px ${number(shadow.offsetY ?? 0)}px ${number(shadow.blur ?? 0)}px ${escapeXml(shadow.color ?? "#000000")})"`
+    : "";
+  if (cache) {
+    const placement = `translate(${number(node.x)} ${number(node.y)}) scale(${node.width / cache.width} ${node.height / cache.height})`;
+    const opacity = node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : "";
+    const fillOpacity = node.fillOpacity != null ? ` fill-opacity="${number(node.fillOpacity)}"` : "";
+    const strokeOpacity = node.strokeOpacity != null ? ` stroke-opacity="${number(node.strokeOpacity)}"` : "";
+    return `<g${textTransformAttr(node)}><path d="${escapeXml(cache.path)}" transform="${placement}" fill="${escapeXml(fill)}"${opacity}${fillOpacity}${strokeOpacity}${strokeParts}${filterPart}><title>${escapeXml(node.text)}</title></path></g>`;
+  }
+  const styleParts = [
+    spacing ? ` letter-spacing="${number(spacing)}"` : "",
+    node.italic ? ' font-style="italic"' : "",
+    node.underline ? ' text-decoration="underline"' : "",
+    // SVG 1.1's writing-mode shorthand; "tb" stacks the glyphs top to bottom
+    // like the canvas painter's 直排 columns.
+    node.direction === "vertical" ? ' writing-mode="tb"' : "",
+    node.fillOpacity != null && node.fillOpacity < 1 ? ` fill-opacity="${number(node.fillOpacity)}"` : "",
+    node.strokeOpacity != null && node.strokeOpacity < 1 ? ` stroke-opacity="${number(node.strokeOpacity)}"` : "",
+    strokeParts,
+    filterPart,
+  ].join("");
+
+  const transformAttr = textTransformAttr(node);
+  const textTransform = node.highlight ? "" : transformAttr;
+
+  const head =
+    `<text x="${number(x)}" y="${number(node.y + node.fontSize)}" font-family="${escapeXml(
+      node.fontFamily ?? "sans-serif",
+    )}" font-size="${number(node.fontSize)}" font-weight="${node.fontWeight ?? "normal"}" fill="${escapeXml(
+      fill,
+    )}"${node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : ""} text-anchor="${anchor}"${styleParts}${textTransform}>`;
+  const lines = svgTextLines(node, measureCtx);
+  const textBody =
+    lines.length === 1
+      ? `${head}${escapeXml(lines[0])}</text>`
+      : `${head}${escapeXml(lines[0])}${wrappedTail(node, lines, x, node.y + node.fontSize)}</text>`;
+
+  if (node.highlight) {
+    const highlightRect = `<rect x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(node.height)}" fill="${escapeXml(node.highlight)}"/>`;
+    if (transformAttr) {
+      return `<g${transformAttr}>${highlightRect}${textBody}</g>`;
+    }
+    return `${highlightRect}${textBody}`;
+  }
+  return textBody;
+}
+
+/** One <tspan> per further wrapped/typed line, stepped by the line pitch. */
+function wrappedTail(node, lines, anchorX, anchorY) {
+  // Horizontal: every continuation restarts at the head's x and steps down.
+  // 直排 columns advance to the LEFT (dx), each restarting at the head's y.
+  if (node.direction === "vertical") {
+    return lines
+      .slice(1)
+      .map(
+        (line) =>
+          `<tspan dx="${number(-textLineHeight(node))}" y="${number(anchorY)}">${escapeXml(line)}</tspan>`,
+      )
+      .join("");
+  }
+  return lines
+    .slice(1)
+    .map(
+      (line) =>
+        `<tspan x="${number(anchorX)}" dy="${number(textLineHeight(node))}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+}

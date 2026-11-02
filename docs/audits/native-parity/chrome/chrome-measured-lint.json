@@ -1,0 +1,96 @@
+{
+  "base": "7580eca7eb4917bc7556ca38717b1b3c5882e5b7",
+  "revision": "603fd4dd55baefe924a0731c6557f980dfe34972",
+  "baselineDiagnostics": 2884,
+  "currentDiagnostics": 2727,
+  "additionalDiagnostics": [],
+  "newFiles": [
+    {
+      "path": "native_studio/Sources/Engine/native-paint-command.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/Engine/native-paint-renderer.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/Models/native-paints.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/Models/portable-effects.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-effects-layout.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-paint-actions.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/tests/BitmapSampling.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/tests/NativePaintParityTests.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-canvas-actions.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-canvas-properties.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-inspector-controls.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-layer-background.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-layer-order.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-rail-feedback.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-titlebar-style.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/Sources/UI/native-toolbar-glyphs.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/tests/NativeInspectorVisualTests.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    }
+  ],
+  "fullTouchedLegacyLint": "failed",
+  "differentialExecution": "passed"
+}
