@@ -132,8 +132,9 @@ async function deleteIndexedDbModel(key) {
 }
 
 /**
- * Checks browser caches or native IPC availability without reading whole native models.
- * The native result is capability-only: this API cannot cheaply certify a particular file.
+ * Reports whether this particular model file is actually installed.
+ * Native bundled files are checked by existence (`hasModelBytes`), never by bridge
+ * capability alone; a missing file falls through to the browser caches.
  *
  * @param {object} options
  * @param {string} options.filename - The model file name (e.g. "rmbg-1.4-fp16.onnx").
@@ -146,9 +147,14 @@ export async function isModelAssetCached({
   fallbackUrl,
   cacheName = DEFAULT_MODEL_CACHE_NAME,
 }) {
-  // Preserve native UI behavior without reading a 100MB model for a badge.
-  // Capability is not proof this particular optional weight is installed.
-  if (typeof window !== "undefined" && window.electronAPI?.loadModelBytes) return true;
+  if (typeof window !== "undefined" && window.electronAPI?.hasModelBytes) {
+    try {
+      if (await window.electronAPI.hasModelBytes(filename)) return true;
+    } catch (err) {
+      // Status is best-effort: an unverifiable native file must not be reported as installed.
+      console.warn(`[model_asset_loader] Electron existence check failed for ${filename}:`, err);
+    }
+  }
 
   const localUrl = resolveLocalModelUrl(filename);
   const cacheKeys = [localUrl, fallbackUrl, `/models/${filename}`, filename].filter(Boolean);
