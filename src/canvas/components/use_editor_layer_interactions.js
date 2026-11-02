@@ -130,7 +130,7 @@ export default function useEditorLayerInteractions(model) {
         return;
       }
       if (dragged?.parentId) {
-        onMoveNodeToRoot?.(id, target);
+        onMoveNodeToRoot?.(ids.length > 1 ? ids : id, target);
         return;
       }
       const unit = dragUnits[target];

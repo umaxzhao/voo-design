@@ -118,9 +118,9 @@ export function createNodeStackActions({ getDoc, setDoc, selection, getSelectedG
     });
   }
 
-  function moveNodeToRoot(id, targetRootIndex) {
+  function moveNodeToRoot(idOrIds, targetRootIndex) {
     const doc = getDoc();
-    const next = ops.moveNodeToRoot(doc, id, targetRootIndex);
+    const next = ops.moveNodeToRoot(doc, idOrIds, targetRootIndex);
     if (next === doc) return false;
     commitEditorDocument("editor.layer.move", setDoc, next, {
       name: "editor.history.entry.moveOutOfGroup",

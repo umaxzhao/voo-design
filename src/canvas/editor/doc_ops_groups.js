@@ -338,35 +338,35 @@ export function reorderGroupTo(doc, groupId, targetIndex) {
  * can skip the history entry.
  */
 export function moveNodeToRoot(doc, id, targetRootIndex) {
-  const node = doc.nodes.find((candidate) => candidate.id === id);
-  if (!node || node.locked || isRegionNode(node)) return doc;
-  const blockIds = moveAffectedIds(doc, [id]);
-  const block = doc.nodes.filter((candidate) =>
-    blockIds.includes(candidate.id),
-  );
-  const rest = doc.nodes.filter(
-    (candidate) => !blockIds.includes(candidate.id),
-  );
-  // The root slots are the TRUE top-level rows that remain after the lift. A
-  // clip follower is parentless but renders indented beneath its base, so it is
-  // not a placement target — counting it here would shift every root index by
-  // the number of clip followers and break "drop above the group" (the panel
-  // excludes clip followers from its drag rows too).
-  const roots = rest.filter(
+  const ids = Array.isArray(id) ? id : [id];
+  const roots = Array.isArray(id)
+    ? groupingRoots(doc, ids)
+    : doc.nodes.filter((candidate) => candidate.id === id);
+  if (
+    !roots.length ||
+    roots.some((n) => n.locked || isLockedByGroup(doc, n) || isRegionNode(n))
+  ) {
+    return doc;
+  }
+  const rootIds = new Set(roots.map((candidate) => candidate.id));
+  const blockIds = new Set(moveAffectedIds(doc, Array.from(rootIds)));
+  const block = doc.nodes.filter((candidate) => blockIds.has(candidate.id));
+  const rest = doc.nodes.filter((candidate) => !blockIds.has(candidate.id));
+  const rootTargets = rest.filter(
     (candidate) => !candidate.parentId && !candidate.clipTo,
   );
-  let at = Math.max(0, Math.min(roots.length, Math.round(targetRootIndex)));
-  // A locked node keeps its slot: the lifted unit may not be placed on or
-  // below the first locked node above the target (the base image).
-  const firstLocked = roots.findIndex((candidate) => candidate.locked);
+  const target = Number.isFinite(targetRootIndex)
+    ? targetRootIndex
+    : rootTargets.length;
+  let at = Math.max(0, Math.min(rootTargets.length, Math.round(target)));
+  const firstLocked = rootTargets.findIndex((candidate) => candidate.locked);
   if (firstLocked >= 0) at = Math.max(at, firstLocked + 1);
   const flatIndex =
-    at >= roots.length
+    at >= rootTargets.length
       ? rest.length
-      : rest.findIndex((candidate) => candidate.id === roots[at].id);
-  // Detach the unit's root from its parent; descendants stay under the unit.
+      : rest.findIndex((candidate) => candidate.id === rootTargets[at].id);
   const detached = block.map((candidate) =>
-    candidate.id === id ? { ...candidate, parentId: null } : candidate,
+    rootIds.has(candidate.id) ? { ...candidate, parentId: null } : candidate,
   );
   return withNodes(
     doc,
