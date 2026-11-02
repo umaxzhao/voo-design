@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { _electron as electron } from "playwright";
 import { seedResponsiveDocument, settlePanels } from "./ui-responsive-editor-helpers.mjs";
+import { startEditorBrowserServer } from "./editor-browser-server.mjs";
 
 // T02 source-host check: launches this copy's own Electron main/preload with its own
 // dist build and an isolated userData profile. Nothing outside the copy is read or written.
@@ -16,9 +17,6 @@ await mkdir(evidence, { recursive: true });
 const profile = await mkdtemp(join(tmpdir(), "voo-t02-host-"));
 const entry = join(profile, "entry.cjs");
 await writeFile(entry, `const {app}=require('electron');
-// Test boundary: force the packaged branch so electron/main.cjs loads this copy's dist/index.html,
-// never a dev server on localhost:5173 (which belongs to another tree).
-Object.defineProperty(app,'isPackaged',{get:()=>true});
 app.setPath('userData',${JSON.stringify(join(profile, "profile"))});
 app.setPath('documents',${JSON.stringify(join(profile, "documents"))});
 require(${JSON.stringify(join(root, "electron/main.cjs"))});`);
@@ -38,9 +36,11 @@ const sectionHeights = (page) => page.evaluate(() => [...document.querySelectorA
   border: getComputedStyle(section).borderTopWidth,
 })));
 
+// This copy's own Vite server (its root is this copy); the renderer must come from its origin.
+const devServer = await startEditorBrowserServer();
 const launchEnv = { ...process.env };
-delete launchEnv.VITE_DEV_SERVER_URL;
 delete launchEnv.NODE_ENV;
+launchEnv.VITE_DEV_SERVER_URL = `${devServer.origin}/?voo-test=1`;
 const app = await electron.launch({ args: [entry], env: {
   ...launchEnv,
   VOO_USER_DATA_DIR: join(profile, "profile"),
@@ -119,5 +119,6 @@ try {
   const closed = await Promise.race([app.close().then(() => "closed"), new Promise((r) => setTimeout(() => r("timeout"), 20_000))]);
   result.cleanup = closed;
   await writeFile(join(evidence, "electron-host-result.json"), JSON.stringify(result, null, 2));
+  await devServer.close();
   console.log(JSON.stringify(result.status === "passed" ? { status: "passed", checks: Object.keys(result.checks) } : result));
 }
