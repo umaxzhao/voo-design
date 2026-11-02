@@ -41,7 +41,7 @@ export default function ModifiersSection({ object, engine, t, revealed = false }
   if (!modifier && !picker && !revealed) return null;
   return <CollapsibleSection title={t("editor.props.modifiers")} storageKey="modifiers.section" testId="editor-modifiers-section"
     extra={<span data-testid="editor-modifiers-add"><SectionAddButton label={t("editor.modifiers.add")} onClick={() => setPicker(value => !value)} /></span>}>
-    {picker ? <div data-testid="editor-modifiers-picker" className="rounded-xl border border-white/10 bg-neutral-900 p-1" onKeyDown={event => { if (event.key === "Escape") setPicker(false); }}>
+    {picker ? <div data-testid="editor-modifiers-picker" className="rounded-xl bg-neutral-900 p-1" onKeyDown={event => { if (event.key === "Escape") setPicker(false); }}>
       {kinds.map(item => <button key={item.type} type="button" data-testid={`editor-modifier-add-${item.type}`} disabled={Boolean(modifier) || !engine} onClick={() => add(item)} className="block w-full rounded-lg px-2 py-1.5 text-left text-[11px] text-neutral-200 hover:bg-white/[0.08] disabled:opacity-40">{t(item.title)}</button>)}
     </div> : null}
     {!modifier ? null : <div data-testid="editor-modifiers-stack">

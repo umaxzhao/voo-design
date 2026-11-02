@@ -14,6 +14,8 @@
 
 ## 1.0.0
 
+- Make application chrome borderless across inspectors, toolbars, menus, dialogs, workbench and settings. Replace selection rings with filled states, remove prompt/window perimeters and retain artwork strokes, manipulation guides and keyboard feedback. Guard JSX, shared class constants, inline borders and raw CSS against decorative outlines.
+
 - Restore borderless inspector dropdown and font-picker triggers while retaining large corners, keyboard focus and floating-menu edges. Keep custom-menu navigation and deletion keys from reaching selected canvas artwork.
 
 - Integrate Linux/Windows window controls into the editor title bar, hide the native frame/menu while preserving accelerators, retain macOS traffic lights and keep custom close requests behind the shared unsaved-work guard. Add actual Linux/X11 window interaction checks.

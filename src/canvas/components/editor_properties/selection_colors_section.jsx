@@ -62,7 +62,7 @@ export default function SelectionColorsSection({ selectedNodes = [], engine }) {
             className="flex min-h-7 items-center gap-2 rounded-xl bg-neutral-800 px-2.5 text-left transition-colors hover:bg-neutral-800/80"
           >
             <span
-              className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-white/20"
+              className="h-3.5 w-3.5 shrink-0 rounded-full"
               style={{ background: entry.colour, backgroundSize: "100% 100%" }}
               aria-hidden="true"
             />

@@ -180,12 +180,11 @@ const SKEUOMORPHIC = {
 };
 
 /**
- * Borders are a last resort, not a default. Hierarchy comes from lightness:
- * an overlay is one step brighter than the canvas, a control one step brighter
- * than the overlay. Solid-tone borders are the historical wrong answer.
+ * Interface surfaces are borderless. These spellings remain meaningful only
+ * for real artwork and manipulation guides; border-policy.cjs guards the UI.
  */
 const BORDER_ALLOWED = [
-  "border-white/", // the sanctioned translucent hairline
+  "border-white/", // functional geometry, never a decorative surface edge
   "border-transparent",
   "border-current",
   "border-none",

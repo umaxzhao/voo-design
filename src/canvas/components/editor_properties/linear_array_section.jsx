@@ -23,7 +23,7 @@ import { IconCopy, IconTrash } from "../../icons.jsx";
 const FIELD_CLASS =
   "h-7 w-full min-w-0 rounded-xl bg-neutral-800 px-2 text-[11px] font-mono tabular-nums text-neutral-100 outline-none transition-colors hover:bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
 const ERROR_FIELD_CLASS =
-  "h-7 w-full min-w-0 rounded-xl bg-neutral-800 px-2 text-[11px] font-mono tabular-nums text-rose-300 outline-none ring-1 ring-rose-500/60 focus-visible:ring-1 focus-visible:ring-rose-400";
+  "h-7 w-full min-w-0 rounded-xl bg-neutral-800 px-2 text-[11px] font-mono tabular-nums text-rose-300 outline-none focus-visible:ring-1 focus-visible:ring-rose-400";
 
 function NumberInput({
   label,

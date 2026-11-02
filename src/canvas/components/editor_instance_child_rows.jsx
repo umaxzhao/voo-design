@@ -98,7 +98,7 @@ export default function EditorInstanceChildRows({
           }}
           className={`flex h-7 w-full items-center gap-2 rounded-xl pr-2 text-left text-[11px] font-mono transition-colors ${
             selected
-              ? "bg-[#2a2a2a] text-white ring-1 ring-inset ring-[#E5B2FF]/60"
+              ? "bg-[#2a2a2a] text-white"
               : "text-neutral-400 hover:bg-[#222222] hover:text-neutral-200"
           }`}
           style={{ paddingLeft: 8 + (depth + 1 + sourceDepth) * 14 }}

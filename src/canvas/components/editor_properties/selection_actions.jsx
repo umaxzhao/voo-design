@@ -46,7 +46,7 @@ export default function SelectionActions({
               <button
                 type="button"
                 onClick={() => onClearSelection()}
-                className={`${sectionRowClass} justify-center text-[10px] text-rose-300 ring-1 ring-rose-400/20`}
+                className={`${sectionRowClass} justify-center text-[10px] text-rose-300 `}
               >
                 {t("editor.selection.deselect")}
               </button>
@@ -86,14 +86,14 @@ export default function SelectionActions({
               <button
                 type="button"
                 onClick={() => onApplyTransformSelection?.()}
-                className={`${sectionRowClass} justify-center text-[10px] text-emerald-300 ring-1 ring-emerald-400/20`}
+                className={`${sectionRowClass} justify-center text-[10px] text-emerald-300 `}
               >
                 {t("editor.selection.applyTransform")}
               </button>
               <button
                 type="button"
                 onClick={() => onCancelTransformSelection?.()}
-                className={`${sectionRowClass} justify-center text-[10px] text-rose-300 ring-1 ring-rose-400/20`}
+                className={`${sectionRowClass} justify-center text-[10px] text-rose-300 `}
               >
                 {t("editor.selection.cancelTransform")}
               </button>

@@ -162,7 +162,7 @@ export default function EditorLayers({
     ref={panelRef}
     data-testid="editor-layers-panel"
     aria-label={t(panelTab === "assets" ? "editor.assets" : "editor.layers")}
-    className={`editor-layers-resizable absolute ${sideClass} top-1/2 z-30 flex ${LAYERS_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 flex-col rounded-3xl border border-white/10 bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`}
+    className={`editor-layers-resizable absolute ${sideClass} top-1/2 z-30 flex ${LAYERS_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 flex-col rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`}
     style={bottomInset > 0 ? {
       top: `calc(50% - ${bottomInset / 2}px)`,
       maxHeight: `calc(100% - ${bottomInset + 80}px)`

@@ -118,7 +118,7 @@ export default function ProfileSection() {
                       (oauthProvidersState === "ready" && !isAvailable)
                     }
                     onClick={() => handleOAuth(provider)}
-                    className="flex min-h-9 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 text-xs text-neutral-200 outline-none hover:bg-white/[0.1] disabled:cursor-wait disabled:opacity-50 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+                    className="flex min-h-9 items-center justify-center gap-2 rounded-xl bg-white/[0.05] px-3 text-xs text-neutral-200 outline-none hover:bg-white/[0.1] disabled:cursor-wait disabled:opacity-50 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
                   >
                     <span aria-hidden="true" className="font-semibold uppercase">
                       {provider === "google" ? "G" : "GH"}
@@ -245,7 +245,7 @@ export default function ProfileSection() {
           <button
             type="button"
             onClick={() => void logout()}
-            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/[0.06]"
+            className="rounded-lg px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/[0.06]"
           >
             {t("user.signOut")}
           </button>

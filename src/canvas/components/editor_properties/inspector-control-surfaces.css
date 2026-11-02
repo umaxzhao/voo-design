@@ -6,7 +6,6 @@
   --inspector-select-surface: #171717;
   --inspector-track-surface: #171717;
   --inspector-active-surface: #404040;
-  --inspector-control-border: rgb(255 255 255 / 0.12);
   --inspector-value: #e5e5e5;
   --inspector-label: #a3a3a3;
 }
@@ -16,7 +15,6 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] {
   --inspector-select-surface: #ffffff;
   --inspector-track-surface: #f5f5f5;
   --inspector-active-surface: #d4d4d4;
-  --inspector-control-border: rgb(0 0 0 / 0.14);
   --inspector-value: #262626;
   --inspector-label: #525252;
 }
@@ -39,7 +37,7 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] {
   text-transform: none !important;
 }
 
-/* Choices use a quiet fill and chevron; only floating panels need an edge. */
+/* Fields, choices and commands use surface lightness instead of outlines. */
 [data-testid="editor-properties-panel"]
   :is(
     [data-inspector-control="field"],
@@ -161,7 +159,6 @@ html[data-theme="light"]
   :is([data-inspector-control="action"], [data-transform-actions] button) {
   height: var(--inspector-control-height);
   min-height: var(--inspector-control-height);
-  border: 1px solid var(--inspector-control-border);
   border-radius: var(--inspector-control-radius);
 }
 
@@ -214,4 +211,21 @@ html[data-theme="light"]
     > [data-inspector-control="bare-field"] {
     min-height: var(--inspector-control-height);
   }
+}
+
+/* Focus is a filled state, never a second frame around the numeric row. */
+[data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="field"],
+    .inspector-field,
+    .inspector-row
+  ):focus-within,
+html[data-theme="light"]
+  [data-testid="editor-properties-panel"]
+  :is(
+    [data-inspector-control="field"],
+    .inspector-field,
+    .inspector-row
+  ):focus-within {
+  background-color: var(--inspector-active-surface) !important;
 }

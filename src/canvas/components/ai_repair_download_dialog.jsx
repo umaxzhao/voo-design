@@ -33,7 +33,7 @@ function AiRepairDownloadDialog({ state, onDownload, onCancel }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-xs rounded-3xl border border-white/10 bg-neutral-900 p-4 shadow-panel"
+        className="w-full max-w-xs rounded-3xl bg-neutral-900 p-4 shadow-panel"
       >
         <h2
           id={titleId}

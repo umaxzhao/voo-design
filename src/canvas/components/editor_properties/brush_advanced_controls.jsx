@@ -74,7 +74,7 @@ export default function BrushAdvancedControls({
               onClick={() => onPressureSize?.(!pressureSize)}
               className={`flex h-7 w-full items-center justify-between rounded-xl px-2.5 transition-all ${
                 pressureSize
-                  ? "bg-neutral-800 text-white ring-1 ring-[#a7ffd4]/40"
+                  ? "bg-neutral-800 text-white"
                   : "bg-neutral-800 text-neutral-400 hover:bg-neutral-800/80 hover:text-neutral-200"
               }`}
             >
@@ -117,7 +117,7 @@ export default function BrushAdvancedControls({
               onClick={() => onPressureOpacity?.(!pressureOpacity)}
               className={`flex h-7 w-full items-center justify-between rounded-xl px-2.5 transition-all ${
                 pressureOpacity
-                  ? "bg-neutral-800 text-white ring-1 ring-[#a7ffd4]/40"
+                  ? "bg-neutral-800 text-white"
                   : "bg-neutral-800 text-neutral-400 hover:bg-neutral-800/80 hover:text-neutral-200"
               }`}
             >

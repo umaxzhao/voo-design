@@ -163,7 +163,7 @@ export default function EditorFindReplace({
         event.stopPropagation();
         onClose?.();
       }}
-      className="fixed left-1/2 top-[52px] z-[125] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 rounded-xl border border-white/10 bg-black/95 p-2 font-mono shadow-panel backdrop-blur"
+      className="fixed left-1/2 top-[52px] z-[125] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 rounded-xl bg-black/95 p-2 font-mono shadow-panel backdrop-blur"
     >
       <div className="flex items-center gap-1.5">
         <Search

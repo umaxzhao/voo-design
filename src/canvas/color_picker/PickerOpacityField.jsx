@@ -8,7 +8,7 @@ export function PickerOpacityField({ value, onChange, onCommit = undefined }) {
   const { t } = useI18n();
   const [draft, setDraft] = useState(null);
   return (
-    <div className="flex w-14 shrink-0 items-center rounded-lg border border-white/10 bg-black/40 px-1.5 py-0.5 font-mono text-[11px] focus-within:border-[#a7ffd4]/40">
+    <div className="flex w-14 shrink-0 items-center rounded-lg bg-black/40 px-1.5 py-0.5 font-mono text-[11px]">
       <input
         type="number"
         min={0}

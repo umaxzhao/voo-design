@@ -272,7 +272,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
               id="editor-select-menu-list"
               aria-label={menuLabel}
               data-testid="editor-select-menu-list"
-              className="fixed z-[9999] flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl border border-white/10 bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"
+              className="fixed z-[9999] flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"
               style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
             >
               {SELECT_MENU_ITEMS.map((item) => {

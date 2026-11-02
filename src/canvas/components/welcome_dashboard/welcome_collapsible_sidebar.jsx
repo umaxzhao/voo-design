@@ -37,7 +37,7 @@ export function WelcomeCollapsibleSidebar({
         aria-expanded={sidebarExpanded}
         aria-controls="welcome-sidebar"
         onClick={toggleSidebar}
-        className="welcome-sidebar-toggle-btn absolute left-3 top-3 z-30 flex size-9 md:size-9 max-md:size-11 items-center justify-center rounded-full border border-white/10 bg-neutral-900/90 text-neutral-300 shadow-pop backdrop-blur-md transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4] cursor-pointer"
+        className="welcome-sidebar-toggle-btn absolute left-3 top-3 z-30 flex size-9 md:size-9 max-md:size-11 items-center justify-center rounded-full bg-neutral-900/90 text-neutral-300 shadow-pop backdrop-blur-md transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4] cursor-pointer"
       >
         <AlignLeft size={16} />
       </button>

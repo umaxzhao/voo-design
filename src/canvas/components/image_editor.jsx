@@ -1834,7 +1834,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             <div
               role="dialog"
               aria-label={t("editor.exit.confirmTitle")}
-              className="absolute left-1/2 top-1/2 z-50 w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/10 bg-black/95 p-4 shadow-panel backdrop-blur-md font-mono"
+              className="absolute left-1/2 top-1/2 z-50 w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-black/95 p-4 shadow-panel backdrop-blur-md font-mono"
             >
               <h2 className="mb-1 text-[11px] font-medium uppercase tracking-wider text-neutral-400">
                 {dirtyIds.length > 1
@@ -1881,9 +1881,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         {fileDragOver ? (
           <div
             data-testid="editor-drop-overlay"
-            className="pointer-events-none absolute inset-3 z-20 flex items-center justify-center rounded-2xl border border-emerald-500/50 bg-emerald-500/10 shadow-panel backdrop-blur"
+            className="pointer-events-none absolute inset-3 z-20 flex items-center justify-center rounded-2xl bg-emerald-500/10 shadow-panel backdrop-blur"
           >
-            <span className="rounded-full border border-line-strong bg-surface-raised px-4 py-2 text-[12px] font-mono text-neutral-100 shadow-pop">
+            <span className="rounded-full bg-surface-raised px-4 py-2 text-[12px] font-mono text-neutral-100 shadow-pop">
               {t("editor.dropHint")}
             </span>
           </div>

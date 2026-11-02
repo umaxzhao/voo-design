@@ -126,8 +126,8 @@ export async function verifyInspectorDropdownSurfaces({
   await menu.waitFor();
   assert.equal(
     await menu.evaluate((el) => getComputedStyle(el).borderTopWidth),
-    "1px",
-    "Floating menus retain their subtle panel edge",
+    "0px",
+    "Floating menus use filled surfaces without a decorative edge",
   );
   await page.keyboard.press("Escape");
   await dropdown.focus();
@@ -158,6 +158,6 @@ export async function verifyInspectorDropdownSurfaces({
     "Dropdown navigation must not nudge or change the selected artwork",
   );
   mark(
-    `borderless dropdowns and font triggers: ${rows.length} actual shape/Frame/text/image contexts across desktop/mobile, light/dark and English/Chinese; pointer/hover stays flat, keyboard focus and floating panel edge remain`,
+    `borderless dropdowns and font triggers: ${rows.length} actual shape/Frame/text/image contexts across desktop/mobile, light/dark and English/Chinese; pointer/hover and floating menus stay flat, keyboard focus remains`,
   );
 }

@@ -369,10 +369,9 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
           ? object.fill
           : object.stroke;
       return (
-        <div
-          className={`${tile} rounded-md`}
-          style={{ background: color ?? "#262626", opacity: object.opacity ?? 1, boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
-        />
+        <div className={`${tile} bg-neutral-800`}>
+          <div className="h-3.5 w-5 rounded-md" style={{ background: color ?? "#262626", opacity: object.opacity ?? 1 }} />
+        </div>
       );
     }
     case NODE_KIND.ELLIPSE: {
@@ -384,7 +383,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
         <div className={`${tile} bg-neutral-800`}>
           <div
             className="h-3.5 w-3.5 rounded-full"
-            style={{ background: color ?? "transparent", opacity: object.opacity ?? 1, boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
+            style={{ background: color ?? "transparent", opacity: object.opacity ?? 1 }}
           />
         </div>
       );
@@ -404,7 +403,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
     case NODE_KIND.REGION: {
       const color = object.color || "#FF3B30";
       return (
-        <div
+        <div data-ui-guide="artwork"
           className={`${tile} border border-dashed rounded-md`}
           style={{ borderColor: color, backgroundColor: `${color}25` }}
         />
@@ -422,7 +421,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
     case NODE_KIND.ADJUSTMENT:
       return (
         <div className={`${tile} bg-neutral-800 text-[#a7ffd4]`}>
-          <div className="h-3.5 w-3.5 rounded-full border border-white/20 bg-neutral-900 overflow-hidden flex">
+          <div className="h-3.5 w-3.5 rounded-full bg-neutral-900 overflow-hidden flex">
             <div className="w-1/2 h-full bg-neutral-100" />
             <div className="w-1/2 h-full bg-neutral-800" />
           </div>

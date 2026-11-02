@@ -191,7 +191,7 @@ export default function CollabAvatars({
       {open ? (
         <AnchoredGlobalPopover anchorRef={boxRef} surfaceRef={popoverRef}
           label={t("collab.share")}
-          className="rounded-2xl border border-white/10 bg-neutral-900 p-3.5 shadow-panel"
+          className="rounded-2xl bg-neutral-900 p-3.5 shadow-panel"
         >
           <div className="mb-2.5 flex items-center gap-1.5">
             <span className="text-[12px] font-medium text-neutral-100">

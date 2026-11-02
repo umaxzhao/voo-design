@@ -70,7 +70,7 @@ function Hotspots({ doc, frameId, onAction }) {
           : "editor.prototype.runner.go",
       )}
       aria-label={t("editor.prototype.runner.hotspot")}
-      className="absolute cursor-pointer rounded-lg bg-transparent transition-colors hover:bg-white/10 hover:ring-1 hover:ring-[#a7ffd4]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4]"
+      className="absolute cursor-pointer rounded-lg bg-transparent transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4]"
       style={{
         left: `${rect.x * 100}%`,
         top: `${rect.y * 100}%`,
@@ -222,7 +222,7 @@ export default function PrototypeRunner({ doc, engine, startFrameId, onClose }) 
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex flex-col bg-black/90 backdrop-blur-sm">
-      <div className="flex items-center justify-between border-b border-white/10 text-neutral-200">
+      <div className="flex items-center justify-between text-neutral-200">
         <div className={BAR_CLASS}>
           <span className="text-[11px] font-mono uppercase tracking-wide text-neutral-400">
             {t("editor.prototype.runner.title")}
@@ -269,7 +269,7 @@ export default function PrototypeRunner({ doc, engine, startFrameId, onClose }) 
       </div>
       <div className="relative flex flex-1 items-center justify-center overflow-hidden">
         <div
-          className="relative shrink-0 overflow-hidden rounded-md ring-1 ring-white/15"
+          className="relative shrink-0 overflow-hidden rounded-md"
           style={{ width: displayWidth, height: displayHeight }}
         >
           {images.get(currentId) ? (
@@ -305,7 +305,7 @@ export default function PrototypeRunner({ doc, engine, startFrameId, onClose }) 
               <div
                 role="dialog"
                 aria-label={overlayFrame.name || t("editor.prototype.action.overlay")}
-                className="relative shrink-0 overflow-hidden rounded-lg ring-1 ring-white/20"
+                className="relative shrink-0 overflow-hidden rounded-lg"
                 style={{ width: overlayWidth, height: overlayHeight }}
                 onClick={(event) => event.stopPropagation()}
               >
@@ -331,7 +331,7 @@ export default function PrototypeRunner({ doc, engine, startFrameId, onClose }) 
           );
         })}
       </div>
-      <div className="flex items-center justify-center border-t border-white/10 py-2 text-[10px] font-mono text-neutral-500">
+      <div className="flex items-center justify-center py-2 text-[10px] font-mono text-neutral-500">
         {t("editor.prototype.runner.hint")}
       </div>
     </div>,

@@ -41,7 +41,7 @@ export default function PenProperties({
                 aria-pressed={penMode === mode}
                 className={`${sectionRowClass} justify-center text-[10px] ${
                   penMode === mode
-                    ? "text-white ring-1 ring-white/25"
+                    ? "text-white bg-white/[0.08]"
                     : "text-neutral-400"
                 }`}
               >
@@ -110,7 +110,7 @@ export default function PenProperties({
                 onClick={() => onPenAnchorType(type)}
                 className={`${sectionRowClass} justify-center text-[10px] ${
                   penAnchorType === type
-                    ? "text-white ring-1 ring-white/25"
+                    ? "text-white bg-white/[0.08]"
                     : "text-neutral-400"
                 }`}
               >

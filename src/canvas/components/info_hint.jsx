@@ -123,7 +123,7 @@ export default function InfoHint({ text, label, className = "" }) {
         // a bare "more info" would tell a screen reader nothing.
         aria-label={text}
         {...triggerProps}
-        className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-white/15 text-[9px] font-semibold leading-none text-neutral-500 transition-colors hover:border-white/30 hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/50"
+        className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold leading-none text-neutral-500 transition-colors hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/50"
       >
         ?
       </button>

@@ -23,7 +23,7 @@ export default function PropertiesPanelShell({
   const sideClass = swapSide ? "left-4" : "right-4";
   // The canvas-local timeline owns the reserved bottom area: keep the
   // horizontal placement and centre within the height that is left.
-  const panelClass = `flex flex-col ${showHeader ? "[&>div:first-child]:shrink-0" : ""} ${DOCKED_PANEL_MAX_HEIGHT_CLASS} absolute ${sideClass} top-1/2 z-30 w-72 -translate-y-1/2 rounded-3xl border border-white/10 bg-black/95 ${showHeader ? "p-3" : "pointer-events-auto"} shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`;
+  const panelClass = `flex flex-col ${showHeader ? "[&>div:first-child]:shrink-0" : ""} ${DOCKED_PANEL_MAX_HEIGHT_CLASS} absolute ${sideClass} top-1/2 z-30 w-72 -translate-y-1/2 rounded-3xl bg-black/95 ${showHeader ? "p-3" : "pointer-events-auto"} shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`;
   const panelStyle =
     bottomInset > 0
       ? {

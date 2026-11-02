@@ -68,7 +68,7 @@ export default function EditorObject3dMenu({ onAdd }) {
       {open ? (
         <div
           role="menu"
-          className="absolute left-1/2 top-full z-40 mt-2 flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl border border-white/10 bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"
+          className="absolute left-1/2 top-full z-40 mt-2 flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"
         >
           {OBJECTS.map(({ type, labelKey, Icon }) => (
             <button

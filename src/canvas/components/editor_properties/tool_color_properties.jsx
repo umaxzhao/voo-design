@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection } from "./property_section.jsx";
 import ColorWheel from "../../color_picker/ColorWheel.jsx";
-import { IconSwap, IconPipette } from "../../icons.jsx";
+import { IconSwap, IconPipette, IconCheck } from "../../icons.jsx";
 
 export default function ToolColorProperties({
   color = "#ffffff",
@@ -48,43 +48,59 @@ export default function ToolColorProperties({
         />
 
         {/* 2. Dual Swatch (Foreground / Background overlapping block) underneath */}
-        <div className="flex w-full items-center justify-between px-1">
+        <div className="flex w-full flex-wrap items-center justify-between gap-y-2 px-1">
           <div className="flex items-center gap-2">
-            <div className="relative h-7 w-7 select-none">
+            <div className="relative h-9 w-9 select-none rounded-lg bg-neutral-800">
               {/* Background Color Swatch (Bottom-Right) */}
               <button
                 type="button"
                 onClick={() => setActiveSlot("bg")}
                 aria-label={t("editor.toolOptions.backgroundColor")}
+                aria-pressed={activeSlot === "bg"}
                 title={t("editor.toolOptions.backgroundColor")}
-                className={`absolute bottom-0 right-0 h-4.5 w-4.5 rounded-full before:absolute before:-inset-1 before:content-[''] transition-transform hover:scale-105 ${
-                  activeSlot === "bg"
-                    ? "ring-2 ring-white ring-offset-1 ring-offset-[#141414] z-10 scale-105"
-                    : "ring-1 ring-white/30 z-0"
+                className={`absolute bottom-0.5 right-0.5 h-4.5 w-4.5 rounded-full transition-transform hover:scale-105 ${
+                  activeSlot === "bg" ? "z-10 scale-110" : "z-0"
                 }`}
                 style={{
                   width: "18px",
                   height: "18px",
                   backgroundColor: bgColor,
                 }}
-              />
+              >
+                {activeSlot === "bg" ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-2.5 items-center justify-center rounded-full bg-neutral-100 text-black"
+                  >
+                    <IconCheck size={8} strokeWidth={1.5} absoluteStrokeWidth />
+                  </span>
+                ) : null}
+              </button>
               {/* Foreground Color Swatch (Top-Left) */}
               <button
                 type="button"
                 onClick={() => setActiveSlot("fg")}
                 aria-label={t("editor.toolOptions.foregroundColor")}
+                aria-pressed={activeSlot === "fg"}
                 title={t("editor.toolOptions.foregroundColor")}
-                className={`absolute top-0 left-0 h-4.5 w-4.5 rounded-full before:absolute before:-inset-1 before:content-[''] transition-transform hover:scale-105 ${
-                  activeSlot === "fg"
-                    ? "ring-2 ring-white ring-offset-1 ring-offset-[#141414] z-10 scale-105"
-                    : "ring-1 ring-white/30 z-0"
+                className={`absolute top-0.5 left-0.5 h-4.5 w-4.5 rounded-full transition-transform hover:scale-105 ${
+                  activeSlot === "fg" ? "z-10 scale-110" : "z-0"
                 }`}
                 style={{
                   width: "18px",
                   height: "18px",
                   backgroundColor: fgColor,
                 }}
-              />
+              >
+                {activeSlot === "fg" ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-2.5 items-center justify-center rounded-full bg-neutral-100 text-black"
+                  >
+                    <IconCheck size={8} strokeWidth={1.5} absoluteStrokeWidth />
+                  </span>
+                ) : null}
+              </button>
             </div>
 
             {/* Swap button (X) */}

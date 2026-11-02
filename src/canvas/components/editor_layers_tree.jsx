@@ -93,10 +93,7 @@ export default function EditorLayersTree({
       id="layer-row-canvas-background"
       aria-selected={isBackgroundSelected}
       tabIndex={-1}
-      className={`group/layer flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all cursor-pointer ${isBackgroundSelected ? "bg-neutral-800 text-neutral-100 shadow-[inset_0_0_0_1px_#a7ffd4]" : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"}`}
-      style={{
-        boxShadow: isBackgroundSelected ? "inset 0 0 0 1px #a7ffd4" : undefined
-      }}
+      className={`group/layer flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all cursor-pointer ${isBackgroundSelected ? "bg-neutral-700 text-neutral-100" : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"}`}
       onClick={onSelectBackground}
       onKeyDown={e => {
         if (e.key === "Enter" || e.key === " ") {
@@ -106,7 +103,7 @@ export default function EditorLayersTree({
       }}
     >
       <div
-        className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-white/20"
+        className="h-3.5 w-3.5 shrink-0 rounded-full"
         style={{
           backgroundColor: backgroundTransparent ? "transparent" : displayBg
         }}

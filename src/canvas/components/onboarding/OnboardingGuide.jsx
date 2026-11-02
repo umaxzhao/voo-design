@@ -270,7 +270,7 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
       className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70"
     >
       {/* One fixed height for every step so the frame does not jump between them. */}
-      <div className="relative flex h-[min(656px,90dvh)] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-[#161616] border border-white/10 shadow-panel lg:max-w-[960px] lg:flex-row">
+      <div className="relative flex h-[min(656px,90dvh)] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-[#161616] shadow-panel lg:max-w-[960px] lg:flex-row">
         <OnboardingArt
           name="onboarding/cover.webp"
           className="hidden shrink-0 lg:block lg:h-full lg:w-1/3"

@@ -5,7 +5,7 @@ import { loadEditorPanelSectionState, toggleEditorPanelSectionState } from "../e
 
 /** Shared input skin for every field in the panel. */
 export const fieldClass =
-  "inspector-field h-7 w-full rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono tabular-nums text-neutral-100 outline-none transition-colors hover:bg-neutral-800/80 focus:ring-1 focus:ring-[#a7ffd4]/40";
+  "inspector-field h-7 w-full rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono tabular-nums text-neutral-100 outline-none transition-colors hover:bg-neutral-800/80";
 
 /**
  * Section titles share a scope hook; the inspector applies readable label
@@ -15,11 +15,10 @@ export const sectionTitleClass =
   "inspector-section-title max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
 
 /** The separator and vertical rhythm every section in the panel shares. */
-// One vertical rhythm for every group: the divider sits centred between the
-// previous group's last row and the next group's header (12px on each side).
+// One vertical rhythm separates groups through whitespace, without rules.
 const sectionRhythmClass =
-  "border-t border-white/10 pb-3 pt-1.5 first:border-t-0 first:pt-0";
-const emptySectionRhythmClass = "border-t border-white/10 py-3";
+  "pb-3 pt-1.5 first:pt-0";
+const emptySectionRhythmClass = "py-3";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
@@ -96,9 +95,7 @@ export function SectionEmptyRow({
             <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
               {icon}
             </span>
-          ) : (
-            <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-md border border-white/25" />
-          )}
+          ) : null}
           <span className="min-w-0 flex-1 truncate text-left">{label}</span>
           {showPlus ? (
             <span aria-hidden="true" className="text-[12px] font-mono text-neutral-500">+</span>
@@ -147,7 +144,7 @@ export function CollapsibleSection({
     setOpen(toggleEditorPanelSectionState(sectionStorageKey, open));
   };
   return (
-    <div className={sectionRhythmClass} data-testid={testId}>
+    <div data-inspector-section className={sectionRhythmClass} data-testid={testId}>
       <div className={sectionHeaderClass}>
         <button
           type="button"
@@ -199,6 +196,7 @@ export function StaticSection({
   void storageKey;
   return (
     <div
+      data-inspector-section
       className={emptyState ? emptySectionRhythmClass : sectionRhythmClass}
       data-testid={testId}
     >

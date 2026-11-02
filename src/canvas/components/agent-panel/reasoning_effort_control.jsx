@@ -68,7 +68,7 @@ export default function ReasoningEffortControl({
         <div
           role="menu"
           aria-label={t("agent.reasoning.label")}
-          className="absolute bottom-full right-0 z-30 mb-2 min-w-40 rounded-xl border border-white/[0.07] bg-[#171717] p-1.5 shadow-panel"
+          className="absolute bottom-full right-0 z-30 mb-2 min-w-40 rounded-xl bg-[#171717] p-1.5 shadow-panel"
         >
           <button
             type="button"

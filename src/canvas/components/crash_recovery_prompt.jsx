@@ -32,7 +32,7 @@ export function CrashRecoveryDialog({ draft, onRestore, onDiscard, busy = false 
             (event.shiftKey ? buttons[buttons.length - 1] : buttons[0]).focus();
           }
         }}
-        className="w-full max-w-md rounded-3xl border border-white/10 bg-neutral-900/95 p-7 text-neutral-200 shadow-panel backdrop-blur-md">
+        className="w-full max-w-md rounded-3xl bg-neutral-900/95 p-7 text-neutral-200 shadow-panel backdrop-blur-md">
         <h2 id="crash-recovery-title" className="text-[15px] font-medium text-white">{t("app.crashRecovery.title")}</h2>
         <p id="crash-recovery-body" className="mt-2 text-xs leading-relaxed text-neutral-400">{t("app.crashRecovery.body")}</p>
         {draft.label && <p className="mt-4 truncate rounded-xl bg-white/5 px-3 py-2 text-xs">{draft.label}</p>}

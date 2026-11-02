@@ -165,10 +165,10 @@ export default function AffinityAdjustmentSection({
   return (
     <div
       data-testid="affinity-adjustment-section"
-      className="flex flex-col gap-3 rounded-2xl bg-white/[0.03] border border-white/10 p-3"
+      className="flex flex-col gap-3 rounded-2xl bg-white/[0.03] p-3"
     >
       {/* 1. Affinity-Style Header Card */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
+      <div className="flex items-center justify-between pb-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-medium text-neutral-100 tracking-tight truncate">
@@ -213,7 +213,7 @@ export default function AffinityAdjustmentSection({
                 key={idx}
                 type="button"
                 onClick={() => applyPreset(preset.patch)}
-                className="rounded-lg bg-white/[0.04] px-2 py-0.5 text-[10px] font-mono text-neutral-300 hover:bg-white/[0.12] hover:text-white transition-colors border border-white/[0.06] cursor-pointer"
+                className="rounded-lg bg-white/[0.04] px-2 py-0.5 text-[10px] font-mono text-neutral-300 hover:bg-white/[0.12] hover:text-white transition-colors cursor-pointer"
               >
                 {t(preset.labelKey)}
               </button>

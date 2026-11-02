@@ -16,11 +16,6 @@
     border-radius: 24px;
     --mobile-frame-inset-radius: calc(24px - 4px);
     --mobile-content-radius: calc(24px - 4px - 2px);
-    background: linear-gradient(
-      -90deg,
-      rgb(0 0 0) 52%,
-      rgb(178 255 214) 80%
-    ) !important;
   }
 
   .app-root-frame > .app-title-bar {
@@ -92,7 +87,7 @@
   .relative.flex[data-agent-open="true"] > aside > section {
     height: 100%;
     min-height: 0;
-    border: 1px solid rgb(255 255 255 / 10%);
+
     border-radius: 1rem 1rem 0 0;
   }
 

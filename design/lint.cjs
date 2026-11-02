@@ -9,6 +9,7 @@ const { ESLint } = require("eslint");
 const designRule = require("../eslint-rules/design-system.cjs");
 const { DATA_FILE_PATTERN } = require("../eslint-rules/design-system.cjs");
 const aiTells = require("../eslint-rules/design-ai-tells.cjs");
+const borderPolicy = require("./border-policy.cjs");
 
 const RULE_ID = "design/design-system";
 
@@ -130,6 +131,8 @@ function wrapRuleWithContrast(baseRule) {
         contrastPlaceholderHex:
           "`{{token}}` is too dark to read — it measures {{ratio}} against `{{background}}`, under the 4.5:1 floor for placeholders. Use `{{replacement}}` (Design.md §11).",
         ...aiTells.MESSAGES,
+        borderlessUi:
+          "`{{token}}` adds a decorative UI outline. Use surface lightness and spacing; retain focus-visible feedback. Only actual artwork/manipulation guides may declare a documented data-ui-guide role (Design.md: 无描边界面).",
       },
     },
     create(context) {
@@ -166,6 +169,7 @@ function wrapRuleWithContrast(baseRule) {
       }
 
       function reportContrast(strNode, text) {
+        borderPolicy.checkClassText(context, strNode, text);
         for (const m of text.matchAll(DARK_PLACEHOLDER_NEUTRAL)) {
           context.report({
             node: strNode,
@@ -195,6 +199,10 @@ function wrapRuleWithContrast(baseRule) {
 
       return {
         ...listeners,
+        Property(node) {
+          listeners.Property?.(node);
+          borderPolicy.checkInlineStyle(context, node);
+        },
         "JSXAttribute[name.name=/^(className|class)$/]"(node) {
           if (originalJsxAttr) originalJsxAttr(node);
 
@@ -279,6 +287,7 @@ const LABEL = {
   shadowNamed: "shadow",
   shadowCard: "shadow",
   border: "border",
+  borderlessUi: "border",
   emoji: "emoji",
   ...aiTells.LABEL,
 };

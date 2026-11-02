@@ -14,6 +14,7 @@ import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
+import { WORKSPACE_BACKGROUND } from "./canvas/editor/render_canvas_base.js";
 import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
@@ -27,6 +28,7 @@ const isEmbed = typeof window !== "undefined" && Boolean(
 export default function App() {
   const activeDocumentId = useDesignStore(s => s.activeDocumentId);
   const welcomeOpen = useDesignStore((s) => s.welcomeOpen);
+  const canvasBackgroundColor = useDesignStore((s) => s.canvasBackgroundColor) ?? WORKSPACE_BACKGROUND;
   const documentLoading = useDesignStore((s) => s.documentLoading);
   // The AI panel state is managed in design_store for hybrid agent coordination
   const agentOpen = useDesignStore((s) => s.agentPanelOpen);
@@ -143,10 +145,8 @@ export default function App() {
   return (
     <main
       data-embed={isEmbed ? "true" : undefined}
-      className="app-root-frame relative flex h-full w-full select-none flex-col"
-      style={isEmbed ? { background: "#000" } : {
-        background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
-      }}
+      className={`app-root-frame relative flex h-full w-full select-none flex-col ${welcomeOpen && !isEmbed ? "bg-black" : ""}`}
+      style={isEmbed ? { backgroundColor: "#000" } : welcomeOpen ? undefined : { backgroundColor: canvasBackgroundColor }}
     >
       {!isEmbed && <CrashRecoveryPrompt />}
       {!isEmbed && <ImageSizeNotice />}
@@ -158,7 +158,7 @@ export default function App() {
         data-agent-open={agentOpen && !welcomeOpen && !browserDrawerOpen ? "true" : "false"}
         data-browser-open={browserDrawerOpen ? "true" : "false"}
       >
-        {/* The rounded green frame wraps the workspace below the title bar. */}
+        {/* The borderless rounded shell wraps the workspace below the title bar. */}
         <div className="editor-shell relative min-h-0 min-w-0 flex-1" data-testid="editor-shell">
           <div className="editor-shell-inner flex flex-col">
             <div className="relative min-h-0 flex-1 overflow-hidden">

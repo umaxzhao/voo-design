@@ -76,7 +76,7 @@ export function WelcomeRenameModal({
   if (!renameItem) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t("welcome.dialog.renameTitle")} tabIndex={-1} className="w-full max-w-sm rounded-3xl bg-neutral-900 border border-white/10 shadow-panel p-5 space-y-4">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t("welcome.dialog.renameTitle")} tabIndex={-1} className="w-full max-w-sm rounded-3xl bg-neutral-900 shadow-panel p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold text-white">{t("welcome.dialog.renameTitle")}</h3>
           <button
@@ -132,7 +132,7 @@ export function WelcomeEmptyTrashModal({
   if (!confirmEmptyTrashOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t("welcome.actions.emptyTrash")} tabIndex={-1} className="w-full max-w-sm rounded-3xl bg-neutral-900 border border-white/10 shadow-panel p-5 space-y-4">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t("welcome.actions.emptyTrash")} tabIndex={-1} className="w-full max-w-sm rounded-3xl bg-neutral-900 shadow-panel p-5 space-y-4">
         <h3 className="text-xs font-semibold text-white">{t("welcome.actions.emptyTrash")}</h3>
         <p className="text-xs text-neutral-400">{t("welcome.dialog.emptyTrashConfirm")}</p>
         <div className="flex justify-end gap-2 pt-2">

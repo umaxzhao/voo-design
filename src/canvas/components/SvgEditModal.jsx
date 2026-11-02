@@ -111,11 +111,11 @@ function SvgEditModal({
       onClick={onClose}
     >
       <div
-        className="relative flex w-full max-w-2xl max-h-[85vh] flex-col rounded-3xl border border-white/10 bg-[#181818] p-5 shadow-panel text-neutral-200"
+        className="relative flex w-full max-w-2xl max-h-[85vh] flex-col rounded-3xl bg-[#181818] p-5 shadow-panel text-neutral-200"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="flex items-center justify-between pb-3">
           <div className="flex items-center gap-2">
             <IconCode size={15} className="text-neutral-400" />
             <span className="text-xs font-semibold text-white">
@@ -151,7 +151,7 @@ function SvgEditModal({
             onKeyDown={handleTextareaKeyDown}
             spellCheck={false}
             rows={14}
-            className="w-full h-80 resize-y rounded-xl bg-black/40 p-3 font-mono text-xs leading-relaxed text-neutral-200 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#a7ffd4]"
+            className="w-full h-80 resize-y rounded-xl bg-black/40 p-3 font-mono text-xs leading-relaxed text-neutral-200 placeholder-neutral-400 focus:outline-none"
             placeholder="<svg ...>...</svg>"
           />
         </div>

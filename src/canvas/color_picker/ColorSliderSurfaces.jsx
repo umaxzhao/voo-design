@@ -139,7 +139,7 @@ export function ColorSliderSurfaces({
             background: "linear-gradient(to top, #000000, transparent)",
           }}
         />
-        <div
+        <div data-ui-guide="color-handle"
           style={{
             left: `${handleXPercent}%`,
             top: `${handleYPercent}%`,
@@ -160,7 +160,7 @@ export function ColorSliderSurfaces({
           title={eyeDropperTitle || "Pick color from screen"}
           aria-label={eyeDropperTitle || "Pick color from screen"}
           data-testid="picker-eyedropper"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/5 disabled:hover:text-neutral-300"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/5 disabled:hover:text-neutral-300"
         >
           <svg
             className="h-3.5 w-3.5"
@@ -187,7 +187,7 @@ export function ColorSliderSurfaces({
                 "linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)",
             }}
           >
-            <div
+            <div data-ui-guide="color-handle"
               style={{ left: `${hueHandlePercent}%` }}
               className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-transparent shadow-[0_0_2px_rgba(0,0,0,0.6)]"
             />
@@ -212,7 +212,7 @@ export function ColorSliderSurfaces({
                   background: `linear-gradient(to right, transparent, ${activeColorHex})`,
                 }}
               />
-              <div
+              <div data-ui-guide="color-handle"
                 style={{ left: `${opacityHandlePercent}%` }}
                 className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-transparent shadow-[0_0_2px_rgba(0,0,0,0.6)]"
               />

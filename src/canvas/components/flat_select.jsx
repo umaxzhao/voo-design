@@ -16,7 +16,7 @@ import { IconCheck, IconChevronDown } from "../icons.jsx";
 import { PopoverScopeContext } from "./popover_scope.js";
 
 const PANEL_CLASS =
-  "absolute z-50 overflow-hidden rounded-xl bg-[#181818] p-1 border border-white/10 shadow-menu";
+  "absolute z-50 overflow-hidden rounded-xl bg-[#181818] p-1 shadow-menu";
 
 /** Normalize options to {value, label} objects. */
 function normalizeOptions(options) {
