@@ -61,9 +61,12 @@ export async function importHtmlSnippetToCanvas({
   try {
     // Keep fonts and scene engines deferred until an actual import operation.
     const { incrementalHtmlToDocument } = await import("../../editor/html_import.js");
+    // The root background lands on the imported group/frame; the current
+    // document's page background and existing nodes are never overwritten.
     const parsed = incrementalHtmlToDocument(html, {
       width: Math.max(100, Math.min(3840, width)),
       height: Math.max(100, Math.min(8192, height)),
+      rootBackgroundOnGroup: true,
     });
 
     if (!parsed?.doc?.nodes || parsed.doc.nodes.length === 0) {
