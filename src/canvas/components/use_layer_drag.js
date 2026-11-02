@@ -44,6 +44,9 @@ export default function useLayerDrag({
     (commit) => {
       const session = sessionRef.current;
       if (!session) return;
+      if (commit) {
+        session.measure?.();
+      }
       sessionRef.current = null;
       window.removeEventListener("pointermove", session.onMove);
       window.removeEventListener("pointerup", session.onUp);
@@ -82,7 +85,7 @@ export default function useLayerDrag({
           session.slot,
         );
         if (target !== session.siblingDocIndex)
-          onDrop?.(session.id, target, null, "siblings");
+          onDrop?.(session.id, target, null, "siblings", session.ids);
         return;
       }
       // A group member dropped on a root slot maps straight to a root-plane
@@ -92,7 +95,7 @@ export default function useLayerDrag({
         ? childSlotToRootIndex(nodes.length, session.slot)
         : slotToDocTarget(nodes.length, session.from, session.slot);
       if (target !== session.fromDocIndex)
-        onDrop?.(session.id, target, null, "root");
+        onDrop?.(session.id, target, null, "root", session.ids);
     },
     [nodes.length, onDrop],
   );
@@ -205,7 +208,9 @@ export default function useLayerDrag({
         for (const row of allRects) {
           const container = containerIds.has(row.id);
           if (!container && (row.parentId !== null || insideSiblingPlane)) continue;
-          const inset = Math.min(10, row.height * 0.25);
+          const inset = container
+            ? Math.min(3, row.height * 0.1)
+            : Math.min(10, row.height * 0.25);
           if (
             session.pointerY >= row.top + inset &&
             session.pointerY <= row.top + row.height - inset &&
@@ -220,6 +225,7 @@ export default function useLayerDrag({
           setOverId(over);
         }
       };
+      session.measure = measure;
 
       const tick = () => {
         const list = listRef.current;
@@ -250,7 +256,12 @@ export default function useLayerDrag({
         }
         measure();
       };
-      session.onUp = () => finishRef.current(true);
+      session.onUp = (upEvent) => {
+        if (upEvent && typeof upEvent.clientY === "number") {
+          session.pointerY = upEvent.clientY;
+        }
+        finishRef.current(true);
+      };
       session.onCancel = () => finishRef.current(false);
       session.onKey = (keyEvent) => {
         if (keyEvent.key !== "Escape") return;
