@@ -24,6 +24,55 @@ function fixture() {
 }
 
 describe("bounded workspace zoom pictures", () => {
+  it("keeps refinement quiet while subpixel input leaves the raster surface unchanged", () => {
+    const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
+    picture.paint(f.surface); vi.advanceTimersByTime(176);
+    const next = { ...f.surface, viewport: { ...f.surface.viewport, panX: 101 } };
+    picture.paint(next);
+    const count = f.engine.renderLayerPass.mock.calls.length;
+    vi.advanceTimersByTime(100); picture.paint(next);
+    vi.advanceTimersByTime(100);
+    expect(f.canvas.dataset.artworkState).toBe("preview");
+    expect(f.engine.renderLayerPass).toHaveBeenCalledTimes(count);
+    vi.advanceTimersByTime(76);
+    expect(f.canvas.dataset.artworkState).toBe("exact");
+    picture.dispose();
+  });
+
+  it("requests screen-density pixels independently of the engine's draft density", () => {
+    window.devicePixelRatio = 2;
+    const f = fixture();
+    f.engine.renderLayerPass.mockImplementation((target, ids, surface) => {
+      target.width = Math.round(surface.stageWidth * (surface.dpr ?? 1));
+      target.height = Math.round(surface.stageHeight * (surface.dpr ?? 1));
+    });
+    const picture = createArtworkPicture(f.canvas, f.engine);
+    picture.paint(f.surface);
+    expect([f.canvas.width, f.canvas.height]).toEqual([2000, 1600]);
+    vi.advanceTimersByTime(176);
+    expect(f.canvas.dataset.artworkWarm).toBe("true");
+    picture.dispose();
+  });
+
+  it("reuses a fully captured clipped scene when zooming exposes only empty canvas", () => {
+    const f = fixture();
+    const frame = { id: "frame", kind: "group", isFrame: true, clipContent: true,
+      x: 100, y: 100, width: 600, height: 400 };
+    const doc = { isCanvasRoot: true, nodes: [frame, ...Array.from({ length: 600 }, (_, i) => ({
+      id: `child-${i}`, kind: "rect", parentId: frame.id, x: 200, y: 200, width: 20, height: 20,
+    }))] };
+    f.engine.getDocument = () => doc;
+    const picture = createArtworkPicture(f.canvas, f.engine);
+    picture.paint(f.surface); vi.advanceTimersByTime(176);
+    const count = f.engine.renderLayerPass.mock.calls.length;
+    picture.paint({ ...f.surface, viewport: { zoom: .7, panX: 220, panY: 162 } });
+    expect(f.canvas.dataset.artworkState).toBe("preview");
+    expect(f.engine.renderLayerPass).toHaveBeenCalledTimes(count);
+    vi.advanceTimersByTime(176);
+    expect(f.canvas.dataset.artworkState).toBe("exact");
+    picture.dispose();
+  });
+
   it("reuses covered motion, debounces refinement, and paints the latest exact viewport", () => {
     const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
     picture.paint(f.surface);
@@ -34,7 +83,7 @@ describe("bounded workspace zoom pictures", () => {
     picture.paint(next);
     expect(f.canvas.dataset.artworkState).toBe("preview");
     expect(f.engine.renderLayerPass).toHaveBeenCalledTimes(paints);
-    expect(f.ctx.setTransform).toHaveBeenLastCalledWith(1.1, 0, 0, 1.1, -176, -176.00000000000003);
+    expect(f.ctx.setTransform).toHaveBeenLastCalledWith(1.1, 0, 0, 1.1, -563.2, -563.2);
     vi.advanceTimersByTime(100);
     const latest = { ...next, viewport: { ...next.viewport, zoom: 1.12 } };
     picture.paint(latest);
@@ -42,7 +91,7 @@ describe("bounded workspace zoom pictures", () => {
     expect(f.canvas.dataset.artworkState).toBe("preview");
     vi.advanceTimersByTime(76);
     expect(f.canvas.dataset.artworkState).toBe("exact");
-    expect(f.engine.renderLayerPass).toHaveBeenLastCalledWith(f.canvas, expect.any(Array), latest);
+    expect(f.engine.renderLayerPass).toHaveBeenLastCalledWith(f.canvas, expect.any(Array), { ...latest, dpr: 1 });
     picture.dispose();
   });
 
@@ -76,6 +125,20 @@ describe("bounded workspace zoom pictures", () => {
     vi.runAllTimers();
     expect(f.surfaces).toHaveLength(0);
     expect(f.canvas.dataset.artworkState).toBe("exact");
+    picture.dispose();
+  });
+
+  it("uses the available bounded overscan at high DPR rather than halving it away", () => {
+    window.devicePixelRatio = 2;
+    const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
+    const surface = { ...f.surface, stageWidth: 1440, stageHeight: 1000 };
+    picture.paint(surface); vi.advanceTimersByTime(176);
+    const count = f.engine.renderLayerPass.mock.calls.length;
+    const retained = f.surfaces.filter(canvas => canvas.width > 0).at(-1);
+    expect(retained.width * retained.height * 4).toBeLessThanOrEqual(32 * 1024 * 1024);
+    picture.paint({ ...surface, viewport: { ...surface.viewport, panX: 200, panY: 160 } });
+    expect(f.canvas.dataset.artworkState).toBe("preview");
+    expect(f.engine.renderLayerPass).toHaveBeenCalledTimes(count);
     picture.dispose();
   });
 

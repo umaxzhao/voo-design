@@ -8,8 +8,10 @@ export function freeCanvasSurface(page, workspace, zoom) {
   return {
     left,
     top,
-    stageWidth: Math.max(1, Math.ceil(workspace.right - page.left) - left),
-    stageHeight: Math.max(1, Math.ceil(workspace.bottom - page.top) - top),
+    // A fractional page origin must not resize the bitmap on every camera frame.
+    // One extra CSS pixel covers the floor-aligned origin's subpixel remainder.
+    stageWidth: Math.max(1, Math.ceil(workspace.right - workspace.left) + 1),
+    stageHeight: Math.max(1, Math.ceil(workspace.bottom - workspace.top) + 1),
     viewport: {
       zoom,
       panX: -left,

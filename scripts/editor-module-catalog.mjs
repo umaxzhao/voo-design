@@ -49,6 +49,7 @@ export const EDITOR_MODULES = [
     id: "canvas",
     title: "Canvas, camera and snapping",
     paths: [
+      "src/canvas/editor/workspace-free-artwork.js", "src/canvas/editor/workspace-artwork-picture.js", "src/canvas/editor/workspace-spatial-index.js", "src/canvas/editor/workspace-picture-bounds.js", "tests/unit/workspace-spatial-index.test.js", "tests/unit/workspace-picture-bounds.test.js", "tests/unit/workspace-artwork-picture.test.js", "tests/unit/free-canvas-surface.test.js", "scripts/bench-layer-scroll.mjs", "tests/e2e/complete-picture-checks.mjs",
       "src/canvas/components/editor_free*", "src/canvas/components/editor_full*",
       "src/canvas/components/editor_page*", "src/canvas/editor/*viewport*", "src/canvas/editor/*snapp*",
       "src/canvas/editor/*tile*", "src/canvas/page_camera.js",
@@ -93,6 +94,7 @@ export const EDITOR_MODULES = [
     id: "layers",
     title: "Layers, Frames and ownership",
     paths: [
+      "src/canvas/components/editor_windowed_layer_rows.jsx", "tests/e2e/layer-window-multiselect-checks.mjs",
       "src/canvas/components/editor_layer*", "src/canvas/components/use*layer*", "src/canvas/editor/*node*",
       "src/canvas/editor/layer_selection.js", "src/canvas/components/image_editor.jsx",
       "src/canvas/editor/*frame*", "src/canvas/editor/*reparent*", "src/canvas/editor/*duplicate*",

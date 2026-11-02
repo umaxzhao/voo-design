@@ -1,5 +1,7 @@
+import { pictureCapturesScene } from "./workspace-picture-bounds.js";
+
 const QUIET_MS = 160;
-const MARGIN = 160;
+const MARGIN = 512;
 const MAX_BYTES = 32 * 1024 * 1024;
 const MIN_NODES = 500;
 const requestFrame = callback => typeof requestAnimationFrame === "function" ? requestAnimationFrame(callback) : setTimeout(callback, 16);
@@ -27,7 +29,9 @@ export function createArtworkPicture(canvas, engine) {
   const render = (target, surface) => {
     const next = engine.getDocument().nodes;
     if (nodes !== next) { nodes = next; ids = nodes.map(node => node.id); }
-    engine.renderLayerPass(target, ids, surface);
+    // The detached engine stage can use a reduced draft density. Workspace
+    // pixels and their overscan must share the actual screen density instead.
+    engine.renderLayerPass(target, ids, { ...surface, dpr: window.devicePixelRatio || 1 });
   };
   const schedule = (callback) => {
     cancel();
@@ -58,15 +62,19 @@ export function createArtworkPicture(canvas, engine) {
       target.clearRect(margin * dpr, margin * dpr, canvas.width, canvas.height);
       target.drawImage(canvas, margin * dpr, margin * dpr);
       release();
-      picture = { canvas: bitmap, surface, stamp, margin, dpr };
-      canvas.dataset.artworkWarm = margin ? "true" : "false";
+      const complete = pictureCapturesScene(engine.getDocument(), surface, margin, dpr);
+      picture = { canvas: bitmap, surface, stamp, margin, dpr, complete };
+      canvas.dataset.artworkWarm = margin || complete ? "true" : "false";
     } catch (error) { bitmap.width = bitmap.height = 0; throw error; }
   };
   const warm = (surface, stamp) => {
     if (stampOf() !== stamp || !sameSurface(current, surface)) return;
     const dpr = window.devicePixelRatio || 1;
-    let margin = MARGIN;
-    while (margin > 0 && (surface.stageWidth + margin * 2) * (surface.stageHeight + margin * 2) * dpr ** 2 * 4 > MAX_BYTES) margin = Math.floor(margin / 2);
+    // Solve the device-pixel area budget directly. Repeated halving discarded
+    // usable padding on Retina screens and made ordinary pan/zoom miss the cache.
+    const width = Math.ceil(surface.stageWidth * dpr), height = Math.ceil(surface.stageHeight * dpr);
+    const available = Math.floor((Math.sqrt((width - height) ** 2 + MAX_BYTES) - width - height) / 4);
+    const margin = Math.max(0, Math.min(Math.floor(MARGIN * dpr), available)) / dpr;
     if (margin) copy(margin, surface, stamp);
   };
   const preview = (surface, stamp) => {
@@ -77,8 +85,8 @@ export function createArtworkPicture(canvas, engine) {
     if (scale < .5 || scale > 2) return false;
     const x = surface.viewport.panX - (picture.surface.viewport.panX + picture.margin) * scale;
     const y = surface.viewport.panY - (picture.surface.viewport.panY + picture.margin) * scale;
-    if (x > 0 || y > 0 || x + picture.canvas.width / picture.dpr * scale < surface.stageWidth ||
-        y + picture.canvas.height / picture.dpr * scale < surface.stageHeight) return false;
+    if (!picture.complete && (x > 0 || y > 0 || x + picture.canvas.width / picture.dpr * scale < surface.stageWidth ||
+        y + picture.canvas.height / picture.dpr * scale < surface.stageHeight)) return false;
     context.save();
     try {
       context.setTransform(1, 0, 0, 1, 0, 0);
@@ -94,7 +102,12 @@ export function createArtworkPicture(canvas, engine) {
     const stamp = stampOf();
     const dpr = window.devicePixelRatio || 1;
     if (!forceExact && stamp && stamp === currentStamp && sameSurface(current, surface) &&
-        canvas.width === Math.round(surface.stageWidth * dpr) && canvas.height === Math.round(surface.stageHeight * dpr)) return;
+        canvas.width === Math.round(surface.stageWidth * dpr) && canvas.height === Math.round(surface.stageHeight * dpr)) {
+      // Subpixel camera input can keep the floor-aligned surface unchanged.
+      // It is still motion: do not refine halfway through that gesture.
+      if (canvas.dataset.artworkState === "preview") schedule(() => paint(current, true));
+      return;
+    }
     current = surface; currentStamp = stamp;
     cancel();
     if (!forceExact && stamp && preview(surface, stamp)) {
@@ -109,7 +122,7 @@ export function createArtworkPicture(canvas, engine) {
       canvas.width * canvas.height * 4 <= MAX_BYTES;
     if (eligible) {
       copy(0, surface, stamp);
-      schedule(() => warm(surface, stamp));
+      if (!picture?.complete) schedule(() => warm(surface, stamp));
     }
   };
   return {
