@@ -52,7 +52,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   await mount("text", "text");
   await mount("paint", "text");
   const emptyStrokeSection = host.getByRole("button", { name: /add stroke/i }).evaluate((button) => {
-    const section = button.closest("[class*='border-t']");
+    const section = button.closest("[data-inspector-section]");
     const header = section.firstElementChild;
     const contentBounds = [...header.children].map((child) => child.getBoundingClientRect());
     const contentTop = Math.min(...contentBounds.map((bounds) => bounds.top));

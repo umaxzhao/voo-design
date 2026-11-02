@@ -144,7 +144,7 @@ export function CollapsibleSection({
     setOpen(toggleEditorPanelSectionState(sectionStorageKey, open));
   };
   return (
-    <div className={sectionRhythmClass} data-testid={testId}>
+    <div data-inspector-section className={sectionRhythmClass} data-testid={testId}>
       <div className={sectionHeaderClass}>
         <button
           type="button"
@@ -196,6 +196,7 @@ export function StaticSection({
   void storageKey;
   return (
     <div
+      data-inspector-section
       className={emptyState ? emptySectionRhythmClass : sectionRhythmClass}
       data-testid={testId}
     >
