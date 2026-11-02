@@ -152,7 +152,7 @@ try {
   }, imageId);
   const filters = page.getByTestId("effects-filter-stack");
   await filters.waitFor({ state: "visible", timeout: 5000 });
-  const valueFields = filters.locator('input[type="number"]');
+  const valueFields = filters.locator('input[inputmode="decimal"]');
   if (await valueFields.count() === 0) await filters.locator("button").first().click();
   await valueFields.first().waitFor({ state: "visible", timeout: 5000 });
   assert.equal(await valueFields.count(), 2);
