@@ -1,5 +1,4 @@
 import { isBooleanNode, isGroupNode } from "../editor/scene_model.js";
-import { isRowSelected } from "../editor/layer_selection.js";
 import { IconChevronRight, IconChevronDown, IconEye, IconEyeOff, IconClipMask } from "../icons.jsx";
 import EditorLayerThumbnail from "./editor_layer_thumbnail.jsx";
 import EditorLayerName from "./editor_layer_name.jsx";
@@ -27,10 +26,6 @@ export default function EditorLayerRow({
     beginRowDrag,
     childrenMap,
     dragUnits,
-    objects,
-    selectedIds,
-    activeIndex,
-    isBackgroundSelected,
     toggleGroupCollapse,
     activeCanvasId,
     t,
@@ -100,7 +95,7 @@ export default function EditorLayerRow({
           setDraggedChip(null);
         }
       }}
-      className={`relative rounded-xl transition-colors ${isDropTarget ? "bg-emerald-500/10 ring-1 ring-emerald-400/50" : ""}`}
+      className={`relative rounded-xl transition-colors ${isDropTarget ? "bg-emerald-500/10" : ""}`}
     >
       {!overId && dragId && slot === position && position >= 0 ? <div
         className="pointer-events-none absolute -top-[3px] left-1 right-1 z-20 h-[2px] rounded-full bg-[#a7ffd4]"
@@ -118,19 +113,13 @@ export default function EditorLayerRow({
           } : undefined
         }) : undefined}
         className={`group/layer relative flex min-h-8 select-none items-center gap-1.5 rounded-lg py-1 transition-colors ${dragId === object.id ? "opacity-40 " : ""}${
-        // The drag-over ring wins over the selection shadow, matching the inline boxShadow below.
-        overId === object.id ? `bg-neutral-800 ${rowSelectedOf(object) ? "text-neutral-100 " : ""}ring-1 ring-inset ring-[#a7ffd4]` : rowSelectedOf(object) ? `bg-neutral-800 text-neutral-100 ${isRowSelected(objects, object, {
-          selectedIds,
-          activeIndex,
-          isBackgroundSelected
-        }) ? "shadow-[inset_0_0_0_1px_#a7ffd4]" : ""}` : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"} ${draggable ? (dragId ? "touch-none " : "touch-pan-y ") + "cursor-default" : ""}`}
+        overId === object.id ? "bg-[#a7ffd4]/15 text-neutral-100" : rowSelected ? "bg-neutral-700 text-neutral-100" : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"} ${draggable ? (dragId ? "touch-none " : "touch-pan-y ") + "cursor-default" : ""}`}
         style={{
-          boxShadow: rowSelected && overId !== object.id ? "inset 0 0 0 1px #a7ffd4" : undefined,
           paddingLeft: 8 + depth * 16,
           paddingRight: 8
         }}
       >
-        {depth > 0 && <span
+        {depth > 0 && <span data-ui-guide="hierarchy"
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 border-l border-white/10"
           style={{

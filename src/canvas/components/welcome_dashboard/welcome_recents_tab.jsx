@@ -103,7 +103,7 @@ export function WelcomeRecentsTab({
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={t("welcome.search.placeholder")}
             aria-label={t("welcome.search.placeholder")}
-            className="h-11 w-full rounded-xl border border-white/10 bg-neutral-900 pl-10 pr-11 text-xs text-neutral-100 placeholder:text-neutral-400 outline-none focus:border-white/20"
+            className="h-11 w-full rounded-xl bg-neutral-900 pl-10 pr-11 text-xs text-neutral-100 placeholder:text-neutral-400 outline-none"
           />
           <button
             type="button"

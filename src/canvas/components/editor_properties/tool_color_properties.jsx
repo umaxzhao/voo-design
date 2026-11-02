@@ -52,7 +52,7 @@ export default function ToolColorProperties({
           <div className="flex items-center gap-2">
             <div className="relative h-7 w-7 select-none">
               {/* Background Color Swatch (Bottom-Right) */}
-              <button
+              <button data-ui-guide="paint-preview"
                 type="button"
                 onClick={() => setActiveSlot("bg")}
                 aria-label={t("editor.toolOptions.backgroundColor")}
@@ -69,7 +69,7 @@ export default function ToolColorProperties({
                 }}
               />
               {/* Foreground Color Swatch (Top-Left) */}
-              <button
+              <button data-ui-guide="paint-preview"
                 type="button"
                 onClick={() => setActiveSlot("fg")}
                 aria-label={t("editor.toolOptions.foregroundColor")}

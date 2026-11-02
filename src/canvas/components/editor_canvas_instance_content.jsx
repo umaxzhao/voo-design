@@ -212,7 +212,7 @@ export default function CanvasInstanceContent({
       />
       {selectedNode &&
       selectedNode ? (
-        <div
+        <div data-ui-guide="canvas-selection"
           data-testid="editor-instance-child-selection"
           data-source-node-id={selectedNode.id}
           className="pointer-events-none absolute ring-1 ring-[#E5B2FF]"

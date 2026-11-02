@@ -39,14 +39,14 @@ export default function WelcomePromptSettings({
         }, ...(styleOptions ?? []).map(style => ({
           value: style.id,
           label: style.name
-        }))]} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border-transparent !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
+        }))]} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
             </ComposerField>
 
             <ComposerField label={t("welcome.prompt.designSystem")}>
               <FlatSelect value={designSystemId} onChange={value => onSelectDesignSystem?.(value)} label={t("welcome.prompt.designSystem")} options={(designSystemOptions ?? []).map(system => ({
           value: system.id,
           label: system.label
-        }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border-transparent !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
+        }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
             </ComposerField>
 
             <ComposerField label={t("welcome.prompt.candidates")}>
@@ -55,7 +55,7 @@ export default function WelcomePromptSettings({
           label: t("welcome.prompt.candidateN", {
             n: count
           })
-        }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border-transparent !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
+        }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
             </ComposerField>
             <ComposerField label={t("welcome.prompt.sizeLabel")}>
               <FlatSelect value={currentSize ? `${currentSize.width}x${currentSize.height}` : AUTO_SIZE_ID} onChange={value => {
@@ -71,7 +71,7 @@ export default function WelcomePromptSettings({
         }} label={t("welcome.prompt.sizeLabel")} options={[{ value: AUTO_SIZE_ID, label: automaticSizeLabel }, ...(sizeOptions ?? []).map(option => ({
           value: `${option.width}x${option.height}`,
           label: `${option.width} × ${option.height}`
-        }))]} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border-transparent !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
+        }))]} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !bg-white/[0.045] !px-2.5 !text-xs hover:!bg-white/[0.075]" panelClassName="!z-[400]" portal />
             </ComposerField>
               </div>
               </div>;

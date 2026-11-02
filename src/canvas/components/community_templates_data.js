@@ -22,7 +22,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "SaaS Analytics & Cloud Metric Dashboard",
     category: "dashboard",
     badge: "Staff Pick",
-    badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+    badgeColor: "bg-indigo-500/20 text-indigo-300",
     tags: ["#SaaS", "#Dashboard", "#DarkUI", "#Charts"],
     author: {
       name: "VOO Core Studio",
@@ -48,7 +48,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "iOS 18 Mobile Banking & Digital Wallet",
     category: "mobile",
     badge: "Trending",
-    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    badgeColor: "bg-emerald-500/20 text-emerald-300",
     tags: ["#iOS18", "#Mobile", "#Fintech", "#AppleDesign"],
     author: {
       name: "Alex Rivera",
@@ -74,7 +74,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "Bento Grid AI Product Landing Page",
     category: "landing",
     badge: "Popular",
-    badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    badgeColor: "bg-purple-500/20 text-purple-300",
     tags: ["#BentoGrid", "#LandingPage", "#AI", "#WebDesign"],
     author: {
       name: "Studio Hyperion",
@@ -100,7 +100,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "Universal Design System & UI Kit",
     category: "design-systems",
     badge: "Essential",
-    badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    badgeColor: "bg-blue-500/20 text-blue-300",
     tags: ["#DesignSystem", "#Tokens", "#Components", "#UIStarter"],
     author: {
       name: "Design Tokens WG",
@@ -126,7 +126,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "Dark Mode Tech Pitch Deck (16:9)",
     category: "slides",
     badge: "Curated",
-    badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    badgeColor: "bg-amber-500/20 text-amber-300",
     tags: ["#PitchDeck", "#Presentation", "#Keynote", "#16:9"],
     author: {
       name: "Elena Rostova",
@@ -152,7 +152,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "Minimalist E-Commerce Store & Lookbook",
     category: "web",
     badge: "Editor's Choice",
-    badgeColor: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+    badgeColor: "bg-rose-500/20 text-rose-300",
     tags: ["#ECommerce", "#Minimalist", "#Shop", "#Lookbook"],
     author: {
       name: "Atelier Studio",
@@ -178,7 +178,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "AXIOM — Avant-garde Product Landing",
     category: "design-systems",
     badge: "Signature",
-    badgeColor: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+    badgeColor: "bg-orange-500/20 text-orange-300",
     tags: ["#AXIOM", "#Editorial", "#HairlineGrid", "#PosterType"],
     author: {
       name: "VOO Signature",
@@ -204,7 +204,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "VOID OS — Observability Console",
     category: "design-systems",
     badge: "Signature",
-    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    badgeColor: "bg-emerald-500/20 text-emerald-300",
     tags: ["#VOIDOS", "#Terminal", "#Dashboard", "#MonoData"],
     author: {
       name: "VOO Signature",
@@ -230,7 +230,7 @@ export const COMMUNITY_TEMPLATES = [
     title: "BLOOM — Soft-pop Mobile Launch",
     category: "design-systems",
     badge: "Signature",
-    badgeColor: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+    badgeColor: "bg-pink-500/20 text-pink-300",
     tags: ["#BLOOM", "#SoftPop", "#Mobile", "#StickerUI"],
     author: {
       name: "VOO Signature",

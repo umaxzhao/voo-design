@@ -65,7 +65,7 @@ export default function BackgroundSection({
                   title={transparent ? t("editor.layer.transparent") : swatch}
                   className={`h-5 w-5 shrink-0 rounded-full transition-transform ${
                     currentBg === swatch
-                      ? "scale-110 ring-2 ring-white"
+                      ? "scale-110"
                       : "hover:scale-105"
                   }`}
                   style={{
@@ -82,7 +82,7 @@ export default function BackgroundSection({
           </div>
           <div className="mt-1 flex items-center gap-2">
             <span
-              className="relative size-5 shrink-0 overflow-hidden rounded-full focus-within:ring-2 focus-within:ring-white"
+              className="relative size-5 shrink-0 overflow-hidden rounded-full"
               style={{
                 backgroundColor: currentBg,
                 backgroundImage:
@@ -135,7 +135,7 @@ export default function BackgroundSection({
                     current === entry.colour ? null : entry.colour,
                   )
                 }
-                className={`size-5 shrink-0 rounded-full border border-white/20 transition-shadow hover:ring-1 hover:ring-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] [@media(pointer:coarse)]:size-12 ${expandedEntry?.colour === entry.colour ? "ring-2 ring-[#a7ffd4]" : ""}`}
+                className={`size-5 shrink-0 rounded-full transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] [@media(pointer:coarse)]:size-12 `}
                 style={{
                   background: entry.colour,
                   backgroundSize: "100% 100%",

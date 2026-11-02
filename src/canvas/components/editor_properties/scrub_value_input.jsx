@@ -81,7 +81,7 @@ export default function ScrubValueInput({
             commit();
           }
         }}
-        className={`rounded-md bg-[#2a2a2a] px-1 py-0.5 text-right text-[10px] font-mono tabular-nums text-neutral-100 outline-none ring-1 ring-white/20 ${className ?? ""}`}
+        className={`rounded-md bg-[#2a2a2a] px-1 py-0.5 text-right text-[10px] font-mono tabular-nums text-neutral-100 outline-none ${className ?? ""}`}
       />
     );
   }

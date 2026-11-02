@@ -165,7 +165,7 @@ export default function ColorVariablesSection({
         <div className="relative flex items-center">
           <div className="pointer-events-none absolute left-2.5 flex items-center">
             <span
-              className="h-3 w-3 rounded-full border border-white/20 shrink-0"
+              className="h-3 w-3 rounded-full shrink-0"
               style={{
                 backgroundColor:
                   active?.value ?? (object.fill || "transparent"),
@@ -176,7 +176,7 @@ export default function ColorVariablesSection({
             data-testid="editor-color-variable-select"
             aria-label={t("editor.variables.binding")}
             rootClassName="min-w-0 flex-1"
-            className="w-full appearance-none rounded-xl bg-[#222222] pl-8 pr-7 py-1.5 text-[11px] font-mono text-neutral-200 outline-none hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-white/20 transition-colors cursor-pointer"
+            className="w-full appearance-none rounded-xl bg-[#222222] pl-8 pr-7 py-1.5 text-[11px] font-mono text-neutral-200 outline-none hover:bg-[#282828] focus:bg-[#282828] transition-colors cursor-pointer"
             value={active?.id ?? ""}
             onChange={(event) => bindVariable(event.target.value || null)}
           >
@@ -197,7 +197,7 @@ export default function ColorVariablesSection({
 
         {/* When a variable is bound, show the active variable card with editable name and value */}
         {active ? (
-          <div className="flex items-center gap-1.5 rounded-xl bg-[#1c1c1c] border border-white/5 p-1.5">
+          <div className="flex items-center gap-1.5 rounded-xl bg-[#1c1c1c] p-1.5">
             <input
               key={active.id}
               ref={nameInputRef}
@@ -216,7 +216,7 @@ export default function ColorVariablesSection({
                   }
                 }
               }}
-              className="min-w-0 flex-1 rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none focus:bg-[#282828] focus:ring-1 focus:ring-white/20"
+              className="min-w-0 flex-1 rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none focus:bg-[#282828]"
             />
             <HexField
               value={active.value}
@@ -262,7 +262,7 @@ export default function ColorVariablesSection({
           data-testid="editor-color-variable-create"
           disabled={!canCreate}
           onClick={onCreate}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/[0.08] py-1.5 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl py-1.5 text-[11px] font-mono text-neutral-400 hover:text-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <span className="text-xs">＋</span>
           <span>{t("editor.variables.create")}</span>

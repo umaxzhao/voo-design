@@ -36,7 +36,7 @@ export function ColorSwatch({
       title={ariaLabel}
       disabled={disabled}
       onClick={onClick}
-      className={`relative h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-inset ring-white/15 outline-none transition-colors hover:ring-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={`relative h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-full outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
       style={{
         background: valid ? value : NONE_PATTERN,
       }}
@@ -94,7 +94,7 @@ export function HexInput({
           e.currentTarget.blur();
         }
       }}
-      className={`h-6 w-16 rounded-lg bg-neutral-800 px-1.5 text-[10px] font-mono tabular-nums uppercase text-neutral-100 outline-none transition-colors hover:bg-white/[0.06] focus:ring-1 focus:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={`h-6 w-16 rounded-lg bg-neutral-800 px-1.5 text-[10px] font-mono tabular-nums uppercase text-neutral-100 outline-none transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
     />
   );
 }

@@ -123,7 +123,7 @@ export default function EditorLayersAssets({ model }) {
       {!loading && !visible.length ? <div className="flex flex-col items-center gap-2 px-2 py-5 text-center text-[11px] text-neutral-400"><FolderOpen size={24} strokeWidth={1.5} />{t(query ? "editor.assets.noResults" : "editor.assets.emptyLibrary")}</div> : null}
       <div className="editor-resource-grid grid grid-cols-2 gap-2">
         {visible.map(item => <div key={item.id} className="group relative min-w-0">
-          <button type="button" data-resource-id={item.id} disabled={busy} onClick={() => insert(item)} aria-label={`${t("editor.assets.insert")}: ${item.name}`} className="w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.04] p-1.5 text-left hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-mint disabled:opacity-40">
+          <button type="button" data-resource-id={item.id} disabled={busy} onClick={() => insert(item)} aria-label={`${t("editor.assets.insert")}: ${item.name}`} className="w-full min-w-0 rounded-xl bg-white/[0.04] p-1.5 text-left hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-mint disabled:opacity-40">
             <span className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-neutral-900">{item.preview ? <img src={item.preview} alt="" className="size-full object-contain" /> : <Layers size={24} strokeWidth={1.5} />}</span>
             <span className="mt-1 block truncate text-[10px] text-neutral-300" title={item.name}>{item.name.replace(/-[a-f0-9]{8}\.voo$/i, "").replace(/\.voo$/i, "")}</span>
           </button>

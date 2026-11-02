@@ -37,7 +37,7 @@ export default function EditorIconPickerModal({
         if (e.key === "Escape") onClose?.();
       }}
     >
-      <div className="relative flex max-h-[80vh] w-[360px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-neutral-900 p-4 shadow-panel">
+      <div className="relative flex max-h-[80vh] w-[360px] flex-col overflow-hidden rounded-2xl bg-neutral-900 p-4 shadow-panel">
         {/* Header */}
         <div className="mb-3 flex items-center justify-between">
           <h2 id="icon-picker-title" className="text-[15px] font-semibold text-neutral-100">
@@ -66,7 +66,7 @@ export default function EditorIconPickerModal({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("common.search")}
             autoFocus
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2 pl-8 pr-3 text-xs text-neutral-200 outline-none placeholder:text-neutral-400 focus:border-[#a7ffd4]/50 focus:ring-1 focus:ring-[#a7ffd4]/40"
+            className="w-full rounded-xl bg-white/[0.04] py-2 pl-8 pr-3 text-xs text-neutral-200 outline-none placeholder:text-neutral-400"
           />
         </div>
 

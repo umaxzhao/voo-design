@@ -79,7 +79,7 @@ export default function EditorLayerThumbnail({
         }
       }}
       title={maskEdit?.nodeId === object.id ? t("editor.mask.editingHint") : t("editor.props.mask")}
-      className={`shrink-0 cursor-pointer overflow-hidden rounded-md border transition-all ${maskEdit?.nodeId === object.id ? "border-[#E5B2FF] ring-2 ring-[#E5B2FF] shadow-[0_0_8px_rgba(229,178,255,0.4)]" : "border-white/10 hover:border-[#E5B2FF]/80"}`}
+      className={`shrink-0 cursor-pointer overflow-hidden rounded-md transition-all ${maskEdit?.nodeId === object.id ? "shadow-[0_0_8px_rgba(229,178,255,0.4)]" : ""}`}
     >
       <MaskThumb
         object={object}

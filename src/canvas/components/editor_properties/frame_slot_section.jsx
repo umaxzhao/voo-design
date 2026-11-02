@@ -86,7 +86,7 @@ export default function FrameSlotSection({ object, editAndCommit }) {
               if (e.key === "Enter") handleAdd();
             }}
             placeholder={t("editor.props.addSlotPlaceholder")}
-            className="h-6 min-w-0 flex-1 rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none focus:ring-1 focus:ring-[#a7ffd4]/40"
+            className="h-6 min-w-0 flex-1 rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none"
           />
           <button
             type="button"

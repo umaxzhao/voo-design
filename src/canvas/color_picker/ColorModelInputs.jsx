@@ -12,7 +12,7 @@ import { useI18n } from "../use_i18n.js";
 import CustomSelect from "../components/custom_select.jsx";
 
 const FIELD_CLASS =
-  "flex items-center rounded-lg border border-white/10 bg-black/40 px-1 py-0.5 focus-within:border-[#a7ffd4]/40";
+  "flex items-center rounded-lg bg-black/40 px-1 py-0.5";
 const INPUT_CLASS =
   "w-full min-w-0 bg-transparent font-mono text-white outline-none";
 

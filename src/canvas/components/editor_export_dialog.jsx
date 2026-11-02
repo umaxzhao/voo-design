@@ -127,7 +127,7 @@ export default function EditorExportDialog({
         aria-modal="true"
         aria-labelledby="design-export-title"
         data-testid="design-export-dialog"
-        className="ui-scroll flex max-h-[calc(100dvh-80px)] w-64 max-w-full flex-col gap-3 overflow-y-auto rounded-3xl bg-neutral-900 border border-white/10 p-4 font-mono shadow-menu"
+        className="ui-scroll flex max-h-[calc(100dvh-80px)] w-64 max-w-full flex-col gap-3 overflow-y-auto rounded-3xl bg-neutral-900 p-4 font-mono shadow-menu"
       >
         <h2 id="design-export-title" className="text-xs text-neutral-200">
           {t("editor.exportTitle")}

@@ -79,7 +79,7 @@ export default function EyedropperProperties({
             aria-pressed={Boolean(showSampleRing)}
             className={`${sectionRowClass} justify-between text-[10px] ${
               showSampleRing
-                ? "text-white ring-1 ring-white/25"
+                ? "text-white bg-white/[0.08]"
                 : "text-neutral-400"
             }`}
           >

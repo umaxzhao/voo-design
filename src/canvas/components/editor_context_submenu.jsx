@@ -126,7 +126,7 @@ export default function EditorContextSubmenu({
               aria-label={label}
               data-editor-context-surface={id}
               data-testid={`editor-menu-${id}-options`}
-              className="fixed z-[110] min-w-52 overflow-y-auto overscroll-contain rounded-2xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10"
+              className="fixed z-[110] min-w-52 overflow-y-auto overscroll-contain rounded-2xl bg-neutral-900 p-1 shadow-menu"
               onKeyDown={navigate}
               onContextMenu={(event) => event.preventDefault()}
             >

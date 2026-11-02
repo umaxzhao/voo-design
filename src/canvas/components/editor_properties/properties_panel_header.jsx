@@ -183,7 +183,7 @@ export default function PropertiesPanelHeader({
               if (event.key === "Escape") setEditing(false);
             }}
             aria-label={t("editor.props.layerName")}
-            className="min-w-0 flex-1 border-b border-white/20 bg-transparent text-[11px] font-mono text-neutral-100 outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[11px] font-mono text-neutral-100 outline-none"
           />
         ) : (
           <button
@@ -211,7 +211,7 @@ export default function PropertiesPanelHeader({
     <div className="flex min-h-9 items-center justify-between px-2 py-2 select-none">
       <div className="flex items-center gap-1.5 min-w-0">
         {toolInfo ? (
-          <div className="flex items-center gap-1 rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] font-mono text-neutral-100 ring-1 ring-white/10 truncate">
+          <div className="flex items-center gap-1 rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] font-mono text-neutral-100 truncate">
             {toolInfo.icon}
             <span className="font-semibold text-white truncate">{toolInfo.label}</span>
           </div>

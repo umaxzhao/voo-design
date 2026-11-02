@@ -123,7 +123,7 @@ export default function ToneCurvesWidget({
               }}
               className={`rounded-lg px-1.5 py-0.5 text-[9px] font-mono transition-all ${
                 channel === entry.key
-                  ? "bg-[#333333] text-white ring-1 ring-white/20 font-medium"
+                  ? "bg-[#333333] text-white font-medium"
                   : "bg-[#222222] text-neutral-400 hover:text-neutral-200"
               }`}
               style={{ color: channel === entry.key ? entry.color : undefined }}

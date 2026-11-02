@@ -11,7 +11,7 @@ import { useI18n } from "../use_i18n.js";
  */
 function Kbd({ children }) {
   return (
-    <kbd className="min-w-5 rounded-md border border-white/10 bg-white/[0.08] px-1.5 py-0.5 text-center font-mono text-[10px] font-semibold text-neutral-200">
+    <kbd className="min-w-5 rounded-md bg-white/[0.08] px-1.5 py-0.5 text-center font-mono text-[10px] font-semibold text-neutral-200">
       {children}
     </kbd>
   );
@@ -28,7 +28,7 @@ function ShortcutReferenceModal({
   groups,
   closeLabelKey = "editor.cancel",
   overlayClassName = "fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm",
-  panelClassName = "relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#181818] p-6 shadow-panel font-mono text-neutral-200",
+  panelClassName = "relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl bg-[#181818] p-6 shadow-panel font-mono text-neutral-200",
 }) {
   const { t } = useI18n();
 
@@ -58,7 +58,7 @@ function ShortcutReferenceModal({
         className={panelClassName}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex items-center justify-between pb-4">
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-semibold text-white">
               {t(titleKey)}
@@ -80,13 +80,13 @@ function ShortcutReferenceModal({
               <div className="text-[11px] font-semibold tracking-wider text-neutral-400 uppercase">
                 {t(group.titleKey)}
               </div>
-              <div className="flex flex-col rounded-xl bg-white/[0.03] p-2 border border-white/[0.06]">
+              <div className="flex flex-col rounded-xl bg-white/[0.03] p-2">
                 {group.shortcuts.map((item, index) => {
                   const keys = item.keys ?? [item.key];
                   return (
                     <div
                       key={item.id ?? `${group.id}-${index}`}
-                      className="flex items-center justify-between py-1.5 px-2 text-[12px] border-b border-white/[0.03] last:border-0"
+                      className="flex items-center justify-between py-1.5 px-2 text-[12px] last:border-0"
                     >
                       <span className="text-neutral-300">
                         {t(item.labelKey)}

@@ -24,13 +24,8 @@ html[data-theme="light"] .editor-shell-inner {
   background: #f5f5f5 !important;
 }
 
-html[data-theme="light"] .editor-shell {
-  border-color: #a7ffd4 !important;
-}
-
 html[data-theme="light"] .app-title-bar {
   background: #fafafa !important;
-  border-bottom-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 html[data-theme="light"] .app-title-brand-row,
@@ -101,12 +96,6 @@ html[data-theme="light"] [class~="bg-white/20"] {
   background-color: rgba(0, 0, 0, 0.08) !important;
 }
 
-/* A solid white element is a primary action: keep it, but give it an edge. */
-html[data-theme="light"] [class~="bg-white"] {
-  outline: 1px solid rgba(0, 0, 0, 0.12);
-  outline-offset: -1px;
-}
-
 /* Text ---------------------------------------------------------------------- */
 html[data-theme="light"] [class~="text-white"],
 html[data-theme="light"] [class*="text-neutral-100"],
@@ -142,7 +131,7 @@ html[data-theme="light"] .welcome-type-accent-line {
   stroke: #171717;
 }
 
-/* Hairlines, rings and dividers */
+/* Artwork and manipulation-guide contrast; interface surfaces stay borderless. */
 html[data-theme="light"] [class*="border-white/"],
 html[data-theme="light"] [class*="divide-white/"] {
   border-color: rgba(0, 0, 0, 0.12) !important;

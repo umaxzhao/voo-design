@@ -182,7 +182,7 @@ export function EditorActions({
             className="flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11px] font-mono font-medium text-black transition-all hover:bg-neutral-200 disabled:opacity-50"
           >
             {busy ? (
-              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
+              <span data-ui-guide="progress" className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
             ) : null}
             <span>{t("editor.apply")}</span>
             {dirtyCount > 0 ? (
@@ -212,7 +212,7 @@ export function EditorActions({
 
       {/* 保存成功提示 */}
       {savedNotice ? (
-        <div className="pointer-events-none absolute right-0 top-full mt-2 flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/95 px-3 py-1.5 text-[11px] text-emerald-400 shadow-pop backdrop-blur-md">
+        <div className="pointer-events-none absolute right-0 top-full mt-2 flex items-center gap-1.5 rounded-xl bg-black/95 px-3 py-1.5 text-[11px] text-emerald-400 shadow-pop backdrop-blur-md">
           <span>✓</span>
           <span>{t("editor.saved")}</span>
         </div>

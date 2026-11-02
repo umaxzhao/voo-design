@@ -57,7 +57,7 @@ export default function EditorUpscaleButton({
           aria-expanded={open}
           aria-label={t("editor.upscale.button")}
           className={`${ICON_BTN_AI} disabled:opacity-40 ${
-            open ? "bg-white/10 text-neutral-300 ring-1 ring-white/30" : ""
+            open ? "bg-white/10 text-neutral-300" : ""
           }`}
         >
           <IconHd size={12} className={`text-neutral-300 ${busy ? "animate-pulse" : ""}`} />
@@ -68,7 +68,7 @@ export default function EditorUpscaleButton({
         <div
           role="dialog"
           aria-label={t("editor.upscale.button")}
-          className="node-editor-enter absolute bottom-full left-0 mb-2.5 w-64 rounded-xl bg-neutral-900 border border-white/10 p-1.5 shadow-menu z-50 select-none font-sans text-xs"
+          className="node-editor-enter absolute bottom-full left-0 mb-2.5 w-64 rounded-xl bg-neutral-900 p-1.5 shadow-menu z-50 select-none font-sans text-xs"
         >
           <div className="px-2 pb-1 pt-1 text-[9px] uppercase tracking-wider text-neutral-400 font-mono">
             {t("editor.upscale.button")}

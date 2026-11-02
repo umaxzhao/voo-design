@@ -63,7 +63,7 @@ export default function RoomProjectNotice({
       <button
         type="button"
         onClick={handleSave}
-        className="shrink-0 rounded-md border border-white/10 px-2 py-0.5 text-[11px] font-medium text-neutral-200 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:outline-none"
+        className="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium text-neutral-200 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:outline-none"
       >
         {t("collab.roomProjectAction")}
       </button>

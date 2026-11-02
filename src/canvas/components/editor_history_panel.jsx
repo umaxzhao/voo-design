@@ -110,7 +110,7 @@ export default function EditorHistoryPanel({
       className={`absolute ${sideClass} top-1/2 z-30 flex max-h-[75%] w-64 -translate-y-1/2 flex-col rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-2 pb-2.5 pt-1 border-b border-white/10 mb-2 select-none">
+      <div className="flex items-center justify-between px-2 pb-2.5 pt-1 mb-2 select-none">
         <div className="flex items-center gap-1.5 text-neutral-400">
           <IconHistory size={13} />
           <h2 className="text-[11px] font-mono tracking-wider font-medium uppercase">
@@ -171,7 +171,7 @@ export default function EditorHistoryPanel({
       {activeTab === "actions" ? (
         <>
           {/* Undo / Redo Quick Actions */}
-          <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/10 mb-2">
+          <div className="grid grid-cols-2 gap-1.5 pb-2 mb-2">
             <button
               type="button"
               onClick={onUndo}
@@ -221,7 +221,7 @@ export default function EditorHistoryPanel({
                       onClick={() => onJumpTo?.(stepNum)}
                       className={`group flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-[11px] transition-colors ${
                         isActive
-                          ? "bg-white/15 text-white font-medium ring-1 ring-white/10"
+                          ? "bg-white/15 text-white font-medium"
                           : isFuture
                             ? "text-neutral-500 hover:bg-white/5 hover:text-neutral-400"
                             : "text-neutral-300 hover:bg-white/10 hover:text-white"
@@ -252,7 +252,7 @@ export default function EditorHistoryPanel({
         <div className="flex-1 flex flex-col gap-2 overflow-hidden">
           {/* Create named snapshot row */}
           {namingOpen ? (
-            <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-white/[0.04] border border-white/10">
+            <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-white/[0.04]">
               <input
                 type="text"
                 autoFocus
@@ -263,7 +263,7 @@ export default function EditorHistoryPanel({
                   if (e.key === "Enter") void handleSaveVersion();
                   if (e.key === "Escape") setNamingOpen(false);
                 }}
-                className="w-full rounded-lg bg-black/60 px-2.5 py-1 text-[11px] text-white border border-white/10 focus:outline-none focus:border-white/30"
+                className="w-full rounded-lg bg-black/60 px-2.5 py-1 text-[11px] text-white focus:outline-none"
               />
               <div className="flex items-center justify-end gap-1.5">
                 <button
@@ -287,7 +287,7 @@ export default function EditorHistoryPanel({
             <button
               type="button"
               onClick={() => setNamingOpen(true)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/20 py-1.5 text-[11px] text-neutral-300 hover:border-white/40 hover:text-white transition-colors cursor-pointer"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-1.5 text-[11px] text-neutral-300 hover:text-white transition-colors cursor-pointer"
             >
               <span>+</span>
               <span>{t("editor.history.nameVersion")}</span>
@@ -304,7 +304,7 @@ export default function EditorHistoryPanel({
               versions.map((ver) => (
                 <div
                   key={ver.id}
-                  className="group flex flex-col gap-1 rounded-xl p-2 bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-white/5 transition-colors"
+                  className="group flex flex-col gap-1 rounded-xl p-2 bg-white/[0.02] hover:bg-white/[0.06] transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium text-neutral-200 truncate">

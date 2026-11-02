@@ -117,7 +117,7 @@ export default function SelectionProperties({
                     aria-pressed={active}
                     className={`${sectionRowClass} justify-center text-[10px] ${
                       active
-                        ? "text-white ring-1 ring-white/25"
+                        ? "text-white bg-white/[0.08]"
                         : "text-neutral-400"
                     }`}
                   >
@@ -172,7 +172,7 @@ export default function SelectionProperties({
                   aria-pressed={regionTarget === value}
                   className={`${sectionRowClass} justify-center text-[10px] ${
                     regionTarget === value
-                      ? "text-white ring-1 ring-white/25"
+                      ? "text-white bg-white/[0.08]"
                       : "text-neutral-400"
                   }`}
                 >

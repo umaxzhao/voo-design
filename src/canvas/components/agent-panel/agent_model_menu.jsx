@@ -94,7 +94,7 @@ export default function AgentModelMenu({
       aria-label={t("agent.panel.selectModel")}
       onKeyDown={onKeyDown}
       style={{ maxHeight }}
-      className="absolute inset-x-0 bottom-full z-20 mb-2 flex flex-col gap-2 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#171717] p-2.5 shadow-panel"
+      className="absolute inset-x-0 bottom-full z-20 mb-2 flex flex-col gap-2 overflow-y-auto overscroll-contain rounded-2xl bg-[#171717] p-2.5 shadow-panel"
     >
       {!groups.some(group => group.models.length) && (
         <div className="flex flex-col gap-2 p-2">

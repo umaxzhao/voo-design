@@ -100,17 +100,18 @@ describe("layer row selection styling", () => {
     expect(isRowSelected(objects, second, options)).toBe(false);
   });
 
-  it.each([false, true])("selected row has gray fill and inset shadow (isolated=%s)", (isolated) => {
+  it.each([false, true])("selected row uses a brighter gray fill without an outline (isolated=%s)", (isolated) => {
     const row = renderRow({ isolated });
-    expect(row).toContain("bg-neutral-800");
+    expect(row).toContain("bg-neutral-700");
     expect(row).toContain("text-neutral-100");
-    expect(row).toContain("box-shadow:inset 0 0 0 1px #a7ffd4");
+    expect(row).not.toContain("box-shadow:");
   });
 
-  it("selected drag-over row uses the drag ring without a selection shadow", () => {
+  it("selected drag-over row uses a filled drop cue without an outline", () => {
     const row = renderRow({ overId: "layer" });
     expect(row).toContain('aria-selected="true"');
-    expect(row).toContain("ring-1 ring-inset");
+    expect(row).toContain("bg-[#a7ffd4]/15");
+    expect(row).not.toContain("ring-1");
     expect(row).not.toContain("box-shadow:");
   });
 

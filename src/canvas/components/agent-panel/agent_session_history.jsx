@@ -9,7 +9,7 @@ export default function AgentSessionHistory({
   return (
     <ul
       aria-label={t("agent.history.title")}
-      className="absolute inset-x-2 top-12 z-10 flex max-h-[60%] flex-col gap-0.5 overflow-y-auto rounded-2xl border border-white/[0.06] bg-[#171717] p-2 shadow-panel"
+      className="absolute inset-x-2 top-12 z-10 flex max-h-[60%] flex-col gap-0.5 overflow-y-auto rounded-2xl bg-[#171717] p-2 shadow-panel"
     >
       {sessions.length === 0 && (
         <li className="px-2.5 py-3 text-[12px] text-neutral-400">{t("agent.history.empty")}</li>

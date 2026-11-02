@@ -18,7 +18,7 @@ export default function PanelAddMenu({ items, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   if (items.length === 0) return null;
   return (
-    <div className="mt-2.5 border-t border-white/10 pt-2.5" data-testid="properties-add-menu">
+    <div className="mt-2.5 pt-2.5" data-testid="properties-add-menu">
       <button
         type="button"
         aria-expanded={open}
@@ -34,7 +34,7 @@ export default function PanelAddMenu({ items, defaultOpen = false }) {
       {open ? (
         <div
           role="menu"
-          className="mt-1 rounded-xl border border-white/10 bg-neutral-900 p-1"
+          className="mt-1 rounded-xl bg-neutral-900 p-1"
           onKeyDown={(event) => {
             if (event.key === "Escape") setOpen(false);
           }}

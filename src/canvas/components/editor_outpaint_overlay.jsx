@@ -182,7 +182,7 @@ export default function EditorOutpaintOverlay({
   return (
     <>
       {/* The grown target frame: dashed purple; the original box stays solid. */}
-      <div
+      <div data-ui-guide="canvas-selection"
         aria-hidden
         data-testid="outpaint-frame"
         className="pointer-events-none fixed z-40 border-2 border-dashed border-[#E5B2FF]/80 bg-[#E5B2FF]/10"
@@ -193,7 +193,7 @@ export default function EditorOutpaintOverlay({
           height: frame.height,
         }}
       />
-      <div
+      <div data-ui-guide="canvas-selection"
         aria-hidden
         data-testid="outpaint-origin"
         className="pointer-events-none fixed z-40 border border-white/70"
@@ -217,7 +217,7 @@ export default function EditorOutpaintOverlay({
       </div>
 
       {HANDLES.map((handle) => (
-        <button
+        <button data-ui-guide="canvas-selection"
           key={handle.id}
           type="button"
           data-testid={`outpaint-handle-${handle.id}`}
@@ -236,7 +236,7 @@ export default function EditorOutpaintOverlay({
         role="dialog"
         aria-label={t("editor.outpaint.title")}
         onMouseDown={(event) => event.stopPropagation()}
-        className="nodrag fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/10 bg-neutral-900/95 p-2.5 pl-3.5 shadow-menu backdrop-blur-2xl"
+        className="nodrag fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-neutral-900/95 p-2.5 pl-3.5 shadow-menu backdrop-blur-2xl"
       >
         <span className="whitespace-nowrap pr-1 text-[12px] text-neutral-300">
           {t("editor.outpaint.title")}
@@ -244,7 +244,7 @@ export default function EditorOutpaintOverlay({
         {runsOnCredits && estimatedBadgeText ? (
           <span
             data-testid="outpaint-credits-badge"
-            className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-neutral-400 tabular-nums"
+            className="flex items-center gap-1 rounded-lg bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-neutral-400 tabular-nums"
           >
             <IconCredits size={10} className="shrink-0 text-neutral-400" />
             {estimatedBadgeText}

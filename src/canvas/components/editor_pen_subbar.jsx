@@ -43,7 +43,7 @@ export default function EditorPenSubbar({
       role="group"
       aria-label={t("editor.tool.pen")}
       data-testid="editor-pen-subbar"
-      className="mb-3 flex flex-wrap items-center gap-1 rounded-xl border border-white/10 bg-white/[0.025] p-1 font-mono"
+      className="mb-3 flex flex-wrap items-center gap-1 rounded-xl bg-white/[0.025] p-1 font-mono"
     >
       {SUB_TOOLS.map(({ id, icon: Icon, labelKey }) => (
         <button

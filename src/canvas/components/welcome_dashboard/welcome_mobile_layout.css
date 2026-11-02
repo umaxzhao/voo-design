@@ -302,7 +302,7 @@
   .welcome-mobile-search input {
     width: 100%;
     min-height: 2.75rem;
-    border: 1px solid rgb(255 255 255 / 8%);
+
     border-radius: 1rem;
     background: rgb(255 255 255 / 5%);
     padding: 0.625rem 2.5rem;
@@ -378,7 +378,7 @@
   .welcome-home-projects .grid.grid-cols-1 > .group {
     min-width: 0;
     overflow: hidden;
-    border: 1px solid rgb(255 255 255 / 6%);
+
     border-radius: 1rem;
   }
 

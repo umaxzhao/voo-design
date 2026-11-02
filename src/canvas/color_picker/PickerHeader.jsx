@@ -49,7 +49,7 @@ export function PickerHeader({
     onSelectType(types[next].id);
     event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next]?.focus();
   };
-  return <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+  return <div className="flex items-center justify-between gap-2 pb-2.5">
     {showTypeTabs ? <div role="tablist" aria-label={t("editor.props.fillType")} className="flex items-center gap-1">
       {types.map(({
         id,
