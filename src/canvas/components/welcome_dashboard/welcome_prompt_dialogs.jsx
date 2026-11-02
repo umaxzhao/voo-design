@@ -29,8 +29,8 @@ export default function WelcomePromptDialogs({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
         >
-          <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#171717] p-5 shadow-panel">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+          <div className="relative w-full max-w-lg rounded-2xl bg-[#171717] p-5 shadow-panel">
+            <div className="flex items-center justify-between pb-3 mb-4">
               <h3 className="text-[15px] font-semibold text-neutral-100">
                 {t("welcome.prompt.styleLabel")}
               </h3>
@@ -50,10 +50,10 @@ export default function WelcomePromptDialogs({
                   onSelectStyle?.(DEFAULT_STYLE_ID);
                   setStyleModalOpen(false);
                 }}
-                className={`flex flex-col items-center justify-center rounded-xl border border-dashed p-4 text-center transition-colors ${
+                className={`flex flex-col items-center justify-center rounded-xl   p-4 text-center transition-colors ${
                   !styleId || styleId === DEFAULT_STYLE_ID
-                    ? "border-[#a7ffd4]/60 bg-[#a7ffd4]/5 text-white"
-                    : "border-white/10 text-neutral-400 hover:bg-white/[0.04]"
+                    ? " bg-[#a7ffd4]/5 text-white"
+                    : " text-neutral-400 hover:bg-white/[0.04]"
                 }`}
               >
                 <span className="text-xs font-medium">
@@ -71,10 +71,10 @@ export default function WelcomePromptDialogs({
                     onSelectStyle?.(style.id);
                     setStyleModalOpen(false);
                   }}
-                  className={`flex flex-col rounded-xl border p-2.5 text-left transition-colors ${
+                  className={`flex flex-col rounded-xl  p-2.5 text-left transition-colors ${
                     styleId === style.id
-                      ? "border-[#a7ffd4]/60 bg-white/10 text-white ring-1 ring-[#a7ffd4]/30"
-                      : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/20 hover:bg-white/[0.06]"
+                      ? " bg-white/10 text-white  "
+                      : " bg-white/[0.03] text-neutral-300  hover:bg-white/[0.06]"
                   }`}
                 >
                   {style.swatch && (
@@ -110,8 +110,8 @@ export default function WelcomePromptDialogs({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
         >
-          <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#171717] p-5 shadow-panel">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+          <div className="relative w-full max-w-md rounded-2xl bg-[#171717] p-5 shadow-panel">
+            <div className="flex items-center justify-between pb-3 mb-4">
               <h3 className="text-[15px] font-semibold text-neutral-100">
                 {t("welcome.prompt.designSystem")}
               </h3>
@@ -133,10 +133,10 @@ export default function WelcomePromptDialogs({
                     onSelectDesignSystem?.(system.id);
                     setSystemModalOpen(false);
                   }}
-                  className={`flex flex-col rounded-xl border p-3 text-left transition-colors ${
+                  className={`flex flex-col rounded-xl  p-3 text-left transition-colors ${
                     designSystemId === system.id
-                      ? "border-[#a7ffd4]/60 bg-white/10 text-white ring-1 ring-[#a7ffd4]/30"
-                      : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/20 hover:bg-white/[0.06]"
+                      ? " bg-white/10 text-white  "
+                      : " bg-white/[0.03] text-neutral-300  hover:bg-white/[0.06]"
                   }`}
                 >
                   <span className="text-xs font-semibold">{system.label}</span>
@@ -159,8 +159,8 @@ export default function WelcomePromptDialogs({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
         >
-          <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#171717] p-5 shadow-panel">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+          <div className="relative w-full max-w-sm rounded-2xl bg-[#171717] p-5 shadow-panel">
+            <div className="flex items-center justify-between pb-3 mb-4">
               <h3 className="text-[15px] font-semibold text-neutral-100">
                 {t("welcome.prompt.sizeLabel")}
               </h3>
@@ -181,10 +181,10 @@ export default function WelcomePromptDialogs({
                   onSelectSize?.(null);
                   setSizeModalOpen(false);
                 }}
-                className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-colors ${
+                className={`flex flex-col items-center justify-center rounded-xl  p-3 text-center transition-colors ${
                   !currentSize
-                    ? "border-[#a7ffd4]/60 bg-white/10 text-white ring-1 ring-[#a7ffd4]/30"
-                    : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/20 hover:bg-white/[0.06]"
+                    ? " bg-white/10 text-white  "
+                    : " bg-white/[0.03] text-neutral-300  hover:bg-white/[0.06]"
                 }`}
               >
                 <span className="text-xs font-semibold">{t("welcome.prompt.sizeAuto")}</span>
@@ -201,11 +201,11 @@ export default function WelcomePromptDialogs({
                     });
                     setSizeModalOpen(false);
                   }}
-                  className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-colors ${
+                  className={`flex flex-col items-center justify-center rounded-xl  p-3 text-center transition-colors ${
                     currentSize?.width === option.width &&
                     currentSize?.height === option.height
-                      ? "border-[#a7ffd4]/60 bg-white/10 text-white ring-1 ring-[#a7ffd4]/30"
-                      : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/20 hover:bg-white/[0.06]"
+                      ? " bg-white/10 text-white  "
+                      : " bg-white/[0.03] text-neutral-300  hover:bg-white/[0.06]"
                   }`}
                 >
                   <span className="font-mono text-xs">
@@ -273,7 +273,7 @@ export function WelcomePromptContext({
         {contextOpen && (
           <div
             ref={contextMenuRef}
-            className="absolute bottom-full left-0 z-50 mb-2 w-52 rounded-xl border border-white/10 bg-[#1a1a1a] p-1.5 shadow-panel backdrop-blur-md"
+            className="absolute bottom-full left-0 z-50 mb-2 w-52 rounded-xl bg-[#1a1a1a] p-1.5 shadow-panel backdrop-blur-md"
           >
             <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
               {t("welcome.prompt.addAttachment")}

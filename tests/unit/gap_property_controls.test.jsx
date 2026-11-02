@@ -131,7 +131,7 @@ describe("Gap Property Controls - Tier 1: Functional Feature Coverage", () => {
     expect(metrics.gap).toBe(20);
   });
 
-  it("F6.5: ScrubField container conforms to Design.md mint focus ring tokens", () => {
+  it("F6.5: ScrubField uses filled focus feedback without a decorative ring", () => {
     const html = renderToStaticMarkup(
       <ScrubField
         prefix="Gap"
@@ -142,7 +142,8 @@ describe("Gap Property Controls - Tier 1: Functional Feature Coverage", () => {
         ariaLabel="Gap"
       />,
     );
-    expect(html).toContain("focus-within:ring-[#a7ffd4]/40");
+    expect(html).toContain("focus-within:bg-neutral-700");
+    expect(html).not.toContain("focus-within:ring-");
   });
 });
 

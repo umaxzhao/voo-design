@@ -37,7 +37,7 @@ function usePanelText() {
 }
 
 const CONTROL_CLASS =
-  "rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none transition-colors hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-[#a7ffd4]/50";
+  "rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none transition-colors hover:bg-[#282828] focus:bg-[#282828]";
 const ICON_BUTTON_CLASS =
   "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/60 disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -70,7 +70,7 @@ function StyleTypeRow({
   const [draft, setDraft] = useState("");
   const canApply = Boolean(actions.apply);
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-white/5 bg-[#1c1c1c] p-1.5">
+    <div className="flex flex-col gap-1.5 rounded-xl bg-[#1c1c1c] p-1.5">
       <div className="flex items-center justify-between gap-1">
         <span className="text-[9px] uppercase tracking-[0.14em] text-neutral-400">
           {tv(`styles.type.${type}`)}
@@ -104,7 +104,7 @@ function StyleTypeRow({
             if (styleId) actions.apply?.(type, styleId);
             else actions.detach?.(type);
           }}
-          className="w-full appearance-none rounded-xl bg-[#222222] py-1.5 pl-2 pr-7 text-[11px] font-mono text-neutral-200 outline-none transition-colors hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full appearance-none rounded-xl bg-[#222222] py-1.5 pl-2 pr-7 text-[11px] font-mono text-neutral-200 outline-none transition-colors hover:bg-[#282828] focus:bg-[#282828] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <option value="" className="bg-[#1e1e1e] text-neutral-300">
             {tv("styles.none")}

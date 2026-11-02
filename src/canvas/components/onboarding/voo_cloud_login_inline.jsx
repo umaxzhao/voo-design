@@ -41,7 +41,7 @@ export default function VooCloudLoginInline({ onSignedIn = null }) {
     return (
       <div
         data-testid="onboarding-voo-cloud-signed-in"
-        className="flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5"
+        className="flex items-center justify-between gap-2 rounded-2xl bg-white/[0.04] px-3 py-2.5"
       >
         <div className="min-w-0">
           <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#a7ffd4]">
@@ -75,7 +75,7 @@ export default function VooCloudLoginInline({ onSignedIn = null }) {
       ref={formRef}
       data-testid="onboarding-voo-cloud-login"
       onSubmit={submit}
-      className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3"
+      className="flex flex-col gap-2 rounded-2xl bg-white/[0.03] p-3"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-medium text-neutral-200">

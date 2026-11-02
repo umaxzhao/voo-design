@@ -24,7 +24,7 @@ export default function EditorLayerLocks({
     onPointerDown={e => e.stopPropagation()}
   >
     {!grouped ? <div
-      className="absolute right-full mr-1 top-1/2 -translate-y-1/2 hidden group-hover/locks:flex items-center gap-0.5 rounded-lg bg-neutral-800 p-0.5 shadow-pop border border-white/10 z-30"
+      className="absolute right-full mr-1 top-1/2 -translate-y-1/2 hidden group-hover/locks:flex items-center gap-0.5 rounded-lg bg-neutral-800 p-0.5 shadow-pop z-30"
     >
       {/* Photoshop-style "lock transparent pixels": painting may
        only mix colour into existing content. */}

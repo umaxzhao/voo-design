@@ -213,7 +213,7 @@ export default function EditorContextMenu({
           )
             submenuState[1](null);
         }}
-        className={`fixed z-[100] min-w-52 overflow-y-auto overscroll-contain rounded-2xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10 ${codeDialogOpen ? "hidden" : ""}`}
+        className={`fixed z-[100] min-w-52 overflow-y-auto overscroll-contain rounded-2xl bg-neutral-900 p-1 shadow-menu ${codeDialogOpen ? "hidden" : ""}`}
         style={{ left: x, top: y }}
         data-editor-context-surface="root"
         role="menu"

@@ -35,7 +35,7 @@ export default function CropProperties({
 
   const toggleClass = (active) =>
     `${sectionRowClass} justify-center px-1 text-[10px] ${
-      active ? "text-white ring-1 ring-white/25" : "text-neutral-400"
+      active ? "text-white bg-white/[0.08]" : "text-neutral-400"
     }`;
 
   return (
@@ -174,7 +174,7 @@ export default function CropProperties({
             onClick={() => setDeleteCroppedPixels((v) => !v)}
             className={`${sectionRowClass} justify-between text-[10px] ${
               deleteCroppedPixels
-                ? "text-white ring-1 ring-white/25"
+                ? "text-white bg-white/[0.08]"
                 : "text-neutral-400"
             }`}
           >

@@ -195,7 +195,7 @@ export default function AddKindPicker({
         </button>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-neutral-950/60 px-2.5">
+      <div className="flex shrink-0 items-center gap-2 rounded-xl bg-neutral-950/60 px-2.5">
         <span aria-hidden="true" className="text-[11px] text-neutral-500">⌕</span>
         <input
           type="search"
@@ -270,8 +270,8 @@ export default function AddKindPicker({
                         title={t(preset.labelKey)}
                         className={`group/preset flex flex-col items-center gap-1.5 rounded-xl p-1.5 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
                           active
-                            ? "bg-neutral-800 ring-1 ring-[#a7ffd4]"
-                            : "bg-neutral-900 hover:bg-neutral-800 hover:ring-1 hover:ring-white/20"
+                            ? "bg-neutral-800"
+                            : "bg-neutral-900 hover:bg-neutral-800"
                         }`}
                       >
                         {thumb ? (
@@ -283,7 +283,7 @@ export default function AddKindPicker({
                             className="h-12 w-full rounded-lg object-cover"
                           />
                         ) : (
-                          <div className="flex h-12 w-full items-center justify-center rounded-lg bg-neutral-900 text-neutral-500 ring-1 ring-white/10">
+                          <div className="flex h-12 w-full items-center justify-center rounded-lg bg-neutral-900 text-neutral-500">
                             <KindIcon kind="brightness" />
                           </div>
                         )}

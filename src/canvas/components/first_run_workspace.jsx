@@ -53,11 +53,11 @@ export default function FirstRunWorkspace() {
         event.preventDefault();
         if (isDesktop && state.path.trim()) void configure(() => workspaceStorage.setDirectory(state.path.trim()));
       }}
-      className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-4">
+      className="mt-2 flex flex-col gap-2 pt-4">
       <label htmlFor="first-run-workspace-path" className="text-xs font-medium text-neutral-200">
         {t("firstRun.workspace.label")}
       </label>
-      <div className="flex min-h-12 items-center rounded-lg bg-white/[0.06] focus-within:ring-1 focus-within:ring-white/40">
+      <div className="flex min-h-12 items-center rounded-lg bg-white/[0.06]">
         <input id="first-run-workspace-path" data-testid="first-run-workspace-path"
           type="text" value={state.type === "web-idb" ? t("firstRun.workspace.browserDefault") : state.path}
           readOnly={!isDesktop} disabled={state.busy}

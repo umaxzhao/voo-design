@@ -193,7 +193,7 @@ export default function StreamingLayoutPreview({
         className="pointer-events-none absolute z-30 opacity-0 transition-[left,top,opacity] duration-300 ease-out motion-reduce:transition-none"
       >
         <IconCursor size={18} strokeWidth={1.5} className="text-[#E5B2FF]" />
-        <span className="ml-4 mt-1 flex items-center gap-1.5 w-max rounded-lg bg-neutral-950/95 border border-[#E5B2FF]/40 px-2.5 py-1 text-[11px] font-medium text-[#E5B2FF] shadow-panel">
+        <span className="ml-4 mt-1 flex items-center gap-1.5 w-max rounded-lg bg-neutral-950/95 px-2.5 py-1 text-[11px] font-medium text-[#E5B2FF] shadow-panel">
           <span className="inline-block size-1.5 rounded-full bg-[#E5B2FF] motion-safe:animate-pulse" />
           <span>{t("agent.title")}</span>
         </span>

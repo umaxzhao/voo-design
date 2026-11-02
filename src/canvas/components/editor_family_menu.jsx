@@ -205,7 +205,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
               id={`editor-${menuId}-menu-list`}
               aria-label={menuLabel}
               data-testid={`editor-${menuId}-menu-list`}
-              className="fixed z-[9999] flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl border border-white/10 bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"
+              className="fixed z-[9999] flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"
               style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
             >
               {items.map((item) => {

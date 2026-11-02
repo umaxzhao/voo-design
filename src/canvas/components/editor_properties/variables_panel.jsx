@@ -36,7 +36,7 @@ function usePanelText() {
 }
 
 const CONTROL_CLASS =
-  "rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none transition-colors hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-[#a7ffd4]/50";
+  "rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none transition-colors hover:bg-[#282828] focus:bg-[#282828]";
 const GHOST_BUTTON_CLASS =
   "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/60";
 
@@ -118,10 +118,10 @@ function ValueEditor({ variable, modeId, label, onCommit }) {
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
         <span
           aria-hidden="true"
-          className="h-3.5 w-3.5 shrink-0 rounded-full border border-white/20"
+          className="h-3.5 w-3.5 shrink-0 rounded-full"
           style={{ backgroundColor: color || "transparent" }}
         />
-        <div className="flex min-w-0 flex-1 items-center rounded-lg bg-[#222222] focus-within:bg-[#282828] focus-within:ring-1 focus-within:ring-[#a7ffd4]/50">
+        <div className="flex min-w-0 flex-1 items-center rounded-lg bg-[#222222] focus-within:bg-[#282828]">
           <HexField
             value={color}
             ariaLabel={label}
@@ -149,10 +149,10 @@ function ValueEditor({ variable, modeId, label, onCommit }) {
         aria-checked={value === true}
         aria-label={label}
         onClick={() => onCommit(value !== true)}
-        className={`flex h-6 w-11 shrink-0 items-center rounded-full border px-0.5 transition-colors ${
+        className={`flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors ${
           value === true
-            ? "justify-end border-[#a7ffd4]/40 bg-[#a7ffd4]/20"
-            : "justify-start border-white/10 bg-[#222222]"
+            ? "justify-end bg-[#a7ffd4]/20"
+            : "justify-start bg-[#222222]"
         }`}
       >
         <span
@@ -263,7 +263,7 @@ export default function VariablesPanel({
         aria-modal="true"
         aria-label={tv("editor.variables.panel.title")}
         tabIndex={-1}
-        className="flex max-h-[80vh] w-[680px] max-w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] p-3 font-mono text-neutral-200 shadow-panel outline-none"
+        className="flex max-h-[80vh] w-[680px] max-w-full flex-col overflow-hidden rounded-2xl bg-[#1a1a1a] p-3 font-mono text-neutral-200 shadow-panel outline-none"
       >
         <header className="mb-2.5 flex items-center justify-between gap-2">
           <h2 className="text-[12px] font-medium tracking-wide text-neutral-100">
@@ -385,10 +385,10 @@ export default function VariablesPanel({
                       return (
                         <span
                           key={mode.id}
-                          className={`flex items-center gap-0.5 rounded-lg border px-1 ${
+                          className={`flex items-center gap-0.5 rounded-lg px-1 ${
                             active
-                              ? "border-[#a7ffd4]/30 bg-[#a7ffd4]/10"
-                              : "border-white/10 bg-[#151515]"
+                              ? "bg-[#a7ffd4]/10"
+                              : "bg-[#151515]"
                           }`}
                         >
                           <button
@@ -430,7 +430,7 @@ export default function VariablesPanel({
 
                 {/* Variables list */}
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl bg-[#151515]">
-                  <div className="flex items-center gap-2 border-b border-white/5 px-2 py-1.5">
+                  <div className="flex items-center gap-2 px-2 py-1.5">
                     <RowLabel>{tv("editor.variables.panel.variables")}</RowLabel>
                     <span className="flex-1" />
                     <RowLabel>{tv("editor.variables.panel.value")}</RowLabel>
@@ -447,7 +447,7 @@ export default function VariablesPanel({
                         <div
                           key={variable.id}
                           data-testid={`editor-variables-row-${variable.id}`}
-                          className="flex items-center gap-2 border-b border-white/[0.04] px-2 py-1.5 last:border-b-0"
+                          className="flex items-center gap-2 px-2 py-1.5 last:border-b-0"
                         >
                           <span className="w-10 shrink-0 text-[9px] uppercase tracking-wider text-neutral-500">
                             {tv(`editor.variables.panel.type.${variable.type}`)}

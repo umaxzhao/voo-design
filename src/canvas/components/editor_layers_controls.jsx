@@ -15,7 +15,7 @@ export default function EditorLayersControls({
     blendModeLabelKey
   } = model;
   return <div
-    className="flex flex-row-reverse items-center gap-2 mb-2 border-b border-white/[0.08] pb-2 [&>*:first-child]:w-20 [&>*:last-child]:min-w-0 [&>*:last-child]:flex-1"
+    className="flex flex-row-reverse items-center gap-2 mb-2 pb-2 [&>*:first-child]:w-20 [&>*:last-child]:min-w-0 [&>*:last-child]:flex-1"
   >
     <ScrubField
       suffix="%"

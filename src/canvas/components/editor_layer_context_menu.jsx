@@ -51,7 +51,7 @@ export default function EditorLayerContextMenu({
       />
       <div
         role="menu"
-        className="fixed z-50 w-40 rounded-xl border border-white/10 bg-neutral-900 p-1 font-mono text-[11px] text-neutral-200 shadow-menu"
+        className="fixed z-50 w-40 rounded-xl bg-neutral-900 p-1 font-mono text-[11px] text-neutral-200 shadow-menu"
         style={{
           left: contextMenu.x,
           top: contextMenu.y

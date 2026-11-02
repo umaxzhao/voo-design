@@ -37,7 +37,7 @@ export default function VariantsSection({ engine, node = null, sourceDoc = null,
     </InspectorRow> : <>
       <InspectorRow label={t("editor.variants.set")}><span className="text-[11px] text-neutral-300">{source.name ?? source.variantGroupId ?? t("editor.variants.default")}</span></InspectorRow>
       {variants.map(doc => <InspectorRow key={doc.canvasId} label={doc.variantName ?? t("editor.variants.default")}><span className="text-[11px] text-neutral-300">{doc.name}</span></InspectorRow>)}
-      <div className="flex flex-col gap-1 rounded-xl border border-white/5 bg-[#1c1c1c] p-1.5">
+      <div className="flex flex-col gap-1 rounded-xl bg-[#1c1c1c] p-1.5">
         <span className="text-[9px] uppercase tracking-[0.14em] text-neutral-400">
           {t("editor.variants.properties")}
         </span>
@@ -57,14 +57,14 @@ export default function VariantsSection({ engine, node = null, sourceDoc = null,
             onChange={event => setAxisName(event.target.value)}
             placeholder={t("editor.variants.propertyName")}
             aria-label={t("editor.variants.propertyName")}
-            className="h-6 min-w-0 flex-1 rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none focus:ring-1 focus:ring-[#a7ffd4]/40"
+            className="h-6 min-w-0 flex-1 rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none"
           />
           <input
             value={axisValues}
             onChange={event => setAxisValues(event.target.value)}
             placeholder={t("editor.variants.propertyValues")}
             aria-label={t("editor.variants.propertyValues")}
-            className="h-6 min-w-0 flex-[1.4] rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none focus:ring-1 focus:ring-[#a7ffd4]/40"
+            className="h-6 min-w-0 flex-[1.4] rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none"
           />
           <button
             type="button"
@@ -115,7 +115,7 @@ export default function VariantsSection({ engine, node = null, sourceDoc = null,
                 }, { name: t("editor.variants.description") });
               }
             }}
-            className="h-7 w-full rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none placeholder:text-neutral-400 focus:ring-1 focus:ring-[#a7ffd4]/40"
+            className="h-7 w-full rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none placeholder:text-neutral-400"
           />
         </label>
         <button type="button" className={BUTTON_CLASS} onClick={() => {

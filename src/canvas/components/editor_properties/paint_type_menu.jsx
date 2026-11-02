@@ -97,7 +97,7 @@ export default function PaintTypeMenu({ value, onChange, label, allowImage = tru
             <div
               ref={menuRef}
               role="menu"
-              className="fixed z-[150] max-h-[calc(100dvh-16px)] w-40 overflow-y-auto rounded-xl border border-white/10 bg-[#181818] p-1 shadow-panel"
+              className="fixed z-[150] max-h-[calc(100dvh-16px)] w-40 overflow-y-auto rounded-xl bg-[#181818] p-1 shadow-panel"
               style={{ left: pos?.left ?? 8, top: pos?.top ?? 8, visibility: pos ? "visible" : "hidden" }}
               onKeyDown={(event) => moveEditorMenuFocus(event, menuRef.current)}
             >

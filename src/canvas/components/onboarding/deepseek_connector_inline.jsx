@@ -130,7 +130,7 @@ export default function DeepSeekConnectorInline({ t, status = null, detection = 
     <div
       data-testid="deepseek-connector-inline"
       data-state={state}
-      className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-3"
+      className="flex flex-col rounded-2xl bg-white/[0.03] p-3"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">

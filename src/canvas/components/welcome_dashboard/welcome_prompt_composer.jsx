@@ -8,7 +8,7 @@ import WelcomePromptDialogs, {
 } from "./welcome_prompt_dialogs.jsx";
 import WelcomePromptTypes from "./welcome_prompt_types.jsx";
 import WelcomeModelSelect from "./welcome_model_select.jsx";
-/** Shared animated rim, one real variant count, and the existing context options. */
+/** Shared filled composer, one real variant count, and existing context options. */
 export function WelcomePromptComposer({
   t,
   activePill,
@@ -122,7 +122,7 @@ export function WelcomePromptComposer({
               {attachments.map((attachment) => (
                 <li
                   key={attachment.id ?? `${attachment.kind}:${attachment.name}`}
-                  className="flex max-w-48 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.06] px-2 py-1 text-xs text-neutral-300"
+                  className="flex max-w-48 items-center gap-1.5 rounded-lg bg-white/[0.06] px-2 py-1 text-xs text-neutral-300"
                 >
                   {attachment.kind === "image" && attachment.dataUrl ? (
                     <img
@@ -175,7 +175,7 @@ export function WelcomePromptComposer({
                   aria-haspopup="menu"
                   className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-mono transition-colors cursor-pointer ${
                     candidates > 1
-                      ? "bg-[#E5B2FF]/15 text-[#eed0ff] font-semibold ring-1 ring-[#E5B2FF]/30"
+                      ? "bg-[#E5B2FF]/15 text-[#eed0ff] font-semibold  "
                       : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"
                   }`}
                 >
@@ -187,7 +187,7 @@ export function WelcomePromptComposer({
                     ref={variantsMenuRef}
                     role="menu"
                     aria-label={t("welcome.prompt.candidates")}
-                    className="absolute bottom-full right-0 z-50 mb-2 w-48 rounded-xl border border-white/10 bg-[#1a1a1a] p-2 shadow-panel"
+                    className="absolute bottom-full right-0 z-50 mb-2 w-48 rounded-xl bg-[#1a1a1a] p-2 shadow-panel"
                   >
                     <div className="grid grid-cols-3 gap-1.5">
                       {[1, 2, 3].map((count) => (
@@ -200,8 +200,8 @@ export function WelcomePromptComposer({
                           }}
                           className={`flex items-center justify-center rounded-lg py-1.5 text-xs font-mono transition-colors ${
                             candidates === count
-                              ? "bg-[#E5B2FF]/20 text-[#eed0ff] font-semibold ring-1 ring-[#E5B2FF]/40"
-                              : "border border-white/10 text-neutral-400 hover:bg-white/[0.06] hover:text-white"
+                              ? "bg-[#E5B2FF]/20 text-[#eed0ff] font-semibold  "
+                              : "  text-neutral-400 hover:bg-white/[0.06] hover:text-white"
                           }`}
                           aria-label={t("welcome.prompt.candidateN", {
                             n: count,

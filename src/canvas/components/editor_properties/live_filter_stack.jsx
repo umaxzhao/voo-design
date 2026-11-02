@@ -136,7 +136,7 @@ export default function LiveFilterStack({
       return (
         <div
           key={entry.id}
-          className="flex flex-col gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] p-2"
+          className="flex flex-col gap-1.5 rounded-xl bg-white/[0.03] p-2"
           data-testid={`live-filter-entry-${entry.kind}`}
         >
           <div className="flex min-w-0 items-center gap-1.5">

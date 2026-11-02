@@ -97,7 +97,7 @@ export default function AppTitleBar() {
     <>
       <header
         data-testid="editor-top-bar"
-        className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
+        className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none"
         style={{
           ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
           WebkitAppRegion: "drag",
@@ -224,7 +224,7 @@ export default function AppTitleBar() {
                   moveEditorMenuFocus(event, event.currentTarget)
                 }
                 aria-label={t("titlebar.more")}
-                className="absolute right-0 top-full z-[100] mt-1.5 flex min-w-48 flex-col gap-1 rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-left text-[12px] shadow-panel"
+                className="absolute right-0 top-full z-[100] mt-1.5 flex min-w-48 flex-col gap-1 rounded-xl bg-neutral-900 p-1.5 text-left text-[12px] shadow-panel"
               >
                 <button
                   type="button"
@@ -262,7 +262,7 @@ export default function AppTitleBar() {
                   </span>
                 </button>
                 {welcomeOpen ? null : (
-                  <div role="none" className="border-t border-white/10 pt-1">
+                  <div role="none" className="pt-1">
                     <CollabAvatars />
                   </div>
                 )}

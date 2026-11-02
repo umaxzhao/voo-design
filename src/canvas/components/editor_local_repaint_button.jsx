@@ -67,14 +67,14 @@ export default function EditorLocalRepaintButton({
       {open && (
         <form
           onSubmit={submit}
-          className="absolute bottom-full left-0 mb-2 p-2 bg-neutral-900 border border-white/10 rounded-xl shadow-pop flex items-center gap-2 z-50 min-w-[260px]"
+          className="absolute bottom-full left-0 mb-2 p-2 bg-neutral-900 rounded-xl shadow-pop flex items-center gap-2 z-50 min-w-[260px]"
         >
           <input
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={t("editor.taskbar.repaintPromptPlaceholder") || "Describe changes..."}
-            className="flex-1 bg-neutral-800 text-xs text-neutral-100 px-2 py-1.5 rounded-lg border border-white/10 outline-none focus:border-[#E5B2FF]"
+            className="flex-1 bg-neutral-800 text-xs text-neutral-100 px-2 py-1.5 rounded-lg outline-none"
             autoFocus
           />
           <button

@@ -90,7 +90,7 @@ export default function EditorFullPage({ page }) {
 
         {docRect && !readOnly ? (
           <>
-            <div
+            <div data-ui-guide="artwork"
               ref={pageRingRef}
               aria-hidden
               className="pointer-events-none absolute ring-1 ring-white/15"

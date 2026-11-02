@@ -556,7 +556,7 @@ export function CustomFontPicker({ value, onChange, defaultOpen = false, initial
         aria-expanded={open}
         aria-label={`${t("editor.fontPicker.title")}: ${currentFont}`}
         title={isMissing ? `${currentFont} (Missing font)` : `${t("editor.fontPicker.title")}: ${currentFont}`}
-        className="flex w-full items-center justify-between rounded-xl bg-[#222222] pl-3 pr-2 py-1.5 text-[11px] font-mono text-neutral-100 outline-none transition-all hover:bg-[#282828] focus:ring-1 focus:ring-white/20"
+        className="flex w-full items-center justify-between rounded-xl bg-[#222222] pl-3 pr-2 py-1.5 text-[11px] font-mono text-neutral-100 outline-none transition-all hover:bg-[#282828]"
       >
         <div className="flex items-center gap-1.5 min-w-0 pr-2">
           <span
@@ -622,7 +622,7 @@ export function FontPickerPopover({
       ref={popRef}
       role="dialog"
       aria-label={t("editor.fontPicker.title")}
-      className="fixed z-[100] w-72 rounded-2xl bg-[#1a1a1a]/98 p-2.5 shadow-menu backdrop-blur-xl border border-white/10 font-mono text-neutral-200"
+      className="fixed z-[100] w-72 rounded-2xl bg-[#1a1a1a]/98 p-2.5 shadow-menu backdrop-blur-xl font-mono text-neutral-200"
       style={pos ?? { left: -9999, top: 0 }}
     >
       {/* Tab Header */}
@@ -660,7 +660,7 @@ export function FontPickerPopover({
           onChange={(e) => setSearch?.(e.target.value)}
           aria-label={t("editor.fontPicker.search")}
           placeholder={t("editor.fontPicker.search")}
-          className="w-full rounded-lg bg-[#111111] px-2.5 py-1 text-[11px] text-neutral-200 outline-none placeholder:text-neutral-400 focus:ring-1 focus:ring-white/20"
+          className="w-full rounded-lg bg-[#111111] px-2.5 py-1 text-[11px] text-neutral-200 outline-none placeholder:text-neutral-400"
         />
       </div>
 

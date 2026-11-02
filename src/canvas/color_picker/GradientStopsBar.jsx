@@ -167,10 +167,10 @@ export function GradientStopsBar({
         }}
         tabIndex={0}
         style={{ background: previewGradient }}
-        className="relative h-4 w-full cursor-pointer rounded-md border border-white/10 select-none touch-none outline-none"
+        className="relative h-4 w-full cursor-pointer rounded-md select-none touch-none outline-none"
       >
         {stops.map((stop, idx) => (
-          <div
+          <div data-ui-guide="color-handle"
             key={idx}
             data-stop-handle="true"
             role="button"

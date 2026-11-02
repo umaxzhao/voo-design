@@ -165,7 +165,7 @@ export function WelcomeSidebar({
           </button>
         </div>
 
-        <div role="separator" aria-orientation="horizontal" className="mx-2.5 border-t border-white/10" />
+        <div role="separator" aria-orientation="horizontal" className="mx-2.5 h-2" />
 
         {/* Section: Project folders, created in the workspace (Figma-style sidebar) */}
         <div className="welcome-sidebar-folders space-y-0.5">
@@ -243,7 +243,7 @@ export function WelcomeSidebar({
           ))}
         </div>
 
-        <div role="separator" aria-orientation="horizontal" className="mx-2.5 border-t border-white/10" />
+        <div role="separator" aria-orientation="horizontal" className="mx-2.5 h-2" />
 
         {folderMenu && createPortal(
           <div
@@ -252,7 +252,7 @@ export function WelcomeSidebar({
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
             style={{ top: folderMenu.top, left: folderMenu.left }}
-            className="fixed z-50 flex w-40 flex-col rounded-xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10"
+            className="fixed z-50 flex w-40 flex-col rounded-xl bg-neutral-900 p-1 shadow-menu"
           >
             <button
               type="button"

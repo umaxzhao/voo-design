@@ -225,7 +225,7 @@ function EditorContextualTaskBar({
     maxWidth: "calc(100vw - 16px)"
   } : {
     maxWidth: "calc(100vw - 16px)"
-  }} className={`pointer-events-auto z-40 flex items-center gap-0.5 rounded-full bg-neutral-900/95 border border-white/10 px-1 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docked ? "absolute bottom-[3.25rem] left-1/2 -translate-x-1/2" : docRect ? "absolute -translate-x-1/2" : "relative"}`}>
+  }} className={`pointer-events-auto z-40 flex items-center gap-0.5 rounded-full bg-neutral-900/95 px-1 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docked ? "absolute bottom-[3.25rem] left-1/2 -translate-x-1/2" : docRect ? "absolute -translate-x-1/2" : "relative"}`}>
     {canScrollLeft ? (
       <button
         type="button"
@@ -277,7 +277,7 @@ function EditorContextualTaskBar({
             })}
       </>}
       {type === "shape" && <>
-        {["fill", "stroke"].map(paint => <EditorTooltip key={paint} title={label(paint)}><label className={`${BUTTON} relative`}><span className={`h-3.5 w-3.5 rounded-full border ${paint === "stroke" ? "border-2 border-white" : "border-white/40"}`} style={{
+        {["fill", "stroke"].map(paint => <EditorTooltip key={paint} title={label(paint)}><label className={`${BUTTON} relative`}><span data-ui-guide="paint-preview" className={`h-3.5 w-3.5 rounded-full border ${paint === "stroke" ? "border-2 border-white" : "border-white/40"}`} style={{
                   background: paint === "fill" && typeof node?.fill === "string" ? node.fill : undefined
                 }} /><input type="color" data-testid={`editor-taskbar-${paint}`} aria-label={label(paint)} value={/^#[0-9a-f]{6}$/i.test(node?.[paint]) ? node[paint] : "#ffffff"} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={event => edit({
                   [paint]: event.target.value,
@@ -354,7 +354,7 @@ function EditorContextualTaskBar({
         onApplyPreset?.(preset);
         setAdjustOpen(false);
       }} onClose={() => setAdjustOpen(false)} side="top" /></div>}
-    {moreOpen && <div className="absolute bottom-full right-0 z-50 mb-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-pop"><EditorAiMenuSection onOutpaint={onOutpaint} onUpscale={onUpscale} upscaleBusy={upscaleBusy} onAutoEnhance={onAutoEnhance} onPortraitRetouch={onPortraitRetouch} portraitRetouchBusy={portraitRetouchBusy} onSplitLayers={onSplitLayers} splitLayersBusy={splitLayersBusy} onDone={() => setMoreOpen(false)} />{action("ai-repaint", <IconSparkles size={14} strokeWidth={1.5} />, () => {
+    {moreOpen && <div className="absolute bottom-full right-0 z-50 mb-2 w-56 rounded-xl bg-neutral-900 p-2 shadow-pop"><EditorAiMenuSection onOutpaint={onOutpaint} onUpscale={onUpscale} upscaleBusy={upscaleBusy} onAutoEnhance={onAutoEnhance} onPortraitRetouch={onPortraitRetouch} portraitRetouchBusy={portraitRetouchBusy} onSplitLayers={onSplitLayers} splitLayersBusy={splitLayersBusy} onDone={() => setMoreOpen(false)} />{action("ai-repaint", <IconSparkles size={14} strokeWidth={1.5} />, () => {
         setAiInputOpen(true);
         setMoreOpen(false);
       }, {

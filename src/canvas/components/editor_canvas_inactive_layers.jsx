@@ -77,7 +77,7 @@ export default function EditorCanvasInactiveLayers({
           : selectedIds.includes(node.id);
         const selectedGroup = isGroup && selected;
         const rowColor = selected
-          ? "bg-neutral-800 text-neutral-100 shadow-[inset_0_0_0_1px_#a7ffd4]"
+          ? "bg-neutral-700 text-neutral-100"
           : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200";
 
         return (

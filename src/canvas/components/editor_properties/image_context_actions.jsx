@@ -6,7 +6,7 @@ import HistogramStrip from "./histogram_strip.jsx";
 import CustomSelect from "../custom_select.jsx";
 
 const ACTION_BUTTON_CLASS =
-  "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
+  "min-h-8 rounded-lg bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
 
 export default function ImageContextActions({
   object,
@@ -83,7 +83,7 @@ export default function ImageContextActions({
               max="100"
               defaultValue="10"
               aria-label={t("editor.frequencySeparation.radius")}
-              className="h-6 w-12 shrink-0 rounded-md border border-white/10 bg-neutral-900 px-1 text-right text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+              className="h-6 w-12 shrink-0 rounded-md bg-neutral-900 px-1 text-right text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
             />
           </label>
           <button
@@ -108,7 +108,7 @@ export default function ImageContextActions({
           aria-label={t("editor.image.fitFill")}
           defaultValue=""
           onChange={applyFitOrFill}
-          className="h-8 w-full rounded-lg border border-white/10 bg-neutral-900 px-2 text-[10px] text-neutral-300 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+          className="h-8 w-full rounded-lg bg-neutral-900 px-2 text-[10px] text-neutral-300 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
         >
           <option value="" disabled>
             {t("editor.image.fitFill")}

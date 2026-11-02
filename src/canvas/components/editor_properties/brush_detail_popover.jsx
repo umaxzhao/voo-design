@@ -51,7 +51,7 @@ export default function BrushDetailPopover({ open, onClose, children }) {
     <div
       ref={cardRef}
       data-testid="brush-detail-popover"
-      className="fixed z-[120] w-[264px] rounded-2xl border border-white/10 bg-black/95 p-3 shadow-panel backdrop-blur-md"
+      className="fixed z-[120] w-[264px] rounded-2xl bg-black/95 p-3 shadow-panel backdrop-blur-md"
       style={position ?? { left: -9999, top: 0 }}
     >
       {children}

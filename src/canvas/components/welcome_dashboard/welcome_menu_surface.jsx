@@ -61,7 +61,7 @@ export function WelcomeMenuSurface({ label, onClose, children }) {
         buttons[next]?.focus();
       }}
       style={position ?? undefined}
-      className={`${position ? "fixed" : "absolute right-0 top-7"} ui-scroll z-50 w-36 overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900 py-1 shadow-menu`}
+      className={`${position ? "fixed" : "absolute right-0 top-7"} ui-scroll z-50 w-36 overflow-y-auto rounded-2xl bg-neutral-900 py-1 shadow-menu`}
     >
       {children}
     </div>

@@ -35,9 +35,9 @@ await withEditorBrowser(async ({ page, origin }) => {
     return { image: style.backgroundImage, animation: style.animationName,
       reduced: matchMedia("(prefers-reduced-motion: reduce)").matches };
   });
-  assert.match(rim.image, /conic-gradient/);
-  assert.equal(rim.animation, rim.reduced ? "none" : "prompt-rim-spin");
-  checks.push("the shared animated prompt rim remains active and respects reduced motion");
+  assert.equal(rim.image, "none");
+  assert.equal(rim.animation, "none");
+  checks.push("the shared prompt stays borderless without an animated perimeter");
 
   // Exercise the public creation/open path, rather than injecting a document fixture.
   await page.getByRole("button", { name: "New", exact: true }).click();

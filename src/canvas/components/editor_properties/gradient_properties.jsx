@@ -109,7 +109,7 @@ export default function GradientProperties({
                   aria-pressed={gradientType === gradient.id}
                   className={`${sectionRowClass} justify-center text-[10px] ${
                     gradientType === gradient.id
-                      ? "text-white ring-1 ring-white/25"
+                      ? "text-white bg-white/[0.08]"
                       : "text-neutral-400"
                   }`}
                 >
@@ -165,7 +165,7 @@ export default function GradientProperties({
               <button
                 type="button"
                 onClick={onApplyGradientTool}
-                className={`${sectionRowClass} justify-center text-[10px] text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40`}
+                className={`${sectionRowClass} justify-center text-[10px] text-[#a7ffd4] `}
               >
                 {t("editor.gradient.applyToLayer")}
               </button>
@@ -195,7 +195,7 @@ export default function GradientProperties({
                   onClick={() => onFillContiguous(!fillContiguous)}
                   className={`${sectionRowClass} justify-center text-[10px] ${
                     fillContiguous
-                      ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
+                      ? "text-[#a7ffd4] bg-white/[0.08]"
                       : "text-neutral-400"
                   }`}
                 >
@@ -210,7 +210,7 @@ export default function GradientProperties({
                   onClick={() => onFillSampleAll(!fillSampleAll)}
                   className={`${sectionRowClass} justify-center text-[10px] ${
                     fillSampleAll
-                      ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
+                      ? "text-[#a7ffd4] bg-white/[0.08]"
                       : "text-neutral-400"
                   }`}
                 >

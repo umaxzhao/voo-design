@@ -12,10 +12,11 @@ describe("QA visual defaults and imports", () => {
     };
     expect((linear(DEFAULT_MARK_COLOR) + .05) / (linear("#1e1e1e") + .05)).toBeGreaterThan(7);
   });
-  it.each(["rect", "ellipse"])("outlines intentional black %s thumbs without changing their fill", kind => {
+  it.each(["rect", "ellipse"])("keeps black %s thumbs visible on a filled well without changing their fill", kind => {
     const html = renderToStaticMarkup(<EditorLayerThumb object={{ id: "black", kind, fill: "#000000" }} />);
     expect(html).toContain("background:#000000");
-    expect(html).toContain("box-shadow:inset 0 0 0 1px");
+    expect(html).toContain("bg-neutral-800");
+    expect(html).not.toContain("box-shadow:");
   });
   it.each(["png", "jpg", "jpeg", "webp", "svg", "gif", "bmp", "avif", "ico"])("shares extension-only %s support with drop and picker", ext => {
     expect(isEditorImageFile({ name: `IMAGE.${ext.toUpperCase()}`, type: "" })).toBe(true);

@@ -12,7 +12,7 @@ export default function PropertiesExportAction({ title, label, onExport }) {
     <div
       role="group"
       aria-label={title}
-      className="shrink-0 border-b border-white/10 pb-2.5"
+      className="shrink-0 pb-2.5"
       data-testid="properties-export-action"
     >
       <button type="button" className={fieldClass} onClick={onExport}>{label}</button>

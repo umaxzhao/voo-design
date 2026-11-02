@@ -230,7 +230,7 @@ export default function LayerEffectsSection({
                 style={isEditing ? { ringColor: `${accent}80` } : undefined}
                 className={`flex h-7 items-center justify-between rounded-xl px-2.5 transition-all ${
                   isEditing
-                    ? "bg-neutral-800 ring-1 ring-white/20"
+                    ? "bg-neutral-800"
                     : "bg-neutral-900/80 hover:bg-neutral-800/80"
                 }`}
               >
@@ -297,7 +297,7 @@ export default function LayerEffectsSection({
               <div
                 className={`flex h-7 items-center justify-between rounded-xl px-2.5 transition-all ${
                   isEditing
-                    ? "bg-neutral-800 ring-1 ring-[#E5B2FF]/40"
+                    ? "bg-neutral-800"
                     : "bg-neutral-900/80 hover:bg-neutral-800/80"
                 }`}
               >

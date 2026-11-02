@@ -74,7 +74,7 @@ export default function PageSwitcher() {
       {(open || nodes.length === 0) && (
         <section
           aria-label={t("pageSwitcher.label")}
-          className="flex max-h-[50vh] w-80 flex-col gap-1 overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-menu backdrop-blur-2xl"
+          className="flex max-h-[50vh] w-80 flex-col gap-1 overflow-y-auto rounded-2xl bg-neutral-900/95 p-2 shadow-menu backdrop-blur-2xl"
         >
           <h2 className="px-3 py-2 text-xs font-medium text-neutral-400">
             {t("pageSwitcher.label")}
@@ -194,7 +194,7 @@ export default function PageSwitcher() {
             if (open) cancelDrag();
             setOpen((value) => !value);
           }}
-          className="flex h-9 min-w-0 items-center gap-2 rounded-full border border-white/10 bg-neutral-900/95 px-3.5 text-xs text-neutral-100 shadow-menu backdrop-blur-2xl"
+          className="flex h-9 min-w-0 items-center gap-2 rounded-full bg-neutral-900/95 px-3.5 text-xs text-neutral-100 shadow-menu backdrop-blur-2xl"
         >
           <span className="min-w-0 max-w-[160px] truncate">
             {current?.data?.label ?? t("pageSwitcher.untitled")}

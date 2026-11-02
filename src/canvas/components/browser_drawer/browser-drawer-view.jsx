@@ -85,7 +85,7 @@ export default function BrowserDrawerView({ model, onClose }) {
       role="region"
       aria-label={t("browser.title")}
       style={{ "--browser-drawer-width": `${drawerWidth}px` }}
-      className="voo-browser-drawer relative flex min-h-0 min-w-0 shrink-0 flex-col border-l border-white/10 bg-neutral-950"
+      className="voo-browser-drawer relative flex min-h-0 min-w-0 shrink-0 flex-col bg-neutral-950"
     >
       {/* Desktop Draggable Left Separator */}
       <div
@@ -100,7 +100,7 @@ export default function BrowserDrawerView({ model, onClose }) {
         onKeyDown={handleKeyDown}
         className="browser-drawer-resizer absolute -left-1.5 top-0 bottom-0 z-30 hidden w-3 cursor-col-resize md:block hover:bg-[#a7ffd4]/30 active:bg-[#a7ffd4]/50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
       />
-      <div className="browser-drawer-toolbar flex h-12 shrink-0 items-center gap-1.5 border-b border-white/10 bg-neutral-950 px-2.5 text-xs">
+      <div className="browser-drawer-toolbar flex h-12 shrink-0 items-center gap-1.5 bg-neutral-950 px-2.5 text-xs">
         <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
@@ -139,7 +139,7 @@ export default function BrowserDrawerView({ model, onClose }) {
 
         <form
           onSubmit={handleUrlSubmit}
-          className="browser-address-bar relative flex h-8 min-w-0 flex-1 items-center rounded-lg border border-white/5 bg-neutral-900 px-2.5 transition-colors focus-within:border-[#b2ffd6]/40 focus-within:bg-neutral-800"
+          className="browser-address-bar relative flex h-8 min-w-0 flex-1 items-center rounded-lg bg-neutral-900 px-2.5 transition-colors focus-within:bg-neutral-800"
         >
           <Globe size={14} className="mr-2 shrink-0 text-neutral-500" aria-hidden="true" />
           <input
@@ -210,7 +210,7 @@ export default function BrowserDrawerView({ model, onClose }) {
             <MoreHorizontal size={16} />
           </button>
           {toolsOpen && (
-            <div role="menu" aria-label={t("browser.actions")} className="absolute right-0 top-full z-10 mt-2 flex w-52 flex-col rounded-xl border border-white/10 bg-neutral-900 p-1 shadow-panel">
+            <div role="menu" aria-label={t("browser.actions")} className="absolute right-0 top-full z-10 mt-2 flex w-52 flex-col rounded-xl bg-neutral-900 p-1 shadow-panel">
               <button type="button" role="menuitem" onClick={() => runTool(handleImportFullPage)} disabled={isLoading} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10 disabled:opacity-40">
                 <Download size={14} className="text-neutral-400" />
                 <span>{t("browser.importPage")}</span>
@@ -219,7 +219,7 @@ export default function BrowserDrawerView({ model, onClose }) {
                 <Code size={14} className="text-neutral-400" />
                 <span>{t("browser.customHtml")}</span>
               </button>
-              <div className="my-1 border-t border-white/10" />
+              <div className="my-1" />
               <button type="button" role="menuitem" onClick={() => runTool(() => window.open(url, "_blank", "noopener,noreferrer"))} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
                 <ExternalLink size={14} className="text-neutral-400" />
                 <span>{t("browser.external")}</span>
@@ -246,7 +246,7 @@ export default function BrowserDrawerView({ model, onClose }) {
 
       {/* Picking status banner */}
       {isPicking && (
-        <div className="flex items-center justify-between border-b border-white/10 bg-neutral-800/95 px-3 py-1.5 text-[11px] text-neutral-200">
+        <div className="flex items-center justify-between bg-neutral-800/95 px-3 py-1.5 text-[11px] text-neutral-200">
           <div className="flex items-center gap-1.5 font-medium">
             <MousePointerClick size={13} className="text-[#b2ffd6]" />
             <span>{t("browser.pickingHint")}</span>
@@ -264,12 +264,12 @@ export default function BrowserDrawerView({ model, onClose }) {
       {/* Import Status Alert Banner */}
       {importStatus && (
         <div
-          className={`flex items-center justify-between px-3 py-1.5 text-[11px] border-b ${
+          className={`flex items-center justify-between px-3 py-1.5 text-[11px]  ${
             importStatus.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+              ? "bg-emerald-500/10  text-emerald-300"
               : importStatus.type === "error"
-                ? "bg-rose-500/10 border-rose-500/20 text-rose-300"
-                : "bg-neutral-800 border-white/10 text-neutral-200"
+                ? "bg-rose-500/10  text-rose-300"
+                : "bg-neutral-800  text-neutral-200"
           }`}
         >
           <div className="flex items-center gap-1.5">
@@ -290,7 +290,7 @@ export default function BrowserDrawerView({ model, onClose }) {
 
       {/* Custom HTML Paste Drawer */}
       {showCustomHtml && (
-        <div className="flex flex-col gap-2 border-b border-white/10 bg-neutral-900 p-3">
+        <div className="flex flex-col gap-2 bg-neutral-900 p-3">
           <div className="flex items-center justify-between text-xs text-neutral-300 font-medium">
             <span>{t("browser.htmlTitle")}</span>
             <button
@@ -306,13 +306,13 @@ export default function BrowserDrawerView({ model, onClose }) {
             onChange={(e) => setCustomHtml(e.target.value)}
             placeholder={t("browser.htmlPlaceholder")}
             rows={4}
-            className="w-full rounded-lg bg-neutral-950 p-2 text-xs font-mono text-neutral-200 outline-none ring-1 ring-white/10 focus:ring-emerald-500/50"
+            className="w-full rounded-lg bg-neutral-950 p-2 text-xs font-mono text-neutral-200 outline-none"
           />
           <button
             type="button"
             onClick={handleImportCustomHtml}
             disabled={!customHtml.trim() || isLoading}
-            className="self-end rounded-lg bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30 hover:bg-emerald-500/25 disabled:opacity-40"
+            className="self-end rounded-lg bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
           >
             {t("browser.convert")}
           </button>

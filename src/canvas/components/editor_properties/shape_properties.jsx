@@ -167,7 +167,7 @@ export default function ShapeProperties({
                 aria-pressed={strokeStyle === style.id}
                 className={`${sectionRowClass} justify-center ${
                   strokeStyle === style.id
-                    ? "text-white ring-1 ring-white/25"
+                    ? "text-white bg-white/[0.08]"
                     : "text-neutral-400"
                 }`}
               >
@@ -205,7 +205,7 @@ export default function ShapeProperties({
                     aria-pressed={cornerType === type.id}
                     className={`${sectionRowClass} justify-center text-[10px] ${
                       cornerType === type.id
-                        ? "text-white ring-1 ring-white/25"
+                        ? "text-white bg-white/[0.08]"
                         : "text-neutral-400"
                     }`}
                   >
@@ -266,7 +266,7 @@ export default function ShapeProperties({
                 aria-pressed={arrowStart}
                 className={`${sectionRowClass} justify-center text-[10px] ${
                   arrowStart
-                    ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
+                    ? "text-[#a7ffd4] bg-white/[0.08]"
                     : "text-neutral-400"
                 }`}
               >
@@ -278,7 +278,7 @@ export default function ShapeProperties({
                 aria-pressed={arrowEnd}
                 className={`${sectionRowClass} justify-center text-[10px] ${
                   arrowEnd
-                    ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
+                    ? "text-[#a7ffd4] bg-white/[0.08]"
                     : "text-neutral-400"
                 }`}
               >

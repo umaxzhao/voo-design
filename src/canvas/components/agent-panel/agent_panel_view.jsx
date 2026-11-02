@@ -93,7 +93,7 @@ export default function AgentPanelView({
       {historyOpen && (
         <ul
           aria-label={t("agent.history.title")}
-          className="absolute inset-x-2 top-12 z-10 flex max-h-[60%] flex-col gap-0.5 overflow-y-auto rounded-2xl border border-white/[0.06] bg-[#171717] p-2 shadow-panel"
+          className="absolute inset-x-2 top-12 z-10 flex max-h-[60%] flex-col gap-0.5 overflow-y-auto rounded-2xl bg-[#171717] p-2 shadow-panel"
         >
           {sessions.length === 0 && (
             <li className="px-2.5 py-3 text-[12px] text-neutral-400">{t("agent.history.empty")}</li>
@@ -226,7 +226,7 @@ export default function AgentPanelView({
             {directions.length > 0 && (
               <li className="flex flex-wrap gap-1.5" aria-label={t("agent.authoring.directions")}>
                 {directions.map(direction => (
-                  <button key={direction.id} type="button" title={`${direction.mood} — ${direction.layoutIdea}`} onClick={() => directionChoice.current?.(direction.id)} className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-neutral-200 hover:bg-white/10">
+                  <button key={direction.id} type="button" title={`${direction.mood} — ${direction.layoutIdea}`} onClick={() => directionChoice.current?.(direction.id)} className="rounded-full px-2.5 py-1 text-[11px] text-neutral-200 hover:bg-white/10">
                     {direction.name}
                   </button>
                 ))}

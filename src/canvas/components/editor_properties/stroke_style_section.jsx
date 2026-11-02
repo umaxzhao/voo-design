@@ -58,7 +58,7 @@ function SegmentedRow({
               disabled
                 ? "cursor-not-allowed bg-neutral-900 text-neutral-500"
                 : value === option.value
-                  ? "bg-neutral-700 font-medium text-neutral-100 shadow-xs ring-1 ring-white/10"
+                  ? "bg-neutral-700 font-medium text-neutral-100 shadow-xs"
                   : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200"
             }`}
           >
