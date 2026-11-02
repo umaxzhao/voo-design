@@ -12,7 +12,6 @@ import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
 import {
   requestWelcomeNew,
   WELCOME_MENU_ACTION_EVENT,
-  WELCOME_NEW_EVENT,
 } from "./canvas/components/welcome_dashboard/welcome_events.js";
 import { moveEditorMenuFocus } from "./canvas/components/editor_menu_navigation.js";
 import { useWindowControls } from "./canvas/use_window_controls.js";
@@ -173,13 +172,7 @@ export default function AppTitleBar() {
             type="button"
             data-testid="titlebar-export"
             disabled={!welcomeOpen && welcomeActionsPending}
-            onClick={() =>
-              window.dispatchEvent(
-                new CustomEvent(
-                  welcomeOpen ? WELCOME_NEW_EVENT : "voo:editor-export",
-                ),
-              )
-            }
+            onClick={handlePrimaryAction}
             title={
               welcomeOpen
                 ? t("welcome.header.new")
