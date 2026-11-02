@@ -798,3 +798,28 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
    - 视觉门禁：`npm run lint:design` 校验 1478 个文件 0 违规；
    - 关联单元测试通过：`export_presets.test.js`、`editor-history-commit.test.js`、`qa_undo_button_state.test.js`、`layer_multiselect_reorder.test.js`、`right_panel_phase1.test.jsx`、`properties_panel_restructure.test.jsx`（43/43 通过）。
 
+## 移动路径与锁定层边界约束修复（Out-of-Range Locked Layer Displacement Fix）— 2026-11-02
+
+针对独立 QA 验收发现的锁定层边界阻断拦截（`msg_06072f6c7088`）进行根因定位与算法修正：
+
+1. **缺陷表现与根因分析**：
+   - 场景：文档包含 `['a', 'b', 'c', 'locked', 'd']`，将 `c` 拖到 `a` 之前，或多选 `['b', 'c']` 拖到 `a` 之前；
+   - 现象：实际结果分别为 `['a', 'b', 'locked', 'c', 'd']` 与 `['a', 'locked', 'b', 'c', 'd']`，未能正确排为 `['c', 'a', 'b', 'locked', 'd']` 与 `['b', 'c', 'a', 'locked', 'd']`；
+   - 根因：`src/canvas/editor/reorder-layer-batch.js:104–107` 中，在对移动路径 `[lo, hi]` 做跨越锁定检查后，又无条件执行全局夹紧 `if (firstLocked >= 0 && insertAt <= firstLocked) insertAt = firstLocked + 1`。该逻辑误将位于移动区间完全之外的后续锁定层（如位于索引 3 的 `locked`）当作目标上限，强制将插入点推迟至 `firstLocked + 1`，甚至把非跨锁的合法移动误推到了锁层之后。
+2. **精确算法重构与约束模型**：
+   - 严格基于实际移动路径区间（`lo = Math.min(draggedIndex, target)`, `hi = Math.max(draggedIndex, target)`）进行锁定校验：
+     - 若 `[lo, hi]` 路径内存在任何非当前移动批次的锁定节点（包含 `node.locked` 或祖先组锁 `isLockedByGroup(doc, node)`），则严正拒绝移动（返回 `null`，保持原文档）；
+     - 彻底移除对 `rest` 的全局 `firstLocked` 插入点夹紧，范围外的锁定层不干预合法放置目标；
+     - 保留底部底图锁定位保护（底座约束）：仅当 `insertAt === 0` 且 `rest[0]` 为锁定底图时，`insertAt` 夹紧为 1，确保不能插入到底图之下；
+     - 保持整批原子移动、相对顺序、组子树、蒙版附属层和单步 Undo/Redo 事务提交。
+3. **测试覆盖与双重验证证据**：
+   - 定向单元测试：`tests/unit/layer_multiselect_reorder.test.js` 增加 `allows reordering outside the locked range without displacement by out-of-range locked layers` 测试用例，覆盖：
+     - 单图层 `c` 拖至 `a` 前得到 `['c', 'a', 'b', 'locked', 'd']`；
+     - 多选 `['b', 'c']` 拖至 `a` 前得到 `['b', 'c', 'a', 'locked', 'd']`；
+     - 尝试将 `d` 越过 `locked` 移至 `a` 前被正确拒绝；
+     - 尝试将 `c` 越过 `locked` 移至 `d` 后被正确拒绝；
+   - 单元测试运行：`tests/unit/layer_multiselect_reorder.test.js`（10/10 全部通过）；图层模块测试集（30/30 全部通过）；
+   - 真实浏览器矩阵实测：运行 `editor-browser-fixture` 真实 Chromium E2E 矩阵（12/12 项全部通过，含 `unrelated-later-lock-1` 与 `unrelated-later-lock-2` 及 8 项 root/siblings 连续与非连续拖拽，附带 Undo/Redo 完备还原验证）；
+   - 门禁合规：`npm run lint:design`（1,478 文件 0 违规），`npm run check:modules`（12 模块有效注册，`unmapped: []`）。
+
+

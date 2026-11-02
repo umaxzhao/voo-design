@@ -113,6 +113,30 @@ describe("Layer multi-selection reorder (same parent / root / siblings)", () => 
     expect(next.nodes.find((n) => n.id === "clip").clipTo).toBe("base");
   });
 
+  it("allows reordering outside the locked range without displacement by out-of-range locked layers", () => {
+    const doc = document([
+      shape("a"),
+      shape("b"),
+      shape("c"),
+      shape("locked", { locked: true }),
+      shape("d"),
+    ]);
+
+    // Single layer c dragged before a: expected [c, a, b, locked, d]
+    const nextSingle = reorderNodeTo(doc, ["c"], 0, "c");
+    expect(order(nextSingle)).toEqual(["c", "a", "b", "locked", "d"]);
+
+    // Multi selection b + c dragged before a: expected [b, c, a, locked, d]
+    const nextBatch = reorderNodeTo(doc, ["b", "c"], 0, "b");
+    expect(order(nextBatch)).toEqual(["b", "c", "a", "locked", "d"]);
+
+    // Attempting to move d across locked layer to before a is refused
+    expect(reorderNodeTo(doc, ["d"], 0, "d")).toBe(doc);
+
+    // Attempting to move c across locked layer to after d is refused
+    expect(reorderNodeTo(doc, ["c"], 4, "c")).toBe(doc);
+  });
+
   it("refuses to move locked roots or cross intermediate locked layers", () => {
     const docWithLockedTarget = document([
       shape("a"),

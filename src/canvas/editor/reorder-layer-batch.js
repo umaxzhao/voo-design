@@ -92,7 +92,10 @@ export function reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId) {
   const lo = Math.min(draggedIndex, target);
   const hi = Math.max(draggedIndex, target);
   for (let i = lo; i <= hi; i += 1) {
-    if (!blockIds.has(doc.nodes[i].id) && doc.nodes[i].locked) return null;
+    const node = doc.nodes[i];
+    if (!blockIds.has(node.id) && (node.locked || isLockedByGroup(doc, node))) {
+      return null;
+    }
   }
 
   const rest = doc.nodes.filter(n => !blockIds.has(n.id));
@@ -101,9 +104,9 @@ export function reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId) {
 
   let insertAt = target > draggedIndex ? targetInRest + 1 : targetInRest;
 
-  const firstLocked = rest.findIndex(n => n.locked || isLockedByGroup(doc, n));
-  if (firstLocked >= 0 && insertAt <= firstLocked) {
-    insertAt = firstLocked + 1;
+  // The locked base image keeps the bottom slot: nothing can be pushed under it.
+  if (insertAt === 0 && (rest[0]?.locked || isLockedByGroup(doc, rest[0]))) {
+    insertAt = 1;
   }
   insertAt = Math.max(0, Math.min(rest.length, insertAt));
 
