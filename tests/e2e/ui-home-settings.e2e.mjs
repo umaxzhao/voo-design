@@ -161,6 +161,10 @@ await withEditorBrowser(async ({ page, origin }) => {
   await home.getByRole("button", { name: "Generation settings", exact: true }).click();
   const advanced = page.getByRole("dialog", { name: "Generation settings", exact: true });
   await advanced.waitFor();
+  // Generation type is chosen by radio inside the advanced dialog, before Style checks.
+  const mobileRadio = advanced.getByRole("radio", { name: /Mobile app|移动应用/i });
+  await mobileRadio.click();
+  assert.equal(await mobileRadio.getAttribute("aria-checked"), "true", "Mobile type radio must be checked inside the dialog");
   await advanced.getByRole("button", { name: "Style", exact: true }).click();
   await page.getByRole("listbox", { name: "Style", exact: true }).waitFor();
   await page.keyboard.press("Escape");
