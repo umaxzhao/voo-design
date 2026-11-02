@@ -1,14 +1,26 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createEngineInitController } from "../../src/canvas/editor/editor_engine_init.js";
 import {
   serialiseDocument,
   NODE_KIND,
 } from "../../src/canvas/editor/scene_model.js";
 import { reflowAutoLayout } from "../../src/canvas/editor/scene_auto_layout.js";
+import { ensureFontLoaded } from "../../src/canvas/editor/font_loader.js";
 
-function createTestHarness({ fallbackFontDrift = 3 } = {}) {
+vi.mock("../../src/canvas/editor/font_loader.js", () => ({
+  ensureFontLoaded: vi.fn(),
+}));
+
+const bbox = (width, ascent = 15, descent = 5) => ({
+  width,
+  actualBoundingBoxAscent: ascent,
+  actualBoundingBoxDescent: descent,
+});
+
+function createTestHarness({ measureWidth = 147 } = {}) {
   let currentDoc = null;
   let controller = null;
+  let appliedSnapshot = "";
 
   const setDoc = vi.fn((next) => {
     currentDoc = controller ? controller.measureTextNodes(next) : next;
@@ -18,24 +30,18 @@ function createTestHarness({ fallbackFontDrift = 3 } = {}) {
     save: vi.fn(),
     restore: vi.fn(),
     font: "",
-    measureText: vi.fn((_text) => ({
-      width: 147,
-      actualBoundingBoxAscent: 15,
-      actualBoundingBoxDescent: 5,
-    })),
+    measureText: vi.fn((_text) => bbox(measureWidth)),
   };
 
-  const setGuides = vi.fn();
-  const setAppliedSnapshot = vi.fn();
-  const requestRender = vi.fn();
-  const notify = vi.fn();
-  const incDocVersion = vi.fn();
+  const setAppliedSnapshot = vi.fn((val) => {
+    appliedSnapshot = val;
+  });
 
   controller = createEngineInitController({
     ctx,
     getDoc: () => currentDoc,
     setDoc,
-    setGuides,
+    setGuides: vi.fn(),
     cache: { preload: async () => {}, put: () => {} },
     hostAdapter: {},
     viewportTools: {
@@ -46,11 +52,11 @@ function createTestHarness({ fallbackFontDrift = 3 } = {}) {
     history: { reset: vi.fn() },
     snapshotDoc: () => JSON.stringify(currentDoc),
     snapshotState: () => ({ doc: currentDoc }),
-    getAppliedSnapshot: () => "",
+    getAppliedSnapshot: () => appliedSnapshot,
     setAppliedSnapshot,
-    incDocVersion,
-    requestRender,
-    notify,
+    incDocVersion: vi.fn(),
+    requestRender: vi.fn(),
+    notify: vi.fn(),
     isDisposed: () => false,
     cameraMode: "normal",
   });
@@ -61,109 +67,67 @@ function createTestHarness({ fallbackFontDrift = 3 } = {}) {
     setDoc,
     ctx,
     setAppliedSnapshot,
-    requestRender,
-    notify,
   };
 }
 
 function buildProfileCardDoc() {
-  const rawDoc = {
+  const text = (id, parentId, content, fontSize, width, height) => ({
+    id,
+    kind: NODE_KIND.TEXT,
+    parentId,
+    text: content,
+    fontFamily: "'Inter', sans-serif",
+    fontSize,
+    width,
+    height,
+    x: 0,
+    y: 0,
+  });
+  const group = (id, parentId, width, height, autoLayout, x = 0, y = 0) => ({
+    id,
+    kind: NODE_KIND.GROUP,
+    isFrame: true,
+    parentId,
+    width,
+    height,
+    autoLayout,
+    x,
+    y,
+  });
+
+  return reflowAutoLayout({
     version: 2,
     width: 800,
     height: 600,
     background: "#ffffff",
     nodes: [
-      {
-        id: "card",
-        kind: NODE_KIND.GROUP,
-        isFrame: true,
-        x: 50,
-        y: 50,
-        width: 320,
-        height: 180,
-        autoLayout: { direction: "vertical", gap: 12, padding: 16 },
-      },
-      {
-        id: "header",
-        kind: NODE_KIND.GROUP,
-        parentId: "card",
-        isFrame: true,
-        x: 0,
-        y: 0,
-        width: 288,
-        height: 24,
-        autoLayout: { direction: "horizontal", gap: 8 },
-      },
-      {
-        id: "name",
-        kind: NODE_KIND.TEXT,
-        parentId: "header",
-        text: "Alex Rivera",
-        fontFamily: "'Inter', sans-serif",
-        fontSize: 16,
-        width: 144,
-        height: 20,
-        x: 0,
-        y: 0,
-      },
-      {
-        id: "role",
-        kind: NODE_KIND.TEXT,
-        parentId: "header",
-        text: "Product Designer",
-        fontFamily: "'Inter', sans-serif",
-        fontSize: 12,
-        width: 120,
-        height: 16,
-        x: 0,
-        y: 0,
-      },
-      {
-        id: "meta-group",
-        kind: NODE_KIND.GROUP,
-        parentId: "card",
-        isFrame: true,
-        x: 0,
-        y: 0,
-        width: 288,
-        height: 18,
-        autoLayout: { direction: "horizontal", gap: 6 },
-      },
-      {
-        id: "meta-text",
-        kind: NODE_KIND.TEXT,
-        parentId: "meta-group",
-        text: "San Francisco · 12 Projects",
-        fontFamily: "'Inter', sans-serif",
-        fontSize: 12,
-        width: 180,
-        height: 16,
-        x: 0,
-        y: 0,
-      },
-      {
-        id: "follow-btn",
-        kind: NODE_KIND.GROUP,
-        parentId: "card",
-        isFrame: true,
-        x: 0,
-        y: 0,
-        width: 80,
-        height: 32,
-        autoLayout: { direction: "horizontal", gap: 6, padding: 8 },
-      },
-      {
-        id: "follow-text",
-        kind: NODE_KIND.TEXT,
-        parentId: "follow-btn",
-        text: "Follow",
-        fontFamily: "'Inter', sans-serif",
-        fontSize: 14,
-        width: 44,
-        height: 18,
-        x: 0,
-        y: 0,
-      },
+      group(
+        "card",
+        null,
+        320,
+        180,
+        { direction: "vertical", gap: 12, padding: 16 },
+        50,
+        50,
+      ),
+      group("header", "card", 288, 24, { direction: "horizontal", gap: 8 }),
+      text("name", "header", "Alex Rivera", 16, 144, 20),
+      text("role", "header", "Product Designer", 12, 120, 16),
+      group("meta-group", "card", 288, 18, { direction: "horizontal", gap: 6 }),
+      text(
+        "meta-text",
+        "meta-group",
+        "San Francisco · 12 Projects",
+        12,
+        180,
+        16,
+      ),
+      group("follow-btn", "card", 80, 32, {
+        direction: "horizontal",
+        gap: 6,
+        padding: 8,
+      }),
+      text("follow-text", "follow-btn", "Follow", 14, 44, 18),
       {
         id: "follow-icon",
         kind: NODE_KIND.RECT,
@@ -174,106 +138,68 @@ function buildProfileCardDoc() {
         height: 16,
       },
     ],
-  };
+  });
+}
 
-  // Settled geometry as created and saved in the editor
-  return reflowAutoLayout(rawDoc);
+function expectNodesMatch(actualDoc, expectedDoc) {
+  for (const expected of expectedDoc.nodes) {
+    const actual = actualDoc.nodes.find((n) => n.id === expected.id);
+    expect(actual).toBeDefined();
+    expect(actual.x).toBe(expected.x);
+    expect(actual.y).toBe(expected.y);
+    expect(actual.width).toBe(expected.width);
+    expect(actual.height).toBe(expected.height);
+  }
 }
 
 describe("cold reopen text width and auto-layout geometry preservation", () => {
+  beforeEach(() => {
+    vi.mocked(ensureFontLoaded).mockReset();
+  });
+
   it("preserves exact saved text dimensions and auto-layout positions with 0px drift on document open", async () => {
     const settledDoc = buildProfileCardDoc();
     const savedDoc = serialiseDocument(settledDoc);
-
-    const harness = createTestHarness({ fallbackFontDrift: 3 });
+    const harness = createTestHarness();
     const measureTextSpy = vi.spyOn(harness.ctx, "measureText");
 
     await harness.controller.open({ savedDoc });
 
-    // Text measurement against Canvas2D must NOT be called for saved text nodes on open
     expect(measureTextSpy).not.toHaveBeenCalled();
-
-    const openedDoc = harness.getDoc();
-    expect(openedDoc).toBeDefined();
-
-    // Verify all text node dimensions match the saved values with 0px drift
-    const savedName = settledDoc.nodes.find((n) => n.id === "name");
-    const openedName = openedDoc.nodes.find((n) => n.id === "name");
-    expect(openedName.width).toBe(savedName.width);
-    expect(openedName.height).toBe(savedName.height);
-
-    const savedRole = settledDoc.nodes.find((n) => n.id === "role");
-    const openedRole = openedDoc.nodes.find((n) => n.id === "role");
-    expect(openedRole.width).toBe(savedRole.width);
-    expect(openedRole.height).toBe(savedRole.height);
-
-    const savedFollowText = settledDoc.nodes.find(
-      (n) => n.id === "follow-text",
-    );
-    const openedFollowText = openedDoc.nodes.find(
-      (n) => n.id === "follow-text",
-    );
-    expect(openedFollowText.width).toBe(savedFollowText.width);
-    expect(openedFollowText.height).toBe(savedFollowText.height);
-
-    // Verify all auto-layout container and child geometries match exactly (0px deviation)
-    for (const savedNode of settledDoc.nodes) {
-      const openedNode = openedDoc.nodes.find((n) => n.id === savedNode.id);
-      expect(openedNode).toBeDefined();
-      expect(openedNode.x).toBe(savedNode.x);
-      expect(openedNode.y).toBe(savedNode.y);
-      expect(openedNode.width).toBe(savedNode.width);
-      expect(openedNode.height).toBe(savedNode.height);
-    }
+    expectNodesMatch(harness.getDoc(), settledDoc);
   });
 
   it("subsequently re-measures text and reflows auto-layout when text content is modified", async () => {
     const settledDoc = buildProfileCardDoc();
     const savedDoc = serialiseDocument(settledDoc);
-
-    const harness = createTestHarness({ fallbackFontDrift: 0 });
+    const harness = createTestHarness();
     await harness.controller.open({ savedDoc });
 
     const measureTextSpy = vi.spyOn(harness.ctx, "measureText");
-    // Mock newly measured width for expanded text
-    measureTextSpy.mockReturnValue({
-      width: 220,
-      actualBoundingBoxAscent: 15,
-      actualBoundingBoxDescent: 5,
-    });
+    measureTextSpy.mockReturnValue(bbox(220));
 
     const currentDoc = harness.getDoc();
     const initialRole = currentDoc.nodes.find((n) => n.id === "role");
 
-    // User edits the name to a longer title
-    const editedDoc = {
+    harness.setDoc({
       ...currentDoc,
       nodes: currentDoc.nodes.map((n) =>
         n.id === "name"
           ? { ...n, text: "Alexander Maximilian Rivera, Principal Lead" }
           : n,
       ),
-    };
-
-    harness.setDoc(editedDoc);
-
-    // Since text content changed, measureText must be called
+    });
     expect(measureTextSpy).toHaveBeenCalled();
 
     const updatedDoc = harness.getDoc();
-    const updatedName = updatedDoc.nodes.find((n) => n.id === "name");
-    const updatedRole = updatedDoc.nodes.find((n) => n.id === "role");
-
-    // Name width updated
-    expect(updatedName.width).toBe(220);
-
-    // Role sibling should be shifted right by auto-layout because Name widened
-    expect(updatedRole.x).toBeGreaterThan(initialRole.x);
+    expect(updatedDoc.nodes.find((n) => n.id === "name").width).toBe(220);
+    expect(updatedDoc.nodes.find((n) => n.id === "role").x).toBeGreaterThan(
+      initialRole.x,
+    );
   });
 
   it("measures unmeasured text nodes while preserving already measured saved text nodes", async () => {
     const settledDoc = buildProfileCardDoc();
-    // Invalidate measurements on one text node to simulate an unmeasured import
     const partiallyUnmeasuredDoc = {
       ...settledDoc,
       nodes: settledDoc.nodes.map((n) =>
@@ -281,34 +207,23 @@ describe("cold reopen text width and auto-layout geometry preservation", () => {
       ),
     };
     const savedDoc = serialiseDocument(partiallyUnmeasuredDoc);
-
     const harness = createTestHarness();
     const measureTextSpy = vi.spyOn(harness.ctx, "measureText");
-    measureTextSpy.mockReturnValue({
-      width: 175,
-      actualBoundingBoxAscent: 12,
-      actualBoundingBoxDescent: 4,
-    });
+    measureTextSpy.mockReturnValue(bbox(175, 12, 4));
 
     await harness.controller.open({ savedDoc });
 
     const openedDoc = harness.getDoc();
-    const nameNode = openedDoc.nodes.find((n) => n.id === "name");
-    const metaNode = openedDoc.nodes.find((n) => n.id === "meta-text");
-
-    // Saved node preserved
-    expect(nameNode.width).toBe(144);
-    expect(nameNode.height).toBe(20);
-
-    // Unmeasured node received fresh measurement
-    expect(metaNode.width).toBe(175);
-    expect(metaNode.height).toBeGreaterThan(0);
+    expect(openedDoc.nodes.find((n) => n.id === "name").width).toBe(144);
+    expect(openedDoc.nodes.find((n) => n.id === "name").height).toBe(20);
+    expect(openedDoc.nodes.find((n) => n.id === "meta-text").width).toBe(175);
+    expect(
+      openedDoc.nodes.find((n) => n.id === "meta-text").height,
+    ).toBeGreaterThan(0);
   });
 
   it("clears stale signatures when switching between different documents", async () => {
     const docA = buildProfileCardDoc();
-    const savedDocA = serialiseDocument(docA);
-
     const docB = {
       version: 2,
       width: 800,
@@ -316,7 +231,7 @@ describe("cold reopen text width and auto-layout geometry preservation", () => {
       background: "#ffffff",
       nodes: [
         {
-          id: "name", // Same ID as in docA, but different text & dimensions
+          id: "name",
           kind: NODE_KIND.TEXT,
           text: "Brand New User",
           fontFamily: "'Inter', sans-serif",
@@ -328,16 +243,107 @@ describe("cold reopen text width and auto-layout geometry preservation", () => {
         },
       ],
     };
-    const savedDocB = serialiseDocument(docB);
-
     const harness = createTestHarness();
 
-    await harness.controller.open({ savedDoc: savedDocA });
+    await harness.controller.open({ savedDoc: serialiseDocument(docA) });
     expect(harness.getDoc().nodes.find((n) => n.id === "name").width).toBe(144);
 
-    await harness.controller.open({ savedDoc: savedDocB });
+    await harness.controller.open({ savedDoc: serialiseDocument(docB) });
     const openedB = harness.getDoc().nodes.find((n) => n.id === "name");
     expect(openedB.width).toBe(210);
     expect(openedB.text).toBe("Brand New User");
+  });
+
+  it("preserves exact saved text dimensions and auto-layout positions after async font resolution (strictLossless: true)", async () => {
+    const settledDoc = buildProfileCardDoc();
+    const savedDoc = serialiseDocument(settledDoc);
+
+    let resolveFont;
+    const fontPromise = new Promise((resolve) => {
+      resolveFont = resolve;
+    });
+    vi.mocked(ensureFontLoaded).mockReturnValue(fontPromise);
+
+    const harness = createTestHarness({ measureWidth: 147 });
+    await harness.controller.open({ savedDoc });
+
+    const measureTextSpy = vi.spyOn(harness.ctx, "measureText");
+
+    resolveFont(true);
+    await fontPromise;
+    for (let i = 0; i < 6; i += 1) await Promise.resolve();
+
+    expect(measureTextSpy).not.toHaveBeenCalled();
+    expectNodesMatch(harness.getDoc(), settledDoc);
+  });
+
+  it("remeasures edited and newly added text nodes while preserving unedited saved text nodes upon font resolution", async () => {
+    const settledDoc = buildProfileCardDoc();
+    const savedDoc = serialiseDocument(settledDoc);
+
+    let resolveFont;
+    const fontPromise = new Promise((resolve) => {
+      resolveFont = resolve;
+    });
+    vi.mocked(ensureFontLoaded).mockReturnValue(fontPromise);
+
+    const harness = createTestHarness({ measureWidth: 147 });
+    await harness.controller.open({ savedDoc });
+
+    const currentDoc = harness.getDoc();
+    const editedDoc = {
+      ...currentDoc,
+      nodes: [
+        ...currentDoc.nodes.map((n) =>
+          n.id === "name" ? { ...n, text: "Alexander Maximilian Rivera" } : n,
+        ),
+        {
+          id: "new-tag",
+          kind: NODE_KIND.TEXT,
+          text: "NEW",
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 10,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+        },
+      ],
+    };
+
+    const measureTextSpy = vi.spyOn(harness.ctx, "measureText");
+    measureTextSpy.mockImplementation((text) => {
+      if (text.includes("Alexander")) return bbox(220);
+      if (text.includes("NEW")) return bbox(30, 10, 4);
+      return bbox(147);
+    });
+
+    harness.setDoc(editedDoc);
+    expect(measureTextSpy).toHaveBeenCalled();
+    measureTextSpy.mockClear();
+
+    measureTextSpy.mockImplementation((text) => {
+      if (text.includes("Alexander")) return bbox(225);
+      if (text.includes("NEW")) return bbox(32, 10, 4);
+      if (text === "M")
+        return {
+          width: 10,
+          fontBoundingBoxAscent: 12,
+          fontBoundingBoxDescent: 4,
+        };
+      return bbox(999, 99, 99);
+    });
+
+    resolveFont(true);
+    await fontPromise;
+    for (let i = 0; i < 6; i += 1) await Promise.resolve();
+
+    const finalDoc = harness.getDoc();
+    expect(finalDoc.nodes.find((n) => n.id === "name").width).toBe(225);
+    expect(finalDoc.nodes.find((n) => n.id === "new-tag").width).toBe(32);
+    expect(finalDoc.nodes.find((n) => n.id === "role").width).toBe(120);
+    expect(finalDoc.nodes.find((n) => n.id === "role").height).toBe(16);
+    expect(finalDoc.nodes.find((n) => n.id === "meta-text").width).toBe(180);
+    expect(finalDoc.nodes.find((n) => n.id === "meta-text").height).toBe(16);
   });
 });
