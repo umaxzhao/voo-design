@@ -47,9 +47,10 @@ export function createMarqueePointerGestures({
   function startPixelMarquee(event) {
     const rawPoint = api.toDocPoint(event.clientX, event.clientY);
     const existing = api.getPixelSelection?.();
+    // Only a replace-mode press may move the existing selection; the toolbar
+    // combine mode (subtract/union/intersect) must start a combining marquee.
     if (
-      !event.shiftKey &&
-      !event.altKey &&
+      selectionModeOf(event) === "replace" &&
       existing?.contours?.length &&
       pointInContours(existing, rawPoint)
     ) {
