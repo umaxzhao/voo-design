@@ -7,6 +7,7 @@ const require = createRequire(import.meta.url);
 const yaml = require('js-yaml'); // already in the locked electron-builder dependency tree
 const hook = require('../../scripts/notarize.cjs');
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+const QA_LINUX_ONLY_MARKER = 'QA prerelease branch: Linux only';
 
 describe('optional code signing', () => {
   it('removes empty Actions secrets so the working directory cannot become a certificate path', () => {
@@ -50,7 +51,10 @@ describe('optional code signing', () => {
     expect(workflow.on.workflow_dispatch.inputs.create_draft.default).toBe(false);
     expect(workflow.permissions.contents).toBe('read');
     expect(workflow.jobs.build.if).toBeUndefined();
-    expect(workflow.jobs.build.strategy.matrix.include.map(target => `${target.platform}/${target.arch}`)).toEqual(['linux/x64', 'win/x64', 'mac/x64', 'mac/arm64']);
+    const matrix = workflow.jobs.build.strategy.matrix.include.map(target => `${target.platform}/${target.arch}`);
+    // The QA prerelease branch declares its Linux-only matrix with this marker; main keeps the four-platform contract.
+    if (source.includes(QA_LINUX_ONLY_MARKER)) expect(matrix).toEqual(['linux/x64']);
+    else expect(matrix).toEqual(['linux/x64', 'win/x64', 'mac/x64', 'mac/arm64']);
     expect(workflow.jobs.draft.needs).toEqual(['checks', 'build']);
     expect(workflow.jobs.draft.permissions.contents).toBe('write');
     expect(source).toContain('--draft --prerelease');
