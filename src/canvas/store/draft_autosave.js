@@ -7,13 +7,18 @@
  * .voo file.
  */
 import { buildVooFile } from "./project_io.js";
-import { encodeVooBinary } from "./voo_binary.js";
+import { createVooBackgroundClient } from "./voo-background-client.js";
 import { findDraftEntry } from "./draft-entry.js";
 export { findDraftEntry } from "./draft-entry.js";
 import { saveDraftBytes } from "./draft_store.js";
+import { captureLiveProjectCover } from "../previews/live-project-cover.js";
 
 /** Quiet period after the last change before a draft copy is written. */
 export const DRAFT_AUTOSAVE_DELAY_MS = 1500;
+
+let backgroundClient;
+let queuedWrite = Promise.resolve();
+const background = () => backgroundClient ??= createVooBackgroundClient();
 
 /** Serialises the open pages the same way a manual save does, minus preview and engine flush. */
 function collectPages(store, enginesRef, snapshotsRef) {
@@ -38,8 +43,9 @@ function collectPages(store, enginesRef, snapshotsRef) {
  * false when there is nothing to write (saved document, no recent entry) or
  * the write failed. Never throws.
  */
-export async function writeDraftSnapshot({ store, enginesRef, snapshotsRef }) {
+export async function writeDraftSnapshot({ store, enginesRef, snapshotsRef, signal }) {
   try {
+    signal?.throwIfAborted();
     if (!store || store.filePath || !(store.nodes || []).length) return false;
     const entry = findDraftEntry(store.fileName);
     if (!entry) return false;
@@ -54,15 +60,42 @@ export async function writeDraftSnapshot({ store, enginesRef, snapshotsRef }) {
       editorCamera: store.editorCamera || { panX: 0, panY: 0, zoom: 1 },
       editingNodeId: focusedId,
     };
-    const vooFile = await buildVooFile({ document, kind: "design", version: 2 });
+    let preview = null;
     try {
-      const { createProjectCover } = await import("../previews/project_cover.js");
-      vooFile.preview = await createProjectCover(vooFile, { preferEmbedded: false });
+      const primaryEntry = enginesRef?.current?.get(primary?.id);
+      preview = captureLiveProjectCover(primaryEntry?.ready ? primaryEntry.engine : null);
     } catch (error) {
-      console.warn("[VOO] Draft cover unavailable; retaining document snapshot:", error);
+      console.warn("[VOO] Live draft cover unavailable; using portable cover:", error);
     }
-    return await saveDraftBytes(entry.id, encodeVooBinary(vooFile), entry.name);
+    // Capture canonical pages before yielding: later edits must not change an
+    // already requested snapshot. Serialize background jobs and their IDB writes
+    // together so an older completion cannot overwrite a newer draft.
+    const write = async () => {
+      signal?.throwIfAborted();
+      const vooFile = await buildVooFile({ document, kind: "design", version: 2, preview });
+      signal?.throwIfAborted();
+      try {
+        if (!preview) {
+          const { rasterizeProjectCover } = await import("../previews/project_cover.js");
+          const source = await background().run("cover", vooFile, { signal });
+          signal?.throwIfAborted();
+          vooFile.preview = await rasterizeProjectCover(source);
+        }
+      } catch (error) {
+        signal?.throwIfAborted();
+        console.warn("[VOO] Draft cover unavailable; retaining document snapshot:", error);
+      }
+      signal?.throwIfAborted();
+      const bytes = await background().run("encode", vooFile, { signal });
+      signal?.throwIfAborted();
+      return saveDraftBytes(entry.id, bytes, entry.name);
+    };
+    const task = queuedWrite.then(write);
+    // The caller receives failure below; the queue remains usable for retries.
+    queuedWrite = task.catch(() => {});
+    return await task;
   } catch (err) {
+    if (signal?.aborted) return false;
     console.warn("[VOO] Failed to write draft copy:", err);
     return false;
   }
@@ -79,16 +112,39 @@ export function createDraftAutosaver({
   clearTimer = (id) => clearTimeout(id),
 }) {
   let timer = null;
-  const cancel = () => {
+  let running = null;
+  let due = false;
+  const clearPending = () => {
     if (timer !== null) clearTimer(timer);
     timer = null;
   };
+  const cancel = () => {
+    clearPending();
+    due = false;
+    running?.abort();
+  };
+  const start = () => {
+    if (running) { due = true; return; }
+    due = false;
+    const controller = new AbortController();
+    running = controller;
+    let result;
+    try { result = write({ signal: controller.signal }); }
+    catch (error) { result = Promise.reject(error); }
+    Promise.resolve(result).catch(error => {
+      if (!controller.signal.aborted) console.warn("[VOO] Draft scheduler failed:", error);
+    }).finally(() => {
+      running = null;
+      if (due) start();
+    });
+  };
   return {
     notify() {
-      cancel();
+      clearPending();
+      due = false;
       timer = setTimer(() => {
         timer = null;
-        void write();
+        start();
       }, delayMs);
     },
     cancel,

@@ -4,6 +4,7 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
+      "src/canvas/previews/project_cover.js", "src/canvas/previews/live-project-cover.js",
       "src/app_title_bar.jsx", "src/welcome_settings.css",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
@@ -27,6 +28,7 @@ export const EDITOR_MODULES = [
     id: "documents",
     title: "Documents, persistence and history",
     paths: [
+      "src/canvas/components/editor_hooks/use_draft_autosave.js", "tests/unit/voo-background-client.test.js", "tests/unit/draft-background-order.test.js", "tests/unit/live-project-cover.test.js", "tests/e2e/background-draft-checks.mjs",
       "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
       "src/shared/media-export.js", "src/canvas/editor/export_filename.js",
       "src/canvas/components/editor_hooks/use_editor_apply.js", "src/canvas/components/image_editor.jsx",
