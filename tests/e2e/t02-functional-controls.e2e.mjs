@@ -9,6 +9,11 @@ import { seedResponsiveDocument, settlePanels } from "./ui-responsive-editor-hel
 // by pixel, so a blank or white export cannot pass on its file header alone.
 const EVIDENCE = process.env.T02_EVIDENCE ?? join(process.env.HOME ?? "/tmp", "voo-t02-functional");
 const GREEN = [0, 255, 0];
+// Matrix axes: viewport width (1440 wide, 1100 narrow) and theme (light, dark).
+const WIDTH = Number(process.env.T02_WIDTH ?? 1440);
+const THEME = process.env.T02_THEME ?? "dark";
+if (![1440, 1100].includes(WIDTH)) throw new Error(`T02_WIDTH must be 1440 or 1100, got ${WIDTH}`);
+if (!["light", "dark"].includes(THEME)) throw new Error(`T02_THEME must be light or dark, got ${THEME}`);
 
 await mkdir(EVIDENCE, { recursive: true });
 const checks = [];
@@ -50,7 +55,8 @@ async function decodeInPage(page, path, mime) {
 
 await withEditorBrowser(async ({ page, errors }) => {
   await seedResponsiveDocument(page);
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.setViewportSize({ width: WIDTH, height: 1000 });
+  await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, THEME);
   await page.evaluate(async () => {
     const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
     const e = window.__vooEditor;
@@ -141,5 +147,5 @@ await withEditorBrowser(async ({ page, errors }) => {
   checks.push("unlink, one undo and one redo verified");
 
   assert.deepEqual(errors, [], `page errors: ${errors.join("\n")}`);
-  console.log(`T02 functional ok:\n- ${checks.join("\n- ")}`);
+  console.log(`T02 functional ok (${WIDTH}px, ${THEME}):\n- ${checks.join("\n- ")}`);
 }, { openDocument: true, mcpLink: true });
