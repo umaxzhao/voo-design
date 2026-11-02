@@ -64,9 +64,72 @@ function isUiSource(filename) {
   );
 }
 
+/** Element tags and ARIA roles that are controls: a divider never lives on them. */
+const CONTROL_TAGS = new Set(["button", "input", "select", "textarea", "a"]);
+const CONTROL_ROLES = new Set([
+  "button",
+  "checkbox",
+  "combobox",
+  "dialog",
+  "listbox",
+  "menu",
+  "menuitem",
+  "option",
+  "radio",
+  "slider",
+  "switch",
+  "tab",
+  "textbox",
+]);
+
+/**
+ * The element whose attributes directly own this string (the JSX opening tag
+ * of a className). Nested descendants are deliberately not searched upward.
+ */
+function ownerOpeningElement(node) {
+  for (let current = node; current; current = current.parent) {
+    if (current.type === "JSXOpeningElement") return current;
+  }
+  return null;
+}
+
+function attributeValue(opening, name) {
+  const attribute = opening.attributes.find(
+    (item) => item.type === "JSXAttribute" && item.name?.name === name,
+  );
+  return attribute?.value?.value;
+}
+
+/**
+ * A structural divider owner: an element marked `data-ui-structure="divider"`
+ * that is not itself a control. Frames are CSS-owned (design/structural-lines.cjs)
+ * and never reach this check.
+ */
+function isDividerOwner(node) {
+  const opening = ownerOpeningElement(node);
+  if (!opening || attributeValue(opening, "data-ui-structure") !== "divider")
+    return false;
+  if (CONTROL_TAGS.has(opening.name?.name)) return false;
+  return !CONTROL_ROLES.has(attributeValue(opening, "role"));
+}
+
+/**
+ * A single-side hairline, or a pair of sides, in neutral translucent white.
+ * Full perimeters (`border`, `border-2`, `ring-*`, inset shadows) never qualify.
+ */
+function isDividerToken(token) {
+  const base = token.slice(token.lastIndexOf(":") + 1).replace(/^!/, "");
+  return (
+    /^border-[tblr]$/.test(base) ||
+    /^border-white\/(?:\d+|\[0\.\d+\])$/.test(base)
+  );
+}
+
 function checkClassText(context, node, text) {
   if (!isUiSource(context.getFilename()) || hasGuideOwner(node)) return;
+  const divider = isDividerOwner(node);
   for (const token of decorativeBorderTokens(text)) {
+    if (divider && isDividerToken(token)) continue;
     context.report({ node, messageId: "borderlessUi", data: { token } });
   }
 }
@@ -122,5 +185,6 @@ module.exports = {
   isUiSource,
   checkClassText,
   checkInlineStyle,
+  isDividerToken,
   isGuideSelector,
 };

@@ -92,7 +92,7 @@ export default function InstanceSection({ object, engine }) {
 
         {/* Typed Component Properties (Boolean, Text, InstanceSwap) */}
         {hasTypedProps ? (
-          <div className="flex flex-col gap-1.5 py-1 my-1">
+          <div className="flex flex-col gap-1.5 py-1 border-t border-b border-white/5 my-1" data-ui-structure="divider">
             <span className="px-1 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
               {t("editor.props.componentProperties")}
             </span>

@@ -354,7 +354,7 @@ export default function EditorRulers({
             data-testid="editor-ruler-top"
             role="group"
             aria-label={label(t, "editor.rulers.horizontal", "Horizontal ruler")}
-            className="pointer-events-auto absolute left-0 right-0 top-0 overflow-hidden bg-[#1c1c1c]/95"
+            className="pointer-events-auto absolute left-0 right-0 top-0 overflow-hidden border-b border-white/10 bg-[#1c1c1c]/95" data-ui-structure="divider"
             style={{ height: RULER_SIZE }}
             onPointerDown={beginCreate(GUIDE_TYPES.HORIZONTAL)}
             onPointerMove={handleCreateMove}
@@ -388,7 +388,7 @@ export default function EditorRulers({
             data-testid="editor-ruler-left"
             role="group"
             aria-label={label(t, "editor.rulers.vertical", "Vertical ruler")}
-            className="pointer-events-auto absolute bottom-0 left-0 top-0 overflow-hidden bg-[#1c1c1c]/95"
+            className="pointer-events-auto absolute bottom-0 left-0 top-0 overflow-hidden border-r border-white/10 bg-[#1c1c1c]/95" data-ui-structure="divider"
             style={{ width: RULER_SIZE }}
             onPointerDown={beginCreate(GUIDE_TYPES.VERTICAL)}
             onPointerMove={handleCreateMove}
@@ -425,7 +425,7 @@ export default function EditorRulers({
           {/* Corner box: a quiet origin marker, not a control. */}
           <div
             aria-hidden
-            className="pointer-events-auto absolute left-0 top-0 bg-[#1c1c1c]"
+            className="pointer-events-auto absolute left-0 top-0 border-b border-r border-white/10 bg-[#1c1c1c]" data-ui-structure="divider"
             style={{ width: RULER_SIZE, height: RULER_SIZE }}
           >
             <span className="absolute left-1 top-1 h-1 w-1 rounded-full bg-[#a7ffd4]/70" />

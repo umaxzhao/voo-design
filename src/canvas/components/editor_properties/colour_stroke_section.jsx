@@ -142,7 +142,7 @@ export function StrokeSection({
                 ariaLabel={t("editor.props.customColour")}
               />
             )}
-            <div data-paint-controls className="flex shrink-0 items-center gap-0.5 pl-2">
+            <div data-paint-controls className="flex shrink-0 items-center gap-0.5 border-l border-white/10 pl-2" data-ui-structure="divider">
               {strokeOpacityMixed ? (
                 <span
                   className="text-[11px] font-mono text-neutral-400"

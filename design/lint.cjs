@@ -132,7 +132,7 @@ function wrapRuleWithContrast(baseRule) {
           "`{{token}}` is too dark to read — it measures {{ratio}} against `{{background}}`, under the 4.5:1 floor for placeholders. Use `{{replacement}}` (Design.md §11).",
         ...aiTells.MESSAGES,
         borderlessUi:
-          "`{{token}}` adds a decorative UI outline. Use surface lightness and spacing; retain focus-visible feedback. Only actual artwork/manipulation guides may declare a documented data-ui-guide role (Design.md: 无描边界面).",
+          "`{{token}}` adds a decorative UI outline to a control. Use surface lightness and spacing; retain focus-visible feedback. Module dividers may only be a single-side or two-side hairline on a non-control element marked data-ui-structure=\"divider\" (registered in design/structural-lines.cjs); artwork guides use a documented data-ui-guide role (Design.md: 无描边界面).",
       },
     },
     create(context) {

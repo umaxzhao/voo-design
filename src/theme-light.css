@@ -24,8 +24,13 @@ html[data-theme="light"] .editor-shell-inner {
   background: #f5f5f5 !important;
 }
 
+html[data-theme="light"] .editor-shell {
+  border-color: #a7ffd4 !important;
+}
+
 html[data-theme="light"] .app-title-bar {
   background: #fafafa !important;
+  border-bottom-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 html[data-theme="light"] .app-title-brand-row,

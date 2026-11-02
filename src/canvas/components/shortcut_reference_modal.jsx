@@ -58,7 +58,7 @@ function ShortcutReferenceModal({
         className={panelClassName}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between pb-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4" data-ui-structure="divider">
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-semibold text-white">
               {t(titleKey)}

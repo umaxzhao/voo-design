@@ -53,7 +53,7 @@ export default function FirstRunWorkspace() {
         event.preventDefault();
         if (isDesktop && state.path.trim()) void configure(() => workspaceStorage.setDirectory(state.path.trim()));
       }}
-      className="mt-2 flex flex-col gap-2 pt-4">
+      className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-4" data-ui-structure="divider">
       <label htmlFor="first-run-workspace-path" className="text-xs font-medium text-neutral-200">
         {t("firstRun.workspace.label")}
       </label>

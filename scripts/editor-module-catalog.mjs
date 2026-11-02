@@ -299,6 +299,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_icon_picker_modal.jsx", "src/canvas/components/SvgEditModal.jsx", "tests/e2e/global-overlay-harness.jsx",
       "tests/unit/global-overlay-portals.test.jsx", "src/canvas/components/editor_design_issues.jsx", "src/shared/i18n/extended-en.js",
       "src/shared/i18n/extended-zh.js", "src/canvas/icons.jsx", "src/index.css", "src/theme-light.css", "src/canvas/components/ui/*", "design/*", "eslint-rules/design-system.cjs", "scripts/check-design.mjs", "tests/unit/borderless-ui-policy.test.js", "tests/e2e/ui-border-scanner.mjs",
+      "design/structural-lines.cjs", "tests/e2e/structural-lines.e2e.mjs", "tests/unit/structural-lines-guard.test.js", "tests/unit/structural-divider-policy.test.js",
     ],
     related: [
       "selection", "layers", "text", "images", "layout",
@@ -312,7 +313,7 @@ export const EDITOR_MODULES = [
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "settings-i18n", "locale-lifecycle",
       "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu", "impeccable-polish", "mobile-control-targets", "command_palette",
-      "design_tokens", "borderless-ui",
+      "design_tokens", "borderless-ui", "structural-lines",
     ],
     remaining: [
       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",

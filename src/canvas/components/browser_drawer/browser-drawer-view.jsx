@@ -87,7 +87,7 @@ export default function BrowserDrawerView({ model, onClose }) {
       role="region"
       aria-label={t("browser.title")}
       style={{ "--browser-drawer-width": `${drawerWidth}px` }}
-      className="voo-browser-drawer relative flex min-h-0 min-w-0 shrink-0 flex-col bg-neutral-950"
+      className="voo-browser-drawer relative flex min-h-0 min-w-0 shrink-0 flex-col border-l border-white/10 bg-neutral-950" data-ui-structure="divider"
     >
       {/* Desktop Draggable Left Separator */}
       <div
@@ -102,7 +102,7 @@ export default function BrowserDrawerView({ model, onClose }) {
         onKeyDown={handleKeyDown}
         className="browser-drawer-resizer absolute -left-1.5 top-0 bottom-0 z-30 hidden w-3 cursor-col-resize md:block hover:bg-[#a7ffd4]/30 active:bg-[#a7ffd4]/50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
       />
-      <div className="browser-drawer-toolbar flex h-12 shrink-0 items-center gap-1.5 bg-neutral-950 px-2.5 text-xs">
+      <div className="browser-drawer-toolbar flex h-12 shrink-0 items-center gap-1.5 border-b border-white/10 bg-neutral-950 px-2.5 text-xs" data-ui-structure="divider">
         <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
@@ -218,7 +218,7 @@ export default function BrowserDrawerView({ model, onClose }) {
                 <Code size={14} className="text-neutral-400" />
                 <span>{t("browser.customHtml")}</span>
               </button>
-              <div className="my-1" />
+              <div className="my-1 border-t border-white/10" data-ui-structure="divider" />
               <button type="button" role="menuitem" onClick={() => runTool(() => window.open(url, "_blank", "noopener,noreferrer"))} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
                 <ExternalLink size={14} className="text-neutral-400" />
                 <span>{t("browser.external")}</span>
@@ -245,7 +245,7 @@ export default function BrowserDrawerView({ model, onClose }) {
 
       {/* Picking status banner */}
       {isPicking && (
-        <div className="flex items-center justify-between bg-neutral-800/95 px-3 py-1.5 text-[11px] text-neutral-200">
+        <div className="flex items-center justify-between border-b border-white/10 bg-neutral-800/95 px-3 py-1.5 text-[11px] text-neutral-200" data-ui-structure="divider">
           <div className="flex items-center gap-1.5 font-medium">
             <MousePointerClick size={13} className="text-[#b2ffd6]" />
             <span>{t("browser.pickingHint")}</span>
@@ -289,7 +289,7 @@ export default function BrowserDrawerView({ model, onClose }) {
 
       {/* Custom HTML Paste Drawer */}
       {showCustomHtml && (
-        <div className="flex flex-col gap-2 bg-neutral-900 p-3">
+        <div className="flex flex-col gap-2 border-b border-white/10 bg-neutral-900 p-3" data-ui-structure="divider">
           <div className="flex items-center justify-between text-xs text-neutral-300 font-medium">
             <span>{t("browser.htmlTitle")}</span>
             <button

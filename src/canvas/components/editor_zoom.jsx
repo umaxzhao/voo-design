@@ -243,7 +243,7 @@ export function EditorZoom({
                 {t("editor.addCanvas")}
               </button>
             ) : null}
-            <div className="mobile-more-command hidden my-1" role="separator" />
+            <div className="mobile-more-command hidden my-1 border-t border-white/10" role="separator" data-ui-structure="divider" />
             {rulersAvailable ? (
               <button
                 type="button"
@@ -315,7 +315,7 @@ export function EditorZoom({
               </button>
             ) : null}
 
-            <div className="mt-1 px-2 pb-1 pt-2 text-neutral-400">{t("editor.menu.groupGrid")}</div>
+            <div className="mt-1 border-t border-white/10 px-2 pb-1 pt-2 text-neutral-400" data-ui-structure="divider">{t("editor.menu.groupGrid")}</div>
             <button
               type="button"
               role="menuitemcheckbox"

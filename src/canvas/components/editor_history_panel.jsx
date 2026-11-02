@@ -110,7 +110,7 @@ export default function EditorHistoryPanel({
       className={`absolute ${sideClass} top-1/2 z-30 flex max-h-[75%] w-64 -translate-y-1/2 flex-col rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-2 pb-2.5 pt-1 mb-2 select-none">
+      <div className="flex items-center justify-between px-2 pb-2.5 pt-1 border-b border-white/10 mb-2 select-none" data-ui-structure="divider">
         <div className="flex items-center gap-1.5 text-neutral-400">
           <IconHistory size={13} />
           <h2 className="text-[11px] font-mono tracking-wider font-medium uppercase">
@@ -171,7 +171,7 @@ export default function EditorHistoryPanel({
       {activeTab === "actions" ? (
         <>
           {/* Undo / Redo Quick Actions */}
-          <div className="grid grid-cols-2 gap-1.5 pb-2 mb-2">
+          <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/10 mb-2" data-ui-structure="divider">
             <button
               type="button"
               onClick={onUndo}

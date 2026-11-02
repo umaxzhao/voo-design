@@ -343,7 +343,7 @@ export default function ProviderCard({
       </div>
 
       {isCustom && (onEditCustom || onDeleteCustom) && (
-        <div className="mt-3 flex items-center justify-between pt-2">
+        <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2" data-ui-structure="divider">
           {onEditCustom ? (
             <button
               type="button"

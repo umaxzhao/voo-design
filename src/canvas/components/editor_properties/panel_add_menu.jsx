@@ -18,7 +18,7 @@ export default function PanelAddMenu({ items, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   if (items.length === 0) return null;
   return (
-    <div className="mt-2.5 pt-2.5" data-testid="properties-add-menu">
+    <div className="mt-2.5 border-t border-white/10 pt-2.5" data-testid="properties-add-menu" data-ui-structure="divider">
       <button
         type="button"
         aria-expanded={open}

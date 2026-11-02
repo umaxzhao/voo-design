@@ -22,7 +22,7 @@ export default function EditorLayersFooter({
     onRemove
   } = model;
   return <div
-    className="flex items-center justify-between pt-2 mt-2 px-1"
+    className="flex items-center justify-between border-t border-white/10 pt-2 mt-2 px-1" data-ui-structure="divider"
   >
     <div
       className="flex items-center gap-1"

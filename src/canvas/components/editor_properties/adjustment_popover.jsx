@@ -92,7 +92,7 @@ export default function AdjustmentPopover({
           side === "right" ? "right-full mr-3" : "left-full ml-3"
         } max-md:fixed max-md:left-1/2 max-md:top-1/2 max-md:-translate-x-1/2 max-md:m-0`}
       >
-        <div className="mb-3 flex items-center justify-between pb-2.5 px-0.5">
+        <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2.5 px-0.5" data-ui-structure="divider">
           <span className="text-[12px] font-medium font-mono text-neutral-100 uppercase tracking-wider">
             {title}
           </span>

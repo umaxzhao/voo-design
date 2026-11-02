@@ -64,7 +64,7 @@ export default function SettingsDrawer({
         data-testid="settings-drawer"
         className="flex h-[min(760px,90dvh)] w-full max-w-[1040px] flex-col overflow-hidden rounded-3xl bg-neutral-950 text-neutral-200 shadow-panel"
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 px-5 py-3">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 px-5 py-3" data-ui-structure="divider">
           <h1 className="text-xs uppercase tracking-[0.14em] text-neutral-400">
             {title}
           </h1>

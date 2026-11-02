@@ -219,7 +219,7 @@ export default function CanvasTabBar() {
                   </div>
                   </div>
                 </details>
-                <div className="my-1.5" role="separator" />
+                <div className="my-1.5 border-t border-white/10" role="separator" data-ui-structure="divider" />
                 <details className="welcome-mobile-menu-disclosure">
                   <summary>{t("welcome.menu.import")}</summary>
                   <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
@@ -295,7 +295,7 @@ export default function CanvasTabBar() {
                 </div>
               );
             })}
-            <div className="my-1" role="separator" />
+            <div className="my-1 border-t border-white/10" role="separator" data-ui-structure="divider" />
             <button
               type="button"
               onClick={() => {

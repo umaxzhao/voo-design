@@ -22,6 +22,7 @@
 
 const T = require("./tokens.cjs");
 const { isGuideSelector } = require("./border-policy.cjs");
+const { isStructuralCssDeclaration } = require("./structural-lines.cjs");
 
 /** Capsule idioms: these mean "fully round", not an off-ladder radius. */
 const CAPSULE = new Set(["999px", "9999px", "50%", "100%", "9999em"]);
@@ -87,10 +88,13 @@ function scanCss(source, filename = "") {
     const at = m.index + rawProp.length;
     // A generated design stylesheet is artwork, not the application's chrome.
     const isArtwork = /(?:html_pipeline|codegen)\//.test(filename);
-    if (!isArtwork && !isGuideSelector(selectorAt(css, m.index)) &&
+    // Structural lines are an explicit registry (design/structural-lines.cjs),
+    // matched by file and exact selector; any other border is decorative.
+    const selector = selectorAt(css, m.index);
+    if (!isArtwork && !isGuideSelector(selector) && !isStructuralCssDeclaration(filename, selector, prop, value) &&
       (/^border(?:-(?:top|right|bottom|left))?$/.test(prop) || prop === "outline") &&
       !/^(?:0(?:px)?|none|hidden)\b/.test(value) && !/\btransparent\b/.test(value)) {
-      push(at, "border", "Decorative UI borders are prohibited. Use filled surfaces and spacing; retain only real artwork/manipulation guides and keyboard focus (Design.md: 无描边界面).");
+      push(at, "border", "Decorative control borders are prohibited. Use filled surfaces and spacing. Structural lines must be registered in design/structural-lines.cjs; artwork guides and keyboard focus are exempt (Design.md: 无描边界面).");
     }
 
     if (prop === "border-radius" || prop.startsWith("border-") && prop.endsWith("-radius")) {

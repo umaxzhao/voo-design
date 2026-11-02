@@ -156,14 +156,11 @@
   }
 
   /*
-   * Text-entry surfaces match `:focus-visible` even for a click, so they keep
-   * the frameless look (they show focus through their own fill/caret).
-   * `tabindex="-1"` targets (dialog shells, headings focused by script) are
-   * outside the Tab order, so a frame around the whole container is noise.
+   * Text-entry surfaces and selects keep their keyboard ring (WCAG 2.4.7); a
+   * pointer click is kept frameless by the POINTER MODALITY rule below.
+   * Contenteditable regions and `tabindex="-1"` targets (dialog shells, headings
+   * focused by script) are outside the Tab order, so a frame there is noise.
    */
-  input:focus-visible,
-  textarea:focus-visible,
-  select:focus-visible,
   [contenteditable]:focus-visible,
   [tabindex="-1"]:focus-visible {
     outline: none !important;
@@ -384,14 +381,16 @@
 }
 
 /*
- * The app shell keeps the large corners without a decorative perimeter.
- * Page surfaces fill its box and clip to the inner radius.
+ * The app frame, matching VOO-Run's editor-shell: a solid 2px mint border on a
+ * 16px radius. Pages sit inside .editor-shell-inner, which fills the border box
+ * and clips to the inner radius.
  */
 .editor-shell {
   box-sizing: border-box;
-  border: 0;
+  border: 2px solid #b2ffd6;
   border-radius: 16px;
   overflow: hidden;
+  transition: border-color 0.25s ease;
 }
 
 .app-root-frame[data-embed="true"] .editor-shell {

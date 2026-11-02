@@ -222,7 +222,7 @@ export default function PrototypeRunner({ doc, engine, startFrameId, onClose }) 
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex flex-col bg-black/90 backdrop-blur-sm">
-      <div className="flex items-center justify-between text-neutral-200">
+      <div className="flex items-center justify-between border-b border-white/10 text-neutral-200" data-ui-structure="divider">
         <div className={BAR_CLASS}>
           <span className="text-[11px] font-mono uppercase tracking-wide text-neutral-400">
             {t("editor.prototype.runner.title")}
@@ -331,7 +331,7 @@ export default function PrototypeRunner({ doc, engine, startFrameId, onClose }) 
           );
         })}
       </div>
-      <div className="flex items-center justify-center py-2 text-[10px] font-mono text-neutral-500">
+      <div className="flex items-center justify-center border-t border-white/10 py-2 text-[10px] font-mono text-neutral-500" data-ui-structure="divider">
         {t("editor.prototype.runner.hint")}
       </div>
     </div>,

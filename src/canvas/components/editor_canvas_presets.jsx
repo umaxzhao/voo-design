@@ -136,7 +136,7 @@ export default function EditorCanvasPresets({
       }
       onClick={(event) => event.stopPropagation()}
     >
-      <div className="px-3 py-2">
+      <div className="border-b border-white/[0.06] px-3 py-2" data-ui-structure="divider">
         <input
           type="text"
           value={query}
@@ -148,7 +148,7 @@ export default function EditorCanvasPresets({
         />
       </div>
 
-      <div className="px-3 py-1.5">
+      <div className="border-b border-white/[0.06] px-3 py-1.5" data-ui-structure="divider">
         <p className="pb-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 select-none">
           {t("editor.canvas.scaleContent")}
         </p>
@@ -216,7 +216,7 @@ export default function EditorCanvasPresets({
         ) : null}
       </div>
 
-      <div className="">
+      <div className="border-t border-white/[0.06]" data-ui-structure="divider">
         <p className="px-3 pt-2 pb-0.5 text-[9px] font-mono uppercase tracking-widest text-neutral-500 select-none">
           {t("editor.canvas.custom")}
         </p>

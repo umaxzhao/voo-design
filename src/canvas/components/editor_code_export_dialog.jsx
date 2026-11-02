@@ -387,7 +387,7 @@ export default function EditorCodeExportDialog({
 
         <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 pb-4 lg:grid-cols-[minmax(0,1fr)_232px]">
           <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl bg-neutral-900">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2" data-ui-structure="divider">
               <div className="min-w-0">
                 <p
                   className="truncate text-[10px] text-neutral-300"

@@ -161,8 +161,8 @@ export default function App() {
         data-agent-open={agentOpen && !welcomeOpen && !browserDrawerOpen ? "true" : "false"}
         data-browser-open={browserDrawerOpen ? "true" : "false"}
       >
-        {/* The borderless rounded shell wraps the workspace below the title bar. */}
-        <div className="editor-shell relative min-h-0 min-w-0 flex-1" data-testid="editor-shell">
+        {/* The rounded green frame wraps the workspace below the title bar. */}
+        <div className="editor-shell relative min-h-0 min-w-0 flex-1" data-testid="editor-shell" data-ui-structure="frame">
           <div className="editor-shell-inner flex flex-col">
             <div className="relative min-h-0 flex-1 overflow-hidden">
               {editorActivated || needsEditor ? (

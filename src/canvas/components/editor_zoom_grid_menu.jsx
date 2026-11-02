@@ -25,7 +25,7 @@ export default function EditorZoomGridMenu({ snapToGrid, onToggleSnapToGrid, gri
         <span aria-hidden="true" className="ml-auto text-neutral-400">{snapToGrid ? "✓" : ""}</span>
       </button>
   
-      <div className="my-1" role="separator" />
+      <div className="my-1 border-t border-white/10" role="separator" data-ui-structure="divider" />
       <div className="px-2 py-1 text-neutral-400">{t("editor.grid.size")}</div>
       {[8, 16, 32, 64].map((size) => (
         <button

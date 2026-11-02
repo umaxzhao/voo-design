@@ -105,7 +105,7 @@ export default function AppTitleBar() {
     <>
       <header
         data-testid="editor-top-bar"
-        className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none"
+        className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10" data-ui-structure="divider"
         style={{
           ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
           ...(windowControls.supported ? { paddingRight: 0, columnGap: 16 } : {}),
@@ -258,7 +258,7 @@ export default function AppTitleBar() {
                   </span>
                 </button>
                 {welcomeOpen ? null : (
-                  <div role="none" className="pt-1">
+                  <div role="none" className="border-t border-white/10 pt-1" data-ui-structure="divider">
                     <CollabAvatars />
                   </div>
                 )}

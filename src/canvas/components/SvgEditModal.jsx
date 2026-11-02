@@ -115,7 +115,7 @@ function SvgEditModal({
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3" data-ui-structure="divider">
           <div className="flex items-center gap-2">
             <IconCode size={15} className="text-neutral-400" />
             <span className="text-xs font-semibold text-white">

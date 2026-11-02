@@ -168,7 +168,7 @@ export default function AffinityAdjustmentSection({
       className="flex flex-col gap-3 rounded-2xl bg-white/[0.03] p-3"
     >
       {/* 1. Affinity-Style Header Card */}
-      <div className="flex items-center justify-between pb-2.5">
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5" data-ui-structure="divider">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-medium text-neutral-100 tracking-tight truncate">
