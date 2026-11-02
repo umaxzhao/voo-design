@@ -2,10 +2,20 @@
 
 ## 独立定向续测与本地测试提交：2026-11-02
 
-- 产品源码基线 `3e8f5214`，只更新测试的本地提交 `164896f0`、`ed288fff`；未推送发布。36项（含冷重开几何）+27项快捷键定向单测通过；后续3契约文件21项独立通过，无新增skip。文本工具已补全 `TextToolProperties` 的 `minFontSize={6}` 结构断言；首页提交补充了供应商未配置时拒建项目弹设置、及有效提交时单次生成意图与内存建构的真实行为单测。
-- 浏览器大图层、快捷键生命周期与布局历史通过。隔离原生Electron 5项通过；另独立退出旧进程、新进程读回同一磁盘文件并加载1图片节点/1asset成功，不扩展为复杂项目认证。
-- ZIP 导出下载门禁已定位并闭环：历史提交 `ef87d596` 将顶栏主导出按钮改造为打开多格式导出弹窗（`editor.export`），便携快照 ZIP 归入命令面板（`titlebar.snapshotTitle`）；`nested-project-roundtrip.e2e.mjs` 原先硬编码寻找顶栏快照按钮导致 30s 超时，对齐命令面板 UI 交互后，两阶段端到端测试均全量通过（生成 ZIP 压缩包下载验证、新上下文冷导入真实文件选择器、嵌入位图像素及层级保真恢复与后置 Undo/Redo 均通过）。
-- 原生IME/实体硬件、复杂连续编辑后的冷重开、font_picker设计lint和滚动长帧仍未关闭。详细增量与日志：`/Users/tt/Documents/Codex/2026-11-02/task/qa-followup/`、`qa-continuation/`；Mac结果不继承为Linux通过。
+- 产品源码基线 `31c24644`（前序包含 `d20c6836`、`03c6ed3e`、`ed288fff`、`164896f0`、`3e8f5214`）；未推送、未发布。模块登记 `scripts/editor-module-catalog.mjs` 中 `workspace` 补齐 `welcome_home_actions.test.js`，`unmapped` 已清零（12 模块 73 特性注册有效）。全量单测 1,707 套件、5,108 项通过（0 失败，4 预留跳过）。
+- 复杂多文档连续编辑→保存→正常关闭→独立冷进程恢复回归通过：
+  - 隔离环境：`/private/tmp/voo-multi-doc-cold-*`，真实双进程 Electron 43.4.0 实例，测试文档与用户空间严格隔离。
+  - 进程一（连续编辑与多标签）：Doc A 连续添加文本（Inter 28px）、矩形形状（圆角/描边）及真实位图图像；Undo/Redo 验证正常；保存为 `MultiDocA.voo`（1,679 字节，SHA256 校验记录）。通过顶栏添加项目建立多标签（Tab count = 2）；Doc B 独立编辑 Frame 嵌套子层级（嵌套圆形及文本）；切换 Tab 验证双向会话状态与 Undo 隔离无串扰；保存为 `MultiDocB.voo`（854 字节）。
+  - 正常关闭：已保存状态下关闭 Doc B 标签页，无阻塞弹窗平滑退出，标签收敛为 1 且 Doc A 恢复激活；第一进程正常干净退出（Exit code 0，PID 释放）。
+  - 进程二（全新独立冷进程）：启动新 PID 独立 Electron 实例，读盘冷载入 `MultiDocA.voo` 与 `MultiDocB.voo`。文本尺寸 0px 漂移（Inter 28px 精准 294px 保持）、位图像素哈希（`603457605`）完全一致、Frame 嵌套父子关系精准重建、载入后继续编辑与 Undo/Redo 完备可用。机器日志：`/Users/tt/Documents/Codex/2026-11-02/task/multi-doc-cold-audit.json`。
+- 本地解包可测试构建产物方案验证：
+  - 执行 `npm run prebuild`（同步 canvaskit/ort wasm 及 notices）、`npx vite build --mode electron`（3,479 模块编译通过，用时 6.96s）、`node scripts/build-connector-resource.mjs` 及 `node scripts/signing-env.mjs --dir`；
+  - 成功生成本地未签名、不发布的测试解包产物：`release/mac-arm64/VOO Design.app`；公证跳过，无远端交互，严禁发布。
+- 任务边界与持续保留项：
+  - `src/canvas/components/font_picker.jsx:571:25`（裸 `rounded` 违规）核实属于 `codex/nba-font-fidelity` 分支草稿，按红线未越界覆盖；`lint:design` 保持未过（exit code 1）。
+  - 2,000 层虚拟化列表滚动长帧由 Codex 性能团队在独立工作树归因分析，主树未触碰 `editor_windowed_layer_rows.jsx`。
+  - 键盘焦点/IME 由 Codex 司令部工作树负责，主树未触碰。
+  - 实体触控板/触控笔/Linux 原生环境认证保持硬件环境受阻标记，Mac 结果不继承为 Linux。
 
 ## Codex 独立 Mac 原生复测：3e8f5214（两项核心修复获限定场景通过，发布门禁未过）
 
