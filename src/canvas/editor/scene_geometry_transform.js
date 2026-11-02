@@ -5,7 +5,9 @@
  *     doc = T(centre) · R(rotation) · shear(tan shear) · T(−centre) · local
  */
 
-import { NODE_KIND } from "./scene_model.js";
+// Imported from the core module, not the scene_model facade: the facade
+// re-exports scene_model_paths, which now imports this file (cycle otherwise).
+import { NODE_KIND } from "./scene_model_core.js";
 
 const DEG_TO_RAD = Math.PI / 180;
 
