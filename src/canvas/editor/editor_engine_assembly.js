@@ -40,6 +40,7 @@ export function assembleEngineControllers({
   incDocVersion,
   requestRender,
   notify,
+  flushNotify = null,
   selection,
   history,
   cache,
@@ -183,7 +184,7 @@ export function assembleEngineControllers({
     transformsInFlight: bitmapWriter.transformsInFlight,
     getAppliedSnapshot,
     setAppliedSnapshot,
-    onCommit: notify,
+    onCommit: flushNotify ?? notify,
   });
 
   selectionController = createEngineSelectionController({

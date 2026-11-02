@@ -91,13 +91,15 @@ await withEditorBrowser(async ({ page, tool }) => {
     mark("export is opt-in for shapes, Frames, text and images; add/remove persist per layer and undo/redo immediately follow document state");
 
     const x = panel.getByLabel("X", { exact: true });
-    await x.fill("150"); await x.press("Enter");
-    assert.equal((await node()).x, 150);
-    await x.fill("222"); await x.press("Escape");
-    assert.equal((await node()).x, 150, "Escape must revert the live geometry preview");
-    assert.equal(await x.inputValue(), "150");
-    await tool("undo");
-    assert.equal((await node()).x, 100, "one undo must skip the cancelled draft");
+    for (let round = 0; round < 5; round++) {
+      await x.fill("150"); await x.press("Enter");
+      assert.equal((await node()).x, 150);
+      await x.fill("222"); await x.press("Escape");
+      assert.equal((await node()).x, 150, "Escape must revert the live geometry preview");
+      assert.equal(await x.inputValue(), "150");
+      await tool("undo");
+      assert.equal((await node()).x, 100, "one undo must skip the cancelled draft");
+    }
     const y = panel.getByLabel("Y", { exact: true });
     await y.fill("140"); await y.blur();
     assert.equal((await node()).y, 140);

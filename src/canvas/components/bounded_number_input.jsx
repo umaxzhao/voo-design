@@ -44,6 +44,7 @@ export default function BoundedNumberInput({
   const emittedValueRef = useRef(value);
   const onCommitRef = useRef(onCommit);
   const transactionRef = useRef(null);
+  const lastPropValueRef = useRef(value);
 
   onCommitRef.current = onCommit;
   if (!transactionRef.current) {
@@ -53,13 +54,18 @@ export default function BoundedNumberInput({
   }
 
   useEffect(() => {
+    const propChanged = lastPropValueRef.current !== value;
+    lastPropValueRef.current = value;
+
     if (!focusedRef.current) {
-      const nextDraft = String(value);
-      committedValueRef.current = value;
-      emittedValueRef.current = value;
-      if (draftRef.current !== nextDraft) {
-        draftRef.current = nextDraft;
-        setDraft(nextDraft);
+      if (propChanged || draftRef.current !== String(committedValueRef.current)) {
+        const nextDraft = String(value);
+        committedValueRef.current = value;
+        emittedValueRef.current = value;
+        if (draftRef.current !== nextDraft) {
+          draftRef.current = nextDraft;
+          setDraft(nextDraft);
+        }
       }
     }
     // Commit and immediate undo can publish the same value as the last render.
