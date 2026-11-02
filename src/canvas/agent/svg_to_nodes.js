@@ -1094,6 +1094,41 @@ function collectElementText(element) {
   return result.trim();
 }
 
+function estimateSvgTextWidth(text, fontSize = 16, letterSpacing = 0) {
+  const size = fontSize > 0 ? fontSize : 16;
+  const lSpacing = Number(letterSpacing) || 0;
+  const rawLines = String(text ?? "").split("\n");
+  let maxWidth = 0;
+  for (const line of rawLines) {
+    let width = 0;
+    for (const ch of line) {
+      const isWide = /[ᄀ-ᅟ⺀-꓏ꫀ-힣豈-﫿︰-﹏＀-￯぀-ヿ一-鿿]/.test(ch);
+      width += (isWide ? 1.0 : 0.55) * size + lSpacing;
+    }
+    if (width > maxWidth) maxWidth = width;
+  }
+  return maxWidth;
+}
+
+function calculateSvgTextAnchorOffset(textAnchor, textWidth) {
+  const anchor = String(textAnchor ?? "").toLowerCase().trim();
+  if (anchor === "middle") return -textWidth / 2;
+  if (anchor === "end") return -textWidth;
+  return 0;
+}
+
+function normalizeSvgFontWeight(rawWeight) {
+  if (rawWeight == null) return undefined;
+  const str = String(rawWeight).trim().toLowerCase();
+  if (!str) return undefined;
+  if (str === "bold") return 700;
+  if (str === "normal") return 400;
+  if (str === "bolder") return 800;
+  if (str === "lighter") return 300;
+  const num = parseInt(str, 10);
+  return Number.isFinite(num) ? num : 400;
+}
+
 function buildTextElement(attrs, paint, matrix, ctx, element) {
   const positionedTspans = (element?.children || []).filter(
     (c) => c.tag === "tspan" && (c.attrs.x !== undefined || c.attrs.y !== undefined),
@@ -1107,16 +1142,29 @@ function buildTextElement(attrs, paint, matrix, ctx, element) {
       const tStyle = parseStyle(tAttrs.style);
       const tx = parseNumber(tAttrs.x) ?? (parseNumber(attrs.x) ?? 0);
       const ty = parseNumber(tAttrs.y) ?? (parseNumber(attrs.y) ?? 0);
-      const tFontSize = parseNumber(tAttrs["font-size"] ?? tStyle["font-size"] ?? tAttrs.fontSize) ?? 16;
-      const tpt = applyMatrix(matrix, tx, ty - tFontSize);
-      const fontFamily = tAttrs["font-family"] ?? tStyle["font-family"];
-      const fontWeight = tAttrs["font-weight"] ?? tStyle["font-weight"];
-      const fontStyle = tAttrs["font-style"] ?? tStyle["font-style"];
-      const textAnchor = tAttrs["text-anchor"] ?? tStyle["text-anchor"];
+      const tFontSize = parseNumber(tAttrs["font-size"] ?? tStyle["font-size"] ?? tAttrs.fontSize ?? tStyle.fontSize) ?? 16;
+      const fontFamily = tAttrs["font-family"] ?? tStyle["font-family"] ?? tAttrs.fontFamily ?? tStyle.fontFamily;
+      const fontWeight = normalizeSvgFontWeight(tAttrs["font-weight"] ?? tStyle["font-weight"] ?? tAttrs.fontWeight ?? tStyle.fontWeight);
+      const fontStyle = tAttrs["font-style"] ?? tStyle["font-style"] ?? tAttrs.fontStyle ?? tStyle.fontStyle;
+      const letterSpacing = parseNumber(tAttrs["letter-spacing"] ?? tStyle["letter-spacing"] ?? tAttrs.letterSpacing ?? tStyle.letterSpacing) ?? 0;
+      const textAnchor =
+        tAttrs["text-anchor"] ??
+        tAttrs.textAnchor ??
+        tAttrs.textanchor ??
+        tStyle["text-anchor"] ??
+        tStyle.textAnchor ??
+        tStyle.textanchor;
+
+      const textWidth = estimateSvgTextWidth(tContent, tFontSize, letterSpacing);
+      const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
+      const tpt = applyMatrix(matrix, tx + anchorOffsetX, ty - tFontSize);
       nodes.push({
         kind: "text",
         x: round(tpt.x),
         y: round(tpt.y),
+        width: Math.ceil(Math.round(textWidth * 1000) / 1000),
+        height: Math.ceil(tFontSize * 1.25),
         text: tContent,
         fontSize: round(tFontSize),
         fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
@@ -1125,9 +1173,10 @@ function buildTextElement(attrs, paint, matrix, ctx, element) {
           paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
         opacity: round(paint.opacity),
         ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
-        ...(fontWeight ? { fontWeight: Number.isFinite(parseInt(fontWeight, 10)) ? parseInt(fontWeight, 10) : fontWeight === "bold" ? 700 : 400 } : {}),
+        ...(fontWeight != null ? { fontWeight } : {}),
         ...(fontStyle ? { fontStyle } : {}),
         ...(fontStyle === "italic" ? { italic: true } : {}),
+        ...(letterSpacing ? { letterSpacing } : {}),
         ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
       });
     }
@@ -1139,16 +1188,29 @@ function buildTextElement(attrs, paint, matrix, ctx, element) {
   if (!content.trim()) return null;
   const x = parseNumber(attrs.x) ?? 0;
   const y = parseNumber(attrs.y) ?? 0;
-  const fontSize = parseNumber(attrs["font-size"] ?? style["font-size"] ?? attrs.fontSize) ?? 16;
-  const pt = applyMatrix(matrix, x, y - fontSize);
-  const fontFamily = attrs["font-family"] ?? style["font-family"];
-  const fontWeight = attrs["font-weight"] ?? style["font-weight"];
-  const fontStyle = attrs["font-style"] ?? style["font-style"];
-  const textAnchor = attrs["text-anchor"] ?? style["text-anchor"];
+  const fontSize = parseNumber(attrs["font-size"] ?? style["font-size"] ?? attrs.fontSize ?? style.fontSize) ?? 16;
+  const fontFamily = attrs["font-family"] ?? style["font-family"] ?? attrs.fontFamily ?? style.fontFamily;
+  const fontWeight = normalizeSvgFontWeight(attrs["font-weight"] ?? style["font-weight"] ?? attrs.fontWeight ?? style.fontWeight);
+  const fontStyle = attrs["font-style"] ?? style["font-style"] ?? attrs.fontStyle ?? style.fontStyle;
+  const letterSpacing = parseNumber(attrs["letter-spacing"] ?? style["letter-spacing"] ?? attrs.letterSpacing ?? style.letterSpacing) ?? 0;
+  const textAnchor =
+    attrs["text-anchor"] ??
+    attrs.textAnchor ??
+    attrs.textanchor ??
+    style["text-anchor"] ??
+    style.textAnchor ??
+    style.textanchor;
+
+  const textWidth = estimateSvgTextWidth(content, fontSize, letterSpacing);
+  const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
+  const pt = applyMatrix(matrix, x + anchorOffsetX, y - fontSize);
   return {
     kind: "text",
     x: round(pt.x),
     y: round(pt.y),
+    width: Math.ceil(Math.round(textWidth * 1000) / 1000),
+    height: Math.ceil(fontSize * 1.25),
     text: content,
     fontSize: round(fontSize),
     fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
@@ -1157,9 +1219,10 @@ function buildTextElement(attrs, paint, matrix, ctx, element) {
       paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
     opacity: round(paint.opacity),
     ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
-    ...(fontWeight ? { fontWeight: Number.isFinite(parseInt(fontWeight, 10)) ? parseInt(fontWeight, 10) : fontWeight === "bold" ? 700 : 400 } : {}),
+    ...(fontWeight != null ? { fontWeight } : {}),
     ...(fontStyle ? { fontStyle } : {}),
     ...(fontStyle === "italic" ? { italic: true } : {}),
+    ...(letterSpacing ? { letterSpacing } : {}),
     ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
   };
 }

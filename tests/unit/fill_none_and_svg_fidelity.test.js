@@ -309,11 +309,17 @@ describe("SVG import fidelity: radialGradient, clipPath, text and multi-subpath"
     expect(editorNodes[0].fontWeight).toBe(700);
     expect(editorNodes[0].italic).toBe(true);
     expect(editorNodes[0].align).toBe("center");
+    expect(editorNodes[0].x).toBeCloseTo(30.7, 1);
+    expect(editorNodes[0].width).toBe(139);
+    expect(editorNodes[0].height).toBe(23);
 
     expect(editorNodes[1].text).toBe("Right Note");
     expect(editorNodes[1].fontFamily).toBe("Roboto");
     expect(editorNodes[1].fontWeight).toBe(600);
     expect(editorNodes[1].align).toBe("right");
+    expect(editorNodes[1].x).toBe(173);
+    expect(editorNodes[1].width).toBe(77);
+    expect(editorNodes[1].height).toBe(18);
 
     // 2. svg_to_nodes
     const { nodes: agentNodes } = parseSvgToNodes(svg);
@@ -324,11 +330,17 @@ describe("SVG import fidelity: radialGradient, clipPath, text and multi-subpath"
     expect(agentNodes[0].fontWeight).toBe(700);
     expect(agentNodes[0].italic).toBe(true);
     expect(agentNodes[0].align).toBe("center");
+    expect(agentNodes[0].x).toBeCloseTo(30.7, 1);
+    expect(agentNodes[0].width).toBe(139);
+    expect(agentNodes[0].height).toBe(23);
 
     expect(agentNodes[1].text).toBe("Right Note");
     expect(agentNodes[1].fontFamily).toBe("Roboto");
     expect(agentNodes[1].fontWeight).toBe(600);
     expect(agentNodes[1].align).toBe("right");
+    expect(agentNodes[1].x).toBe(173);
+    expect(agentNodes[1].width).toBe(77);
+    expect(agentNodes[1].height).toBe(18);
   });
 
   it("preserves moveTo in multi-subpath paths imported via editor_svg_import", () => {

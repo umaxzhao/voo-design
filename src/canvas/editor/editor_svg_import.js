@@ -16,6 +16,10 @@ import {
   NODE_KIND,
 } from "./scene_model.js";
 import { parseSvgPath } from "./editor_svg_parse.js";
+import {
+  measureSvgTextWidth,
+  calculateSvgTextAnchorOffset,
+} from "./editor_svg_text.js";
 
 /** Checks if a string contains valid SVG markup. */
 export function isSvgString(str) {
@@ -68,6 +72,19 @@ function parseNum(val, defaultVal = 0) {
   if (val == null) return defaultVal;
   const num = parseFloat(val);
   return Number.isFinite(num) ? num : defaultVal;
+}
+
+/** Normalizes SVG font-weight into numeric weight consistent with TEXT_FONT_WEIGHTS. */
+function normalizeSvgFontWeight(rawWeight) {
+  if (rawWeight == null) return undefined;
+  const str = String(rawWeight).trim().toLowerCase();
+  if (!str) return undefined;
+  if (str === "bold") return 700;
+  if (str === "normal") return 400;
+  if (str === "bolder") return 800;
+  if (str === "lighter") return 300;
+  const num = parseInt(str, 10);
+  return Number.isFinite(num) ? num : 400;
 }
 
 /** Parses transform attribute e.g. matrix(...), translate(...), scale(...), rotate(...). */
@@ -793,7 +810,24 @@ export function parseSvgStringToNodes(svgString) {
           const tx = parseNum(tAttrs.x, attrs.x ? parseNum(attrs.x, 0) : 0);
           const ty = parseNum(tAttrs.y, attrs.y ? parseNum(attrs.y, 0) : 0);
           const tFontSize = parseNum(tAttrs["font-size"] ?? tAttrs.fontSize ?? tStyle["font-size"] ?? tStyle.fontSize, 16);
-          const tpt = applyTransformToPoint(tx, ty - tFontSize, matrix);
+          const tFontFamily = tAttrs["font-family"] ?? tAttrs.fontFamily ?? tStyle["font-family"] ?? tStyle.fontFamily;
+          const cleanTFontFamily = tFontFamily ? tFontFamily.replace(/['"]/g, "").trim() : "sans-serif";
+          const rawTFontWeight = tAttrs["font-weight"] ?? tAttrs.fontWeight ?? tStyle["font-weight"] ?? tStyle.fontWeight;
+          const tFontWeight = normalizeSvgFontWeight(rawTFontWeight);
+          const tFontStyle = tAttrs["font-style"] ?? tAttrs.fontStyle ?? tStyle["font-style"] ?? tStyle.fontStyle;
+          const tLetterSpacing = parseNum(tAttrs["letter-spacing"] ?? tAttrs.letterSpacing ?? tStyle["letter-spacing"] ?? tStyle.letterSpacing, 0);
+          const textAnchor =
+            tAttrs["text-anchor"] ??
+            tAttrs.textAnchor ??
+            tAttrs.textanchor ??
+            tStyle["text-anchor"] ??
+            tStyle.textAnchor ??
+            tStyle.textanchor;
+
+          const textWidth = measureSvgTextWidth(tContent, tFontSize, cleanTFontFamily, tFontWeight, tLetterSpacing);
+          const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
+          const tpt = applyTransformToPoint(tx + anchorOffsetX, ty - tFontSize, matrix);
           const textNode = createTextNode({
             x: tpt.x,
             y: tpt.y,
@@ -801,17 +835,13 @@ export function parseSvgStringToNodes(svgString) {
             fontSize: tFontSize,
             fill: tPaint.fill !== "transparent" && tPaint.fill !== "none" ? tPaint.fill : "#000000",
           });
-          const fontFamily = tAttrs["font-family"] ?? tAttrs.fontFamily ?? tStyle["font-family"] ?? tStyle.fontFamily;
-          if (fontFamily) textNode.fontFamily = fontFamily.replace(/['"]/g, "").trim();
-          const fontWeight = tAttrs["font-weight"] ?? tAttrs.fontWeight ?? tStyle["font-weight"] ?? tStyle.fontWeight;
-          if (fontWeight) {
-            const fwNum = parseInt(fontWeight, 10);
-            textNode.fontWeight = Number.isFinite(fwNum) ? fwNum : fontWeight === "bold" ? 700 : 400;
-          }
-          const fontStyle = tAttrs["font-style"] ?? tAttrs.fontStyle ?? tStyle["font-style"] ?? tStyle.fontStyle;
-          if (fontStyle) textNode.fontStyle = fontStyle;
-          if (fontStyle === "italic") textNode.italic = true;
-          const textAnchor = tAttrs["text-anchor"] ?? tAttrs.textAnchor ?? tStyle["text-anchor"] ?? tStyle.textAnchor;
+          textNode.width = Math.ceil(Math.round(textWidth * 1000) / 1000);
+          textNode.height = Math.ceil(tFontSize * 1.25);
+          if (tFontFamily) textNode.fontFamily = cleanTFontFamily;
+          if (tFontWeight != null) textNode.fontWeight = tFontWeight;
+          if (tFontStyle) textNode.fontStyle = tFontStyle;
+          if (tFontStyle === "italic") textNode.italic = true;
+          if (tLetterSpacing) textNode.letterSpacing = tLetterSpacing;
           if (textAnchor === "middle") textNode.align = "center";
           else if (textAnchor === "end") textNode.align = "right";
           textNode.opacity = tPaint.opacity;
@@ -827,8 +857,25 @@ export function parseSvgStringToNodes(svgString) {
       const y = parseNum(attrs.y, 0);
       const style = parseInlineStyle(attrs.style);
       const fontSize = parseNum(attrs["font-size"] ?? attrs.fontSize ?? style["font-size"] ?? style.fontSize, 16);
+      const fontFamily = attrs["font-family"] ?? attrs.fontFamily ?? style["font-family"] ?? style.fontFamily;
+      const cleanFontFamily = fontFamily ? fontFamily.replace(/['"]/g, "").trim() : "sans-serif";
+      const rawFontWeight = attrs["font-weight"] ?? attrs.fontWeight ?? style["font-weight"] ?? style.fontWeight;
+      const fontWeight = normalizeSvgFontWeight(rawFontWeight);
+      const fontStyle = attrs["font-style"] ?? attrs.fontStyle ?? style["font-style"] ?? style.fontStyle;
+      const letterSpacing = parseNum(attrs["letter-spacing"] ?? attrs.letterSpacing ?? style["letter-spacing"] ?? style.letterSpacing, 0);
+      const textAnchor =
+        attrs["text-anchor"] ??
+        attrs.textAnchor ??
+        attrs.textanchor ??
+        style["text-anchor"] ??
+        style.textAnchor ??
+        style.textanchor;
+
+      const textWidth = measureSvgTextWidth(content, fontSize, cleanFontFamily, fontWeight, letterSpacing);
+      const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
       // SVG y is a baseline; editor text positions are the top of the box.
-      const pt = applyTransformToPoint(x, y - fontSize, matrix);
+      const pt = applyTransformToPoint(x + anchorOffsetX, y - fontSize, matrix);
       const textNode = createTextNode({
         x: pt.x,
         y: pt.y,
@@ -836,17 +883,13 @@ export function parseSvgStringToNodes(svgString) {
         fontSize,
         fill: paint.fill !== "transparent" && paint.fill !== "none" ? paint.fill : "#000000",
       });
-      const fontFamily = attrs["font-family"] ?? attrs.fontFamily ?? style["font-family"] ?? style.fontFamily;
-      if (fontFamily) textNode.fontFamily = fontFamily.replace(/['"]/g, "").trim();
-      const fontWeight = attrs["font-weight"] ?? attrs.fontWeight ?? style["font-weight"] ?? style.fontWeight;
-      if (fontWeight) {
-        const fwNum = parseInt(fontWeight, 10);
-        textNode.fontWeight = Number.isFinite(fwNum) ? fwNum : fontWeight === "bold" ? 700 : 400;
-      }
-      const fontStyle = attrs["font-style"] ?? attrs.fontStyle ?? style["font-style"] ?? style.fontStyle;
+      textNode.width = Math.ceil(Math.round(textWidth * 1000) / 1000);
+      textNode.height = Math.ceil(fontSize * 1.25);
+      if (fontFamily) textNode.fontFamily = cleanFontFamily;
+      if (fontWeight != null) textNode.fontWeight = fontWeight;
       if (fontStyle) textNode.fontStyle = fontStyle;
       if (fontStyle === "italic") textNode.italic = true;
-      const textAnchor = attrs["text-anchor"] ?? attrs.textAnchor ?? style["text-anchor"] ?? style.textAnchor;
+      if (letterSpacing) textNode.letterSpacing = letterSpacing;
       if (textAnchor === "middle") textNode.align = "center";
       else if (textAnchor === "end") textNode.align = "right";
       textNode.opacity = paint.opacity;
