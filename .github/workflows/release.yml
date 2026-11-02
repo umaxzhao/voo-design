@@ -36,6 +36,17 @@ jobs:
           node tests/e2e/editor-optional-loading.e2e.mjs
         env:
           VOO_BROWSER_EVIDENCE_DIR: ${{ runner.temp }}/desktop-browser-evidence
+          HTML2NODES_SHOTS: ${{ runner.temp }}/t09-html2nodes-shots
+      # Diagnostic only: runs after the gate above fails. The gate assertion, 1% threshold
+      # and exit code are unchanged; this step does not affect the job result.
+      - name: T09 Linux diagnostics (failure only)
+        if: failure()
+        continue-on-error: true
+        run: bash tests/diagnostics/t09-linux/collect.sh
+        env:
+          VOO_DIAG_ROOT: ${{ github.workspace }}
+          VOO_DIAG_OUT: ${{ runner.temp }}/t09-linux-diagnostics
+          VOO_DIAG_SHOTS: ${{ runner.temp }}/t09-html2nodes-shots
       - run: node scripts/verify-editor-release.mjs
         env:
           GOMAXPROCS: '1'
@@ -52,6 +63,14 @@ jobs:
             ${{ runner.temp }}/desktop-web-release.json
             ${{ runner.temp }}/desktop-browser-evidence/**
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t09-linux-diagnostics
+          path: |
+            ${{ runner.temp }}/t09-html2nodes-shots/**
+            ${{ runner.temp }}/t09-linux-diagnostics/**
+          if-no-files-found: ignore
   build:
     timeout-minutes: 45
     strategy:
