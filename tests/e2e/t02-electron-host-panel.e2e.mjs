@@ -54,7 +54,7 @@ try {
   const page = await app.firstWindow();
   page.setDefaultTimeout(30_000);
   result.checks.url = page.url();
-  assert.ok(page.url().startsWith("file://") && page.url().includes(root.replace(/\/$/, "")), `renderer must be this copy's dist: ${page.url()}`);
+  assert.ok(page.url().startsWith(devServer.origin), `renderer must come from this copy's dev server: ${page.url()}`);
   const errors = [];
   page.on("pageerror", (error) => errors.push(String(error)));
   const newDocument = page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true });
