@@ -1,0 +1,8 @@
+{
+  "name": "voo",
+  "version": "1.0.0",
+  "description": "Inspect and edit the open VOO canvas through MCP.",
+  "author": { "name": "VOO Design" },
+  "repository": "https://github.com/umaxzhao/voo-design",
+  "license": "MIT"
+}

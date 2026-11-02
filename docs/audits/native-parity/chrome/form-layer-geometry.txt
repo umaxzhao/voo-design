@@ -1,0 +1,30 @@
+=== [Integrated Mode] Compiling against production Sources/ ===
+=== 正在编译 VOO Design Native Studio E2E 测试套件 ===
+=== 正在执行 VOO Design Native Studio E2E 测试 ===
+2026-11-01 12:09:01.565 VOODesignE2ETests[95095:11444065] [VOO Design Native] bundled fonts: Intel One Mono ready; 9 face file(s) found
+================================================================================
+             VOO DESIGN NATIVE STUDIO — OPAQUE-BOX E2E TEST RUNNER
+================================================================================
+Target: VOO Design Native (Swift 6 + AppKit + CoreGraphics + Metal)
+Filter: Tier = All (1-4), Pattern = test_FormLayerCard
+Total registered test cases: 440 | Selected: 1
+--------------------------------------------------------------------------------
+
+  [31m[FAIL][0m (0.427s) [T3] [Native-Inspector] test_FormLayerCardShowsAllRowsAndCanvasBackgroundWithoutScrolling
+         [31m↳ [NativeWorkflowParityTests.swift:33] Every authored FORM row is fully visible: row=13, rowRect=(0.0, 442.0, 232.0, 34.0), clip=(0.0, 0.0, 232.0, 474.0), table=(0.0, 0.0, 232.0, 474.0), scroll=(12.0, 94.0, 232.0, 474.0)[0m
+
+================================================================================
+                             TEST RESULTS SUMMARY
+================================================================================
+Tier & Feature Category                   Total     Passed    Failed    Pass Rate
+--------------------------------------------------------------------------------
+Tier 1: Feature Coverage (F1-F18)         0         0         0            0.0%
+Tier 2: Boundary & Corner Cases           0         0         0            0.0%
+Tier 3: Cross-Feature Combinations        1         0         1            0.0%
+Tier 4: Real-World Scenarios              0         0         0            0.0%
+--------------------------------------------------------------------------------
+TOTAL                                     1         0         1            0.0%
+================================================================================
+Execution Time: 0.427 seconds
+[31m✗ TEST SUITE FAILED with 1 failure(s) (Exit Code 1)[0m
+
