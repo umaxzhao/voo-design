@@ -123,7 +123,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
             "center",
             v === "center",
             "left-[18px] top-[18px] h-6 w-3",
-            "h-[18px] w-[2px]",
+            "h-[18px] w-[2px] translate-x-[6px]",
             "centerVertical",
           )}
           {pin(
@@ -132,7 +132,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
             "center",
             h === "center",
             "left-[30px] top-[18px] h-6 w-3",
-            "h-[2px] w-[10px]",
+            "h-[2px] w-[18px] -translate-x-[6px]",
             "centerHorizontal",
           )}
         </div>
