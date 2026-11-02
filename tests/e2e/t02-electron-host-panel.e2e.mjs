@@ -117,11 +117,7 @@ try {
 } finally {
   await writeFile(join(evidence, "electron-host-result.json"), JSON.stringify(result, null, 2));
   const closed = await Promise.race([app.close().then(() => "closed"), new Promise((r) => setTimeout(() => r("timeout"), 20_000))]);
-  if (closed === "timeout") {
-    // Dirty document: the close guard waits for an answer. Exit this app in-process (not a signal kill).
-    await app.evaluate(({ app: electronApp }) => electronApp.exit(0)).catch(() => {});
-  }
-  result.cleanup = closed === "timeout" ? "timeout-then-in-process-exit" : closed;
+  result.cleanup = closed; // no forced exit: a timeout is recorded as cleanup-blocked
   result.sourceCommit = (await import("node:child_process")).execSync("git rev-parse HEAD", { cwd: root }).toString().trim();
   result.servedOrigin = devServer.origin;
   await writeFile(join(evidence, "electron-host-result.json"), JSON.stringify(result, null, 2));
