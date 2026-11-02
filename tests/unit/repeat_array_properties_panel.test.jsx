@@ -41,11 +41,12 @@ function renderSections(props) {
 }
 
 describe("Modifiers group", () => {
-  it("shows the Modifiers title, its add entry and an empty row for an empty stack", () => {
+  it("shows the Modifiers title and its add entry as header-only for an empty stack", () => {
     const html = renderSections();
     expect(html).toContain('data-testid="editor-modifiers-section"');
     expect(html).toContain('data-testid="editor-modifiers-add"');
-    expect(html).toContain('data-testid="editor-modifiers-empty"');
+    expect(html).not.toContain('data-testid="editor-modifiers-empty"');
+    expect(html).not.toContain('data-testid="editor-modifiers-stack"');
     expect(html).not.toContain('data-testid="editor-modifiers-picker"');
     expect(html).not.toContain('editor-repeat-array-section');
     expect(html).not.toContain('editor.props.repeatArray');
@@ -62,7 +63,7 @@ describe("Modifiers group", () => {
       );
       expect(html).toContain('data-testid="editor-modifiers-section"');
       expect(html).toContain('data-testid="editor-modifiers-add"');
-      expect(html).toContain('data-testid="editor-modifiers-empty"');
+      expect(html).not.toContain('data-testid="editor-modifiers-empty"');
       expect(html).not.toContain('data-testid="editor-modifiers-picker"');
     }
   });

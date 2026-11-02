@@ -13,7 +13,7 @@
 import PropTypes from "prop-types";
 import { useMemo, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
-import { CollapsibleSection, SectionAddButton, SectionEmptyRow } from "./property_section.jsx";
+import { CollapsibleSection, SectionAddButton } from "./property_section.jsx";
 import {
   IconAdd,
   IconClose,
@@ -276,10 +276,8 @@ export default function StyleSection({ object, styles = null, styleActions = nul
       testId="editor-style-section"
       extra={<SectionAddButton label={tv("styles.add")} onClick={() => setShowAll((value) => !value)} />}
     >
-      <div className="flex flex-col gap-2">
-        {shownTypes.length === 0 ? (
-          <SectionEmptyRow label={t("editor.props.emptyState")} variant="empty" testId="editor-style-empty" />
-        ) : null}
+      {/* No applied style and no expanded list: the title row alone is the empty state. */}
+      {shownTypes.length === 0 ? null : <div className="flex flex-col gap-2">
         {shownTypes.map((type) => {
           const list = library[type];
           const activeId = styleIds[STYLE_TYPE_KEYS[type]];
@@ -309,7 +307,7 @@ export default function StyleSection({ object, styles = null, styleActions = nul
             {tv("styles.hint")}
           </p>
         ) : null}
-      </div>
+      </div>}
     </CollapsibleSection>
   );
 }
