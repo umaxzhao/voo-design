@@ -58,7 +58,7 @@ await withEditorBrowser(async ({ page, errors }) => {
   const iframeBox = await iframe.boundingBox();
   assert.ok(iframeBox.width > 0, "iframe is loaded and has positive width");
 
-  // Full-page import has one home in the browser's top bar.
+  // Trigger Full Page Import via topbar button
   const importFullBtn = drawer.getByRole("button", { name: /Import Page|导入整页/i });
   await importFullBtn.waitFor();
   await importFullBtn.click();
