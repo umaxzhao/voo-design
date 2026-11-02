@@ -15,7 +15,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "npm run copy:ort && npm run copy:canvaskit && concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
-    "electron:build": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs --dir",
+    "electron:build": "node scripts/prepare-desktop-models.mjs && npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs --dir",
     "pretest": "npm run copy:canvaskit && node scripts/ensure-dist.mjs",
     "test": "vitest run",
     "bench:design": "node scripts/design-bench/run.mjs",
@@ -33,9 +33,9 @@
     "bench:agent": "node scripts/agent-bench/run.mjs --dry-run",
     "test:e2e:codex": "node tests/e2e/codex_agent.e2e.mjs",
     "test:e2e:claude": "node tests/e2e/claude_agent.e2e.mjs",
-    "dist": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs --linux AppImage --publish never && npm run verify:package",
-    "dist:dir": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs --dir",
-    "dist:all": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs -mwl --publish never",
+    "dist": "node scripts/prepare-desktop-models.mjs && npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs --linux AppImage --publish never && npm run verify:package",
+    "dist:dir": "node scripts/prepare-desktop-models.mjs && npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs --dir",
+    "dist:all": "node scripts/prepare-desktop-models.mjs && npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build --mode electron && node scripts/build-connector-resource.mjs && node scripts/signing-env.mjs -mwl --publish never",
     "test:e2e:fps": "node tests/e2e/canvas_fps.e2e.mjs",
     "notices": "node scripts/generate-third-party-notices.mjs",
     "smoke:packaged": "node scripts/smoke-packaged.mjs",
@@ -114,6 +114,10 @@
       {
         "from": "build/connector",
         "to": "connector"
+      },
+      {
+        "from": "dist-electron/models",
+        "to": "models"
       }
     ],
     "asar": true,

@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   writeFile: (filePath, content) => ipcRenderer.invoke("fs:writeFile", filePath, content),
   writeFileBytes: (filePath, bytes) => ipcRenderer.invoke("fs:writeBinary", filePath, bytes),
   loadModelBytes: (modelName) => ipcRenderer.invoke("model:loadBytes", modelName),
+  hasModel: (modelName) => ipcRenderer.invoke("model:has", modelName),
   onMenuAction: (callback) => {
     const handler = (_, action) => callback(action);
     ipcRenderer.on("menu:action", handler);

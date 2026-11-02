@@ -1,0 +1,8 @@
+{
+  "baseUrl": "https://voo.run/editor/models/",
+  "models": [
+    { "file": "rmbg-1.4-fp16.onnx", "bytes": 88217533, "sha256": "9fdfdb41866d872e0acf4a010c35c1a8547bf0eebe0d1544406bbf1c824cb59d", "license": "bria-rmbg-1.4" },
+    { "file": "lama_512_fp16.onnx", "bytes": 106559381, "sha256": "1fa042eaf30a6660b9190f0a1512d27bdceff90fab172af295303cdf2905e516", "license": "Apache-2.0" },
+    { "file": "lama_512_int8.onnx", "bytes": 62074990, "sha256": "cab19978adc306622fe37ef60d4a52103b99c98141d499c2a2366a7ed1255dbe", "license": "Apache-2.0" }
+  ]
+}

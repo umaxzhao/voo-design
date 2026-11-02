@@ -186,7 +186,11 @@ async function ensureWebModule(moduleId, { onProgress, fetcher = globalThis.fetc
     if (importer.url && typeof fetcher === "function") {
       let response;
       try {
-        response = await fetcher(importer.url);
+        // Runtime assets live beside index.html, including /editor/ deployments.
+        const assetUrl = typeof document !== "undefined" && document.baseURI
+          ? new URL(importer.url.replace(/^\//, ""), document.baseURI).href
+          : importer.url;
+        response = await fetcher(assetUrl);
       } catch (err) {
         moduleStateCache.set(moduleId, MODULE_STATE.AVAILABLE);
         return { ok: false, reason: `Network error downloading ${moduleId}: ${err?.message || "connection failed"}` };

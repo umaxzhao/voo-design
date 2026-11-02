@@ -1,5 +1,32 @@
 # Image editor acceptance matrix
 
+## Desktop model delivery: 2026-11-03
+
+Capability IDs: `images.local-models`, `images.model-readiness`, `images.subpath-runtime`.
+Source baseline: `0363f210`; changed-source SHA256 values and artifact SHA256 are
+recorded outside the repository in `ai-desktop-fix/evidence.json` under the
+current chat's visualization directory. This receipt does not inherit an older release pass.
+
+| Acceptance axis | Executed evidence and remaining scope |
+| --- | --- |
+| Published reproduction | Installed Beta2, disposable empty profile and offline network: background-removal UI fails without a mask. The archive omits RMBG/LaMa; native-loader presence incorrectly bypasses the download prompt. |
+| Domain and UI | Candidate packaged App, macOS arm64, independent profile, offline: background-removal button applies a real matte; shared AI-repair engine operation replaces bitmap pixels. Repair pointer sequences are not newly certified. |
+| Pixels and history | Cutout painted pixels 49152→18400. Cutout and repair Undo return the exact original pixel hash; Redo returns the exact edited hash. |
+| Resource delivery | RMBG and both LaMa variants are checked by exact size/SHA256 before staging into `dist-electron/models`; every desktop packaging entry point and native CI provisions these resources. Package inspection checks each required file, not merely any ONNX. |
+| Status | `model:has` checks a real nonempty file without allocating a full model buffer. Missing legacy IPC status no longer means the model is cached. Browser cache fallback remains available. |
+| Hosted subpath | Published Web model download succeeded, then `/ort/...wasm` returned 404. Module assets now resolve beside document.baseURI; the regression retains origin-root behavior without a document. |
+| Unit and build | 4993 passing units, 4 skipped; design scan 1481 files; production build, module registration, and real candidate archive/transitive dependency inspection pass. Core browser release receipt is still pending for this revision. |
+| Remaining | Windows/Linux, signed distribution, updater/install UX, cold project reopening, all image-quality cases, and all physical input paths remain unverified. Existing public Beta2 is unchanged. |
+
+Retained regression checks: `module-loader-assets.test.js`,
+`model_asset_loader.test.js`, `client-model-ipc.test.js`,
+`desktop-model-assets.test.js`, `electron_builder_config.test.js`, and
+`package_contents.test.js`. Sparse package fixtures certify only presence/size;
+the native receipt separately records actual model inference and real pixels.
+
+Local candidate: `/private/tmp/voo-ai-desktop-candidate/mac-arm64/VOO Design.app`.
+This is an unsigned test artifact, not a replacement of the published Beta2.
+
 This is the maintained coverage map, not a claim that every possible interaction
 or platform is certified. Run the checks on the exact clean revision; reports
 belong outside the repository. Video is excluded from this audit by request.

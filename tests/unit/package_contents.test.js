@@ -1,5 +1,5 @@
 import { createPackage } from '@electron/asar';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm, readFile, open } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { finished } from 'node:stream/promises';
@@ -36,6 +36,13 @@ async function fixture({ omit, extra, runtimeDependencies, missingEmbeddedNotice
   await writeFile(path.join(source, 'package.json'), JSON.stringify({ dependencies: { ws: '*' } }));
   if (runtimeDependencies) await writeFile(path.join(source, 'node_modules/ws/package.json'), JSON.stringify({ dependencies: runtimeDependencies }));
   await mkdir(path.join(app, 'resources'), { recursive: true });
+  // Sparse fixtures certify presence/size checks only, never model inference.
+  const models = JSON.parse(await readFile(new URL('../../scripts/desktop-model-manifest.json', import.meta.url), 'utf8')).models;
+  await mkdir(path.join(app, 'resources/models'));
+  for (const model of models) {
+    const file = await open(path.join(app, 'resources/models', model.file), 'w');
+    try { await file.truncate(model.bytes); } finally { await file.close(); }
+  }
   for (const file of ['scripts/mcp-server.mjs', 'electron/mcp_server/tool_catalog.js', 'node_modules/ws/package.json', 'cordis.patch.yml']) {
     const target = path.join(app, 'resources/connector/voo', file);
     await mkdir(path.dirname(target), { recursive: true });
@@ -62,6 +69,11 @@ describe('shipped package inspection', () => {
   });
   it('accepts runtime assets, production dependencies, and font licenses', async () => {
     expect(verifyPackage(await fixture()).locales).toEqual(['en-US.pak', 'zh-CN.pak']);
+  });
+  it('rejects an archive that omits a required AI weight even when all other assets exist', async () => {
+    const app = await fixture();
+    await rm(path.join(app, 'resources/models/lama_512_int8.onnx'));
+    expect(() => verifyPackage(app)).toThrow('Missing or invalid required desktop model: lama_512_int8.onnx');
   });
   it.each([
     'dist/fonts/inter.ttf', 'dist/assets/editor.js.map', 'electron/tests/debug.js',

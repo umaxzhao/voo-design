@@ -242,10 +242,20 @@ describe("model_asset_loader (Offline & Local Bundle & Browser Caching)", () => 
     expect(globalThis.fetch).toHaveBeenCalledWith("https://models.test/test.onnx");
   });
 
-  it("preserves native IPC availability reporting without reading a large model for status", async () => {
+  it("does not mistake a legacy native loader for an installed model", async () => {
     const loadModelBytes = vi.fn();
     globalThis.window = { electronAPI: { loadModelBytes } };
-    expect(await isModelAssetCached({ filename: "optional.onnx" })).toBe(true);
+    expect(await isModelAssetCached({ filename: "optional.onnx" })).toBe(false);
+    expect(loadModelBytes).not.toHaveBeenCalled();
+  });
+
+  it("uses per-file native status without reading the weight", async () => {
+    const loadModelBytes = vi.fn();
+    const hasModel = vi.fn(async (name) => name === "installed.onnx");
+    globalThis.window = { electronAPI: { loadModelBytes, hasModel } };
+    expect(await isModelAssetCached({ filename: "installed.onnx" })).toBe(true);
+    expect(await isModelAssetCached({ filename: "missing.onnx" })).toBe(false);
+    expect(hasModel).toHaveBeenCalledWith("installed.onnx");
     expect(loadModelBytes).not.toHaveBeenCalled();
   });
 

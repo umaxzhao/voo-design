@@ -29,4 +29,15 @@ exports.registerClientModelIpc = function registerClientModelIpc(ipcMain, app) {
     const buf = await fs.promises.readFile(fullPath);
     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
   });
+  ipcMain.handle("model:has", async (_, modelName) => {
+    const fullPath = resolveBundledModelPath(modelName);
+    if (!fullPath) return false;
+    try {
+      const info = await fs.promises.stat(fullPath);
+      return info.isFile() && info.size > 0;
+    } catch (error) {
+      if (error.code === "ENOENT") return false;
+      throw error;
+    }
+  });
 };

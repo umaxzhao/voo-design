@@ -71,6 +71,8 @@ jobs:
             platform: mac
             arch: arm64
     runs-on: ${{ matrix.os }}
+    env:
+      VOO_DESKTOP_MODELS_DIR: ${{ runner.temp }}/voo-desktop-models
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,6 +82,8 @@ jobs:
           node-version: '22.14'
           cache: npm
       - run: npm ci
+      - name: Fetch and checksum required desktop AI weights
+        run: node scripts/prepare-desktop-models.mjs --download
       - name: Package on the native architecture
         env:
           CSC_LINK: ${{ matrix.platform == 'mac' && secrets.CSC_LINK || '' }}
