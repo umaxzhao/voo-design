@@ -184,6 +184,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
           finished.patch.points,
           dx,
           dy,
+          api.getPatchDirection?.(),
         );
       }
       return;

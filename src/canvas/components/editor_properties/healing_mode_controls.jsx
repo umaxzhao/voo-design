@@ -1,12 +1,13 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
 import { useI18n } from "../../use_i18n.js";
-import ToolSliderField from "./tool_slider_field.jsx";
 
-export default function HealingModeControls({ healingMode, cloneSource }) {
+export default function HealingModeControls({
+  healingMode,
+  cloneSource,
+  patchDirection = "source",
+  onPatchDirection,
+}) {
   const { t } = useI18n();
-  const [patchDirection, setPatchDirection] = useState("source");
-  const [diffusion, setDiffusion] = useState(50);
 
   if (healingMode === "patch") {
     return (
@@ -17,7 +18,7 @@ export default function HealingModeControls({ healingMode, cloneSource }) {
               key={direction}
               type="button"
               aria-pressed={patchDirection === direction}
-              onClick={() => setPatchDirection(direction)}
+              onClick={() => onPatchDirection?.(direction)}
               className={`h-6 flex-1 rounded-lg px-2 text-[10px] font-mono transition-colors ${
                 patchDirection === direction
                   ? "bg-neutral-600 text-neutral-100"
@@ -28,15 +29,10 @@ export default function HealingModeControls({ healingMode, cloneSource }) {
             </button>
           ))}
         </div>
-        <ToolSliderField
-          label={t("editor.patch.diffusion")}
-          min={0}
-          max={100}
-          value={diffusion}
-          onValueChange={setDiffusion}
-          suffix="%"
-          ariaLabel={t("editor.patch.diffusion")}
-        />
+        {/* Diffusion has no engine behaviour yet, so it is stated as unavailable instead of shown as a dead slider. */}
+        <p className="text-[10px] font-mono text-neutral-500" role="note">
+          {`${t("editor.patch.diffusion")}: ${t("editor.patch.diffusionUnavailable")}`}
+        </p>
       </div>
     );
   }
@@ -59,4 +55,6 @@ export default function HealingModeControls({ healingMode, cloneSource }) {
 HealingModeControls.propTypes = {
   healingMode: PropTypes.oneOf(["spot", "aiRepair", "patch", "clone"]),
   cloneSource: PropTypes.object,
+  patchDirection: PropTypes.oneOf(["source", "destination"]),
+  onPatchDirection: PropTypes.func,
 };

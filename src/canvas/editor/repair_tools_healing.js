@@ -23,7 +23,17 @@ export function createRepairHealingTools({
    * Takes the selected patch contour (docPoints), computes texture difference from (dx, dy)
    * reference location, and blends seamlessly.
    */
-  async function patchBlendStroke(nodeId, docPoints, dx, dy) {
+  async function patchBlendStroke(nodeId, docPoints, dx, dy, direction = "source") {
+    if (direction !== "source" && direction !== "destination") {
+      throw new Error(`Unknown patch direction: ${direction}`);
+    }
+    // Source: the lasso receives pixels sampled from (lasso + drag).
+    // Destination: the lasso content is written at the dragged-to location.
+    // Both reuse the same blend; only the mask position and sample offset flip.
+    const destination = direction === "destination";
+    const maskPoints = destination
+      ? docPoints.map((pt) => ({ x: pt.x + dx, y: pt.y + dy }))
+      : docPoints;
     const doc = getDoc();
     const node = findNode(doc, nodeId);
     if (!node || node.kind !== NODE_KIND.IMAGE) return false;
@@ -51,7 +61,7 @@ export function createRepairHealingTools({
     maskCtx.strokeStyle = "#ffffff";
     maskCtx.lineWidth = 2;
 
-    const localPoints = docPoints.map((pt) => {
+    const localPoints = maskPoints.map((pt) => {
       const local = toNodeLocal(node, pt);
       return {
         x: (local.x / (node.width || bWidth)) * bWidth,
@@ -91,8 +101,10 @@ export function createRepairHealingTools({
       if (marked && !anyMaskedPixel(marked)) return false;
     }
     const localDelta = toNodeLocalDelta(node, { x: dx, y: dy });
-    const patchDx = (localDelta.x / (node.width || bWidth)) * bWidth;
-    const patchDy = (localDelta.y / (node.height || bHeight)) * bHeight;
+    // Sample offset: Source reads from (lasso + drag), Destination from (lasso - drag).
+    const sign = destination ? -1 : 1;
+    const patchDx = sign * (localDelta.x / (node.width || bWidth)) * bWidth;
+    const patchDy = sign * (localDelta.y / (node.height || bHeight)) * bHeight;
     const patchedDataUrl = patchBlendImage(
       srcCanvas,
       maskCanvas,
