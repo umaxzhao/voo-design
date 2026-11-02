@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+// Optional evidence directory for the before/after PNGs reviewed by a human.
+const EVIDENCE = process.env.UF14_EVIDENCE;
 
 // UF14 regression: the Patch tool's Source / Destination direction must reach the engine
 // and change which region receives pixels. Source writes the lasso (the region dragged
@@ -84,8 +88,18 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
     assert.equal(await page.evaluate(() => window.__vooEditor.getPatchDirection()), direction, "engine stores the chosen direction");
     const lassoChanged = changedIn(before, after, lassoBox);
     const destinationChanged = changedIn(before, after, destinationBox);
+    if (EVIDENCE) {
+      await mkdir(EVIDENCE, { recursive: true });
+      const png = await page.evaluate((nodeId) => window.__vooEditor.exportSelectionPng([nodeId]), id);
+      const dataUrl = typeof png === "string" ? png : png.dataUrl;
+      await writeFile(join(EVIDENCE, `${direction}-after.png`), Buffer.from(dataUrl.split(",")[1], "base64"));
+    }
     await tool("undo");
     assert.deepEqual(await pixels(id), before, `${direction}: one Undo restores the image`);
+    await tool("redo");
+    assert.deepEqual(await pixels(id), after, `${direction}: one Redo re-applies the patch`);
+    await tool("undo");
+    assert.deepEqual(await pixels(id), before, `${direction}: second Undo restores the image again`);
     return { lassoChanged, destinationChanged };
   };
 
