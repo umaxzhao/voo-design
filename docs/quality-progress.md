@@ -777,3 +777,24 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
    - `test_WindowController_OpenRealVooFileDirectlyLoadsSceneAndSetsTitle`：验证端到端从工作台打开真实 .voo 文件进入画布并切换视图。
 
 验证：`./build.sh` 通过（binary 4.97 MB ≤ 5 MB，bundle 10.29 MB ≤ 35 MB，冷启动 0.20~0.50s）；`./tests/run_tests.sh` **392/392 通过**。真机截图：`native_studio/docs/screenshots/z_dashboard_with_covers.png`。
+
+## 导出配置与合并更新（Coalesced Updates）Undo/Redo 历史消费与状态恢复修复 — 2026-11-02
+
+针对独立 QA 补验中发现的导出配置 Undo/Redo 消费但未恢复缺陷（`msg_32fb703bee1c`）进行根因定位与引擎级闭环修复：
+
+1. **缺陷表现与时序归因**：
+   - 场景：对象已有 2x 导出配置，在面板中将 scale 改为 3x，随后使用快捷键（`Ctrl+Z` / `Cmd+Z`）或工具栏撤销按钮回到 2x；点击图层行核对，再执行重做（`Ctrl+Shift+Z` / Redo）；
+   - 现象：`historyTimeline` 显示 `after-redo` 时 `canRedo` 确实变为 `false`（Redo 动作被消费），但导出配置 scale 未能恢复为 3x，仍停留为 2x；
+   - 根因定位：`src/canvas/editor/editor_engine.js` 中的 `updateNodeCoalesced` 为了防止高频输入（滑块拖拽、文本输入等）产生历史碎片，设置了 250ms 的防抖延时提交定时器 `toolCommitTimer`。当用户在 250ms 内立即触发 Undo 时，3x 的历史快照尚未被推入历史栈（`history.push` 未执行）；此时执行 `history.undo()` 实际回退了更早前的一次历史提交；而当延时定时器触发或重做被执行时，历史栈中从未记录过 3x 的独立快照，导致重做取出的仍是 2x 快照。
+2. **架构解决方案（引擎级合并提交即时冲刷机制）**：
+   - 在 `editor_engine.js` 实现 `flushPendingToolCommit()` 协议：
+     - 在执行 `undo()`、`redo()`、`jumpToHistory()`、`commit()`、`commitEditorDocument()`、`captureDocumentSession()`、`markApplied()`、`selection.onChange`（选择变更）以及切换至其他节点编辑（`lastCoalescedId !== id`）时，若存在挂起的合并提交，立即同步清零定时器并调用 `ctrl.historyApi.commit("editor.tool.update")` 固化当前编辑快照；
+     - 包装 `canUndo()` 与 `isDirty()`：在 `toolCommitTimer` 挂起期间即时感知未持久化修改，返回 `true`；`canRedo()` 在有新编辑挂起时返回 `false`；
+     - 撤销时前置执行 flush：使得 scale 3x 立即作为最新历史节点入栈，随后紧跟的 `history.undo()` 即可精准回退至 scale 2x，并将 3x 完整保留在 Redo 前向栈中；后续 `redo()` 即可精准恢复至 3x；
+     - 覆盖即时撤销（< 250ms）与延时撤销（> 250ms）、快捷键与按钮两条路径；多次同一节点快速更新依然合为单步历史，跨节点编辑与非合并更新自动切分独立历史。
+3. **测试覆盖与验收证据**：
+   - 新增专用回归测试：`tests/unit/coalesced_update_history.test.js`（8/8 项测试全部通过，覆盖即时 Undo/Redo、延时 Undo/Redo、多层连续防抖合并、跨节点隔离、非合并插入刷新与 dirty 状态检测）；
+   - 模块登记：已在 `scripts/editor-module-catalog.mjs` 中将新测试登记至 `documents` 模块，`node scripts/editor-checks.mjs --changed --json` 验证 `unmapped: []`；
+   - 视觉门禁：`npm run lint:design` 校验 1478 个文件 0 违规；
+   - 关联单元测试通过：`export_presets.test.js`、`editor-history-commit.test.js`、`qa_undo_button_state.test.js`、`layer_multiselect_reorder.test.js`、`right_panel_phase1.test.jsx`、`properties_panel_restructure.test.jsx`（43/43 通过）。
+
