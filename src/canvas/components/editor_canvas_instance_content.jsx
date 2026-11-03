@@ -12,7 +12,8 @@ function vectorSource(node) {
     width: Math.max(1, node.width),
     height: Math.max(1, node.height),
     backgroundColor: "transparent",
-    nodes: [{ ...node, x: 0, y: 0, rotation: 0 }],
+    // The outer DOM layer already applies overall opacity and rotation once.
+    nodes: [{ ...node, x: 0, y: 0, rotation: 0, opacity: 1 }],
   });
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
