@@ -17,6 +17,7 @@ import {
   useCollabState,
 } from "../collab/use_collab.js";
 import { useDesignStore } from "../../store/design_store.js";
+import { startLoopbackCollab, stopLoopbackCollab, useLoopbackState } from "../collab/use_loopback_collab.js";
 import { exportRoomSnapshot } from "../store/share_actions.js";
 import { useI18n } from "../use_i18n.js";
 
@@ -72,12 +73,14 @@ export default function CollabAvatars({
 }) {
   const { t } = useI18n();
   const liveCollabState = useCollabState();
+  const local = useLoopbackState();
   const state = propState ?? liveCollabState;
   const onStop = propOnStop ?? stopCollab;
   const onIdentity = propOnIdentity ?? setCollabIdentity;
 
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [localCopyError, setLocalCopyError] = useState(false);
   const [identity, setIdentity] = useState(loadIdentity);
   const identityRef = useRef(identity);
   const [explained, setExplained] = useState(false);
@@ -271,10 +274,11 @@ export default function CollabAvatars({
             </p>
           ) : null}
 
+          <p className="mb-1 text-[11px] text-neutral-400">{t("collab.onlineLink")}</p>
           <div className="mb-2.5 flex items-center gap-1.5">
             <input
               readOnly
-              value={sharedLink ?? ""}
+              value={sharedLink ?? state?.link ?? ""}
               placeholder={t("collab.linkPending")}
               onFocus={(event) => event.target.select()}
               aria-label={t("collab.link")}
@@ -287,6 +291,31 @@ export default function CollabAvatars({
             >
               {copied ? t("collab.copied") : t("collab.copy")}
             </button>
+          </div>
+
+          <div className="mb-2.5 space-y-1 text-[11px] text-neutral-400">
+            <div className="flex items-center justify-between gap-2">
+              <span>{t("collab.loopbackLink")}</span>
+              <span>{t(`collab.loopbackStatus.${local.status}`)}</span>
+            </div>
+            {local.link ? <div className="flex gap-1.5">
+              <input readOnly value={local.link} aria-label={t("collab.loopbackLink")}
+                onFocus={event => event.target.select()}
+                className="min-w-0 flex-1 rounded-xl bg-neutral-800 px-2.5 py-1.5 text-neutral-200" />
+              <button type="button" onClick={async () => {
+                try { await navigator.clipboard.writeText(local.link); setLocalCopyError(false); }
+                catch { setLocalCopyError(true); }
+              }}
+                className="rounded-xl bg-white px-3 py-1.5 font-semibold text-black">{t("collab.copy")}</button>
+            </div> : null}
+            {localCopyError ? <p role="alert" className="text-rose-300">{t("collab.copyFailed")}</p> : null}
+            {local.error ? <p role="alert" className="text-rose-300">{local.error}</p> : null}
+            {!local.guest ? <button type="button" disabled={local.status === "starting"}
+              onClick={() => void (local.status === "ready" ? stopLoopbackCollab() : startLoopbackCollab(access))}
+              className="w-full rounded-xl bg-white/[0.06] px-2.5 py-1.5 text-neutral-300 disabled:opacity-50">
+              {local.status === "ready" ? t("collab.loopbackStop") : t("collab.loopbackStart")}
+            </button> : null}
+            <p>{t("collab.lanDisabled")}</p>
           </div>
 
           {shareError ? (

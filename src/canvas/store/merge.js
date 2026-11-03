@@ -12,6 +12,8 @@
  * stale copy can no longer undo anything it did not itself change.
  */
 
+import { mergeComments } from "../comments/comment_merge.js";
+
 /** Structural equality is enough here: nodes and edges are plain JSON. */
 function unchanged(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -164,6 +166,10 @@ export function mergeEditorDocuments(base, local, remote) {
   keys.forEach((key) => {
     if (key === "nodes") {
       merged.nodes = mergeById(base?.nodes, local.nodes, remote.nodes);
+      return;
+    }
+    if (key === "comments") {
+      merged.comments = mergeComments(base?.comments, local.comments, remote.comments);
       return;
     }
     merged[key] = mergeValue(base?.[key], local[key], remote[key]);

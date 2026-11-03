@@ -53,6 +53,7 @@ exports.bootUpdateChain = function bootUpdateChain({ kind = 'base', response = 0
     let cliBridgeRetry = null; let cliBridgeStartup = startup;
     let cliBridge = { close: async () => { events.push('bridge.close'); await bridgeClose; } }; ${quitBlock}`,
   { app, closeGuard: guard, startup, bridgeClose, clearTimeout, events, console,
+    loopbackCollab: { stop: async () => {} },
     startDesktopCliBridge: async () => events.push('bridge.restart') });
   native.quitAndInstall = () => { events.push('native.install'); if (state.installError) throw state.installError; };
   native.checkForUpdates = () => { throw new Error('Network forbidden'); };

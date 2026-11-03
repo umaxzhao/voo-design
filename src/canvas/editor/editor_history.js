@@ -249,6 +249,17 @@ export function createHistory({
       entries = session.entries.slice();
       currentIndex = session.currentIndex;
     },
+    /** Apply a remote document delta to every undo/redo snapshot without adding an entry. */
+    rebaseDocuments(rebase) {
+      entries = entries.map(entry => {
+        const isString = typeof entry.snapshot === "string";
+        const snapshot = isString ? JSON.parse(entry.snapshot) : entry.snapshot;
+        if (!snapshot || typeof snapshot !== "object") throw new Error("Invalid history snapshot");
+        const wrapped = snapshot.doc && typeof snapshot.doc === "object";
+        const next = wrapped ? { ...snapshot, doc: rebase(snapshot.doc) } : rebase(snapshot);
+        return { ...entry, snapshot: isString ? JSON.stringify(next) : next };
+      });
+    },
     getEntries() {
       return entries.map((entry, idx) => ({
         id: entry.id,

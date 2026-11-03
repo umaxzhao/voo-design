@@ -37,6 +37,10 @@ const safeStorageApi = {
 };
 
 contextBridge.exposeInMainWorld("vooDesktop", {
+  loopbackCollab: {
+    start: () => ipcRenderer.invoke("collab:loopback-start"),
+    stop: () => ipcRenderer.invoke("collab:loopback-stop"),
+  },
   version: () => ipcRenderer.invoke("app:version"),
   updates: {
     status: () => ipcRenderer.invoke("updates:status"),
