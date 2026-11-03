@@ -67,7 +67,7 @@ await withEditorBrowser(async ({ page, tool }) => {
       await openBothPanels(page); await assertPanelLayout(page);
       if (width <= 390) {
         for (const [label, key, value] of [["X", "x", 75], ["W", "width", 175]]) {
-          const field = page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: label, exact: true });
+          const field = page.getByTestId("editor-properties-panel").getByRole("textbox", { name: label, exact: true });
           await field.scrollIntoViewIfNeeded(); await assertReachable(field, `${width}px ${label} field`);
           const readable = await field.evaluate(element => {
             const style = getComputedStyle(element), context = document.createElement("canvas").getContext("2d");
