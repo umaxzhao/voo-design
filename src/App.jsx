@@ -93,14 +93,24 @@ export default function App() {
     window.addEventListener("voo:open-browser", handleOpenBrowser);
     window.addEventListener("voo:open-onboarding", handleOpenOnboarding);
 
+    let lastNewAt = 0;
+    const triggerNewDocument = () => {
+      const now = Date.now();
+      if (now - lastNewAt < 300) return;
+      lastNewAt = now;
+      if (useDesignStore.getState().welcomeOpen) {
+        requestWelcomeNew();
+      } else {
+        window.dispatchEvent(new CustomEvent("voo:file-new"));
+      }
+    };
+
     const handleKeyDown = (e) => {
+      if (e.defaultPrevented) return;
+      if (e.isComposing || e.keyCode === 229 || e.nativeEvent?.isComposing) return;
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === "n" || e.key === "N")) {
         e.preventDefault();
-        if (useDesignStore.getState().welcomeOpen) {
-          requestWelcomeNew();
-        } else {
-          window.dispatchEvent(new CustomEvent("voo:file-new"));
-        }
+        triggerNewDocument();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -116,11 +126,7 @@ export default function App() {
             window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
             break;
           case "file:new":
-            if (useDesignStore.getState().welcomeOpen) {
-              requestWelcomeNew();
-            } else {
-              window.dispatchEvent(new CustomEvent("voo:file-new"));
-            }
+            triggerNewDocument();
             break;
           case "file:open":
             window.dispatchEvent(new CustomEvent("voo:file-open"));
