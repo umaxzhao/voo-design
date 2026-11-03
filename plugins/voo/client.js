@@ -7,12 +7,13 @@
  * from the browser module table.
  */
 window.__ModuleLoader__.load({
-  id: 'voo-editor-panel',
+  // The loader id must equal the bundle package name (`voo`).
+  id: 'voo',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
 
-    /** Tab type identity in the sidebar tab system and the body registration key. */
+    /** Tab type identity in the sidebar tab system and the body registration key (kept stable across the bundle merge). */
     const ID = 'voo-editor-panel';
     /** Page kind the guide entry opens. */
     const KIND = 'voo';

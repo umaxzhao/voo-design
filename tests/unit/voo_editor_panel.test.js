@@ -13,11 +13,12 @@ import {
   DEFAULT_BRIDGE_PORT,
   DEFAULT_EDITOR_PORT,
   resolveEditorPanelOptions,
-} from "../../plugins/voo-editor-panel/lib/options.js";
-import { resolveEditorFile, startEditorServer } from "../../plugins/voo-editor-panel/lib/editor-server.js";
+} from "../../plugins/voo/lib/options.js";
+import { resolveEditorFile, startEditorServer } from "../../plugins/voo/lib/editor-server.js";
+import { load as loadYaml } from "js-yaml";
 
 /** `tests/unit/` -> plugin package directory -> the repo root two levels above it. */
-const PACKAGE_DIR = fileURLToPath(new URL("../../plugins/voo-editor-panel/", import.meta.url));
+const PACKAGE_DIR = fileURLToPath(new URL("../../plugins/voo/", import.meta.url));
 const REPO_ROOT = path.resolve(PACKAGE_DIR, "..", "..");
 
 const ENV_KEYS = ["VOO_EDITOR_PANEL_REPO", "VOO_EDITOR_PANEL_DIR"];
@@ -297,5 +298,48 @@ describe("startEditorServer", () => {
     expect(page.response.headers.get("content-type")).toContain("text/html");
     expect(page.body).toContain("VOO 编辑器尚未构建");
     expect(page.body).toContain("VOO editor build not found");
+  });
+});
+
+describe("integrated VOO bundle", () => {
+  const packageDir = path.join(REPO_ROOT, "plugins", "voo");
+
+  it("declares one bundle carrying the panel Client half and the bridge modules", () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(packageDir, "package.json"), "utf8"));
+    expect(manifest.name).toBe("voo");
+    expect(manifest.dsh.bundle.patch).toBe("./cordis.patch.yml");
+    expect(manifest.dsh.client).toMatchObject({
+      platform: "web",
+      immediately: true,
+      inject: ["@deepseek-ai/dsh-client-ui-sidebar-right"],
+    });
+    for (const key of [".", "./client", "./lib/model-bridge.js", "./locale/*.json", "./icon"]) {
+      expect(manifest.exports[key], `exports ${key}`).toBeDefined();
+    }
+    // The boot graph loads a bundle's Client module by package name.
+    expect(fs.readFileSync(path.join(packageDir, "client.js"), "utf8")).toContain("id: 'voo'");
+  });
+
+  it("keeps exactly one insert with the panel, canvas MCP and model bridge rows", () => {
+    const patch = loadYaml(fs.readFileSync(path.join(packageDir, "cordis.patch.yml"), "utf8"));
+    expect(Array.isArray(patch)).toBe(true);
+    expect(patch).toHaveLength(1);
+    const rows = patch[0].insert;
+    expect(rows.map((row) => row.id)).toEqual(["voo-editor-panel", "mcp-voo", "voo-model-bridge"]);
+
+    // The panel row is this package's Host half, anchored beside the patch, so
+    // one install mounts both halves whatever directory the bundle sits in.
+    expect(rows[0].name).toBe("./index.js");
+    expect(fs.existsSync(path.join(packageDir, "index.js"))).toBe(true);
+    expect(rows[0].config).toEqual({ port: 4173, editorDir: "", bridge: true });
+
+    // The canvas MCP client spawns an absolute script entry inside this checkout.
+    expect(rows[1].name).toBe("@deepseek-ai/dsh-mcp-client");
+    expect(fs.existsSync(rows[1].config.args[0]), rows[1].config.args[0]).toBe(true);
+    expect(fs.existsSync(path.join(rows[1].config.cwd, "package.json"))).toBe(true);
+
+    // The model bridge row resolves beside the patch, from inside this package.
+    expect(rows[2].name).toBe("./lib/model-bridge.js");
+    expect(fs.existsSync(path.join(packageDir, "lib", "model-bridge.js"))).toBe(true);
   });
 });

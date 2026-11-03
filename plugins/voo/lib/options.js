@@ -1,7 +1,8 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** `plugins/voo-editor-panel/lib` → `plugins/voo-editor-panel`. */
+/** `plugins/voo/lib` → `plugins/voo`. */
 export const PACKAGE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** The loopback port the built editor is served on. */
@@ -19,12 +20,40 @@ function configuredPath(value) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
+function isFile(filePath) {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Find an editor build by walking up from this package: the linked
+ * `plugins/voo` resolves `<repo>/dist`, and a connector built by
+ * `scripts/build-agent-plugin.mjs` resolves nothing unless a build sits next
+ * to it.
+ *
+ * @returns {string|undefined} the first directory containing `index.html`.
+ */
+export function discoverEditorBuild() {
+  let directory = PACKAGE_DIR;
+  for (let depth = 0; depth < 4; depth += 1) {
+    const candidate = path.join(directory, "dist");
+    if (isFile(path.join(candidate, "index.html"))) return candidate;
+    const parent = path.dirname(directory);
+    if (parent === directory) break;
+    directory = parent;
+  }
+  return undefined;
+}
+
 /**
  * Normalise the bundle row's config into the values the Host half uses.
  *
  * Defaults target a checkout of the VOO repository with the bundle linked from
- * `plugins/voo-editor-panel`: the editor build is `<repo>/dist` and the local
- * bridge lives at `<repo>/electron/cli_bridge_server.js`.
+ * `plugins/voo`: the editor build is discovered under the checkout `<dist>`,
+ * and the local bridge lives at `<repo>/electron/cli_bridge_server.js`.
  *
  * @param {object} [config] the loader row's config.
  * @returns {{host: string, port: number, bridgePort: number, editorDir: string, repoDir: string, bridge: boolean}}
@@ -33,13 +62,15 @@ export function resolveEditorPanelOptions(config = {}) {
   // A blank row value means "use the default", so it must not shadow the env override.
   const repoSetting = configuredPath(config.repoDir) ?? configuredPath(process.env.VOO_EDITOR_PANEL_REPO);
   const repoDir = path.resolve(repoSetting ?? path.resolve(PACKAGE_DIR, "..", ".."));
-  const editorSetting = configuredPath(config.editorDir) ?? configuredPath(process.env.VOO_EDITOR_PANEL_DIR);
-  const editorDir = path.resolve(editorSetting ?? path.join(repoDir, "dist"));
+  const editorSetting =
+    configuredPath(config.editorDir) ??
+    configuredPath(process.env.VOO_EDITOR_PANEL_DIR) ??
+    (repoSetting === undefined ? discoverEditorBuild() : undefined);
   return {
     host: "127.0.0.1",
     port: positivePort(config.port, DEFAULT_EDITOR_PORT),
     bridgePort: positivePort(config.bridgePort, DEFAULT_BRIDGE_PORT),
-    editorDir,
+    editorDir: path.resolve(editorSetting ?? path.join(repoDir, "dist")),
     repoDir,
     bridge: config.bridge !== false,
   };

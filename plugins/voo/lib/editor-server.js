@@ -111,7 +111,7 @@ export async function startEditorServer(options) {
     }
 
     if (pathname === "/__voo/health") {
-      const body = JSON.stringify({ ok: true, service: "voo-editor-panel", editorDir, hasBuild: isFile(indexPath) });
+      const body = JSON.stringify({ ok: true, service: "voo", editorDir, hasBuild: isFile(indexPath) });
       response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
       response.end(method === "HEAD" ? undefined : body);
       return;
@@ -154,7 +154,7 @@ export async function startEditorServer(options) {
     response.writeHead(200, headers);
     const stream = fs.createReadStream(filePath);
     stream.on("error", (error) => {
-      logger.error?.(`[voo-editor-panel] failed to read ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error?.(`[voo] failed to read ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
       response.destroy();
     });
     stream.pipe(response);

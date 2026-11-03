@@ -1,15 +1,15 @@
 {
-  "name": "voo-editor-panel",
+  "name": "voo",
   "version": "1.0.0",
   "private": true,
-  "description": "Runs the VOO Design editor inside the DeepSeek Harness right sidebar, on the same local bridge as the canvas tools.",
+  "description": "The single DeepSeek Harness plugin for VOO: canvas MCP tools, the model bridge, and the VOO editor panel in the right sidebar.",
   "keywords": [
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
     "voo",
-    "editor",
-    "sidebar"
+    "mcp",
+    "editor"
   ],
   "license": "MIT",
   "type": "module",
@@ -17,6 +17,7 @@
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
+    "./lib/model-bridge.js": "./lib/model-bridge.js",
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.png",
     "./package.json": "./package.json"
@@ -26,6 +27,7 @@
     "client.js",
     "lib/*.js",
     "cordis.patch.yml",
+    "deepseek.cordis.yml",
     "locale/*.json",
     "icon.png",
     "README.md"

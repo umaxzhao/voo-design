@@ -1,5 +1,24 @@
 # 项目检查总进度
 
+## 整合为单一 VOO Harness 插件（面板 + 画布工具 + 模型桥）：2026-11-03
+
+- **基线版本**：`3657d11e` + 上一轮面板提交 `ab87ef7b`；本轮把三个 VOO 相关安装收拢为一个包 `voo`（`plugins/voo`），工作树原有未提交改动仅为本轮内容。
+- **整合内容**：`plugins/voo` 现在是一个插件包，`cordis.patch.yml` 一次插入三行：
+  - `voo-editor-panel`（`./index.js`，patch 相对锚定）：右侧栏编辑器面板；Host 半在 4173 提供 `dist/` 构建（回环、GET/HEAD、SPA 回退、穿越拒绝、`/__voo/health`），并在 4179 无监听时于 Host 进程内启动 VOO CLI bridge（已运行则复用）；Client 半注册右栏标签、引导卡片与 iframe 主体。构建目录解析顺序：`editorDir` 配置 → `VOO_EDITOR_PANEL_DIR` → 从包目录向上 4 层寻找含 `index.html` 的 `dist/`。
+  - `mcp-voo`：`@deepseek-ai/dsh-mcp-client` 经 `node scripts/mcp-server.mjs` 暴露 `mcp__voo__*` 画布工具，驱动 bridge 上登记的编辑器页（面板或 VOO App）。
+  - `voo-model-bridge`（`./lib/model-bridge.js`，patch 相对锚定；`plugins/voo/lib/model-bridge.js` 为 `plugins/voo-model-bridge` 的再导出，构建器会把真实模块覆盖进去）：4399 提供 Harness 模型给编辑器自带 Agent。
+  - `scripts/build-agent-plugin.mjs` 同步扩展：生成的便携连接器也带 `index.js`/`client.js`/`dsh.client` 与三行 patch，MCP 行仍按目标目录烘焙绝对路径。
+- **安装状态**：profile `desktop` 已把依赖从旧连接器链接切换为 `voo: link:/Volumes/TD/Projects/voo_design/plugins/voo`，`dsh.profile.bundles` 仅保留 `voo`；旧包 `voo-editor-panel` 与旧连接器 `voo` 均已 `remove_bundle`（`application: applied`）。
+- **验收证据**：
+  1. 单测：`npx vitest run tests/unit/voo_editor_panel.test.js tests/unit/portable-agent-plugin.test.js tests/unit/dsh_connector_plugin.test.js` → 3 文件 30 项全部通过（面板 Host 18 项 + 便携构建 4 项 + 连接器 8 项），新增断言覆盖“单一 insert、三行 id 顺序、面板行 patch 相对名、MCP 行绝对入口存在、`dsh.client` 清单、Client 模块 id 必须等于包名”。
+  2. 整合包 Host 半独立冒烟（`tmp/voo-integrated-smoke.mjs`，隔离端口 4174/4180）：编辑器 `/` 200 HTML、`assets/index-*.js` 200 JS、`/__voo/health` → `{ok:true,service:"voo",hasBuild:true}`，包内 bridge `/health` ok，dispose 后编辑器与 bridge 均关闭。
+  3. 仓库 MCP 入口：`node scripts/mcp-server.mjs` initialize + tools/list → server `voo`、74 个工具；模型桥再导出模块 `name=voo-model-bridge`、`apply` 为函数。
+  4. `npm run check:modules` 仍通过（12 模块 / 74 能力 / 99 套件）。
+- **未验证 / 保留项**：
+  - **激活需要重启一次 DeepSeek Harness**：本次是在运行中的 Host 内替换同名包，Loader 仍缓存了旧的 `voo` 包解析（`ENOENT .../connectors/voo/index.js`），`set_plugin`/`set_bundle` 无法让旧解析失效；重启后按新 patch 重新组合即可正常加载。重启后的 Client 注册、`mcp__voo__*` 可用性、4173/4179/4399 三服务与 `voo_status` 尚未在本轮实测（留待重启后验证）。
+  - 便携连接器（`build-agent-plugin.mjs` 产物）在无仓库/无 `dist` 的机器上，面板会显示“尚未构建”提示页；编辑器构建来源的 App asar 直读方案未实现。
+  - 本轮未运行编辑器浏览器套件（未改 `src/`、`electron/` 运行时代码）；未 push、未部署。
+
 ## VOO 设计编辑器进驻 DeepSeek Harness 右侧面板：2026-11-03
 
 - **基线版本**：`3657d11e`（`merge/consolidate-all-branches`，工作树在改动前干净）；本轮改动为新增插件包与单测，未推送。

@@ -276,19 +276,25 @@ re-detect action. Selecting DeepSeek Harness also opts the page into the canvas
 MCP link, so a browser tab reaches the bridge for external MCP clients the same
 way it does for local CLIs. Packaging details: [mcp-server.md](mcp-server.md#portable-connectors).
 
-#### Running the editor in the Harness right sidebar
+#### One plugin: editor panel, canvas tools and model bridge
 
-`plugins/voo-editor-panel` is a second Harness bundle that puts the editor
-itself next to the conversation. Its Host half serves the repository `dist/`
-build on `http://127.0.0.1:4173` and starts the local CLI bridge on 4179 when
-nothing is listening (an existing VOO desktop bridge is reused); its Client half
-registers a right-sidebar tab type whose card opens
-`http://127.0.0.1:4173/?embed`. The `?embed` view hides the title bar and
-onboarding, opens an untitled project, and opts the page into the canvas MCP
-link, so the same window the agent drives is the one you see beside the chat.
-Install with `dsh plugin --profile desktop add "link:<repo>/plugins/voo-editor-panel"`,
-build the editor first (`npm run build`), and keep the port at 4173: the bridge
-only accepts its fixed origin allowlist.
+`plugins/voo` is the single Harness bundle; it mounts three rows from one
+`cordis.patch.yml`:
+
+| Row | Role |
+| --- | --- |
+| `voo-editor-panel` | The editor itself, next to the conversation. Its Host half serves the repository `dist/` build on `http://127.0.0.1:4173` and starts the local CLI bridge on 4179 when nothing is listening (an existing VOO desktop bridge is reused); its Client half registers the right-sidebar tab whose card opens `http://127.0.0.1:4173/?embed`. |
+| `mcp-voo` | The `mcp__voo__*` canvas tools that drive whichever editor page is linked to the bridge — the sidebar panel, or the open VOO desktop app. |
+| `voo-model-bridge` | The Harness model in OpenAI format on 4399 for the editor's own agent. |
+
+The `?embed` view hides the title bar and onboarding, opens an untitled
+project, and opts the page into the canvas MCP link, so the same window the
+agent drives is the one you see beside the chat. Install with
+`dsh plugin --profile desktop add "link:<repo>/plugins/voo"`, build the editor
+first (`npm run build`), and keep the port at 4173: the bridge only accepts its
+fixed origin allowlist. `node scripts/build-agent-plugin.mjs <empty-folder>`
+produces the same bundle as a portable connector with the MCP runtime and
+`ws` vendored.
 
 ### Using the Harness model inside VOO
 

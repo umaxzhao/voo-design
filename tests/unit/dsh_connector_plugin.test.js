@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, symlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -54,7 +54,14 @@ describe("portable DeepSeek Harness plugin bundle", () => {
   it("declares a DSH bundle with localizable display metadata", async () => {
     const manifest = JSON.parse(await readFile(path.join(fixture.destination, "package.json"), "utf8"));
     expect(manifest.name).toBe("voo");
-    expect(manifest.dsh).toEqual({ bundle: { patch: "./cordis.patch.yml" } });
+    expect(manifest.dsh).toMatchObject({
+      bundle: { patch: "./cordis.patch.yml" },
+      client: {
+        platform: "web",
+        immediately: true,
+        inject: ["@deepseek-ai/dsh-client-ui-sidebar-right"],
+      },
+    });
     expect(manifest.exports).toMatchObject({
       "./locale/*.json": "./locale/*.json",
       "./icon": "./icon.png",
@@ -72,6 +79,12 @@ describe("portable DeepSeek Harness plugin bundle", () => {
     const serverEntry = path.join(fixture.destination, "scripts/mcp-server.mjs");
     const expectedLines = [
       "- insert:",
+      "    - id: voo-editor-panel",
+      "      name: './index.js'",
+      "      config:",
+      "        port: 4173",
+      "        editorDir: ''",
+      "        bridge: true",
       "    - id: mcp-voo",
       "      name: '@deepseek-ai/dsh-mcp-client'",
       "      config:",
@@ -99,11 +112,17 @@ describe("portable DeepSeek Harness plugin bundle", () => {
     const source = await readFile(path.join(repoRoot, "plugins/voo-model-bridge/lib/model-bridge.js"), "utf8");
     expect(bridge).toBe(source);
     const library = path.join(fixture.destination, "lib");
+    const sourceLibrary = path.join(repoRoot, "plugins/voo-model-bridge/lib");
+    const modelBridgeFiles = new Set(await readdir(sourceLibrary));
     for (const file of await readdir(library)) {
-      if (!file.endsWith(".js")) continue;
+      if (!file.endsWith(".js") || !modelBridgeFiles.has(file)) continue;
       const packaged = await readFile(path.join(library, file), "utf8");
-      const original = await readFile(path.join(repoRoot, "plugins/voo-model-bridge/lib", file), "utf8");
+      const original = await readFile(path.join(sourceLibrary, file), "utf8");
       expect(packaged).toBe(original);
+    }
+    // The panel Host half ships beside the model bridge.
+    for (const file of ["options.js", "editor-server.js", "cli-bridge.js"]) {
+      await stat(path.join(library, file));
     }
     const runtime = await import(pathToFileURL(path.join(library, "model-bridge.js")).href);
     expect(runtime.name).toBe("voo-model-bridge");
@@ -116,12 +135,9 @@ describe("portable DeepSeek Harness plugin bundle", () => {
   it("ships English and Chinese titles plus a valid icon below the DSH limit", async () => {
     const english = JSON.parse(await readFile(path.join(fixture.destination, "locale/en.json"), "utf8"));
     const chinese = JSON.parse(await readFile(path.join(fixture.destination, "locale/zh.json"), "utf8"));
-    expect(english).toEqual({
-      meta: {
-        title: "VOO",
-        description: "Connect the open VOO canvas to DeepSeek Harness through MCP tools.",
-      },
-    });
+    expect(english.meta.title).toBe("VOO");
+    expect(english.meta.description).toContain("editor");
+    expect(english.meta.description).toContain("MCP");
     expect(chinese.meta.title).toBe("VOO");
     expect(chinese.meta.description).toContain("VOO");
     const icon = await readFile(path.join(fixture.destination, "icon.png"));

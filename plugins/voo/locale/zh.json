@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "VOO",
-    "description": "通过 MCP 工具把正在打开的 VOO 画布接入 DeepSeek Harness。"
+    "description": "一个插件包含全部 VOO 能力：编辑器直接在右侧面板运行，画布 MCP 工具驱动它（或正在运行的 VOO App），编辑器自带的 Agent 也能使用 Harness 的模型。"
   }
 }

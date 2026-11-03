@@ -1,0 +1,38 @@
+# The single VOO bundle patch.
+#
+# Installed as a link from `plugins/voo`, this patch gives one profile three
+# rows: the VOO editor panel (and its loopback bridge), the canvas MCP tools
+# that drive the same canvas, and the model bridge the editor's own agent uses.
+#
+# The MCP row's server entry is an absolute path because the MCP client spawns
+# it with `node`; `node scripts/build-agent-plugin.mjs <empty-folder>` bakes
+# the path of the built connector instead, and moving this checkout means
+# updating this one path (or rebuilding the connector).
+- insert:
+    - id: voo-editor-panel
+      # A patch-relative path instead of the bare package name: the Loader
+      # anchors it beside this patch, so the row resolves inside whatever copy
+      # of this bundle is installed (linked checkout or built connector).
+      name: './index.js'
+      config:
+        # Loopback origin the right-Sidebar iframe loads.
+        port: 4173
+        # Empty: resolve the editor build by walking up from this package.
+        editorDir: ''
+        # Start the VOO CLI bridge when nothing is listening on 4179.
+        bridge: true
+    - id: mcp-voo
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: voo
+        transport: stdio
+        command: node
+        args:
+          - /Volumes/TD/Projects/voo_design/scripts/mcp-server.mjs
+        cwd: /Volumes/TD/Projects/voo_design
+        toolCallTimeoutMs: 65000
+        failOnStartupError: false
+    - id: voo-model-bridge
+      name: './lib/model-bridge.js'
+      config:
+        port: 4399

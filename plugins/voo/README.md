@@ -1,4 +1,32 @@
-# VOO agent connector
+# VOO for DeepSeek Harness
+
+This one bundle is everything VOO needs in DeepSeek Harness:
+
+| Row | What it gives you |
+| --- | --- |
+| `voo-editor-panel` (this package) | The VOO Design editor in the right sidebar, served on `http://127.0.0.1:4173`, plus the local CLI bridge on 4179 when no VOO app or bridge is already running. |
+| `mcp-voo` | The `mcp__voo__*` canvas tools that drive whichever editor page is linked to the bridge — the sidebar panel, or the open VOO desktop app. |
+| `voo-model-bridge` | `http://127.0.0.1:4399/v1`, the Harness model in OpenAI format for the editor's own agent. |
+
+Install it once:
+
+```sh
+dsh plugin --profile desktop add "link:/absolute/path/to/plugins/voo"
+```
+
+Restart Harness when the bundle does not activate through HMR, then open a
+session: the right sidebar's guide page offers **VOO 设计编辑器**, and the
+`mcp__voo__*` tools are available in the conversation. Build the editor first
+(`npm run build` in this repository) — the panel discovers `<repo>/dist`, or
+uses `editorDir` from the row config. Keep `port: 4173`: the VOO CLI bridge
+only accepts a fixed origin allowlist that includes it.
+
+The panel's iframe URL is `http://127.0.0.1:4173/?embed`; `?embed` hides the
+title bar and onboarding, opens an untitled project and opts the page into the
+canvas MCP link, so the conversation agent and the visible editor share one
+canvas.
+
+## Portable connector
 
 Build the portable plugin from the repository:
 

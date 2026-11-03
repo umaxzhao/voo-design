@@ -46,13 +46,13 @@ export async function ensureCliBridge(options) {
   const { repoDir, port, logger = console } = options;
   const existing = await probeCliBridge({ port });
   if (existing !== null) {
-    logger.info?.(`[voo-editor-panel] reusing the VOO bridge already listening on 127.0.0.1:${port}`);
+    logger.info?.(`[voo] reusing the VOO bridge already listening on 127.0.0.1:${port}`);
     return { started: false, port, close: async () => {} };
   }
 
   const entry = bridgeServerPath(repoDir);
   if (!fs.existsSync(entry)) {
-    logger.warn?.(`[voo-editor-panel] no VOO bridge at ${entry}; the editor panel runs without a canvas link.`);
+    logger.warn?.(`[voo] no VOO bridge at ${entry}; the editor panel runs without a canvas link.`);
     return { started: false, port, close: async () => {} };
   }
 
@@ -61,7 +61,7 @@ export async function ensureCliBridge(options) {
     throw new Error(`VOO bridge module at ${entry} does not export startCliBridgeServer`);
   }
   const bridge = await module.startCliBridgeServer({ port });
-  logger.info?.(`[voo-editor-panel] started the VOO bridge on ws://127.0.0.1:${bridge.port}`);
+  logger.info?.(`[voo] started the VOO bridge on ws://127.0.0.1:${bridge.port}`);
   return {
     started: true,
     port: bridge.port,

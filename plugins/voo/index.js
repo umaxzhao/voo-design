@@ -24,7 +24,7 @@ export function apply(ctx, config = {}) {
       Promise.resolve()
         .then(() => resource.close())
         .catch((error) => {
-          console.warn(`[voo-editor-panel] ${label} shutdown failed: ${describe(error)}`);
+          console.warn(`[voo] ${label} shutdown failed: ${describe(error)}`);
         });
     };
 
@@ -33,7 +33,7 @@ export function apply(ctx, config = {}) {
         server = await startEditorServer({ host: options.host, port: options.port, editorDir: options.editorDir });
       } catch (error) {
         console.error(
-          `[voo-editor-panel] cannot serve the editor on http://${options.host}:${options.port}: ${describe(error)}. ` +
+          `[voo] cannot serve the editor on http://${options.host}:${options.port}: ${describe(error)}. ` +
             `Another process may own the port; set "port" in the profile patch.`,
         );
         return;
@@ -43,12 +43,12 @@ export function apply(ctx, config = {}) {
         return;
       }
       const buildNote = server.hasBuild ? "" : ` (no build at ${options.editorDir}; run npm run build in the VOO repository)`;
-      console.info(`[voo-editor-panel] editor served at ${server.url}/?embed${buildNote}`);
+      console.info(`[voo] editor served at ${server.url}/?embed${buildNote}`);
       if (!options.bridge) return;
       try {
         bridge = await ensureCliBridge({ repoDir: options.repoDir, port: options.bridgePort });
       } catch (error) {
-        console.error(`[voo-editor-panel] VOO bridge unavailable: ${describe(error)}`);
+        console.error(`[voo] VOO bridge unavailable: ${describe(error)}`);
         return;
       }
       if (disposed) shutdown(bridge, "VOO bridge");
@@ -61,7 +61,7 @@ export function apply(ctx, config = {}) {
       shutdown(server, "editor server");
       shutdown(bridge, "VOO bridge");
     };
-  }, "voo-editor-panel: loopback editor host");
+  }, "voo: loopback editor host");
 }
 
 function describe(error) {

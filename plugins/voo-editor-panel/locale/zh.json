@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "VOO 编辑器面板",
-    "description": "在 DeepSeek Harness 右侧面板里运行 VOO 设计编辑器，并让 Agent 的画布工具作用于同一个本地桥接的画布。"
-  }
-}

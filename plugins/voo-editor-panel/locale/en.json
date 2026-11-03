@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "VOO Editor Panel",
-    "description": "Runs the VOO Design editor in the DeepSeek Harness right sidebar, linked to the same local bridge as the VOO canvas tools."
-  }
-}
