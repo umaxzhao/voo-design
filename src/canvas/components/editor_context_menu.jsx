@@ -119,10 +119,10 @@ export default function EditorContextMenu({
         items[nextIndex]?.focus();
       }
     };
-    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointerdown", onPointerDown, true);
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerdown", onPointerDown, true);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [onClose, codeDialogOpen]);
