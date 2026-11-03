@@ -106,7 +106,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   assert.notEqual(blurred, "#ff0000");
   await tool("undo");
   assert.equal(await sample(149, 150), blurred);
-  const opacity = host.getByRole("spinbutton", {name:"Opacity",exact:true});
+  const opacity = host.getByRole("textbox", {name:"Opacity",exact:true});
   await opacity.fill("0"); await opacity.press("Enter");
   assert.equal(await sample(149, 150), "#ff0000");
   await opacity.fill("100"); await opacity.press("Enter");
@@ -141,7 +141,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   });
   await mount("adjustment", adjustmentId);
   const brightnessBefore = await sample(175, 150);
-  const input = host.getByRole("spinbutton", { name: "Brightness", exact: true });
+  const input = host.getByRole("textbox", { name: "Brightness", exact: true });
   await input.fill("40"); await input.press("Enter");
   assert.notEqual(await sample(175, 150), brightnessBefore);
   await host.getByRole("checkbox", { name: "Brightness", exact: true }).click();
@@ -261,7 +261,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
     e.selectExactly(nodes.map((node) => node.id));
   });
   await page.getByTestId("editor-properties-panel").getByText("2 selected", { exact: true }).waitFor();
-  const rotation = page.getByRole("spinbutton", { name: "Rotation", exact: true });
+  const rotation = page.getByRole("textbox", { name: "Rotation", exact: true });
   await rotation.waitFor();
   assert.equal(await rotation.inputValue(), "0");
   await rotation.fill("30");
