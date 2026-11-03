@@ -7,6 +7,14 @@
 - 强化已有 `t02-empty-groups-interaction`，在中英/浅深/1440及1100宽共8组实际测量，并真实验证变量新增/Undo/管理、样式入口、修改器添加/UndoRedo。最终提交与各检查退出码在同级 `evidence/PANEL-RHYTHM-REPORT.md`、`panel-rhythm-verification.json`，不继承0f的134步门禁结果到本次改动。
 - 已有窗口和未保存文档未动；只本地提交，无push/release/CI/部署；浏览器结果不冒充原生Mac或其它OS认证。
 
+
+## UI 面板节奏独立 QA — 2026-11-03
+
+- 独立副本 `qa-ui-panel-a659-b-20261103T1800Z`，产品提交 `a6591d860afa0c0599ebf29b2916203147ca9f73`（父 `0f7498a9037ab5c0d1263325ef076db356aa474b`）；本地 test-only locator 迁移提交 `0d07b419f70ffc05dd79a67aa122a11d8dad2c6a`，只将颜色变量新增入口定位到空状态中可见的 header 按钮，原绑定、颜色传播、像素导出和 history 断言完整保留。
+- 前置 Blob、独立依赖、模块、lint、unit、build 与所有 11 项相关真实浏览器检查日志见 `/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/ui-panel-a659-b-20261103T1800Z/`。初始旧 locator 运行 exit1 原样保留；迁移后变量新增/绑定/编辑/解绑/Undo/Redo 与 2x PNG/JPEG 像素 suite exit0。
+- 面板几何检查覆盖中英、浅深主题、1100/1440 宽度；focus 和 green outer frame 有截图/相邻 inspector 与 Frame overlay 合同，但最终视觉判定仍待用户反馈。此项是有针对性的 UI QA，不继承 0f 的 134 步全量结果；未执行 native GUI 验收。
+- 本地提交，无 push、release、CI、部署、用户 app/profile 替换。
+
 ## QA 产物路径隔离 — 2026-11-03
 
 - Test-only，固定基线 `41225de450ded0b562d0a861fe559947a44f4016`；仅两份既有套件改产物路径，产品源码与原业务断言/timeout不变。
