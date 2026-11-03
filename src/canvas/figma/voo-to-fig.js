@@ -230,7 +230,7 @@ function layerRecord({ guid, parentGuid, position, node, origin, imageAssets, bl
       ...base,
       type: isFrame ? "FRAME" : "GROUP",
       ...(isFrame ? { frameMaskDisabled: node.clipContent === false } : {}),
-      ...autoLayoutFields(isFrame ? node.autoLayout : null),
+      ...autoLayoutFields(node.autoLayout),
     };
   }
   if (node.kind === NODE_KIND.ELLIPSE) {
@@ -375,7 +375,10 @@ export function buildFigContainer(sceneDoc, template, { pageName = "Page 1", ima
       const guid = { sessionID: LAYER_SESSION_ID, localID: nextLocalId };
       nextLocalId += 1;
       layers.push(layerRecord({ guid, parentGuid, position: positionKey(index), node, origin, imageAssets, blobs }));
-      if (node.kind === NODE_KIND.GROUP) emitChildren(node.id, guid, { x: node.x, y: node.y });
+      if (node.kind === NODE_KIND.GROUP) {
+        const isFrame = node.isFrame === true || node.frame === true || node.containerType === "frame";
+        emitChildren(node.id, guid, isFrame ? { x: node.x, y: node.y } : origin);
+      }
     });
   };
   emitChildren("", CANVAS_GUID, { x: 0, y: 0 });
