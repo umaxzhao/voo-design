@@ -17,7 +17,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
       fontSize: parseFloat(style.fontSize), font: style.fontFamily };
   });
   await select("audit-rect");
-  const x = panel.getByRole("spinbutton", { name: "X", exact: true });
+  const x = panel.getByRole("textbox", { name: "X", exact: true });
   const field = x.locator("..");
   assert.equal((await styles(field)).radius, 12, "Numeric fields keep the original large corner radius");
   assert.equal((await styles(field)).height, 32);
@@ -89,7 +89,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal((await styles(strip)).radius, 12);
   await horizontal.click(); await settle();
   assert.equal(await horizontal.getAttribute("aria-pressed"), "true");
-  assert.equal((await styles(panel.getByRole("spinbutton", { name: "W", exact: true }).locator("../.."))).radius, 12);
+  assert.equal((await styles(panel.getByRole("textbox", { name: "W", exact: true }).locator("../.."))).radius, 12);
   assert.equal((await styles(horizontal)).radius, 12);
   const inactive = panel.getByRole("button", { name: "Vertical", exact: true });
   assert.notEqual((await styles(horizontal)).background, (await styles(inactive)).background);
