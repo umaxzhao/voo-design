@@ -194,9 +194,10 @@ export const EDITOR_MODULES = [
     title: "Layout, constraints and design systems",
     paths: [
       "src/canvas/editor/*layout*", "src/canvas/editor/*constraint*", "src/canvas/editor/*variable*",
-      "src/canvas/editor/*component*", "src/canvas/components/editor_properties/*layout*",
+      "src/canvas/editor/*component*", "src/canvas/editor/*instance*", "src/canvas/components/editor_properties/*layout*",
       "src/canvas/components/editor_properties/*constraint*",
       "src/canvas/components/editor_properties/*variant*", "src/canvas/design_systems/*",
+      "tests/unit/*instance*", "tests/unit/uf23_dual_fill_detach_export.test.js",
     ],
     related: ["layers","text","inspector","documents","platform"],
     features: ["layout.auto-layout","layout.constraints","layout.variables","layout.components"],
