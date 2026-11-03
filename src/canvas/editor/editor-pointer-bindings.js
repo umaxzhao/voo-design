@@ -19,6 +19,7 @@ const CANCELLABLE_KINDS = new Set([
   "region",
   "regionFree",
   "marquee",
+  "frameMarqueePending",
   "pixelMarquee",
   "pixelLasso",
   "selectionMove",
@@ -94,7 +95,16 @@ export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, hi
     handlers.onPointerDown(createFrameMoveEvent(stage, event, frameId));
     return true;
   };
-  if (api) api.beginFrameMove = beginFrameMove;
+  const beginFreeSelection = event => {
+    if (event.button !== 0 || api.getTool() !== TOOL.SELECT) return false;
+    const native = event.nativeEvent ?? event;
+    const forwarded = { target: stage, preventDefault: () => native.preventDefault() };
+    for (const field of ["type", "button", "buttons", "pointerId", "pointerType", "clientX", "clientY",
+      "shiftKey", "altKey", "ctrlKey", "metaKey", "pressure", "isPrimary"]) forwarded[field] = native[field];
+    handlers.onPointerDown(forwarded);
+    return true;
+  };
+  if (api) { api.beginFrameMove = beginFrameMove; api.beginFreeSelection = beginFreeSelection; }
   const stageEvents = { pointerdown: handlers.onPointerDown, pointermove: handlers.onPointerMove,
     pointerup: handlers.onPointerUp, pointercancel: handlers.onPointerUp,
     pointerleave: handlers.onPointerLeave, auxclick: handlers.onAuxClick, dblclick: handlers.onDoubleClick };
@@ -107,6 +117,7 @@ export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, hi
   return () => {
     keyboard.onWindowBlur();
     if (api?.beginFrameMove === beginFrameMove) delete api.beginFrameMove;
+    if (api?.beginFreeSelection === beginFreeSelection) delete api.beginFreeSelection;
     if (api?.refreshBrushCursor === hover?.refreshBrushCursor) delete api.refreshBrushCursor;
     if (api?.hasHandleUnder === hitTest?.hasHandleUnder) delete api.hasHandleUnder;
     if (api?.cancelActiveGesture === keyboard.cancelActiveGesture) delete api.cancelActiveGesture;

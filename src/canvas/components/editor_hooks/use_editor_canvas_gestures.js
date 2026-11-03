@@ -60,8 +60,8 @@ export function useEditorCanvasGestures({
 
   // Free-stage pointer gestures: Space / middle-button drag pans, and clicking
   // the empty canvas deselects the focused page. Left-button drag on the empty
-  // canvas (not over any artboard) also pans the free view — a view-only camera
-  // offset that never writes back to workflow node positions.
+  // canvas on legacy bounded pages pans the free view; a root canvas routes
+  // Select drags through the same engine selection controller as artwork.
   const onFreePointerDown = useCallback((event) => {
     const isPanTrigger = event.button === 1 || spaceRef.current || tool === TOOL.HAND;
     const isLeftClick = event.button === 0;
@@ -114,7 +114,15 @@ export function useEditorCanvasGestures({
       return;
     }
 
-    // Middle-button drag, space+drag, or drag on empty canvas: start panning camera
+    if (!isPanTrigger && tool === TOOL.SELECT && targetEngine?.getDocument?.()?.isCanvasRoot &&
+        targetEngine.beginFreeSelection?.(event)) {
+      if (targetId && !focusedId) focusEditorPage(targetId);
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    // Middle-button drag, space+drag, or legacy empty canvas: pan camera
     event.preventDefault();
     if (isPanTrigger) event.stopPropagation();
 

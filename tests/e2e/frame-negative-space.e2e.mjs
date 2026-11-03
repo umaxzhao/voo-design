@@ -24,6 +24,19 @@ await withEditorBrowser(async ({ page }) => {
     await page.evaluate(() => window.__vooEditor.flushTransforms());
     await settle();
   };
+  const dragLabel = async (id, delta) => {
+    const label = page.locator(`[data-testid="editor-canvas-frame-label"][data-frame-id="${id}"]`);
+    await label.waitFor();
+    const box = await label.boundingBox(); assert.ok(box, "Frame label must be visible");
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)
+      ?.closest('[data-testid="editor-canvas-frame-label"]')?.getAttribute("data-frame-id"), start);
+    assert.equal(hit, id, "Drag must target the requested Frame label");
+    const origin = await client({ x: 0, y: 0 }), end = await client(delta);
+    await page.mouse.move(start.x, start.y); await page.mouse.down();
+    await page.mouse.move(start.x + end.x - origin.x, start.y + end.y - origin.y, { steps: 8 });
+    await page.mouse.up(); await settle(); await page.evaluate(() => window.__vooEditor.flushTransforms()); await settle();
+  };
   const screenPixels = async points => {
     await settle();
     const source = `data:image/png;base64,${(await page.screenshot()).toString("base64")}`;
@@ -66,7 +79,19 @@ await withEditorBrowser(async ({ page }) => {
   const siblingPoint = await client({ x: 480, y: 150 });
   const beforePixels = await screenPixels([siblingPoint]);
   assert.deepEqual(beforePixels, [[0, 255, 0, 255]]);
-  await drag({ x: 200, y: 210 }, { x: -200, y: -190 });
+  const beforeMarqueeHistory = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
+  const marqueeStart = await client({ x: 75, y: 95 }), marqueeEnd = await client({ x: 175, y: 170 });
+  await page.mouse.move(marqueeStart.x, marqueeStart.y); await page.mouse.down();
+  await page.mouse.move(marqueeEnd.x, marqueeEnd.y, { steps: 8 }); await page.mouse.up(); await settle();
+  const marqueeState = await documentState();
+  assert.deepEqual(marqueeState.selected, ["negative-child"], "Frame body drag selects its child with a marquee");
+  assert.deepEqual(marqueeState.nodes, before.nodes, "Frame body marquee does not move either Frame or subtree");
+  assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), beforeMarqueeHistory);
+  assert.deepEqual(await screenPixels([siblingPoint]), beforePixels, "Frame body marquee preserves sibling pixels");
+  await page.evaluate(() => window.__vooEditor.selectExactly(["negative-moving"]));
+  assert.deepEqual(await documentState(), before);
+  passed.push("Frame body marquee selects the child without geometry, pixel or history changes");
+  await dragLabel("negative-moving", { x: -200, y: -190 });
   const after = await documentState();
   console.log(JSON.stringify({ negativeDrag: { before, after, siblingPoint } }));
   assert.deepEqual(after.nodes.filter(n => n.id.startsWith("negative-sibling")),
@@ -92,7 +117,7 @@ await withEditorBrowser(async ({ page }) => {
   assert.deepEqual(await documentState(), after);
   passed.push("one undo and redo restore the exact document bounds, crop, subtree geometry and selection");
 
-  await drag({ x: 0, y: 20 }, { x: 230, y: 220 });
+  await dragLabel("negative-moving", { x: 230, y: 220 });
   const returned = await documentState();
   const returnedFrame = returned.nodes.find(n => n.id === "negative-moving");
   assert.deepEqual([returnedFrame.x, returnedFrame.y], [90, 110]);

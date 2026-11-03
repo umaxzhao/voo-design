@@ -26,6 +26,23 @@ const snapshot = page => page.evaluate(async () => {
 });
 const worldToScreen = (state, x, y) => ({ x: state.board.x + x * state.board.width / state.width,
   y: state.board.y + y * state.board.height / state.height });
+async function freePoint(page) {
+  return page.evaluate(() => {
+    const stage = document.querySelector('[data-testid="editor-pages"]');
+    const screen = stage.getBoundingClientRect();
+    const board = document.querySelector("[data-editor-artboard]").getBoundingClientRect();
+    for (let y = screen.top + 18; y < Math.min(board.top - 8, screen.bottom - 18); y += 18) {
+      for (let x = screen.left + 18; x < Math.min(board.left - 8, screen.right - 18); x += 18) {
+        const hit = document.elementFromPoint(x, y);
+        if (hit?.closest('[data-testid="editor-pages"]') === stage &&
+            !hit.closest('button, input, textarea, select, [role="dialog"], [role="menu"], [data-testid="editor-properties-panel"], [data-testid="editor-layers-panel"]')) {
+          return { x, y, tag: hit.tagName, testId: hit.closest('[data-testid]')?.getAttribute("data-testid") };
+        }
+      }
+    }
+    throw new Error("No free stage point above and left of the artboard");
+  });
+}
 async function drag(page, a, b, screenshot) {
   await page.mouse.move(a.x, a.y); await page.mouse.down();
   await page.mouse.move(b.x, b.y, { steps: 8 });
@@ -33,9 +50,35 @@ async function drag(page, a, b, screenshot) {
   await page.mouse.up();
 }
 async function verify(page, label) {
-  await page.evaluate(() => { window.__vooEditor.selectExactly([]); window.__vooEditor.setTool("select"); });
+  await page.getByTestId("editor-select-menu-trigger").click();
+  await page.getByTestId("editor-select-menu-list").getByRole("menuitem").first().click();
+  const focusState = await snapshot(page), stageFocus = worldToScreen(focusState, 80, 80);
+  await page.mouse.click(stageFocus.x, stageFocus.y);
+  await page.evaluate(() => window.__vooEditor.selectExactly([]));
   const initial = await snapshot(page);
   const a = worldToScreen(initial, 36, 24), b = worldToScreen(initial, 660, 440);
+  const outside = await freePoint(page);
+  await page.mouse.click(outside.x, outside.y);
+  const focus = await page.evaluate(() => ({ tag: document.activeElement?.tagName,
+    interactive: Boolean(document.activeElement?.closest('button, input, textarea, [role="dialog"], [data-editor-artboard-title]')) }));
+  assert.equal(focus.interactive, false, `${label}: free-stage focus is not an interactive control`);
+  await drag(page, outside, b, `${label}-free-marquee.png`);
+  const freeAfter = await snapshot(page);
+  assert.deepEqual(freeAfter.selected, ids.slice(0, 2), `${label}: free stage marquee selects exactly A and B`);
+  assert.deepEqual(freeAfter.nodes, initial.nodes, `${label}: free stage marquee keeps model`);
+  assert.deepEqual(freeAfter.camera, initial.camera, `${label}: free stage marquee does not pan`);
+  assert.deepEqual(freeAfter.layouts, initial.layouts, `${label}: free stage marquee keeps layout`);
+  assert.deepEqual(freeAfter.history, initial.history, `${label}: free stage marquee adds no history`);
+  records.push({ label: `${label}-free-stage`, outside, end: b, focus,
+    camera: initial.camera, afterCamera: freeAfter.camera, selected: freeAfter.selected });
+  await page.evaluate(() => window.__vooEditor.selectExactly([]));
+  await page.mouse.move(outside.x, outside.y); await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 8 }); await page.keyboard.press("Escape"); await page.mouse.up();
+  const freeCancelled = await snapshot(page);
+  assert.deepEqual(freeCancelled.selected, [], `${label}: Escape cancels free-stage marquee`);
+  assert.deepEqual(freeCancelled.nodes, initial.nodes, `${label}: cancelled free-stage marquee keeps model`);
+  assert.deepEqual(freeCancelled.camera, initial.camera, `${label}: cancelled free-stage marquee keeps camera`);
+  assert.deepEqual(freeCancelled.history, initial.history, `${label}: cancelled free-stage marquee adds no history`);
   await page.evaluate(id => window.__vooEditor.selectExactly([id]), frameId);
   const selectedFrameStart = worldToScreen(initial, 80, 80);
   await drag(page, selectedFrameStart, b);
@@ -143,6 +186,25 @@ await withEditorBrowser(async ({ page, tool }) => {
     after: { camera: after.camera, board: after.board, layouts: after.layouts } });
   await page.locator('[data-testid="editor-toolbar"] button[aria-label="Select"]').first().click();
   await verify(page, "after-real-hand-pan");
+  for (const kind of ["Space", "middle", "Hand"]) {
+    if (kind === "Hand") {
+      await page.locator('[data-testid="editor-toolbar"] button[aria-label="Hand"]').first().click();
+      assert.equal(await page.evaluate(() => window.__vooEditor.getTool()), "hand");
+    }
+    const start = await freePoint(page), previous = await snapshot(page);
+    await page.mouse.click(start.x, start.y);
+    if (kind === "Space") await page.keyboard.down("Space");
+    await page.mouse.move(start.x, start.y); await page.mouse.down({ button: kind === "middle" ? "middle" : "left" });
+    await page.mouse.move(start.x + 30, start.y + 20, { steps: 6 });
+    await page.mouse.up({ button: kind === "middle" ? "middle" : "left" });
+    if (kind === "Space") await page.keyboard.up("Space");
+    const next = await snapshot(page);
+    assert.equal(next.camera.panX, previous.camera.panX + 30, `${kind}: camera x pans`);
+    assert.equal(next.camera.panY, previous.camera.panY + 20, `${kind}: camera y pans`);
+    assert.deepEqual(next.nodes, previous.nodes, `${kind}: model stays fixed`);
+    assert.deepEqual(next.layouts, previous.layouts, `${kind}: layout stays fixed`);
+    records.push({ label: `free-${kind}-pan`, start, before: previous.camera, after: next.camera });
+  }
 }, {});
 await writeFile(`${out}/default-frame-marquee.json`, JSON.stringify({ zip, records }, null, 2));
 console.log(JSON.stringify({ passed: "default frame marquee, reverse, shift, geometry/history and cold ZIP", records }, null, 2));

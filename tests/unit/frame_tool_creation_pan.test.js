@@ -183,6 +183,27 @@ describe("Frame tool creation and Hand tool pan", () => {
   });
 
   describe("useEditorCanvasGestures pointer down and up behaviors", () => {
+    it.each([true, false])("routes free Select for isCanvasRoot=%s without changing legacy panning", isCanvasRoot => {
+      const engine = createMockEngine({ ...createDocument(800, 600), isCanvasRoot });
+      engine.beginFreeSelection = vi.fn(() => true);
+      const panGestureRef = { current: null }, freeStageRef = mockFreeStage();
+      const gestures = useEditorCanvasGestures({
+        multi: true, visible: true, freeStageRef, spaceRef: { current: false }, panGestureRef,
+        enginesRef: { current: new Map([["page-1", { engine }]]) }, layoutById: new Map(),
+        cameraZoom: 1, tool: TOOL.SELECT, focusedId: "page-1", focusEditorPage: vi.fn(),
+        handleFocusCanvas: vi.fn(), setCanvasBackgroundSelected: vi.fn(), nodeIds: ["page-1"],
+      });
+      const event = { button: 0, clientX: 100, clientY: 100, pointerId: 1,
+        target: { closest: () => null }, preventDefault: vi.fn(), stopPropagation: vi.fn() };
+      gestures.onFreePointerDown(event);
+      if (isCanvasRoot) {
+        expect(engine.beginFreeSelection).toHaveBeenCalledWith(event);
+        expect(panGestureRef.current).toBeNull();
+      } else {
+        expect(engine.beginFreeSelection).not.toHaveBeenCalled();
+        expect(panGestureRef.current).toMatchObject({ button: 0, panTrigger: false });
+      }
+    });
     it("Hand tool initiates camera panning cleanly even over artboards", () => {
       const panGestureRef = { current: null };
       const freeStageRef = mockFreeStage();
