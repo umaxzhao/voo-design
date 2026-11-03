@@ -31,6 +31,10 @@ import AgentPanelView from "../../src/canvas/components/agent-panel/agent_panel_
 import AgentExtensionDialog from "../../src/canvas/components/agent-panel/agent_extension_dialog.jsx";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
 import { AGENT_SETTING, AGENT_DEFAULTS } from "../../src/canvas/agent/agent-settings.js";
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { DEV_EXTENSION_ID } from "../../src/shared/extension_id.js";
 
 describe("VOO-F-AGENT-IMG01: Agent Dual Modes & Image Taskbar Integration", () => {
   beforeEach(() => {
@@ -377,6 +381,87 @@ describe("VOO-F-AGENT-IMG01: Agent Dual Modes & Image Taskbar Integration", () =
       expect(draftText).toBe("Keep my custom prompt");
       expect(activeContext.layerId).toBe("layer-image-1");
       expect(generationTriggered).toBe(false);
+    });
+  });
+
+  describe("8. Extension Package Identity & Integrity Contract", () => {
+    it("verifies extension manifest permissions are strictly isolated without VooRun excess", () => {
+      const manifestPath = path.resolve(__dirname, "../../extension/manifest.json");
+      expect(fs.existsSync(manifestPath)).toBe(true);
+
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      expect(manifest.name).toBe("VOO Design Web Images");
+      expect(manifest.version).toBe("0.1.0");
+      expect(manifest.manifest_version).toBe(3);
+
+      // Permissions must be strictly ["tabs"] only!
+      expect(manifest.permissions).toEqual(["tabs"]);
+      // Strictly forbidden VooRun permissions
+      expect(manifest.permissions).not.toContain("debugger");
+      expect(manifest.permissions).not.toContain("nativeMessaging");
+      expect(manifest.permissions).not.toContain("cookies");
+      expect(manifest.permissions).not.toContain("webNavigation");
+
+      // Verify derived extension ID
+      const keyDer = Buffer.from(manifest.key, "base64");
+      const keyHash = crypto.createHash("sha256").update(keyDer).digest();
+      const derivedId = keyHash
+        .subarray(0, 16)
+        .toString("hex")
+        .split("")
+        .map((c) => {
+          const code = c.charCodeAt(0);
+          return code >= 97 ? String.fromCharCode(code + 10) : String.fromCharCode(code + 49);
+        })
+        .join("");
+      expect(derivedId).toBe("iippbemfbmjdkfpjbhjcfcbcmmjidaim");
+      expect(derivedId).toBe(DEV_EXTENSION_ID);
+    });
+
+    it("verifies package manifest and zip hash consistency when packaged", () => {
+      const zipPath = path.resolve(
+        __dirname,
+        "../../extension/dist/voo-design-extension-0.1.0.zip",
+      );
+      const packageManifestPath = path.resolve(
+        __dirname,
+        "../../extension/dist/package-manifest.json",
+      );
+
+      if (fs.existsSync(zipPath) && fs.existsSync(packageManifestPath)) {
+        const zipBytes = fs.readFileSync(zipPath);
+        const actualHash = crypto.createHash("sha256").update(zipBytes).digest("hex");
+        const meta = JSON.parse(fs.readFileSync(packageManifestPath, "utf8"));
+
+        expect(meta.name).toBe("VOO Design Web Images");
+        expect(meta.version).toBe("0.1.0");
+        expect(meta.sha256).toBe(actualHash);
+        expect(meta.extensionId).toBe("iippbemfbmjdkfpjbhjcfcbcmmjidaim");
+        expect(meta.permissions).toEqual(["tabs"]);
+      }
+    });
+  });
+
+  describe("9. Honest Dialog Affordance & Gap Transparency", () => {
+    it("renders honest package card without forging 404 remote download URLs", () => {
+      const markup = renderToStaticMarkup(
+        <AgentExtensionDialog
+          isOpen={true}
+          status={EXTENSION_STATUS.MISSING}
+          route="chatgpt"
+          onClose={() => {}}
+          onRetry={() => {}}
+          t={(k) => k}
+        />,
+      );
+
+      // Must NOT contain 404 legacy voo.run/download URL or external download links
+      expect(markup).not.toContain("voo.run/download");
+      expect(markup).not.toContain("<a ");
+
+      // Must display honest package identity and copy-command
+      expect(markup).toContain("npm run package:extension");
+      expect(markup).toContain("data-testid=\"agent-ext-copy-path\"");
     });
   });
 });

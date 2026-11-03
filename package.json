@@ -21,6 +21,7 @@
     "bench:design": "node scripts/design-bench/run.mjs",
     "bench:canvas": "CANVAS_PERF_WRITE=1 vitest run tests/unit/canvas_perf_benchmark.test.js",
     "build:extension": "node scripts/build-extension.mjs",
+    "package:extension": "node scripts/package-extension.mjs",
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
     "check:modules": "node scripts/editor-checks.mjs --check",

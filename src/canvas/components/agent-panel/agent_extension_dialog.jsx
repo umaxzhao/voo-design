@@ -83,9 +83,9 @@ export default function AgentExtensionDialog({
   const badge = getStatusBadge();
   const StatusIcon = badge.icon;
 
-  const handleCopyPath = () => {
-    const extensionPath = "extension";
-    navigator.clipboard?.writeText(extensionPath).then(() => {
+  const handleCopyCommand = () => {
+    const packageCmd = "npm run package:extension";
+    navigator.clipboard?.writeText(packageCmd).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -95,7 +95,7 @@ export default function AgentExtensionDialog({
     if (typeof window !== "undefined" && window.vooDesktop?.revealExtensionFolder) {
       window.vooDesktop.revealExtensionFolder();
     } else {
-      handleCopyPath();
+      handleCopyCommand();
     }
   };
 
@@ -155,7 +155,7 @@ export default function AgentExtensionDialog({
               <span> 并开启右上角“开发者模式”。</span>
             </li>
             <li>
-              <span>点击左上角“加载已解压的扩展程序”，选择项目内置扩展目录 </span>
+              <span>点击左上角“加载已解压的扩展程序”，选择项目本地构建后的扩展目录 </span>
               <code className="rounded-md bg-black/40 px-1 py-0.5 text-[#E5B2FF] font-mono text-[11px]">
                 extension/
               </code>
@@ -169,32 +169,47 @@ export default function AgentExtensionDialog({
           </ol>
         </div>
 
-        {/* Path / Folder Action */}
-        <div className="flex items-center gap-2">
-          {isDesktop && typeof window.vooDesktop?.revealExtensionFolder === "function" ? (
-            <button
-              type="button"
-              onClick={handleOpenFolder}
-              data-testid="agent-ext-open-folder"
-              className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12px] font-medium text-neutral-200 hover:bg-white/20 hover:text-white transition-colors"
-            >
-              <FolderOpen size={14} />
-              <span>{t("agent.extension.openFolder") || "打开扩展所在目录"}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleCopyPath}
-              data-testid="agent-ext-copy-path"
-              className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12px] font-medium text-neutral-200 hover:bg-white/20 hover:text-white transition-colors"
-            >
-              <Copy size={14} />
-              <span>{copied ? (t("install.desktop.copied") || "已复制路径") : (t("agent.extension.copyPath") || "复制 extension 目录路径")}</span>
-            </button>
-          )}
-          <span className="text-[11px] text-neutral-500 min-w-0 truncate">
-            {t("agent.extension.packageNote") || "内置扩展 (0.1.0 纯本地通信)"}
-          </span>
+        {/* Local Package Identity & Action */}
+        <div className="flex flex-col gap-2 rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 text-[11px] text-neutral-400">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium text-neutral-300 truncate">
+              {t("agent.extension.packageIdentity") || "扩展包标识: VOO Design Web Images (0.1.0)"}
+            </span>
+            <span className="rounded-md px-1.5 py-0.5 bg-amber-500/10 text-amber-300 text-[10px] shrink-0">
+              {t("agent.extension.downloadBlocked") || "未发布远端下载包 (需本地构建)"}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-1">
+            {isDesktop && typeof window.vooDesktop?.revealExtensionFolder === "function" ? (
+              <button
+                type="button"
+                onClick={handleOpenFolder}
+                data-testid="agent-ext-open-folder"
+                className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12px] font-medium text-neutral-200 hover:bg-white/20 hover:text-white transition-colors"
+              >
+                <FolderOpen size={14} />
+                <span>{t("agent.extension.openFolder") || "打开扩展所在目录"}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCopyCommand}
+                data-testid="agent-ext-copy-path"
+                className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12px] font-medium text-neutral-200 hover:bg-white/20 hover:text-white transition-colors"
+              >
+                <Copy size={13} />
+                <span>
+                  {copied
+                    ? t("install.desktop.copied") || "已复制命令"
+                    : t("agent.extension.copyBuildCmd") || "复制打包命令"}
+                </span>
+              </button>
+            )}
+            <code className="text-[11px] font-mono text-[#E5B2FF] truncate">
+              npm run package:extension
+            </code>
+          </div>
         </div>
 
         {/* Footer Actions */}
