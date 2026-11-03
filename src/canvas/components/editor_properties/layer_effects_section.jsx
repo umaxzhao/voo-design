@@ -118,6 +118,9 @@ export default function LayerEffectsSection({
       setInlineEffect(kind);
       setPopover(null);
     } else {
+      if (!isStackFilterHost) {
+        return;
+      }
       const initial = starterAdjustment(kind);
       editAndCommit({
         adjustments: {
@@ -223,6 +226,7 @@ export default function LayerEffectsSection({
             const isEditing = popover?.kind === kind && !popover?.isEffect;
             const isFilter = FILTER_KINDS.includes(kind);
             const accent = isFilter ? "#38bdf8" : "#7fd4a8";
+            const isSupported = isStackFilterHost;
 
             return (
               <div
@@ -232,26 +236,39 @@ export default function LayerEffectsSection({
                   isEditing
                     ? "bg-neutral-800 ring-1 ring-white/20"
                     : "bg-neutral-900/80 hover:bg-neutral-800/80"
-                }`}
+                } ${!isSupported ? "opacity-60" : ""}`}
               >
                 <button
                   type="button"
-                  onClick={() => setPopover({ kind, isEffect: false })}
+                  onClick={() => {
+                    if (isSupported) {
+                      setPopover({ kind, isEffect: false });
+                    }
+                  }}
+                  disabled={!isSupported}
+                  title={!isSupported ? t("editor.props.imageOnlyFilter") : undefined}
                   aria-label={t(adjustmentLabelKey(kind))}
-                  className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+                  className={`flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-[#a7ffd4] ${
+                    !isSupported ? "cursor-not-allowed" : ""
+                  }`}
                 >
                   <span
-                    className={`shrink-0 ${isEnabled ? "text-neutral-300" : "text-neutral-500"}`}
+                    className={`shrink-0 ${isEnabled && isSupported ? "text-neutral-300" : "text-neutral-500"}`}
                   >
                     <KindIcon kind={kind} />
                   </span>
                   <span
                     className={`truncate text-[11px] font-mono uppercase ${
-                      isEnabled ? "text-neutral-200" : "text-neutral-500"
+                      isEnabled && isSupported ? "text-neutral-200" : "text-neutral-500"
                     }`}
                   >
                     {t(adjustmentLabelKey(kind))}
                   </span>
+                  {!isSupported ? (
+                    <span className="shrink-0 text-[9px] font-mono px-1 py-0.5 rounded-md bg-amber-500/10 text-amber-400/80 border border-amber-500/20">
+                      {t("editor.props.imageOnlyShort")}
+                    </span>
+                  ) : null}
                 </button>
 
                 <div
@@ -482,12 +499,12 @@ export default function LayerEffectsSection({
       {floating(
         showAddPicker ? (
           <AddKindPicker
-            isImage={object.kind === "image"}
+            isImage={isStackFilterHost}
             bitmap={getBitmap?.(object) ?? null}
             imageKey={object.imageId ?? object.src ?? null}
             adjustments={object.adjustments ?? null}
             onPick={handleAdd}
-            onApplyPreset={applyPreset}
+            onApplyPreset={isStackFilterHost ? applyPreset : null}
             onPickLayerEffect={addLayerEffect}
             onClose={() => setShowAddPicker(false)}
             side={popoverSide}

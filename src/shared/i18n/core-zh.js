@@ -751,5 +751,8 @@ export default {
   "editor.canvasType.threeD": "3D",
   "editor.component.label": "元件",
   "editor.component.uses": "{count} 处引用",
+  "editor.props.imageOnlyFilter": "仅支持图像图层",
+  "editor.props.imageOnlyShort": "仅图像",
+  "editor.props.unsupportedForLayer": "当前图层类型不支持",
   "contextualAi.send": "发送给 AI 智能体",
 };
