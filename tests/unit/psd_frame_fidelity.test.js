@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { initializeCanvas } from "ag-psd";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { initializeCanvas, readPsd } from "ag-psd";
 import { buildPsd, encodePsd } from "../../src/canvas/editor/psd_export.js";
 import { psdBytesToVooFile } from "../../src/canvas/store/psd_to_voo.js";
 
@@ -675,5 +678,257 @@ describe("UF26: PSD Frame fill and empty Frame layer fidelity", () => {
 
     expect(bgEffectiveAlpha).toBeCloseTo(compositeBgAlpha, 2);
     expect(childEffectiveAlpha).toBeCloseTo(compositeChildAlpha, 2);
+  });
+
+  it("roundtrip fidelity: exports layered PSD to disk, re-imports, and verifies composite visible pixels match original", () => {
+    // 1. Document containing opaque filled Frame, semi-transparent Frame, child graphics, and empty frames
+    const doc = {
+      width: 250,
+      height: 200,
+      backgroundColor: "transparent",
+      nodes: [
+        {
+          id: "frame-opaque",
+          kind: "group",
+          isFrame: true,
+          frame: true,
+          name: "Opaque Red Frame",
+          x: 10,
+          y: 10,
+          width: 100,
+          height: 100,
+          fill: "#ff0000",
+          fillOpacity: 1,
+          opacity: 1,
+          visible: true,
+        },
+        {
+          id: "child-green",
+          kind: "rect",
+          parentId: "frame-opaque",
+          name: "Green Child",
+          x: 30,
+          y: 30,
+          width: 40,
+          height: 40,
+          fill: "#00ff00",
+          opacity: 1,
+          visible: true,
+        },
+        {
+          id: "frame-semi",
+          kind: "group",
+          isFrame: true,
+          frame: true,
+          name: "Semi Blue Frame",
+          x: 120,
+          y: 10,
+          width: 100,
+          height: 100,
+          fill: "#0000ff",
+          fillOpacity: 0.5,
+          opacity: 0.8,
+          visible: true,
+        },
+        {
+          id: "child-yellow",
+          kind: "rect",
+          parentId: "frame-semi",
+          name: "Yellow Child",
+          x: 140,
+          y: 30,
+          width: 40,
+          height: 40,
+          fill: "#ffff00",
+          opacity: 1,
+          visible: true,
+        },
+        {
+          id: "frame-empty-black",
+          kind: "group",
+          isFrame: true,
+          frame: true,
+          name: "Empty Black Frame",
+          x: 10,
+          y: 120,
+          width: 60,
+          height: 60,
+          fill: "#000000",
+          fillOpacity: 1,
+          opacity: 1,
+          visible: true,
+        },
+        {
+          id: "frame-empty-clear",
+          kind: "group",
+          isFrame: true,
+          frame: true,
+          name: "Empty Clear Frame",
+          x: 80,
+          y: 120,
+          width: 60,
+          height: 60,
+          fill: "transparent",
+          opacity: 1,
+          visible: true,
+        },
+      ],
+    };
+
+    const renderNode = (node) => {
+      const width = Math.max(1, Math.round(node.width || 10));
+      const height = Math.max(1, Math.round(node.height || 10));
+      const data = new Uint8ClampedArray(width * height * 4);
+      if (node.name === "Opaque Red Frame Background") {
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 255; data[i + 1] = 0; data[i + 2] = 0; data[i + 3] = 255;
+        }
+      } else if (node.name === "Green Child") {
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 0; data[i + 1] = 255; data[i + 2] = 0; data[i + 3] = 255;
+        }
+      } else if (node.name === "Semi Blue Frame Background") {
+        const alpha = Math.round(255 * (node.fillOpacity ?? 0.5));
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 0; data[i + 1] = 0; data[i + 2] = 255; data[i + 3] = alpha;
+        }
+      } else if (node.name === "Yellow Child") {
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 255; data[i + 1] = 255; data[i + 2] = 0; data[i + 3] = 255;
+        }
+      } else if (node.name === "Empty Black Frame Background") {
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 0; data[i + 1] = 0; data[i + 2] = 0; data[i + 3] = 255;
+        }
+      }
+      return { imageData: { width, height, data } };
+    };
+
+    const renderComposite = () => {
+      const width = 250;
+      const height = 200;
+      const data = new Uint8ClampedArray(width * height * 4);
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          // F1: (10, 10, 100, 100)
+          if (x >= 10 && x < 110 && y >= 10 && y < 110) {
+            if (x >= 30 && x < 70 && y >= 30 && y < 70) {
+              data[idx] = 0; data[idx + 1] = 255; data[idx + 2] = 0; data[idx + 3] = 255;
+            } else {
+              data[idx] = 255; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 255;
+            }
+          }
+          // F2: (120, 10, 100, 100), group opacity 0.8
+          else if (x >= 120 && x < 220 && y >= 10 && y < 110) {
+            if (x >= 140 && x < 180 && y >= 30 && y < 70) {
+              data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 0; data[idx + 3] = Math.round(255 * 0.8);
+            } else {
+              data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 255; data[idx + 3] = Math.round(255 * 0.5 * 0.8);
+            }
+          }
+          // F3: (10, 120, 60, 60), black
+          else if (x >= 10 && x < 70 && y >= 120 && y < 180) {
+            data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 255;
+          }
+          // F4: (80, 120, 60, 60), transparent
+          else if (x >= 80 && x < 140 && y >= 120 && y < 180) {
+            data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 0;
+          }
+        }
+      }
+      return { width, height, data };
+    };
+
+    // 2. Export PSD with layerstack and composite
+    const psd = buildPsd({ doc, renderNode, renderComposite });
+    const psdBytes = encodePsd(psd);
+    const uint8Bytes = new Uint8Array(psdBytes);
+    expect(uint8Bytes.length).toBeGreaterThan(1000);
+
+    // 3. Save to disk to satisfy real filesystem persistence contract
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "voo-uf26-roundtrip-"));
+    const tmpPsdPath = path.join(tmpDir, "uf26-roundtrip.psd");
+    try {
+      fs.writeFileSync(tmpPsdPath, Buffer.from(uint8Bytes));
+      expect(fs.existsSync(tmpPsdPath)).toBe(true);
+
+      // 4. Read back PSD from disk and parse
+      const readBackBytes = new Uint8Array(fs.readFileSync(tmpPsdPath));
+      const parsedPsd = readPsd(readBackBytes, { useImageData: true });
+
+      // 5. Re-import into VOO document representation
+      const reimported = psdBytesToVooFile(readBackBytes);
+      const reimportedNames = reimported.document.nodes.map((n) => n.name);
+
+      // Verify layer hierarchy preservation upon re-import
+      expect(reimportedNames).toContain("Opaque Red Frame");
+      expect(reimportedNames).toContain("Opaque Red Frame Background");
+      expect(reimportedNames).toContain("Green Child");
+      expect(reimportedNames).toContain("Semi Blue Frame");
+      expect(reimportedNames).toContain("Semi Blue Frame Background");
+      expect(reimportedNames).toContain("Yellow Child");
+      expect(reimportedNames).toContain("Empty Black Frame");
+      expect(reimportedNames).toContain("Empty Black Frame Background");
+      expect(reimportedNames).toContain("Empty Clear Frame");
+
+      // 6. Verify composite visible pixels between original composite and exported PSD composite
+      const originalComposite = renderComposite();
+      const psdComposite = parsedPsd.imageData;
+
+      function getPixel(data, width, x, y) {
+        const i = (y * width + x) * 4;
+        return { r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3] };
+      }
+
+      // Check points:
+      // Point 1: F1 Red background
+      const origF1Bg = getPixel(originalComposite.data, 250, 20, 20);
+      const psdF1Bg = getPixel(psdComposite.data, 250, 20, 20);
+      expect(psdF1Bg.r).toBe(origF1Bg.r);
+      expect(psdF1Bg.g).toBe(origF1Bg.g);
+      expect(psdF1Bg.b).toBe(origF1Bg.b);
+      expect(psdF1Bg.a).toBe(origF1Bg.a);
+
+      // Point 2: F1 Green child
+      const origF1Child = getPixel(originalComposite.data, 250, 40, 40);
+      const psdF1Child = getPixel(psdComposite.data, 250, 40, 40);
+      expect(psdF1Child.r).toBe(origF1Child.r);
+      expect(psdF1Child.g).toBe(origF1Child.g);
+      expect(psdF1Child.b).toBe(origF1Child.b);
+      expect(psdF1Child.a).toBe(origF1Child.a);
+
+      // Point 3: F2 Semi blue background (fillOpacity 0.5 * group opacity 0.8)
+      const origF2Bg = getPixel(originalComposite.data, 250, 130, 20);
+      const psdF2Bg = getPixel(psdComposite.data, 250, 130, 20);
+      expect(psdF2Bg.r).toBe(origF2Bg.r);
+      expect(psdF2Bg.g).toBe(origF2Bg.g);
+      expect(psdF2Bg.b).toBe(origF2Bg.b);
+      expect(psdF2Bg.a).toBe(origF2Bg.a);
+
+      // Point 4: F2 Yellow child (group opacity 0.8)
+      const origF2Child = getPixel(originalComposite.data, 250, 150, 40);
+      const psdF2Child = getPixel(psdComposite.data, 250, 150, 40);
+      expect(psdF2Child.r).toBe(origF2Child.r);
+      expect(psdF2Child.g).toBe(origF2Child.g);
+      expect(psdF2Child.b).toBe(origF2Child.b);
+      expect(psdF2Child.a).toBe(origF2Child.a);
+
+      // Point 5: F3 Empty black frame
+      const origF3 = getPixel(originalComposite.data, 250, 20, 130);
+      const psdF3 = getPixel(psdComposite.data, 250, 20, 130);
+      expect(psdF3.r).toBe(origF3.r);
+      expect(psdF3.g).toBe(origF3.g);
+      expect(psdF3.b).toBe(origF3.b);
+      expect(psdF3.a).toBe(origF3.a);
+
+      // Point 6: F4 Empty transparent frame
+      const origF4 = getPixel(originalComposite.data, 250, 90, 130);
+      const psdF4 = getPixel(psdComposite.data, 250, 90, 130);
+      expect(psdF4.a).toBe(0);
+      expect(origF4.a).toBe(0);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
