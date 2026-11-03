@@ -95,7 +95,7 @@ export function connectorPatchDirs(patch) {
       }
       if (typeof parsed === "string" && /scripts[\\/]mcp-server\.mjs$/.test(parsed)) {
         // `<dir>/scripts/mcp-server.mjs` — the connector root is two levels up.
-        add(path.dirname(path.dirname(parsed)));
+        add(parsed.replace(/[\\/]scripts[\\/]mcp-server\.mjs$/, ""));
       }
     }
   }
@@ -103,7 +103,7 @@ export function connectorPatchDirs(patch) {
     const loose = /(?:[A-Za-z]:)?[^\s"']*[\\/]scripts[\\/]mcp-server\.mjs/.exec(
       String(patch ?? ""),
     );
-    if (loose) add(path.dirname(path.dirname(loose[0])));
+    if (loose) add(loose[0].replace(/[\\/]scripts[\\/]mcp-server\.mjs$/, ""));
   }
   return dirs;
 }
@@ -114,7 +114,14 @@ export function connectorPatchDirs(patch) {
  * patch that points at the build machine.
  */
 export function rewriteConnectorPatch({ connectorPath, bakedDirs, fs: fsImpl = fs } = {}) {
-  const patchPath = path.join(connectorPath, "cordis.patch.yml");
+  const sep =
+    connectorPath.includes("\\") && !connectorPath.includes("/")
+      ? "\\"
+      : path.sep;
+  const patchPath =
+    connectorPath.endsWith("\\") || connectorPath.endsWith("/")
+      ? `${connectorPath}cordis.patch.yml`
+      : `${connectorPath}${sep}cordis.patch.yml`;
   const patch = readText(fsImpl, patchPath);
   if (patch == null) {
     throw new Error(`connector patch is missing: ${patchPath}`);
@@ -130,9 +137,28 @@ export function rewriteConnectorPatch({ connectorPath, bakedDirs, fs: fsImpl = f
   let next = patch;
   for (const dir of dirs) {
     if (dir === connectorPath) continue;
+    // In YAML double-quoted scalars, backslashes are escaped as "\\".
+    // When rewriting on Windows, replace both escaped backslash forms and raw forms.
+    if (dir.includes("\\")) {
+      const escapedDir = dir.split("\\").join("\\\\");
+      const escapedTarget = connectorPath.split("\\").join("\\\\");
+      if (escapedDir !== escapedTarget) {
+        next = next.split(escapedDir).join(escapedTarget);
+      }
+    }
+    const slashDir = dir.split("\\").join("/");
+    const slashTarget = connectorPath.split("\\").join("/");
+    if (slashDir !== slashTarget) {
+      next = next.split(slashDir).join(slashTarget);
+    }
     next = next.split(dir).join(connectorPath);
   }
-  if (!next.includes(connectorPath)) {
+  const isPresent =
+    next.includes(connectorPath) ||
+    (connectorPath.includes("\\") &&
+      next.includes(connectorPath.split("\\").join("\\\\"))) ||
+    next.includes(connectorPath.split("\\").join("/"));
+  if (!isPresent) {
     throw new Error(`connector patch could not be rewritten: ${patchPath}`);
   }
   if (next !== patch) fsImpl.writeFileSync(patchPath, next);
