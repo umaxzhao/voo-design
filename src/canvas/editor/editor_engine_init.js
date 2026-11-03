@@ -115,6 +115,44 @@ export function createEngineInitController({
   // the font callback calls setDoc(), which queues fonts again synchronously.
   const fontLoadRequests = new Set();
 
+  function triggerFontRemeasure() {
+    if (isDisposed()) return;
+    clearTextLayoutCache();
+    const currentDoc = getDoc();
+    if (!currentDoc) return;
+    const wasClean = getAppliedSnapshot() === snapshotDoc();
+    const measured = measureTextNodes(currentDoc, { force: true });
+    if (measured !== currentDoc) {
+      setDoc(measured, { commit: false });
+      if (wasClean) {
+        setAppliedSnapshot(snapshotDoc());
+      }
+      incDocVersion?.();
+      requestRender();
+      notify();
+    }
+  }
+
+  const handleFontsDone = () => {
+    if (isDisposed()) {
+      if (typeof document !== "undefined" && document.fonts?.removeEventListener) {
+        document.fonts.removeEventListener("loadingdone", handleFontsDone);
+      }
+      return;
+    }
+    triggerFontRemeasure();
+  };
+
+  if (typeof document !== "undefined" && document.fonts?.addEventListener) {
+    document.fonts.addEventListener("loadingdone", handleFontsDone);
+  }
+
+  function dispose() {
+    if (typeof document !== "undefined" && document.fonts?.removeEventListener) {
+      document.fonts.removeEventListener("loadingdone", handleFontsDone);
+    }
+  }
+
   function queueFontLoads(next) {
     for (const node of next.nodes) {
       if (node.kind !== NODE_KIND.TEXT || !node.fontFamily) continue;
@@ -123,17 +161,8 @@ export function createEngineInitController({
       if (!wait) continue;
       fontLoadRequests.add(node.fontFamily);
       void wait.then((loaded) => {
-        if (!loaded || isDisposed()) return;
-        clearTextLayoutCache();
-        const wasClean = getAppliedSnapshot() === snapshotDoc();
-        const measured = measureTextNodes(getDoc(), { force: true });
-        setDoc(measured, { commit: false });
-        if (wasClean) {
-          setAppliedSnapshot(snapshotDoc());
-        }
-        incDocVersion?.();
-        requestRender();
-        notify();
+        if (!loaded) return;
+        triggerFontRemeasure();
       });
     }
   }
@@ -316,5 +345,6 @@ export function createEngineInitController({
     measureTextNodes,
     queueFontLoads,
     open,
+    dispose,
   };
 }

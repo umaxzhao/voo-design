@@ -973,6 +973,7 @@ export function createEditor({
       lastCoalescedId = null;
     }
     ctrl.selectionController.dispose();
+    ctrl.initController?.dispose?.();
     observer.disconnect();
     detachPointer();
     for (const node of doc.nodes) {

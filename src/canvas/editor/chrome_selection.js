@@ -133,8 +133,8 @@ function paintSizeLabel(ctx, box, text, color) {
 
 /** The node's own size, which is what the chip reports — not the rotated box. */
 function sizeLabelText(node, rect) {
-  const width = node?.width ?? rect.width;
-  const height = node?.height ?? rect.height;
+  const width = node?.effectiveLocal?.width ?? node?.width ?? rect.width;
+  const height = node?.effectiveLocal?.height ?? node?.height ?? rect.height;
   return `${Math.round(width)} × ${Math.round(height)}`;
 }
 

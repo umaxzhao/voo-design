@@ -1,8 +1,24 @@
+import { getTextLayout, measureText, textFont } from "./text_metrics.js";
+
 /**
  * Computes and caches the non-transparent (alpha > 0) bounding box of image bitmaps.
  */
 
 const alphaBoundsCache = new WeakMap();
+let sharedMeasureContext = null;
+
+function getSharedMeasureContext() {
+  if (typeof document === "undefined") return null;
+  if (!sharedMeasureContext) {
+    try {
+      const c = document.createElement("canvas");
+      sharedMeasureContext = c.getContext("2d");
+    } catch {
+      sharedMeasureContext = null;
+    }
+  }
+  return sharedMeasureContext;
+}
 
 /**
  * Invalidate cached alpha bounds for a bitmap (e.g. after raster editing / erasing).
@@ -133,13 +149,118 @@ export function getBitmapOpaqueBounds(bitmap, alphaThreshold = 1) {
 }
 
 /**
- * Returns the effective node representation with `effectiveLocal` populated for image nodes.
+ * Computes visual ink bounds for auto-size text nodes, accounting for
+ * typographic advance, alignment offsets, and glyph ink metrics (actualBoundingBoxLeft/Right).
+ */
+export function getTextVisualBounds(ctx, node) {
+  if (node.direction === "vertical") {
+    const size = measureText(ctx, node);
+    if (size.width > node.width || size.height > node.height) {
+      return {
+        x: 0,
+        y: 0,
+        width: Math.max(node.width, size.width),
+        height: Math.max(node.height, size.height),
+      };
+    }
+    return null;
+  }
+
+  ctx.save();
+  try {
+    ctx.font = textFont(node);
+    const letterSpacing = node.letterSpacing ?? 0;
+    if ("letterSpacing" in ctx) ctx.letterSpacing = `${letterSpacing}px`;
+    const { lines, widths } = getTextLayout(ctx, node);
+    const align = node.align ?? "left";
+    const strokeWidth = node.stroke ? (node.strokeWidth ?? 0) : 0;
+    const strokeHalf = strokeWidth > 0 ? strokeWidth / 2 : 0;
+
+    let minLocalX = 0;
+    let maxLocalX = node.width;
+
+    lines.forEach((line, index) => {
+      const lineWidth = widths[index] ?? 0;
+      const spare = node.width - lineWidth;
+      const localAnchorX =
+        align === "center" ? spare / 2 : align === "right" ? spare : 0;
+
+      // Include typographic advance extents
+      minLocalX = Math.min(minLocalX, localAnchorX);
+      maxLocalX = Math.max(maxLocalX, localAnchorX + lineWidth);
+
+      // Measure actual glyph ink extents if supported by Canvas2D
+      if (line && typeof ctx.measureText === "function") {
+        const metrics = ctx.measureText(line);
+        if (
+          metrics &&
+          typeof metrics.actualBoundingBoxLeft === "number" &&
+          typeof metrics.actualBoundingBoxRight === "number"
+        ) {
+          // W3C Canvas 2D TextMetrics:
+          // actualBoundingBoxLeft is positive measuring leftward from alignment anchor.
+          const lineInkLeft =
+            localAnchorX - metrics.actualBoundingBoxLeft - strokeHalf;
+          const lineInkRight =
+            localAnchorX + metrics.actualBoundingBoxRight + strokeHalf;
+          minLocalX = Math.min(minLocalX, lineInkLeft);
+          maxLocalX = Math.max(maxLocalX, lineInkRight);
+        }
+      }
+    });
+
+    const layoutSize = measureText(ctx, node);
+    const minHeight = Math.max(node.height, layoutSize.height);
+
+    const hasOverflow =
+      minLocalX < -0.01 ||
+      maxLocalX > node.width + 0.01 ||
+      layoutSize.height > node.height;
+    if (!hasOverflow) return null;
+
+    const visualLeft = Math.floor(minLocalX);
+    const visualRight = Math.ceil(maxLocalX);
+    return {
+      x: visualLeft,
+      y: 0,
+      width: visualRight - visualLeft,
+      height: minHeight,
+    };
+  } finally {
+    ctx.restore();
+  }
+}
+
+/**
+ * Returns the effective node representation with `effectiveLocal` populated for image nodes
+ * and auto-size text nodes whose visual ink extents exceed stored dimensions.
  * @param {object} node
- * @param {HTMLImageElement|HTMLCanvasElement|ImageBitmap} bitmap
+ * @param {HTMLImageElement|HTMLCanvasElement|ImageBitmap|object} bitmapOrSource
  * @returns {object}
  */
-export function resolveEffectiveNode(node, bitmap) {
-  if (!node || node.kind !== "image" || !bitmap) return node;
+export function resolveEffectiveNode(node, bitmapOrSource) {
+  if (!node) return node;
+
+  if (node.kind === "text" && !(node.boxWidth > 0)) {
+    const ctx = getSharedMeasureContext();
+    if (ctx && typeof measureText === "function") {
+      try {
+        const visualBounds = getTextVisualBounds(ctx, node);
+        if (visualBounds) {
+          return {
+            ...node,
+            effectiveLocal: visualBounds,
+          };
+        }
+      } catch {
+        // Fallback to node if measurement fails
+      }
+    }
+    return node;
+  }
+
+  const bitmap = bitmapOrSource?.cache ? bitmapOrSource.cache.get(node) : bitmapOrSource;
+  if (node.kind !== "image" || !bitmap) return node;
   const opaque = getBitmapOpaqueBounds(bitmap);
   const bw = bitmap.naturalWidth ?? bitmap.width;
   const bh = bitmap.naturalHeight ?? bitmap.height;
