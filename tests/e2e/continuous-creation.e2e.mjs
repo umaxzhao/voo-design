@@ -24,7 +24,7 @@ await withEditorBrowser(async ({ page }) => {
   const addedSince = async before => (await f.snapshot()).nodes.filter(n => !before.nodes.some(old => old.id === n.id));
   const panel = page.getByTestId("editor-properties-panel");
   const edit = async (name, value) => {
-    const input = panel.getByRole("spinbutton", { name, exact: true });
+    const input = panel.getByRole("textbox", { name, exact: true });
     await input.fill(String(value)); await input.press("Enter"); await f.settle();
   };
   const context = async (point, testId) => { await f.click(point, { button: "right" }); await page.getByTestId("editor-menu-mask-submenu").hover(); await page.getByTestId(testId).click(); await f.settle(); };
