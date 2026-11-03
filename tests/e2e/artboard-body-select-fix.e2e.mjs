@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { saveZipSnapshot, importZipFromWelcome } from "./uf13-pen-join-helpers.mjs";
 
-const EVIDENCE_DIR =
-  process.env.VOO_FIX_EVIDENCE_DIR ||
-  "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/marquee-select-fix-20261103-v3";
+const EVIDENCE_DIR = mkdtempSync(editorArtifactPath("artboard-body-select-fix/run-"));
+console.log(`Evidence directory: ${EVIDENCE_DIR}`);
 
 await mkdir(EVIDENCE_DIR, { recursive: true });
 

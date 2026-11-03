@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { canonicalProjectNodes } from "../../scripts/desktop-release-plan.mjs";
 import { saveZipSnapshot, importZipFromWelcome } from "./uf13-pen-join-helpers.mjs";
 
-const out = process.env.VOO_FIX_EVIDENCE_DIR;
-if (!out || !out.startsWith("/")) throw new Error("VOO_FIX_EVIDENCE_DIR must be an absolute independent directory");
+const out = mkdtempSync(editorArtifactPath("default-frame-marquee/run-"));
+console.log(`Evidence directory: ${out}`);
 await mkdir(out, { recursive: true });
 const zip = `${out}/default-frame.zip`, records = [];
 let ids, frameId, savedNodes;
