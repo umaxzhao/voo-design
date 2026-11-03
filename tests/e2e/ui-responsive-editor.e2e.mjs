@@ -1,6 +1,7 @@
 import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { assertEditorSafeArea } from "./editor-safe-area-checks.mjs";
 import { assertPanelLayout, assertReachable, boxOf, camera, openBothPanels, prepareResponsiveModels, seedResponsiveDocument, settled, settlePanels, touch } from "./ui-responsive-editor-helpers.mjs";
 
 const checks = [];
@@ -226,13 +227,14 @@ await withEditorBrowser(async ({ page, tool }) => {
 
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 12, right: 10, bottom: 8, left: 6 } });
   await settlePanels(page);
-  assert.deepEqual(await page.locator(".app-root-frame").evaluate(element => {
-    const s = getComputedStyle(element); return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft].map(parseFloat);
-  }), [16, 14, 12, 14]);
+  await assertEditorSafeArea(page, { top: 12, right: 10, bottom: 8, left: 6 }, "responsive-safe");
   await assertReachable(page.getByTestId("editor-zoom-percent"), "safe-area zoom");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
+  await settlePanels(page);
+  await assertEditorSafeArea(page, { top: 0, right: 0, bottom: 0, left: 0 }, "responsive-zero");
+  await assertReachable(page.getByTestId("editor-zoom-percent"), "zero-inset zoom");
   await session.detach();
-  checks.push("safe-area changes preserve physical insets with symmetric horizontal margins and reachable navigation");
+  checks.push("safe-area changes preserve complete mint frame, status gradient, physical safe bounds and reachable navigation without a decorative gutter");
 }, { viewport: { width: 1440, height: 1000 }, hasTouch: true,
   preparePage: page => prepareResponsiveModels(page, true) });
 

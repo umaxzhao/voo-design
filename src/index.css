@@ -410,15 +410,20 @@
     #b2ffd6;
 }
 
-.app-root-frame[data-editor-page="true"],
 .app-root-frame[data-editor-page="true"] > [data-testid="editor-workspace-layout"] {
-  background: #b2ffd6 !important;
+  background: var(--editor-frame-color) !important;
+  /* Global floating-control shadows must not spill into display insets. */
+  overflow: clip;
 }
 
 /* Floating panel shadows stay inside the content edge, clear of the mint rim. */
 .app-root-frame[data-editor-page="true"] {
   --editor-frame-radius: 16px;
   --editor-frame-color: #b2ffd6;
+  background:
+    linear-gradient(-90deg, #000 70.123%, #b2ffd6 89.855%) top /
+      100% env(safe-area-inset-top, 0px) no-repeat,
+    var(--editor-frame-color) !important;
   --mobile-frame-inset-radius: var(--editor-frame-radius);
   --mobile-content-radius: calc(var(--editor-frame-radius) - 2px);
   border-radius: var(--editor-frame-radius);
@@ -427,7 +432,21 @@
     max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))
     env(safe-area-inset-bottom, 0px);
   overflow: clip;
-  overflow-clip-margin: content-box;
+  overflow-clip-margin: padding-box;
+}
+
+/* Extend only the status paint across physical insets, using its actual height
+ * (including wrapped narrow layouts). Controls retain the safe content bounds. */
+.app-root-frame[data-editor-page="true"] > .app-title-bar::before {
+  content: "";
+  position: absolute;
+  inset:
+    calc(-1 * env(safe-area-inset-top, 0px))
+    calc(-1 * max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))
+    0;
+  background: linear-gradient(-90deg, #000 70.123%, #b2ffd6 89.855%);
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Keep the structural frame above global floating-control shadows. The outer
