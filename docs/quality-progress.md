@@ -1,5 +1,13 @@
 # 项目检查总进度
 
+## UF-FRAME-OVERLAY-20261103 — reference outline on an unbounded canvas
+
+- Owner B; isolated `frame-overlay-b8-b-20261103T082643Z-4077`, pinned base `b8ae8039`. Real Frame-label drag moves model `(0,0)` to `(125,80)` while a separate workspace-chrome reference outline stays at the old page bounds; selection and artwork already follow the Frame. Root page background is transparent. This is separate from outer app CSS and OBS-FRAME01 resize fill.
+- Original browser matrix exit 1 preserves 12 phantom-outline checkpoints across real pan/zoom, multiple rotated Frames, one Undo/Redo and actual ZIP chooser cold open; bounded-page reference controls remain valid. Evidence: `closure-acceptance-evidence/frame-overlay-b8-b-20261103T082643Z-4077/` with exact revision, screenshots, model/screen coordinates, raw logs and package hashes in its report.
+- Fix scope: omit the extra layout reference outline only for live `isCanvasRoot` documents; keep engine selection/hover chrome and ordinary bounded-page outlines. New `canvas.frame-overlay-parity` acceptance owns the focused regression.
+- Only exits and revision recorded in the final evidence certify their measured web contexts. Mac old-GUI refusal remains blocked without retry; Linux native, other apps/packages and full release certification remain untested. No CSS or selection Esc/feather history files changed.
+
+
 ## LINUX-STYLE01 — scoped opacity repair, 2026-11-03
 
 - Pinned reproduction: `aad8cafc1c415817e3d55e0e1deb6854164abc65`, own standalone clone; fill RGBA `[255,0,0,128]`, overlapping stroke `[85,0,170,192]`. Layer alpha was applied separately per paint. Reuse the existing isolated-style compositor and wrap expanded SVG paint siblings once; own paint opacity is preserved.
