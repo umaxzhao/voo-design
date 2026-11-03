@@ -5,11 +5,13 @@ const { closeMessages } = require("./native-messages.cjs");
 exports.createCloseGuard = function createCloseGuard({ app, dialog, getWindow }) {
   let pending = null;
   let approvedWindow = null;
+  let generation = 0;
   function confirm() {
     const win = getWindow();
     if (!win || win.isDestroyed()) return Promise.resolve(true);
     if (approvedWindow === win) return Promise.resolve(true);
     if (pending) return pending;
+    const requestedGeneration = generation;
     pending = (async () => {
       const dirty = await win.webContents.executeJavaScript(
         "!window.dispatchEvent(new Event('beforeunload', { cancelable: true }))",
@@ -22,6 +24,7 @@ exports.createCloseGuard = function createCloseGuard({ app, dialog, getWindow })
         });
         if (response !== 1) return false;
       }
+      if (requestedGeneration !== generation) return false;
       approvedWindow = win;
       return true;
     })().finally(() => { pending = null; });
@@ -40,5 +43,10 @@ exports.createCloseGuard = function createCloseGuard({ app, dialog, getWindow })
       }).catch(error => console.error("[electron] Close confirmation failed:", error));
     });
   }
-  return { confirm, attach };
+  function reset() { approvedWindow = null; generation++; }
+  function isApproved() {
+    const win = getWindow();
+    return !win || win.isDestroyed() || approvedWindow === win;
+  }
+  return { confirm, attach, reset, isApproved };
 };

@@ -291,6 +291,11 @@
 最近一次完整核心检查：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，四个平台原生与最终草稿核验通过。线上已更新为该 CI 构建；本地脏工作区草稿仍不属于本版发布认证。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+### 本地安装确认修复（未发布，2026-11-03）
+
+- `platform.desktop-update-install`：以 `895b2b2e` 独立副本修复显式安装前确认、重复请求、错误后的批准撤销及 bridge 恢复；验收边界见 [release-checklist.md](release-checklist.md#explicit-install-confirmation-regression--local-895b2b2e-baseline)。普通 Quit 自动安装与再次检查/下载的控制流单独验证。
+- 本地最终 commit、修前失败、修后真实 exit 与源码哈希：`/Users/tt/Desktop/voo-linux-qa/updater-guard-fix-20261103T064053Z/REPORT.md`。实际各 OS 安装、Squirrel native 生命周期、真实下载与文件持久化均 notrun；没有新增 retry UI、feed 或发布能力。此前只读 12 场景不作为产品修复证据。
+
 ## 三平台 GitHub Beta（门禁与产物核验通过）
 
 - [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。

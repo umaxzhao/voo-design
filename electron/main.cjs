@@ -251,8 +251,17 @@ app.on("before-quit", (event) => {
       clearTimeout(cliBridgeRetry);
       cliBridgeRetry = null;
       await cliBridgeStartup;
+      // An updater error can revoke approval while startup is settling.
+      if (!closeGuard.isApproved()) { cliBridgeShutdown = null; return; }
       if (cliBridge) await cliBridge.close();
       cliBridge = null;
+      if (!closeGuard.isApproved()) {
+        // A late installation error must return to an editable, connected app.
+        cliBridgeShutdown = null;
+        cliBridgeStartup = startDesktopCliBridge();
+        await cliBridgeStartup;
+        return;
+      }
       cliBridgeQuitComplete = true;
       app.quit();
     })().catch((err) => {
@@ -266,7 +275,7 @@ app.on("before-quit", (event) => {
 app.whenReady().then(() => {
   cliBridgeStartup = startDesktopCliBridge();
   createMainWindow();
-  require("./updater.cjs").setupUpdater({ app, ipcMain, getWindow: () => mainWindow });
+  require("./updater.cjs").setupUpdater({ app, ipcMain, getWindow: () => mainWindow, closeGuard });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

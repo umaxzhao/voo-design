@@ -278,3 +278,29 @@ For detailed feature inventory, see:
 - [ ] Run `ANALYZE=1 npm run build` and inspect the local `analysis/bundle.html` report. Ship no report, maps, duplicate WASM, tests or build caches; keep EULA/third-party notices intact.
 - [ ] Verify `zh-CN`/`en-US` locales, production sourcemaps disabled, maximum compression, and on-demand model caching/offline failure behavior. Smoke-test the rebuilt AppImage and refresh `docs/screenshots/packaged-smoke.png`.
 - [ ] Measure DMG/NSIS on their native release hosts; the report's macOS/Windows sizes are estimates.
+
+
+## Explicit-install confirmation regression — local 895b2b2e baseline
+
+Capability: `platform.desktop-update-install` (partial). The local fix is based on
+`895b2b2e8df439e622df62bafada182595df5775`; its final commit, raw exit codes,
+events and source hashes are recorded outside the repository at
+`/Users/tt/Desktop/voo-linux-qa/updater-guard-fix-20261103T064053Z/REPORT.md`.
+The earlier read-only receipt remains unchanged in `updater-close-risk-20261103T063534Z`.
+
+| Acceptance axis | Registered assertions and limits |
+| --- | --- |
+| Explicit entry | `updates:install` waits for the shared native dirty confirmation before installed BaseUpdater/MacUpdater methods; absent guard fails closed. No new feed or retry UI. |
+| Cancel/failure | Keep editing, cancel response, renderer-query rejection, false install result, throw and error event reject or invalidate the handoff; later Quit asks again. An IPC true is accepted handoff only, never installation completion. |
+| Concurrent lifecycle | Repeated clicks and concurrent ordinary Quit share the prompt; one install per accepted request. Failed queued Base adapter quits remain blocked across recovery; Mac waits for existing native readiness and removes its pending listener on error. |
+| Editable recovery | Error before bridge disposal prevents it; error during awaited disposal restores the existing bridge startup path instead of completing Quit. |
+| Ordinary Quit | Installed BaseUpdater.addQuitHandler runs after confirmed quit completion; cancellation keeps the bridge. Failed explicit attempts are not silently retried by the quit hook. |
+| Check/download recovery | Installed AppUpdater check/download promise control flow clears rejected caches and permits a later explicit dependency check; lower download IO is a rejecting/resolving boundary. Existing startup check observes its downloadPromise rejection. There is no user retry control in ReleaseUI. |
+| Geometry/pixels/history | Not applicable to the main-process lifecycle change; no document mutation or render path was changed. Dirty beforeunload state and bridge/window lifecycle are asserted instead. |
+| Platform | Node isolation executes actual installed electron-updater 6.8.9 methods plus product guard/updater/main handler. Electron, native installer and lower download/network IO are side-effect boundaries. No actual native updater constructor is started. |
+| Remaining | Windows/Linux/macOS real installers, native Squirrel quit/cancel/restart, signatures, live feed/download bytes and actual unsaved-file preservation are **notrun**. A failure after native handoff cannot imply rollback of installer side effects. |
+
+Tests: `tests/unit/updater-install-guard.test.js`, `updater-chain-fixture.cjs`,
+`updater-recovery.test.js`, together with the original close/updater/IPC suites.
+This scoped local evidence is not a release, packaged-native acceptance or an
+inherited pass from the earlier 12-case risk receipt. No assertion or timeout was removed.

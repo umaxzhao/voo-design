@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { describe, it, expect, vi } from 'vitest';
 const { setupUpdater } = createRequire(import.meta.url)('../../electron/updater.cjs');
 function context(packaged = true) {
-  return { app: { isPackaged: packaged }, ipcMain: { handle: vi.fn() }, getWindow: () => null, env: {}, logger: { warn: vi.fn() }, loadUpdater: vi.fn() };
+  return { app: { isPackaged: packaged }, ipcMain: { handle: vi.fn() }, getWindow: () => null, closeGuard: { confirm: vi.fn(async () => true), reset: vi.fn() }, env: {}, logger: { warn: vi.fn() }, loadUpdater: vi.fn() };
 }
 describe('offline-safe updater', () => {
   it('does not load or check in development or when disabled', () => {
@@ -19,7 +19,7 @@ describe('offline-safe updater', () => {
     expect(options.logger.warn).toHaveBeenCalledWith('[updates]', 'offline');
     expect(updater.autoDownload).toBe(true); expect(updater.autoInstallOnAppQuit).toBe(true);
   });
-  it('swallows initialization errors and forwards events, installing only when ready', () => {
+  it('swallows initialization errors and forwards events, installing only when ready', async () => {
     const options = context(); options.loadUpdater.mockImplementation(() => { throw new Error('offline'); });
     expect(() => setupUpdater(options)).not.toThrow();
     const next = context(); const handlers = {}; const events = {};
@@ -29,7 +29,7 @@ describe('offline-safe updater', () => {
     next.loadUpdater.mockReturnValue(updater); setupUpdater(next);
     expect(handlers['updates:install']()).toBe(false);
     events['update-available'](); expect(send).toHaveBeenCalledWith('updates:status', { state: 'available' });
-    events['update-downloaded'](); expect(handlers['updates:install']()).toBe(true);
+    events['update-downloaded'](); expect(await handlers['updates:install']()).toBe(true);
     expect(updater.quitAndInstall).toHaveBeenCalledOnce();
     events.error(new Error('offline')); expect(handlers['updates:status']()).toEqual({ state: 'error' });
   });
