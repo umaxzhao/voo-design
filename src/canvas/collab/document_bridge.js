@@ -83,6 +83,10 @@ export function createDocumentBridge({
     );
   }
 
+  function sharedImageIds() {
+    return new Set(imageIds(snapshot()));
+  }
+
   function sendDocument(peerId = null) {
     if (applyingRemote || session.getSnapshot?.().readOnly) return;
     const document = snapshot();
@@ -106,15 +110,24 @@ export function createDocumentBridge({
   }
 
   function announceHave() {
-    const ids = Object.keys(store.getState?.().images ?? {});
+    const sharedIds = sharedImageIds();
+    const ids = Object.keys(store.getState?.().images ?? {}).filter((id) =>
+      sharedIds.has(id),
+    );
     if (ids.length) session.broadcast(MSG.BLOB_HAVE, { ids });
   }
 
   async function sendImages(peerId, ids) {
-    const available = await db.getImageBlobMap?.(ids);
+    const sharedIds = sharedImageIds();
+    const requestedIds = [
+      ...new Set((Array.isArray(ids) ? ids : []).filter((id) => typeof id === "string")),
+    ].filter((id) => sharedIds.has(id));
+    if (!requestedIds.length) return;
+    const requested = new Set(requestedIds);
+    const available = await db.getImageBlobMap?.(requestedIds);
     if (session.peerSupports?.(peerId, CAP_BINARY_BLOBS)) {
       for (const [id, blob] of available ?? []) {
-        if (!blob) continue;
+        if (!requested.has(id) || !blob || !sharedImageIds().has(id)) continue;
         const bytes = new Uint8Array(await blob.arrayBuffer());
         const total = Math.max(
           1,
@@ -122,6 +135,7 @@ export function createDocumentBridge({
         );
         for (let seq = 0; seq < total; seq += 1) {
           await session.whenWritable?.(peerId);
+          if (!sharedImageIds().has(id)) break;
           session.sendRaw?.(
             peerId,
             encodeBinaryFrame(
@@ -143,10 +157,12 @@ export function createDocumentBridge({
       }
       return;
     }
-    const urls = await db.getImageDataUrls(ids);
+    const urls = await db.getImageDataUrls(requestedIds);
     for (const [id, dataUrl] of Object.entries(urls ?? {})) {
+      if (!requested.has(id) || !sharedImageIds().has(id)) continue;
       for (const chunk of splitPayload(dataUrl, CHUNK_SIZE)) {
         await session.whenWritable?.(peerId);
+        if (!sharedImageIds().has(id)) break;
         session.sendTo(peerId, MSG.BLOB_DATA, {
           id,
           dataUrl: chunk.chunk,
@@ -234,10 +250,8 @@ export function createDocumentBridge({
         if (!peers) holders.set(id, (peers = new Set()));
         peers.add(peerId);
       }
-      requestImages(
-        (ids ?? []).filter((id) => imageIds(snapshot()).includes(id)),
-        peerId,
-      );
+      const sharedIds = sharedImageIds();
+      requestImages((ids ?? []).filter((id) => sharedIds.has(id)), peerId);
     },
     onBlobWant(ids, peerId) {
       void sendImages(peerId, ids);
