@@ -354,6 +354,9 @@ export default {
   "collab.explainer":
     "Copy a project link that opens even after you leave. While this room is online, it also joins live collaboration.",
   "collab.link": "Project link",
+  "collab.onlineLink": "Online link",
+  "collab.lanLink": "Local network link",
+  "collab.lanDisabled": "Unavailable",
   "collab.linkPending": "Create a project link to share",
   "collab.copy": "Copy",
   "collab.copied": "Copied",

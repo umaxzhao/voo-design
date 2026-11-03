@@ -271,10 +271,11 @@ export default function CollabAvatars({
             </p>
           ) : null}
 
+          <p className="mb-1 text-[11px] text-neutral-400">{t("collab.onlineLink")}</p>
           <div className="mb-2.5 flex items-center gap-1.5">
             <input
               readOnly
-              value={sharedLink ?? ""}
+              value={sharedLink ?? state?.link ?? ""}
               placeholder={t("collab.linkPending")}
               onFocus={(event) => event.target.select()}
               aria-label={t("collab.link")}
@@ -287,6 +288,11 @@ export default function CollabAvatars({
             >
               {copied ? t("collab.copied") : t("collab.copy")}
             </button>
+          </div>
+
+          <div className="mb-2.5 flex items-center justify-between gap-2 text-[11px] text-neutral-400">
+            <span>{t("collab.lanLink")}</span>
+            <span>{t("collab.lanDisabled")}</span>
           </div>
 
           {shareError ? (

@@ -333,6 +333,9 @@ export default {
   "collab.explainer":
     "复制项目链接后，即使你离开，其他人也能打开项目；房间在线时，链接还会自动加入实时协作。",
   "collab.link": "项目链接",
+  "collab.onlineLink": "在线链接",
+  "collab.lanLink": "局域网链接",
+  "collab.lanDisabled": "暂不可用",
   "collab.linkPending": "创建可分享的项目链接",
   "collab.copy": "复制",
   "collab.copied": "已复制",

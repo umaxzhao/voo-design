@@ -69,7 +69,8 @@ export function createMessageHandler({ roomSecret: getRoomSecret, verifiedPeers,
     // Read-only peers (guests that joined a view link) cannot edit the shared
     // document, even when their client is modified to publish anyway. Peers on
     // older builds announce no flag and stay writable for link compatibility.
-    if (EDIT_MESSAGES.has(message.type) && peerReadOnly.get(fromPeerId)) {
+    if (EDIT_MESSAGES.has(message.type) &&
+        (peerReadOnly.get(fromPeerId) || (!joinedViaLink() && access() === "view"))) {
       console.warn("collab: dropped write from a read-only peer", message.type);
       return;
     }

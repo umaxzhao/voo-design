@@ -263,7 +263,7 @@ export const EDITOR_MODULES = [
       "scripts/editor-module-catalog.mjs", "scripts/editor-checks.mjs", "scripts/editor-check-plans.mjs",
       "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js",
-      "tests/unit/collab_resource_security.test.js",
+      "tests/unit/collab_resource_security.test.js", "tests/unit/lan-loopback-signaling.test.js", "tests/unit/lan-loopback-session.test.js", "tests/unit/collab-history-rebase.test.js",
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/canvas_agent_panel.jsx", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
@@ -276,16 +276,17 @@ export const EDITOR_MODULES = [
     related: ["workspace","documents","inspector","images","text"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration", "platform.collaboration-resource-scope", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
+      "platform.native-collaboration", "platform.collaboration-resource-scope", "platform.lan-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
       "platform.harness-editor-panel", "platform.desktop-update-install",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions", "pending-integration", "agent-model-catalog", "editor-loading",
-      "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
+      "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor", "lan-loopback-signaling", "lan-loopback-session",
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
     ],
     remaining: [
+      "LAN sharing remains disabled: only an isolated loopback prototype is exercised; no cross-device, trusted LAN origin or native hosting is verified.",
       "Paid endpoints, authenticated external clients, signed installers and skipped collaboration cases require separate evidence and cannot inherit an offline pass.",
       "The DeepSeek Harness right-panel host (plugins/voo-editor-panel) has unit coverage for its loopback server; its rendered panel and the DSH-side tab registration are verified in the Harness profile, not by these browser suites.",
     ],
