@@ -291,6 +291,11 @@
 最近一次完整核心检查：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，四个平台原生与最终草稿核验通过。线上已更新为该 CI 构建；本地脏工作区草稿仍不属于本版发布认证。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+### 本地像素选区 Esc 修复（未发布，2026-11-03）
+
+- `selection.pixel-selection-escape`：以 `b8ae8039` 新独立副本复现“Esc 仅清图层、未清 pixel 选区”，新增 pixel-first 的一次可撤销取消；文本编辑、IME composing、input 与顶层浮层仍优先，下一次 Esc 才取消 layer selection。
+- 源码提交、修前失败、真实虚线/像素/UndoRedo 与各命令 exit 在 `/Users/tt/Desktop/voo-linux-qa/selection-escape-fix-20261103T080112Z/REPORT.md`，详细合同见 [editor-closeout.md](audits/editor-closeout.md#pixel-selection-escape-local-b8-regression)。DPR2 为 browser 模拟，Mac/Linux/Windows native 与实体 IME 均 notrun；`UF-SELECTION-MAC-20261103-USER` 原 Mac“不能显示”仍未实机判定，不因本修复关闭。
+
 ### 本地安装确认修复（未发布，2026-11-03）
 
 - `platform.desktop-update-install`：以 `895b2b2e` 独立副本修复显式安装前确认、重复请求、错误后的批准撤销及 bridge 恢复；验收边界见 [release-checklist.md](release-checklist.md#explicit-install-confirmation-regression--local-895b2b2e-baseline)。普通 Quit 自动安装与再次检查/下载的控制流单独验证。
