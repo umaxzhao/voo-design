@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { assertEditorSafeArea } from "./editor-safe-area-checks.mjs";
+import { seedResponsiveDocument, settlePanels } from "./ui-responsive-editor-helpers.mjs";
 
 const settle = page => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 const pageState = page => page.evaluate(async () => {
@@ -28,6 +30,8 @@ const targetHit = locator => locator.evaluate(button => {
 
 await withEditorBrowser(async ({ page }) => {
   const checks = [];
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 12, right: 10, bottom: 8, left: 6 } });
   const switcher = await seedPages(page);
   const input = switcher.locator("input");
   await switcher.getByRole("button", { name: "Page 1", exact: true }).dblclick();
@@ -75,28 +79,24 @@ await withEditorBrowser(async ({ page }) => {
   assert.deepEqual(await pageState(page), beforeCancel);
   checks.push("pointer ownership rejects unrelated release and genuine cancellation never commits");
 
-  const session = await page.context().newCDPSession(page);
   assert.equal(await page.evaluate(() => matchMedia("(pointer: coarse)").matches), false);
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 12, right: 10, bottom: 8, left: 6 } });
   await settle(page);
-  const padding = () => page.evaluate(() => {
-    const style = getComputedStyle(document.querySelector(".app-root-frame"));
-    return [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft].map(parseFloat);
-  });
-  assert.deepEqual(await padding(), [16, 14, 12, 14], "balanced safe-area protection does not depend on a coarse pointer");
+  await assertEditorSafeArea(page, { top: 12, right: 10, bottom: 8, left: 6 }, "fine-safe");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await settle(page);
-  assert.deepEqual(await padding(), [4, 4, 4, 4]);
+  await assertEditorSafeArea(page, { top: 0, right: 0, bottom: 0, left: 0 }, "fine-zero");
   assert.equal(await page.getByTestId("editor-select-menu-trigger").getAttribute("aria-hidden"), null);
   await session.detach();
-  checks.push("fine-pointer sessions retain nonzero safe-area padding while ordinary desktops keep the 4px fallback");
+  checks.push("fine-pointer sessions protect controls and the complete mint frame inside safe bounds, with no decorative desktop gutter");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });
 
 await withEditorBrowser(async ({ page }) => {
   const checks = [];
-  const switcher = await seedPages(page, 12);
   const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 20, right: 8, bottom: 16, left: 12 } });
+  const switcher = await seedPages(page, 12);
   const touch = (type, points = []) => session.send("Input.dispatchTouchEvent", {
     type, touchPoints: points.map(point => ({ ...point, radiusX: 1, radiusY: 1, force: 1 })),
   });
@@ -164,24 +164,19 @@ await withEditorBrowser(async ({ page }) => {
   await switcher.waitFor();
   checks.push("unmounting the popup removes global drag/scroll listeners and cannot commit a late drop");
 
-  const padding = () => page.evaluate(() => {
-    const root = document.querySelector(".app-root-frame");
-    const style = getComputedStyle(root);
-    return [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft].map(parseFloat);
-  });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 20, right: 8, bottom: 16, left: 12 } });
   await settle(page);
-  assert.deepEqual(await padding(), [24, 16, 20, 16]);
+  await assertEditorSafeArea(page, { top: 20, right: 8, bottom: 16, left: 12 }, "touch-portrait-safe");
   await page.setViewportSize({ width: 844, height: 390 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 20, bottom: 12, left: 36 } });
   await settle(page);
-  assert.deepEqual(await padding(), [4, 40, 16, 40], "landscape phones balance the largest safe inset on both sides above the narrow breakpoint");
+  await assertEditorSafeArea(page, { top: 0, right: 20, bottom: 12, left: 36 }, "touch-landscape-safe");
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 390, height: 844 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await settle(page);
-  assert.deepEqual(await padding(), [4, 4, 4, 4]);
-  checks.push("actual safe-area env values protect portrait/landscape with symmetric horizontal margins and fall back to 4px");
+  await assertEditorSafeArea(page, { top: 0, right: 0, bottom: 0, left: 0 }, "touch-zero");
+  checks.push("actual portrait/landscape safe areas protect controls with symmetric frame bounds and no extra gutter");
 
   const select = page.getByTestId("editor-select-tool");
   await select.scrollIntoViewIfNeeded();
@@ -214,3 +209,30 @@ await withEditorBrowser(async ({ page }) => {
   await session.detach();
   console.log(JSON.stringify({ passed: checks }, null, 2));
 }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+// Exercise the same visible contract on both pointer classes and both themes;
+// the drag/cancel/swipe checks above run with nonzero safe areas as well.
+for (const dpr of [1, 2]) for (const coarse of [false, true]) {
+  await withEditorBrowser(async ({ page }) => {
+    await seedResponsiveDocument(page);
+    const session = await page.context().newCDPSession(page);
+    assert.equal(await page.evaluate(() => matchMedia("(pointer: coarse)").matches), coarse);
+    for (const [width, height] of [[1440, 900], [390, 844]]) {
+      await page.setViewportSize({ width, height });
+      for (const theme of ["dark", "light"]) {
+        await page.evaluate(async theme => (await import("/src/canvas/use_editor_theme.js")).setEditorTheme(theme), theme);
+        await page.waitForFunction(color => getComputedStyle(document.querySelector(".editor-shell")).borderLeftColor === color,
+          theme === "dark" ? "rgb(178, 255, 214)" : "rgb(167, 255, 212)");
+        for (const safe of [false, true]) {
+          const insets = safe ? { top: 20, right: 8, bottom: 16, left: 12 } : { top: 0, right: 0, bottom: 0, left: 0 };
+          await session.send("Emulation.setSafeAreaInsetsOverride", { insets });
+          await settlePanels(page);
+          const label = `${coarse ? "touch" : "fine"}-${width}-${theme}-${safe ? "safe" : "zero"}-dpr${dpr}`;
+          await assertEditorSafeArea(page, insets, label);
+          console.log(`${label}: visible frame, safe controls and hit-test passed`);
+        }
+      }
+    }
+    await session.detach();
+  }, { viewport: { width: 1440, height: 900 }, hasTouch: coarse, isMobile: coarse, deviceScaleFactor: dpr });
+}

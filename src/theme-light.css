@@ -29,10 +29,8 @@ html[data-theme="light"] .editor-shell {
 }
 
 /* Match the complete editor surround to the light mint frame. */
-html[data-theme="light"] .app-root-frame[data-editor-page="true"],
-html[data-theme="light"] .app-root-frame[data-editor-page="true"] > [data-testid="editor-workspace-layout"] {
+html[data-theme="light"] .app-root-frame[data-editor-page="true"] {
   --editor-frame-color: #a7ffd4;
-  background: #a7ffd4 !important;
 }
 
 html[data-theme="light"] #root:has(> .app-root-frame[data-editor-page="true"]) {

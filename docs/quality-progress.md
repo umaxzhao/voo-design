@@ -1,5 +1,11 @@
 # 项目检查总进度
 
+## UI 安全区与绿框门禁合同（2026-11-03）
+
+- 独立基线 `3dec4ef2`；保留用户要求的零额外4px外间距，物理安全区保护不减。修正非零安全区时顶栏黑端旁的绿色盖边，并将 `pages_dnd` 的旧 padding 数字断言换成可见边框/安全区/命中合同；原拖动业务断言保留并在非零安全区执行。
+- 详见 [UI safe-area audit](audits/ui-safearea-contract-20261103.md)；最终提交、原失败及检查退出码由同级 `evidence/SAFEAREA-CONTRACT-REPORT.md`/`safearea-verification.json` 固定。新增32组主题/尺寸/指针/安全区/DPR组合，不能当原生硬件通过。
+- 原整合130步门禁仅21步通过、step22失败、108步未执行；本轮只做授权相关检查，不重启全门禁，不升级为全项目通过。无push/发布/部署或已打开文档改动。
+
 ## Isolated b8 + Frame/UI/selection combination — 2026-11-03
 
 - Fresh copy `combo-b8-frame-ui-selection-b-20261103T090717Z-4077`; fixed incoming heads are Frame `adc735d1`, complete UI chain through `66d7609d` (including #52 predecessors and `48d5b6f8`), and C `b8 -> 8606c336 -> 6b48448a`. No e0 dirty gesture edits were imported.
