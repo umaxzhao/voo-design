@@ -4,7 +4,7 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
-      "src/app_title_bar.jsx", "src/welcome_settings.css",
+      "src/App.jsx", "src/app_title_bar.jsx", "src/welcome_settings.css",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
       "src/canvas/components/titlebar*",
@@ -12,16 +12,19 @@ export const EDITOR_MODULES = [
       "src/canvas/components/canvas_tab_label.js", "src/canvas/components/use_tab_bar_overflow.js",
       "src/canvas/use_window_controls.js", "tests/unit/workspace_platform_badge.test.js",
       "tests/unit/settings_workspace.test.js", "tests/unit/close_project_tab.test.jsx",
-      "tests/unit/welcome_home_actions.test.js",
+      "tests/unit/welcome_home_actions.test.js", "tests/unit/win_chrome_titlebar.test.jsx",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry","workspace.project-tabs"],
+    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry","workspace.project-tabs","workspace.browser-mount-chrome"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
-      "top-tabs-overflow", "welcome-sidebar-toggle",
+      "top-tabs-overflow", "welcome-sidebar-toggle", "win-chrome-browser-mount",
     ],
-    remaining: ["Native OS picker behavior and physical touch devices require separate evidence."],
+    remaining: [
+      "Native OS picker behavior and physical touch devices require separate evidence.",
+      "Windows native DWM caption rendering and physical keyboard/IME hardware behavior are simulated at the browser DOM level and require separate Windows OS evidence.",
+    ],
   },
   {
     id: "documents",
