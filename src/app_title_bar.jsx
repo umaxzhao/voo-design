@@ -21,10 +21,14 @@ export const APP_DISPLAY_NAME = "VOO Design";
 /** Space kept clear of the native macOS traffic lights (close/minimise/zoom). */
 const MAC_TRAFFIC_LIGHT_INSET_PX = 96;
 
+/** Space kept clear of the native Windows window controls (minimize/maximize/close). */
+const WIN_WINDOW_CONTROLS_INSET_PX = 138;
+
 export { VooBrandLogo };
 
 export default function AppTitleBar() {
   const isMac = window.electronAPI?.platform === "darwin";
+  const isWindows = window.electronAPI?.platform === "win32";
   const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
   const welcomeActionsReady = useDesignStore((state) => state.welcomeActionsReady);
   const welcomeActionsPending = welcomeOpen && !welcomeActionsReady;
@@ -105,6 +109,7 @@ export default function AppTitleBar() {
         className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
         style={{
           ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
+          ...(isWindows ? { paddingRight: WIN_WINDOW_CONTROLS_INSET_PX } : {}),
           WebkitAppRegion: "drag",
           background:
             "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",

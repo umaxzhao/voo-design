@@ -7,6 +7,7 @@ const closeGuard = require("./close-guard.cjs").createCloseGuard({ app, dialog, 
 
 function createMainWindow() {
   const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+  const isWindows = process.platform === "win32";
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -14,7 +15,17 @@ function createMainWindow() {
     minHeight: 700,
     backgroundColor: "#000000",
     show: isDev,
-    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
+    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : isWindows ? "hidden" : "default",
+    ...(isWindows
+      ? {
+          titleBarOverlay: {
+            color: "#000000",
+            symbolColor: "#ffffff",
+            height: 40,
+          },
+          autoHideMenuBar: true,
+        }
+      : {}),
     trafficLightPosition: { x: 14, y: 14 },
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),

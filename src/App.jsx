@@ -14,6 +14,7 @@ import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
+import { requestWelcomeNew } from "./canvas/components/welcome_dashboard/welcome_events.js";
 import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
@@ -92,6 +93,18 @@ export default function App() {
     window.addEventListener("voo:open-browser", handleOpenBrowser);
     window.addEventListener("voo:open-onboarding", handleOpenOnboarding);
 
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === "n" || e.key === "N")) {
+        e.preventDefault();
+        if (useDesignStore.getState().welcomeOpen) {
+          requestWelcomeNew();
+        } else {
+          window.dispatchEvent(new CustomEvent("voo:file-new"));
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
     let unsubscribeMenu = null;
     if (window.electronAPI?.onMenuAction) {
       unsubscribeMenu = window.electronAPI.onMenuAction((action) => {
@@ -103,7 +116,11 @@ export default function App() {
             window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
             break;
           case "file:new":
-            window.dispatchEvent(new CustomEvent("voo:file-new"));
+            if (useDesignStore.getState().welcomeOpen) {
+              requestWelcomeNew();
+            } else {
+              window.dispatchEvent(new CustomEvent("voo:file-new"));
+            }
             break;
           case "file:open":
             window.dispatchEvent(new CustomEvent("voo:file-open"));
@@ -139,6 +156,7 @@ export default function App() {
       window.removeEventListener("voo:agent-prompt", handleOpenAgent);
       window.removeEventListener("voo:open-onboarding", handleOpenOnboarding);
       window.removeEventListener("voo:open-browser", handleOpenBrowser);
+      window.removeEventListener("keydown", handleKeyDown);
       if (unsubscribeMenu) unsubscribeMenu();
     };
   }, [firstRunOpen]);
