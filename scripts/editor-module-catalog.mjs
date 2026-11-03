@@ -78,13 +78,13 @@ export const EDITOR_MODULES = [
       "src/shared/editor-shortcut-catalog.js",
       "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
       "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "src/canvas/editor/editor_engine.js", "tests/unit/editor-module-audit-regressions.test.js", "tests/unit/mac_qa_interaction_fixes.test.jsx",
-      "tests/unit/pixel-selection-escape.test.js", "tests/e2e/pixel-selection-escape-fixture.mjs",
+      "tests/unit/pixel-selection-escape.test.js", "tests/unit/selection-feather-preview.test.js", "tests/e2e/pixel-selection-escape-fixture.mjs",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
-    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection", "selection.pixel-selection-escape"],
+    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection", "selection.pixel-selection-escape", "selection.feather-preview-cancel"],
     suites: [
       "frame-child-pointer", "frame-label-selection", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle",
-      "hook-lifecycle", "continuous-creation", "pixel-selection-escape",
+      "hook-lifecycle", "continuous-creation", "pixel-selection-escape", "selection-feather-rollback",
     ],
     remaining: [
       "Physical stylus pressure, OS shortcut interception and all multi-touch sequences need device-specific checks.",

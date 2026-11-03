@@ -291,6 +291,12 @@
 最近一次完整核心检查：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，四个平台原生与最终草稿核验通过。线上已更新为该 CI 构建；本地脏工作区草稿仍不属于本版发布认证。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+### 选区 Feather 取消回滚 / 重测矩阵第3行（本地Web候选，2026-11-03）
+
+- `T01-ESC-OBS01`：`selection_api_modify.js` 保留稳定选区前态，输入7后Esc回0时完整恢复contours/bounds/选择像素；重复预览、非零取消与选区替换均有真实UI证据。未修改共享输入、image_editor、Frame/selection overlay绘制或缓存源码。
+- 本地组合为 b8 + `8606c336` + 本次Feather修复；最终SHA、冻结Web包hash、实际控件/像素/UndoRedo、新browser进程保存重开在 `/Users/tt/Desktop/voo-linux-qa/selection-feather-rollback-20261103T083137Z/REPORT.md`。08:34统一矩阵的跨owner组合/原生包身份未指定，不继承本地通过。
+- 平台单列：Web仅对记录的同一包/条件验收；旧Mac QA GUI拒绝为 **blocked**，不重试；Linux/Windows native **未测**。原 `UF-SELECTION-MAC-20261103-USER`“不能显示”仍不关闭，不批量completed。
+
 ### 本地像素选区 Esc 修复（未发布，2026-11-03）
 
 - `selection.pixel-selection-escape`：以 `b8ae8039` 新独立副本复现“Esc 仅清图层、未清 pixel 选区”，新增 pixel-first 的一次可撤销取消；文本编辑、IME composing、input 与顶层浮层仍优先，下一次 Esc 才取消 layer selection。

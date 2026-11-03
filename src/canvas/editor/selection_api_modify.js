@@ -30,12 +30,50 @@ export function createSelectionApiModify(
   },
   api,
 ) {
+  let featherPreviewBase = null;
+  let featherPreviewResult = null;
+  let featherPreviewRadius = 0;
+
+  function applyFeather(radius, current) {
+    if (!current?.nodeId) return false;
+    const node = findNode(getDoc(), current.nodeId);
+    if (!node || node.kind !== NODE_KIND.IMAGE) return false;
+    const bitmap = cache.get(node);
+    if (!bitmap) return false;
+    const feathered = featherSelection(bitmap, current, node, radius);
+    if (!feathered) return false;
+    api.setPixelSelection(feathered);
+    syncAnts();
+    requestRender();
+    notify();
+    return true;
+  }
+
   return {
     /** Default feather radius for selection tools in document pixels. */
     setSelectionFeather(val) {
-      setSelectionFeather(Math.max(0, Math.round(Number(val) || 0)));
-      if (getPixelSelection()?.contours?.length) {
-        api.featherPixelSelection(getSelectionFeather());
+      const current = getPixelSelection();
+      if (current !== featherPreviewResult) {
+        // Selection edits/history restore replace this immutable object. Never
+        // reuse an earlier selection's preimage after that boundary.
+        featherPreviewBase = current;
+        featherPreviewRadius = getSelectionFeather();
+      }
+      const radius = Math.max(0, Math.round(Number(val) || 0));
+      setSelectionFeather(radius);
+      if (current?.contours?.length) {
+        if (radius === featherPreviewRadius) {
+          // Escape emits the committed numeric value. Restore the exact
+          // preimage, rather than rasterizing already-feathered contours again.
+          setPixelSelection(featherPreviewBase);
+          syncAnts();
+          requestRender();
+        } else {
+          applyFeather(radius, featherPreviewBase);
+        }
+        featherPreviewResult = getPixelSelection();
+      } else {
+        featherPreviewBase = featherPreviewResult = null;
       }
       notify();
     },
@@ -58,19 +96,7 @@ export function createSelectionApiModify(
      * deletes and copies fall off at the edge instead of clipping hard.
      */
     featherPixelSelection(radius) {
-      const current = getPixelSelection();
-      if (!current?.nodeId) return false;
-      const node = findNode(getDoc(), current.nodeId);
-      if (!node || node.kind !== NODE_KIND.IMAGE) return false;
-      const bitmap = cache.get(node);
-      if (!bitmap) return false;
-      const feathered = featherSelection(bitmap, current, node, radius);
-      if (!feathered) return false;
-      api.setPixelSelection(feathered);
-      syncAnts();
-      requestRender();
-      notify();
-      return true;
+      return applyFeather(radius, getPixelSelection());
     },
     /**
      * Grows or shrinks the selection's outline by `amount` document pixels

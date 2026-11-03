@@ -210,5 +210,30 @@ Tests: `tests/e2e/pixel-selection-escape.e2e.mjs` and its isolated fixture,
 `tests/unit/pixel-selection-escape.test.js`, existing shortcut lifecycle,
 drawing cancellation and shortcut priority regressions. The separate observed
 Feather live-preview rollback behavior (`T01-ESC-OBS01`, typing 7 then Escape)
-is retained outside the repository as an unfixed finding; this route-only repair
-does not certify that parameter preview cancellation.
+remains preserved in the original failing receipt. Its later local repair is
+scoped separately below; the earlier route-only result does not inherit it.
+
+
+### Feather preview rollback and visible UI matrix row 3
+
+`selection.feather-preview-cancel` is a scoped follow-up on the existing b8
+copy after `8606c336`. Only `selection_api_modify.js` changes product behavior:
+preview values derive from one immutable selection preimage; returning to the
+pre-edit radius restores that exact selection rather than feathering again.
+Selection replacement/history restore invalidates the preimage by object identity.
+The explicit one-shot feather operation retains its original behavior.
+
+| Context | Evidence and boundary |
+| --- | --- |
+| Real UI parameter cancel | Top Marquee rectangle, Feather textbox 0→7→Escape→0 restores original contours/bounds and selection-mask bytes, not only numeric text. |
+| Repeated/nonzero preview | 7→11→7 is deterministic; 3→7→Escape restores3; a later selection never restores an older preimage. |
+| History | Cancelling a preview does not create/rewrite history; actual creation Undo/Redo remains usable. No new parameter-commit history contract is claimed. |
+| Frozen production Web package | Same local C combination and SHA256 package are served from extracted immutable files; real UI add/subtract/intersect, visible outline, Esc/feather, zoom/DPR and new-browser-process file-chooser reopen are recorded. Project ZIP hash is separate from application Web package hash. |
+| Native/assembly | Mac old GUI denial is blocked and never retried; Linux/Windows native and physical IME/HiDPI are untested. Cross-owner assembled commit/native package identity remains a separate retest, not inherited from this local Web artifact. |
+
+Exact local commit, package SHA, raw before/after exits, screenshots and the
+08:34 matrix copy are recorded at
+`/Users/tt/Desktop/voo-linux-qa/selection-feather-rollback-20261103T083137Z/REPORT.md`.
+Tests: `selection-feather-preview.test.js`, `selection-feather-rollback.e2e.mjs`
+and the existing pixel-selection Escape regression. Matrix row3 remains partial
+across platforms; the original current-Mac cannot-display feedback is not closed.
