@@ -235,7 +235,7 @@ export const EDITOR_MODULES = [
       "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
     suites: [
-      "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-frame-pixels",
+      "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-frame-pixels", "inline-export-presets-cold",
       "settings-i18n", "locale-lifecycle", "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu",
       "impeccable-polish", "mobile-control-targets", "export-preview-bounds", "inspector-font-768-matrix-verification",
     ],

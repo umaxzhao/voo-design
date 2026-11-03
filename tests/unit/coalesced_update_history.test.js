@@ -82,6 +82,33 @@ describe("Coalesced update Undo/Redo history tracking", () => {
     vi.useRealTimers();
   });
 
+  it("preserves successive export field edits before an inspector snapshot refresh and round-trips one Undo/Redo", async () => {
+    const presets = [
+      { id: "png", type: "image/png", scale: 1, suffix: "" },
+      { id: "web", type: "image/png", scale: 1, suffix: "" },
+    ];
+    engine.setDoc({ ...engine.getDocument(), nodes: [{
+      ...createRectNode({ x: 20, y: 20, width: 100, height: 100 }),
+      id: "rapid-export", exportPresets: presets,
+    }] });
+    engine.selectExactly(["rapid-export"]);
+    updateExportPresets(engine, "rapid-export", rows => rows.map(row =>
+      row.id === "png" ? { ...row, scale: 2 } : row), true);
+    updateExportPresets(engine, "rapid-export", rows => rows.map(row =>
+      row.id === "png" ? { ...row, suffix: "cover" } : row), true);
+    updateExportPresets(engine, "rapid-export", rows => rows.map(row =>
+      row.id === "web" ? { ...row, type: "image/webp", scale: 3 } : row), true);
+    const expected = [
+      { id: "png", type: "image/png", scale: 2, suffix: "cover" },
+      { id: "web", type: "image/webp", scale: 3, suffix: "" },
+    ];
+    expect(engine.getNode("rapid-export").exportPresets).toEqual(expected);
+    await engine.undo();
+    expect(engine.getNode("rapid-export").exportPresets).toEqual(presets);
+    await engine.redo();
+    expect(engine.getNode("rapid-export").exportPresets).toEqual(expected);
+  });
+
   it("immediate Undo (< 250ms) commits coalesced export scale and reverts to original, then Redo restores it", async () => {
     const rect = {
       ...createRectNode({ x: 20, y: 20, width: 100, height: 100 }),

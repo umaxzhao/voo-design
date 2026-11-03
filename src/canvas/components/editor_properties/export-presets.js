@@ -47,9 +47,14 @@ export function normalizeExportPresets(raw) {
 /** Adding/removing a preset is one history entry; text edits may coalesce. */
 export function updateExportPresets(engine, nodeId, presets, coalesced = false) {
   if (!nodeId) return;
+  // Inspector snapshots can trail the document during a burst of UI events.
+  // A recipe patches the current node, preserving changes from earlier events.
+  const next = typeof presets === "function"
+    ? presets(normalizeExportPresets(engine?.getNode?.(nodeId)?.exportPresets))
+    : presets;
   const update = coalesced
     ? engine?.updateNodeCoalesced ?? engine?.updateNode
     : engine?.updateNode ?? engine?.updateNodeCoalesced;
-  update?.(nodeId, { exportPresets: presets });
+  update?.(nodeId, { exportPresets: next });
 }
 

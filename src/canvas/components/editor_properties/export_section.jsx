@@ -1,7 +1,7 @@
 /** Export section: preset rows (format · scale · suffix) and one Export action. */
 
 import PropTypes from "prop-types";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection, SectionAddButton, fieldClass } from "./property_section.jsx";
 import FlatSelect from "../flat_select.jsx";
@@ -20,6 +20,31 @@ function download(dataUrl, filename) {
   anchor.download = filename;
   anchor.click();
 }
+
+function ExportSuffixField({ value, onChange, t }) {
+  const [draft, setDraft] = useState(value);
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    if (!focused) setDraft(value);
+  }, [focused, value]);
+  return <input
+    value={draft}
+    onFocus={() => setFocused(true)}
+    onBlur={() => setFocused(false)}
+    onChange={(event) => {
+      setDraft(event.target.value);
+      onChange(event.target.value);
+    }}
+    placeholder={t("editor.props.exportSuffix")}
+    aria-label={t("editor.props.exportSuffix")}
+    className={`${fieldClass} !w-[64px] shrink-0 !px-2 !text-[10px]`}
+  />;
+}
+ExportSuffixField.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
+};
 
 export default function ExportSection({ object, selectedNodes = [], engine }) {
   const { t } = useI18n();
@@ -43,7 +68,7 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
 
   const patch = (id, changes) =>
     persist(
-      presets.map((row) => (row.id === id ? { ...row, ...changes } : row)),
+      (current) => current.map((row) => (row.id === id ? { ...row, ...changes } : row)),
       true,
     );
 
@@ -77,7 +102,8 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
         presets.length < MAX_PRESETS ? (
           <SectionAddButton
             label={t("editor.props.addExportSettings")}
-            onClick={() => persist([...presets, createExportPreset()])}
+            onClick={() => persist((current) => current.length < MAX_PRESETS
+              ? [...current, createExportPreset()] : current)}
           />
         ) : null
       }
@@ -110,21 +136,18 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
               triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100 hover:!bg-neutral-800/80"
               widthClass="w-24"
             />
-            <input
+            <ExportSuffixField
+              key={`${object?.id}:${preset.id}`}
               value={preset.suffix}
-              onChange={(event) =>
-                patch(preset.id, { suffix: event.target.value })
-              }
-              placeholder={t("editor.props.exportSuffix")}
-              aria-label={t("editor.props.exportSuffix")}
-              className={`${fieldClass} !w-[64px] shrink-0 !px-2 !text-[10px]`}
+              onChange={(suffix) => patch(preset.id, { suffix })}
+              t={t}
             />
             <button
               type="button"
               aria-label={t("editor.props.removeExportSettings")}
               title={t("editor.props.removeExportSettings")}
               onClick={() =>
-                persist(presets.filter((row) => row.id !== preset.id))
+                persist((current) => current.filter((row) => row.id !== preset.id))
               }
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
             >
@@ -169,7 +192,10 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
         {presets.length > 0 ? (
           <button
             type="button"
-            onClick={() => presets.forEach(exportPreset)}
+            onClick={() => {
+              const current = engine.getNode?.(object?.id);
+              normalizeExportPresets(current ? current.exportPresets : presets).forEach(exportPreset);
+            }}
             className="flex min-h-7 w-full items-center justify-center gap-1.5 rounded-xl bg-white/[0.08] text-[11px] font-mono text-neutral-100 transition-colors hover:bg-white/[0.14] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
             <IconDownload size={12} />

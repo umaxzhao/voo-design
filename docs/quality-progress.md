@@ -1,5 +1,14 @@
 # 项目检查总进度
 
+## UI 导出输入补测与修复（2026-11-03）
+
+- 基线 `48d5b6f8` 的可见预览保持 clean、不改窗口或用户文档；本次仅在独立 `voo-ui-export-followup` 副本修已有内联导出交互。
+- 真实失败：两条配置依次改 2x/3x、后缀、格式时，后缀事件用旧 inspector snapshot 将缩放回写成 1x；逐字输入 `png`/`web` 只留下 `g`/`b`。原日志分别为同级 `evidence/export-followup-before.log` 与 `export-followup-typed.log`。
+- 修复：共享 `updateExportPresets` 可按当前文档执行更新配方，新增/删除/单项修改不覆盖其它刚完成的编辑；导出按钮读取当前配置。后缀字段用即时草稿保留连续键盘字符，失焦后同步文档值，节点切换按节点/配置ID重置。
+- 注册回归 `inline-export-presets-cold`：不加操作间等待，逐字输入后连续改格式/缩放/质量，实际 PNG 240×160/WebP 360×240 下载与红色像素；真实 portable ZIP 下载、新浏览器 filechooser 冷开，两条配置逐字段一致，并补后缀真实键盘 Undo/Redo 与可见值。
+- 检查状态、准确提交和源 hash 以同级 `evidence/EXPORT-FOLLOWUP-REPORT.md` 与 `export-followup-verification.json` 为准。16 项 targeted unit、完整 build/lint/modules 与真实下载冷开已执行；完整单测最终结果单列，未测 OS 不继承 Chromium 通过。
+- 不改 Frame 残影、选择工具/快捷键或 PSD/JPEG round-trip owner 的源码；没有 push、部署、发布、原树改动或 Mac 原生 GUI操作。
+
 ## UI 专项：状态栏与编辑器绿框、空态间距（2026-11-03）
 
 - 独立副本 `2026-11-03/task/voo-ui-codex`，基线 `b8ae8039`；保留已审查的 #52 间距与测试入口四提交，未覆盖原冻结仓库或 e0 草稿。最终提交、源文件 hash、退出码和截图统一记录在同级 `evidence/REPORT.md`。
