@@ -16,6 +16,7 @@ import {
   NODE_KIND,
 } from "./scene_model.js";
 import { parseSvgPath } from "./editor_svg_parse.js";
+import { decodeXmlEntities } from "./editor_svg_xml.js";
 import {
   measureSvgTextWidth,
   calculateSvgTextAnchorOffset,
@@ -41,7 +42,8 @@ function parseAttributes(attrStr) {
   let match;
   while ((match = re.exec(attrStr)) !== null) {
     const key = match[1];
-    const val = match[2] ?? match[3] ?? match[4] ?? "";
+    // Attribute values are XML text: decode references (e.g. &#39; from escapeXml) before use.
+    const val = decodeXmlEntities(match[2] ?? match[3] ?? match[4] ?? "");
     attrs[key] = val;
   }
   return attrs;
