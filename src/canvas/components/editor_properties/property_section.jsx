@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { Children, useState } from "react";
 import { IconChevronDown } from "../../icons.jsx";
 import { loadEditorPanelSectionState, toggleEditorPanelSectionState } from "../editor_panel_preferences.js";
 
@@ -176,6 +176,32 @@ CollapsibleSection.propTypes = {
   testId: PropTypes.string,
 };
 
+const emptySectionHeaderClass =
+  "flex min-w-0 items-center justify-between gap-2 px-1 select-none";
+
+function hasSectionBody(children, emptyState) {
+  if (emptyState !== undefined) {
+    return !emptyState;
+  }
+  if (children === null || children === undefined || children === false || children === "") {
+    return false;
+  }
+  if (Array.isArray(children)) {
+    return children.some((child) => hasSectionBody(child, undefined));
+  }
+  const array = Children.toArray(children);
+  if (array.length === 0) return false;
+  return array.some((child) => {
+    if (child === null || child === undefined || child === false || child === "") {
+      return false;
+    }
+    if (Array.isArray(child)) {
+      return child.some((c) => hasSectionBody(c, undefined));
+    }
+    return true;
+  });
+}
+
 /**
  * A panel group that shares CollapsibleSection's header, spacing and fold
  * persistence (it is expanded by default). Kept as a separate name so call
@@ -189,21 +215,23 @@ export function StaticSection({
   testId = undefined,
   hideHeader = false,
   bodyClassName = sectionBodyClass,
+  emptyState = undefined,
 }) {
   // Core property groups are always open: the panel is a scannable list like
   // Figma's, not a set of drawers. Empty groups keep their header and add entry.
   void storageKey;
+  const hasBody = hasSectionBody(children, emptyState);
   return (
     <div className={sectionRhythmClass} data-testid={testId}>
       {hideHeader ? null : (
-        <div className={sectionHeaderClass}>
+        <div className={hasBody ? sectionHeaderClass : emptySectionHeaderClass}>
           <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
             <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
           </div>
           {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
         </div>
       )}
-      <div className={bodyClassName}>{children}</div>
+      {hasBody ? <div className={bodyClassName}>{children}</div> : null}
     </div>
   );
 }
@@ -213,4 +241,5 @@ StaticSection.propTypes = {
   children: PropTypes.node,
   extra: PropTypes.node,
   storageKey: PropTypes.string,
+  emptyState: PropTypes.bool,
 };
