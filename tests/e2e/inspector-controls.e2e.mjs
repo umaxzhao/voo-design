@@ -220,8 +220,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
       nodes: [{ ...createRectNode({ x: 100, y: 100, width: 100, height: 100, fill: "#ff0000" }), id: "variable-manager-target" }] });
     e.selectExactly(["variable-manager-target"]);
   });
-  await page.getByTestId("properties-add-menu").last().getByRole("button").first().click();
-  await page.getByTestId("properties-add-variables").click();
+  // Directly manage variables from the revealed section header.
   await page.getByTestId("editor-variables-manage").click();
   const variables = page.getByTestId("editor-variables-panel");
   await variables.getByRole("button", { name: "Add collection", exact: true }).click();
