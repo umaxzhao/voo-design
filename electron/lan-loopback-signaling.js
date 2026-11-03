@@ -2,14 +2,15 @@ import { createServer } from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { createRoomId } from "../src/canvas/collab/room.js";
+import { createLoopbackAssetHandler } from "./lan-loopback-assets.js";
 
 const LOOPBACK = "127.0.0.1";
 const MAX_FRAME_BYTES = 256 * 1024;
 const ID = /^[A-Za-z0-9_-]{1,128}$/;
 const ROOM = /^[23456789abcdefghjkmnpqrstuvwxyz]{8,20}$/;
 
-/** Local signaling only: no HTTP file serving and no non-loopback listener. */
-export async function startLoopbackSignaling({ port = 0, room = createRoomId(),
+/** Serve an explicitly supplied editor build and collaboration on loopback only. */
+export async function startLoopbackSignaling({ port = 0, room = createRoomId(), staticRoot,
   hostToken = randomBytes(16).toString("base64url"), guestToken = randomBytes(16).toString("base64url") } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new RangeError("Invalid port");
   if (!ROOM.test(room)) throw new Error("Invalid room");
@@ -24,10 +25,7 @@ export async function startLoopbackSignaling({ port = 0, room = createRoomId(),
     return a.length === b.length && timingSafeEqual(a, b);
   };
   const rooms = new Map();
-  const http = createServer((_req, res) => {
-    res.writeHead(404, { "content-type": "text/plain", "cache-control": "no-store" });
-    res.end("Not found");
-  });
+  const http = createServer(createLoopbackAssetHandler(staticRoot));
   const sockets = new WebSocketServer({ server: http, maxPayload: MAX_FRAME_BYTES });
   // ws forwards the HTTP server's listen error before the HTTP listener sees it.
   // Keep an error listener installed so startLoopbackSignaling can reject normally.

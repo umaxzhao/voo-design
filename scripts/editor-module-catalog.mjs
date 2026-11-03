@@ -263,7 +263,7 @@ export const EDITOR_MODULES = [
       "scripts/editor-module-catalog.mjs", "scripts/editor-checks.mjs", "scripts/editor-check-plans.mjs",
       "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js",
-      "tests/unit/collab_resource_security.test.js", "tests/unit/lan-loopback-signaling.test.js", "tests/unit/lan-loopback-session.test.js", "tests/unit/collab-history-rebase.test.js",
+      "tests/unit/collab_resource_security.test.js", "tests/unit/collab-owner-identity.test.js", "tests/unit/lan-loopback-signaling.test.js", "tests/unit/lan-loopback-session.test.js", "tests/unit/lan-loopback-ipc.test.js", "tests/unit/collab-history-rebase.test.js",
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/canvas_agent_panel.jsx", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
@@ -282,7 +282,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions", "pending-integration", "agent-model-catalog", "editor-loading",
-      "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor", "lan-loopback-signaling", "lan-loopback-session",
+      "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor", "lan-loopback-signaling", "lan-loopback-session", "lan-loopback-ui",
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
     ],
     remaining: [

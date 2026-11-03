@@ -95,12 +95,19 @@ export const CANONICAL_ORIGIN = VOO_RUN_ORIGIN;
  * @param {string} [access] "view" appends the read-only marker; "edit"/undefined leave it off.
  * @param {string} [secret] A URL-fragment room secret, never sent in HTTP requests.
  */
-export function roomUrl(roomId, _origin, access, secret) {
+export function roomUrl(roomId, _origin, access, secret, ownerPublicKey) {
   const base = `${CANONICAL_ORIGIN}/editor/?r=${roomId}`;
   const withAccess = access === "view" ? `${base}&access=view` : base;
   return secret && ROOM_SECRET_PATTERN.test(secret)
-    ? `${withAccess}#k=${secret}`
+    ? `${withAccess}#k=${secret}${ownerPublicKey && /^[A-Za-z0-9_-]{87}$/.test(ownerPublicKey) ? `&p=${ownerPublicKey}` : ""}`
     : withAccess;
+}
+
+export function ownerKeyFromLink(input) {
+  try {
+    const key = new URLSearchParams(new URL(input, CANONICAL_ORIGIN).hash.slice(1)).get("p");
+    return key && /^[A-Za-z0-9_-]{87}$/.test(key) ? key : null;
+  } catch { return null; }
 }
 
 /** The 128-bit secret in a room link fragment, or null if absent or invalid. */

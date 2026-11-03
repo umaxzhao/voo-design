@@ -23,7 +23,7 @@ import {
   releaseAdjustmentRenderer,
 } from "./gl_adjustments.js";
 import { createHistory } from "./editor_history.js";
-import { mergeEditorDocuments } from "../store/merge.js";
+import { rebaseCollabHistory } from "./collab-history-rebase.js";
 import { createDocumentSnapshotState } from "./document-snapshot-state.js";
 import { createSelection } from "./editor_selection.js";
 import { sampleRegionColours } from "./region_colours.js";
@@ -272,7 +272,7 @@ export function createEditor({
     const previousDoc = doc;
     const nextDoc = ctrl.initController.measureTextNodes(next);
     if (!commit && name === "collab.remote") {
-      history.rebaseDocuments(snapshot => mergeEditorDocuments(previousDoc, snapshot, nextDoc));
+      history.rebaseDocuments(snapshot => rebaseCollabHistory(previousDoc, snapshot, nextDoc));
     }
     doc = nextDoc;
     docVersion += 1;

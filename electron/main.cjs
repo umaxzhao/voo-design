@@ -3,6 +3,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 
 let mainWindow = null;
+const loopbackCollab = require("./lan-loopback-ipc.cjs").registerLoopbackIpc(ipcMain, app, () => mainWindow);
 const closeGuard = require("./close-guard.cjs").createCloseGuard({ app, dialog, getWindow: () => mainWindow });
 
 function createMainWindow() {
@@ -254,6 +255,7 @@ app.on("before-quit", (event) => {
       // An updater error can revoke approval while startup is settling.
       if (!closeGuard.isApproved()) { cliBridgeShutdown = null; return; }
       if (cliBridge) await cliBridge.close();
+      await loopbackCollab.stop();
       cliBridge = null;
       if (!closeGuard.isApproved()) {
         // A late installation error must return to an editable, connected app.

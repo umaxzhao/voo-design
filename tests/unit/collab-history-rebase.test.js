@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { createHistory } from "../../src/canvas/editor/editor_history.js";
 import { mergeEditorDocuments } from "../../src/canvas/store/merge.js";
+import { rebaseCollabHistory } from "../../src/canvas/editor/collab-history-rebase.js";
 
 it("rebases remote additions across undo and redo without adding an entry", () => {
   const history = createHistory();
@@ -14,6 +15,14 @@ it("rebases remote additions across undo and redo without adding an entry", () =
   expect(history.redo().doc.nodes.map(node => node.id)).toEqual(["local", "remote"]);
   expect(original.nodes).toEqual([]);
   expect(local.nodes.map(node => node.id)).toEqual(["local"]);
+});
+
+it("promotes a historical child when its parent was deleted remotely", () => {
+  const previous = { nodes: [{ id: "parent", parentId: null }] };
+  const snapshot = { nodes: [{ id: "parent", parentId: null }, { id: "child", parentId: "parent" }] };
+  const result = rebaseCollabHistory(previous, snapshot, { nodes: [] });
+  expect(result.nodes).toEqual([{ id: "child", parentId: null }]);
+  expect(snapshot.nodes[1].parentId).toBe("parent");
 });
 
 it("rebases legacy string snapshots while preserving selection metadata", () => {

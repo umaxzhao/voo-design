@@ -67,10 +67,10 @@ export function createLoopbackTransport(room, handlers, { url, token, initialAcc
     broadcast: wire => { for (const peer of peers) send(peer, wire); },
     bufferedAmount: () => socket?.bufferedAmount ?? 0,
     setAccess(access) {
-      if (!["view", "edit"].includes(access) || socket?.readyState !== 1) throw new Error("Loopback signaling unavailable");
+      if (!["view", "edit"].includes(access)) throw new Error("Invalid loopback access");
       // Preserve the host policy when the signaling socket reconnects.
       hostAccess = access;
-      socket.send(JSON.stringify({ v: 1, t: "access", access }));
+      if (socket?.readyState === 1) socket.send(JSON.stringify({ v: 1, t: "access", access }));
     },
     close() { closed = true; clearTimeout(timer); socket?.close(); },
   };

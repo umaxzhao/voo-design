@@ -28,7 +28,7 @@ try {
       const { getImageBlobMap, getImageDataUrls, putImages } = await import("/src/canvas/store/db.js");
       const e = window.__vooEditor;
       e.setDoc({ ...e.getDocument(), isCanvasRoot: true, nodes: [] });
-      window.startLoopbackAudit = ({ url, identity, room, secret, token }) => {
+      window.startLoopbackAudit = async ({ url, identity, room, secret, token, ownerKey }) => {
         const connect = (id, handlers) => {
           window.auditTransport = createLoopbackTransport(id, handlers, {
             url, token, initialAccess: identity === "host" ? "edit" : undefined,
@@ -36,10 +36,11 @@ try {
           return window.auditTransport;
         };
         const session = createCollabSession({ connect, userId: identity, connectionId: identity });
+        if (identity === "host") await session.prepareAuthority();
         window.auditSession = session;
         window.auditDetach = createDocumentBridge({ session, engine: e, store: useDesignStore,
           db: { getImageBlobMap, getImageDataUrls, putImages } });
-        session.start(room, { secret, viaLink: identity !== "host" });
+        session.start(room, { secret, ownerKey, viaLink: identity !== "host" });
         return session.getSnapshot().link;
       };
     });
@@ -49,15 +50,15 @@ try {
   const share = host.getByRole("button", { name: "Share", exact: true });
   await share.click();
   await host.getByText("Online link", { exact: true }).waitFor();
-  await host.getByText("Local network link", { exact: true }).waitFor();
-  await host.getByText("Unavailable", { exact: true }).waitFor();
+  await host.getByText("This computer only", { exact: true }).waitFor();
+  await host.getByText("Physical LAN sharing is unavailable", { exact: true }).waitFor();
   await share.click();
   const url = `ws://127.0.0.1:${signal.port}`;
   const link = await host.evaluate(({ url, room, secret, token }) => window.startLoopbackAudit({ url, identity: "host", room, secret, token }),
     { url, room: signal.room, secret: signal.guestToken, token: signal.hostToken });
   const parsed = new URL(link);
-  await guest.evaluate(({ url, room, secret }) => window.startLoopbackAudit({ url, identity: "guest", room, secret, token: secret }), {
-    url, room: parsed.searchParams.get("r"), secret: new URLSearchParams(parsed.hash.slice(1)).get("k"),
+  await guest.evaluate(({ url, room, secret, ownerKey }) => window.startLoopbackAudit({ url, identity: "guest", room, secret, token: secret, ownerKey }), {
+    url, room: parsed.searchParams.get("r"), secret: new URLSearchParams(parsed.hash.slice(1)).get("k"), ownerKey: new URLSearchParams(parsed.hash.slice(1)).get("p"),
   });
   await Promise.all([
     host.waitForFunction(() => window.auditSession?.isPeerKnown("guest")),
