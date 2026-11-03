@@ -184,3 +184,56 @@ Production evidence: `/private/tmp/voo-authoring-deployment-proof.json` and
 GitHub Ubuntu CI for integration commit `dac68a5` passed module registration,
 design checks, build and unit tests: https://github.com/umaxzhao/voo-design/actions/runs/41188844041.
 The CI deployment job was skipped; SSH deployment to la2 was independently verified above.
+
+
+## Pixel selection Escape: local b8 regression
+
+Capability `selection.pixel-selection-escape` remains partial. The independent
+local fix is based on `b8ae8039a291e841f786b29f90af00e4f4c89653`; exact final
+commit, source hashes, preserved failures and raw exits are in
+`/Users/tt/Desktop/voo-linux-qa/selection-escape-fix-20261103T080112Z/REPORT.md`.
+No source, GUI or release evidence from another revision is inherited.
+
+| Contract axis | Registered checks and boundaries |
+| --- | --- |
+| Existing input | Real top Marquee button and mouse drag create a pixel selection on an isolated raster image; no engine clear API is invoked as browser evidence. |
+| Cancel order | Existing gesture, selection transform, text editing, lasso/mask/modal exits retain priority. Native inputs and topmost menus own Escape before canvas routing; IME composing is guarded in a unit test. |
+| Pixel then layer | Canvas Escape clears pixel contours first, retains the host layer selection and records one atomic history entry. A later Escape may deselect the layer without a second pixel-clear commit. |
+| Visible/pixels | Real overlay RGBA contains light/dark marching ants before Escape and returns to baseline afterward. Actual artwork export bytes and geometry stay unchanged; selected mask pixels become zero. |
+| History | One real keyboard Undo restores contours and selected pixels; one Redo clears them again. Before/after/undo/redo PNG, JSON and screenshots are retained at each measured zoom/DPR. |
+| Context | DPR1 100% and DPR2 lower/higher zoom are measured and recorded, not inferred from intended click count. DPR2 is browser emulation, not a physical Retina claim. |
+| Vector applicability | Vector-only/no raster host is checked for actual UI feedback and absence of new pixel selection capability; Select still owns layer selection. No whole-canvas rasterization is added. |
+| Original feedback | `UF-SELECTION-MAC-20261103-USER`: original wording remains “顶部工具里的选区工具在画布里无法显示、无法使用。” Browser Esc repair does not settle the original current-Mac cannot-display report. |
+| Remainder | Native Mac/Linux/Windows, physical IME/keyboard and the denied current GUI route are notrun; no retry or alternate GUI route is attempted. AI inference and model downloads remain blocked. |
+
+Tests: `tests/e2e/pixel-selection-escape.e2e.mjs` and its isolated fixture,
+`tests/unit/pixel-selection-escape.test.js`, existing shortcut lifecycle,
+drawing cancellation and shortcut priority regressions. The separate observed
+Feather live-preview rollback behavior (`T01-ESC-OBS01`, typing 7 then Escape)
+remains preserved in the original failing receipt. Its later local repair is
+scoped separately below; the earlier route-only result does not inherit it.
+
+
+### Feather preview rollback and visible UI matrix row 3
+
+`selection.feather-preview-cancel` is a scoped follow-up on the existing b8
+copy after `8606c336`. Only `selection_api_modify.js` changes product behavior:
+preview values derive from one immutable selection preimage; returning to the
+pre-edit radius restores that exact selection rather than feathering again.
+Selection replacement/history restore invalidates the preimage by object identity.
+The explicit one-shot feather operation retains its original behavior.
+
+| Context | Evidence and boundary |
+| --- | --- |
+| Real UI parameter cancel | Top Marquee rectangle, Feather textbox 0→7→Escape→0 restores original contours/bounds and selection-mask bytes, not only numeric text. |
+| Repeated/nonzero preview | 7→11→7 is deterministic; 3→7→Escape restores3; a later selection never restores an older preimage. |
+| History | Cancelling a preview does not create/rewrite history; actual creation Undo/Redo remains usable. No new parameter-commit history contract is claimed. |
+| Frozen production Web package | Same local C combination and SHA256 package are served from extracted immutable files; real UI add/subtract/intersect, visible outline, Esc/feather, zoom/DPR and new-browser-process file-chooser reopen are recorded. Project ZIP hash is separate from application Web package hash. |
+| Native/assembly | Mac old GUI denial is blocked and never retried; Linux/Windows native and physical IME/HiDPI are untested. Cross-owner assembled commit/native package identity remains a separate retest, not inherited from this local Web artifact. |
+
+Exact local commit, package SHA, raw before/after exits, screenshots and the
+08:34 matrix copy are recorded at
+`/Users/tt/Desktop/voo-linux-qa/selection-feather-rollback-20261103T083137Z/REPORT.md`.
+Tests: `selection-feather-preview.test.js`, `selection-feather-rollback.e2e.mjs`
+and the existing pixel-selection Escape regression. Matrix row3 remains partial
+across platforms; the original current-Mac cannot-display feedback is not closed.

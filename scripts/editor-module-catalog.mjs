@@ -33,7 +33,7 @@ export const EDITOR_MODULES = [
       "src/shared/media-export.js", "src/canvas/editor/export_filename.js",
       "src/canvas/components/editor_hooks/use_editor_apply.js", "src/canvas/components/image_editor.jsx",
       "tests/unit/save_formats.test.js", "tests/unit/export_filename.test.js", "tests/unit/voo_file_save.test.js",
-      "src/canvas/editor/editor_engine_history*", "src/canvas/undo*", "tests/unit/coalesced_update_history.test.js", "src/canvas/editor/psd_export.js", "tests/unit/psd_frame_fidelity.test.js", "scripts/real-browser-export-psd.mjs",
+      "src/canvas/editor/editor_engine_history*", "src/canvas/editor/editor_undo_actions.js", "src/canvas/undo*", "tests/unit/coalesced_update_history.test.js", "src/canvas/editor/psd_export.js", "tests/unit/psd_frame_fidelity.test.js", "scripts/real-browser-export-psd.mjs",
     ],
     related: ["workspace","layers","images","platform"],
     features: [
@@ -80,12 +80,13 @@ export const EDITOR_MODULES = [
       "src/shared/editor-shortcut-catalog.js",
       "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
       "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "src/canvas/editor/editor_engine.js", "tests/unit/editor-module-audit-regressions.test.js", "tests/unit/mac_qa_interaction_fixes.test.jsx",
+      "tests/unit/pixel-selection-escape.test.js", "tests/unit/selection-feather-preview.test.js", "tests/e2e/pixel-selection-escape-fixture.mjs",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
-    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection"],
+    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection", "selection.pixel-selection-escape", "selection.feather-preview-cancel"],
     suites: [
       "frame-child-pointer", "frame-label-selection", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle",
-      "hook-lifecycle", "continuous-creation",
+      "hook-lifecycle", "continuous-creation", "pixel-selection-escape", "selection-feather-rollback",
     ],
     remaining: [
       "Physical stylus pressure, OS shortcut interception and all multi-touch sequences need device-specific checks.",

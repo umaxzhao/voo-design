@@ -1,5 +1,13 @@
 # 项目检查总进度
 
+## Isolated b8 + Frame/UI/selection combination — 2026-11-03
+
+- Fresh copy `combo-b8-frame-ui-selection-b-20261103T090717Z-4077`; fixed incoming heads are Frame `adc735d1`, complete UI chain through `66d7609d` (including #52 predecessors and `48d5b6f8`), and C `b8 -> 8606c336 -> 6b48448a`. No e0 dirty gesture edits were imported.
+- The sole content conflict was the shared progress-document insertion; both UI sections and the Frame section are retained. C merged without unresolved conflicts. Catalog arrays are the exact additive union of b8 and all three pinned sources, with b8 order preserved; product/test files match their pinned owners byte-for-byte.
+- Combination unit/lint/build and affected real-browser exits, exact final revision, conflict receipts and source hashes belong to `closure-acceptance-evidence/combo-b8-frame-ui-selection-b-20261103T090717Z-4077/REPORT.md` and its verification JSON. Historical branch passes do not certify this combination.
+- Scope stays local web/source validation. Existing Mac GUI refusal is not retried; PID224, original b8, user package/profile and frozen tree are untouched. Native Mac/Linux/Windows, physical IME/DPI, e0's unfixed gestures and a full release gate remain separate. No push, new CI or release.
+
+
 ## UI 导出输入补测与修复（2026-11-03）
 
 - 基线 `48d5b6f8` 的可见预览保持 clean、不改窗口或用户文档；本次仅在独立 `voo-ui-export-followup` 副本修已有内联导出交互。
@@ -315,6 +323,17 @@
 更新时间：2026-11-02。
 最近一次完整核心检查：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，四个平台原生与最终草稿核验通过。线上已更新为该 CI 构建；本地脏工作区草稿仍不属于本版发布认证。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+### 选区 Feather 取消回滚 / 重测矩阵第3行（本地Web候选，2026-11-03）
+
+- `T01-ESC-OBS01`：`selection_api_modify.js` 保留稳定选区前态，输入7后Esc回0时完整恢复contours/bounds/选择像素；重复预览、非零取消与选区替换均有真实UI证据。未修改共享输入、image_editor、Frame/selection overlay绘制或缓存源码。
+- 本地组合为 b8 + `8606c336` + 本次Feather修复；最终SHA、冻结Web包hash、实际控件/像素/UndoRedo、新browser进程保存重开在 `/Users/tt/Desktop/voo-linux-qa/selection-feather-rollback-20261103T083137Z/REPORT.md`。08:34统一矩阵的跨owner组合/原生包身份未指定，不继承本地通过。
+- 平台单列：Web仅对记录的同一包/条件验收；旧Mac QA GUI拒绝为 **blocked**，不重试；Linux/Windows native **未测**。原 `UF-SELECTION-MAC-20261103-USER`“不能显示”仍不关闭，不批量completed。
+
+### 本地像素选区 Esc 修复（未发布，2026-11-03）
+
+- `selection.pixel-selection-escape`：以 `b8ae8039` 新独立副本复现“Esc 仅清图层、未清 pixel 选区”，新增 pixel-first 的一次可撤销取消；文本编辑、IME composing、input 与顶层浮层仍优先，下一次 Esc 才取消 layer selection。
+- 源码提交、修前失败、真实虚线/像素/UndoRedo 与各命令 exit 在 `/Users/tt/Desktop/voo-linux-qa/selection-escape-fix-20261103T080112Z/REPORT.md`，详细合同见 [editor-closeout.md](audits/editor-closeout.md#pixel-selection-escape-local-b8-regression)。DPR2 为 browser 模拟，Mac/Linux/Windows native 与实体 IME 均 notrun；`UF-SELECTION-MAC-20261103-USER` 原 Mac“不能显示”仍未实机判定，不因本修复关闭。
 
 ### 本地安装确认修复（未发布，2026-11-03）
 

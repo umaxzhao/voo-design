@@ -146,6 +146,13 @@ const MANUAL_ACTIONS = Object.freeze([
     "editor.history.entry.transform",
   ],
   [
+    "editor.selection.clear",
+    "Clear one Design Editor pixel selection",
+    "ATOMIC",
+    "src/canvas/editor-shortcut-actions.js",
+    "editor.history.entry.selection",
+  ],
+  [
     "editor.pointer.selection",
     "Commit a Design Editor pixel selection",
     "GESTURE",

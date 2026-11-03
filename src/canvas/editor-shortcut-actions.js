@@ -1,3 +1,4 @@
+import { commitEditorAction } from './undo-action-contracts.js';
 import { firstHandledShortcutAction } from '../shared/editor-shortcut-pipeline.js';
 import { TOOL } from './editor/tool_ids.js';
 import { getFamilyByCode } from './editor/tool_families.js';
@@ -77,6 +78,16 @@ export function unwindEscape({
         if (!modalTool) return null;
         onTool?.(TOOL.SELECT);
         return "modalTool";
+      },
+      // Pixel selection is independent of layer selection. Clear it as one
+      // undoable action only after editing/gesture/modal cancellation finishes.
+      () => {
+        if (!engine.getPixelSelection?.()?.contours?.length) return null;
+        return commitEditorAction('editor.selection.clear', () => {
+          engine.clearPixelSelection();
+          engine.commit('editor.history.entry.selection');
+          return 'pixelSelection';
+        });
       },
       () => {
         if (
