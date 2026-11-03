@@ -296,6 +296,14 @@ fixed origin allowlist. `node scripts/build-agent-plugin.mjs <empty-folder>`
 produces the same bundle as a portable connector with the MCP runtime and
 `ws` vendored.
 
+The bundle is also **standalone**: it needs neither the VOO desktop app nor a
+repository checkout. When no local build exists the Host proxies the hosted
+editor (`editorUrl`, default `https://voo.run/editor/`) through the loopback
+origin, and when no repository bridge is available it starts the bundled
+`lib/bridge-lite.js` canvas relay instead. The lite bridge carries only the MCP
+canvas channels (no local CLI-agent channels); everything the DeepSeek Harness
+tools call goes through it.
+
 ### Using the Harness model inside VOO
 
 The connector also ships a Harness **model bridge** (`voo-model-bridge`, installed

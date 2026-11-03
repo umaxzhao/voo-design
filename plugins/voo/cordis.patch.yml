@@ -19,7 +19,13 @@
         port: 4173
         # Empty: resolve the editor build by walking up from this package.
         editorDir: ''
-        # Start the VOO CLI bridge when nothing is listening on 4179.
+        # Used when no local build exists: the hosted editor is proxied through
+        # the loopback origin so an app-less/repo-less install still runs and
+        # can link to the bridge. Set "off" to require a local build.
+        editorUrl: 'https://voo.run/editor/'
+        # Start the VOO bridge when nothing is listening on 4179. The full
+        # repository bridge runs when present; otherwise a bundled relay
+        # (bridge-lite) starts, which needs neither the app nor a checkout.
         bridge: true
     - id: mcp-voo
       name: '@deepseek-ai/dsh-mcp-client'

@@ -162,6 +162,8 @@ it("builds the portable folder as an installable DeepSeek Harness bundle", async
   await stat(path.join(destination, "scripts/mcp-server.mjs"));
   await stat(path.join(destination, "index.js"));
   await stat(path.join(destination, "client.js"));
+  // The App-less bundle carries its own canvas relay.
+  await stat(path.join(destination, "lib", "bridge-lite.js"));
   await stat(path.join(destination, "node_modules/ws/package.json"));
 });
 

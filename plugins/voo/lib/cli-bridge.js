@@ -31,40 +31,50 @@ export async function probeCliBridge(options) {
 }
 
 /**
- * Keep the VOO CLI bridge available for the panel editor.
+ * Keep the VOO canvas bridge available for the panel editor.
  *
- * A bridge started by the VOO desktop app (or by `npm run bridge`) is reused;
- * otherwise the repository's bridge module starts inside this Host process, so
- * the panel editor links to the same canvas the agent's VOO tools drive. A
- * missing repository checkout is not an error: the editor still runs, only
- * without the canvas link.
+ * A bridge started by the VOO desktop app (or by `npm run bridge`) is reused.
+ * Otherwise the repository's full bridge starts when a checkout is present
+ * (it also serves local CLI agents); without a checkout the bundled
+ * `bridge-lite` starts instead, so an app-less, repo-less install still links
+ * the panel editor to the `mcp__voo__*` canvas tools.
  *
  * @param {{repoDir: string, port: number, logger?: Console}} options
- * @returns {Promise<{started: boolean, port: number, close: () => Promise<void>}>}
+ * @returns {Promise<{started: boolean, port: number, mode: "reused"|"repo"|"lite"|"none", close: () => Promise<void>}>}
  */
 export async function ensureCliBridge(options) {
   const { repoDir, port, logger = console } = options;
   const existing = await probeCliBridge({ port });
   if (existing !== null) {
     logger.info?.(`[voo] reusing the VOO bridge already listening on 127.0.0.1:${port}`);
-    return { started: false, port, close: async () => {} };
+    return { started: false, port, mode: "reused", close: async () => {} };
   }
 
   const entry = bridgeServerPath(repoDir);
-  if (!fs.existsSync(entry)) {
-    logger.warn?.(`[voo] no VOO bridge at ${entry}; the editor panel runs without a canvas link.`);
-    return { started: false, port, close: async () => {} };
+  if (fs.existsSync(entry)) {
+    const module = await import(pathToFileURL(entry).href);
+    if (typeof module.startCliBridgeServer !== "function") {
+      throw new Error(`VOO bridge module at ${entry} does not export startCliBridgeServer`);
+    }
+    const bridge = await module.startCliBridgeServer({ port });
+    logger.info?.(`[voo] started the VOO bridge on ws://127.0.0.1:${bridge.port}`);
+    return {
+      started: true,
+      port: bridge.port,
+      mode: "repo",
+      close: async () => {
+        await bridge.close();
+      },
+    };
   }
 
-  const module = await import(pathToFileURL(entry).href);
-  if (typeof module.startCliBridgeServer !== "function") {
-    throw new Error(`VOO bridge module at ${entry} does not export startCliBridgeServer`);
-  }
-  const bridge = await module.startCliBridgeServer({ port });
-  logger.info?.(`[voo] started the VOO bridge on ws://127.0.0.1:${bridge.port}`);
+  const { startBridgeLite } = await import("./bridge-lite.js");
+  const bridge = await startBridgeLite({ port, logger });
+  logger.info?.(`[voo] started the standalone canvas bridge on ws://127.0.0.1:${bridge.port}`);
   return {
     started: true,
     port: bridge.port,
+    mode: "lite",
     close: async () => {
       await bridge.close();
     },

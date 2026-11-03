@@ -9,6 +9,11 @@ export const PACKAGE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.u
 export const DEFAULT_EDITOR_PORT = 4173;
 /** The VOO CLI bridge port (`CLI_BRIDGE_DEFAULT_PORT` in the VOO repository). */
 export const DEFAULT_BRIDGE_PORT = 4179;
+/**
+ * Upstream used when no local build exists: the server proxies the hosted
+ * editor through the loopback origin, so the page can still link to the bridge.
+ */
+export const DEFAULT_EDITOR_URL = "https://voo.run/editor/";
 
 function positivePort(value, fallback) {
   const port = Number(value);
@@ -56,7 +61,7 @@ export function discoverEditorBuild() {
  * and the local bridge lives at `<repo>/electron/cli_bridge_server.js`.
  *
  * @param {object} [config] the loader row's config.
- * @returns {{host: string, port: number, bridgePort: number, editorDir: string, repoDir: string, bridge: boolean}}
+ * @returns {{host: string, port: number, bridgePort: number, editorDir: string, editorUrl: string|null, repoDir: string, bridge: boolean}}
  */
 export function resolveEditorPanelOptions(config = {}) {
   // A blank row value means "use the default", so it must not shadow the env override.
@@ -66,12 +71,22 @@ export function resolveEditorPanelOptions(config = {}) {
     configuredPath(config.editorDir) ??
     configuredPath(process.env.VOO_EDITOR_PANEL_DIR) ??
     (repoSetting === undefined ? discoverEditorBuild() : undefined);
+  const editorUrlSetting =
+    configuredPath(config.editorUrl) ??
+    configuredPath(process.env.VOO_EDITOR_PANEL_URL) ??
+    DEFAULT_EDITOR_URL;
   return {
     host: "127.0.0.1",
     port: positivePort(config.port, DEFAULT_EDITOR_PORT),
     bridgePort: positivePort(config.bridgePort, DEFAULT_BRIDGE_PORT),
     editorDir: path.resolve(editorSetting ?? path.join(repoDir, "dist")),
+    editorUrl: editorUrlSetting === "off" ? null : ensureTrailingSlash(editorUrlSetting),
     repoDir,
     bridge: config.bridge !== false,
   };
+}
+
+/** `https://voo.run/editor` and `https://voo.run/editor/` resolve the same way. */
+function ensureTrailingSlash(value) {
+  return value.endsWith("/") ? value : `${value}/`;
 }

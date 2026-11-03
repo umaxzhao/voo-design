@@ -255,6 +255,8 @@ export const EDITOR_MODULES = [
       "tests/unit/agent_tool_order_and_lucide_paths.test.js",
       "tests/unit/voo_editor_panel.test.js",
       "tests/unit/design_quality_lint.test.js", "tests/unit/design_quality_prompt.test.js",
+      "tests/unit/voo_bridge_lite.test.js",
+      "tests/unit/portable-agent-plugin.test.js", "tests/unit/dsh_connector_plugin.test.js",
       "package.json",
     ],
     related: ["workspace","documents","inspector","images","text"],

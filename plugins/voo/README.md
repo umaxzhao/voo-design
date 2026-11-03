@@ -26,6 +26,30 @@ title bar and onboarding, opens an untitled project and opts the page into the
 canvas MCP link, so the conversation agent and the visible editor share one
 canvas.
 
+## Standalone mode (no VOO app, no checkout)
+
+The bundle is self-sufficient: it needs neither the VOO desktop app nor a
+repository checkout.
+
+- **Editor source**: a local build is used when one is found (`editorDir`,
+  `VOO_EDITOR_PANEL_DIR`, or a `dist/` above the package). Without one the Host
+  proxies the hosted editor (`editorUrl`, default `https://voo.run/editor/`)
+  through the loopback origin, so the iframe still loads and can link to the
+  bridge. Set `editorUrl: 'off'` to require a local build instead.
+- **Canvas bridge**: an already-running bridge (VOO app or `npm run bridge`) is
+  reused; otherwise the repository bridge starts when a checkout is available,
+  and the bundled `lib/bridge-lite.js` starts when it is not. The lite bridge
+  carries the MCP canvas relay only (no local CLI-agent channels), which is
+  everything the DeepSeek Harness tools need.
+- The portable connector (`node scripts/build-agent-plugin.mjs <folder>`)
+  carries the same Host/Client halves plus the lite bridge and the MCP runtime,
+  so it runs on a machine that only has DeepSeek Harness and network access.
+
+```sh
+node scripts/build-agent-plugin.mjs /absolute/new/voo-connector
+dsh plugin --profile desktop add "link:/absolute/new/voo-connector"
+```
+
 ## Portable connector
 
 Build the portable plugin from the repository:

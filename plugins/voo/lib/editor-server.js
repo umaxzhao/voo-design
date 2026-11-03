@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { Readable } from "node:stream";
 
 /** Content types the editor build ships. Unknown extensions fall back to bytes. */
 const CONTENT_TYPES = new Map(Object.entries({
@@ -41,6 +42,23 @@ const MISSING_BUILD_PAGE = `<!doctype html>
   <h1>VOO 编辑器尚未构建</h1>
   <p>在 VOO 仓库运行 <code>npm run build</code>，然后刷新这个面板。</p>
   <p>VOO editor build not found. Run <code>npm run build</code> in the VOO repository, then reload this panel.</p>
+</main></body></html>`;
+
+/** Shown when proxy mode cannot reach the hosted editor. */
+const PROXY_FAILURE_PAGE = `<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>VOO 编辑器 · 连接失败</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#f5f5f5;
+    font:13px/1.6 ui-monospace,Menlo,Consolas,"PingFang SC","Microsoft YaHei",sans-serif}
+  main{box-sizing:border-box;height:100%;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:24px}
+  h1{margin:0;font-size:14px;font-weight:600}
+  p{margin:0;color:#a3a3a3}
+  code{color:#f5f5f5}
+</style></head>
+<body><main>
+  <h1>无法加载 VOO 编辑器</h1>
+  <p>本机没有编辑器构建，且无法从托管地址获取。检查网络后刷新这个面板；离线使用请先运行 <code>npm run build</code>。</p>
+  <p>Could not reach the hosted VOO editor. Check the network and reload; for offline use run <code>npm run build</code> in the VOO repository.</p>
 </main></body></html>`;
 
 function isFile(filePath) {
@@ -86,12 +104,77 @@ export function resolveEditorFile(editorDir, urlPath) {
  * `/__voo/health` as JSON so scripts and the panel can tell the build state
  * apart from a connection failure.
  *
- * @param {{host?: string, port: number, editorDir: string, logger?: Console}} options
- * @returns {Promise<{url: string, port: number, editorDir: string, hasBuild: boolean, close: () => Promise<void>}>}
+ * @param {{host?: string, port: number, editorDir: string, editorUrl?: string|null, logger?: Console}} options
+ * @returns {Promise<{url: string, port: number, editorDir: string, editorUrl: string|null, hasBuild: boolean, mode: "local"|"proxy"|"missing", close: () => Promise<void>}>}
  */
 export async function startEditorServer(options) {
-  const { host = "127.0.0.1", port, editorDir, logger = console } = options;
+  const { host = "127.0.0.1", port, editorDir, editorUrl = null, logger = console } = options;
   const indexPath = path.join(editorDir, "index.html");
+  const upstream = editorUrl ? new URL(editorUrl) : null;
+  const hasBuild = () => isFile(indexPath);
+  const mode = () => (hasBuild() ? "local" : upstream ? "proxy" : "missing");
+
+  /** Proxy one request through the loopback origin to the hosted editor build. */
+  const proxy = async (request, response, pathname, method) => {
+    const relative = pathname.replace(/^\/+/, "");
+    let target;
+    try {
+      target = new URL(relative, upstream);
+      if (target.origin !== upstream.origin) throw new Error("origin escape");
+    } catch {
+      response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Forbidden");
+      return;
+    }
+    const attempt = async (url) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        return await fetch(url, {
+          method,
+          headers: { accept: typeof request.headers.accept === "string" ? request.headers.accept : "*/*" },
+          redirect: "follow",
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    const failure = () => {
+      response.writeHead(502, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      response.end(PROXY_FAILURE_PAGE);
+    };
+    let upstreamResponse;
+    try {
+      upstreamResponse = await attempt(target);
+      // Extension-less routes are SPA paths: fall back to the hosted entry page.
+      if (upstreamResponse.status === 404 && path.extname(relative) === "") {
+        upstreamResponse = await attempt(new URL("./index.html", upstream));
+      }
+    } catch (error) {
+      logger.warn?.(`[voo] hosted editor request failed for ${target.href}: ${error instanceof Error ? error.message : String(error)}`);
+      failure();
+      return;
+    }
+    if (upstreamResponse.status >= 500) {
+      failure();
+      return;
+    }
+    const contentType = upstreamResponse.headers.get("content-type") ?? "application/octet-stream";
+    const isHtml = contentType.includes("text/html");
+    response.writeHead(upstreamResponse.status, {
+      "Content-Type": contentType,
+      "Cache-Control": isHtml ? "no-store" : "public, max-age=300",
+      "X-Content-Type-Options": "nosniff",
+    });
+    if (method === "HEAD" || upstreamResponse.body === null) {
+      response.end();
+      return;
+    }
+    Readable.fromWeb(upstreamResponse.body)
+      .on("error", () => response.destroy())
+      .pipe(response);
+  };
 
   const server = http.createServer((request, response) => {
     const method = request.method ?? "GET";
@@ -111,13 +194,24 @@ export async function startEditorServer(options) {
     }
 
     if (pathname === "/__voo/health") {
-      const body = JSON.stringify({ ok: true, service: "voo", editorDir, hasBuild: isFile(indexPath) });
+      const body = JSON.stringify({
+        ok: true,
+        service: "voo",
+        mode: mode(),
+        editorDir,
+        editorUrl,
+        hasBuild: hasBuild(),
+      });
       response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
       response.end(method === "HEAD" ? undefined : body);
       return;
     }
 
-    if (!isFile(indexPath)) {
+    if (!hasBuild()) {
+      if (upstream) {
+        void proxy(request, response, pathname, method);
+        return;
+      }
       if (pathname === "/" || pathname === "/index.html") {
         response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
         response.end(method === "HEAD" ? undefined : MISSING_BUILD_PAGE);
@@ -179,7 +273,9 @@ export async function startEditorServer(options) {
     url: `http://${host}:${actualPort}`,
     port: actualPort,
     editorDir,
-    hasBuild: isFile(indexPath),
+    editorUrl,
+    hasBuild: hasBuild(),
+    mode: mode(),
     close: () =>
       new Promise((resolve) => {
         server.closeAllConnections?.();

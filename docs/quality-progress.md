@@ -1,5 +1,23 @@
 # 项目检查总进度
 
+## 独立运行模式（无 VOO App、无仓库）：托管编辑器反代 + 内置 canvas bridge：2026-11-03
+
+- **基线版本**：`66beaa03`；本轮让单个 VOO Harness 插件在“只有 DSH + 网络”的机器上也能跑起来。
+- **交付**：
+  1. `plugins/voo/lib/editor-server.js` 新增**反代模式**：找不到本地构建时，把 `editorUrl`（默认 `https://voo.run/editor/`，可用 `VOO_EDITOR_PANEL_URL` 覆盖，`off` 关闭）通过 `127.0.0.1:4173` 反代给 iframe。页面 origin 仍是 loopback，因此照常连 bridge；含 SPA 回退、20s 超时、502 友好页、`/__voo/health` 增加 `mode`/`editorUrl`。
+  2. 新增 `plugins/voo/lib/bridge-lite.js`：无 Electron/仓库依赖的 canvas relay（`node:http` + `ws`）。提供 `/health`、origin 白名单与 token 校验、`voo:mcp-*` 五个通道、工具调用事件转发（65s 超时）、token 文件写入（0600，与 MCP stdio 读同一路径）；`ensureCliBridge` 的顺序为：复用已有 bridge → 仓库完整 bridge → bridge-lite。
+  3. 便携连接器构建器自动携带 `lib/bridge-lite.js`（`plugins/voo` 递归复制），并在 bundle patch 配置里补上 `editorUrl` 说明；无 App/无仓库安装即为“托管编辑器 + lite bridge”组合。
+  - 面板 iframe 仍固定 `http://127.0.0.1:4173/?embed`，port 仍受 bridge origin 白名单约束。
+- **验收证据**：
+  1. 单测：`voo_editor_panel` 21/21（反代正例、资源、SPA 回退、404、不可达 502 页、health mode），`voo_bridge_lite` 7/7（协议常量与仓库协议逐项对齐、health、origin/token 拒绝、canvas 注册 → 状态 → MCP_CALL 转发与结果回流、无画布报 `mcp.noCanvas`、token 文件 0600 与 XDG/HOME 路径），`portable-agent-plugin` + `dsh_connector_plugin` 12/12（构建产物含 `lib/bridge-lite.js`）；合计 40/40。
+  2. 独立冒烟（`tmp/voo-standalone-smoke.mjs`：构建出的便携连接器、空 `repoDir`/空 `editorDir`、端口 4175/4181）：`mode=proxy`，`GET /` 200（3469B，含 VOO Design），`assets/index-*.js` 200（544KB），`/deep/route` SPA 回退 200，lite bridge `/health` → `{ok:true,mode:"lite"}`，dispose 后编辑器与 bridge 均关闭。
+  3. 运行态：重载插件行后 `http://127.0.0.1:4173/__voo/health` → `{"mode":"local","editorUrl":"https://voo.run/editor/","hasBuild":true}`（本机有仓库构建时仍用本地构建），`4179` 由仓库完整 bridge 提供，面板页面重连后 `voo_status` → `canvasConnected: true`。
+  4. 门禁：`editor-checks --check` valid；`--changed --json` → `unmapped: []`、`fullReleaseRequired: false`（`tests/unit/voo_bridge_lite.test.js` 与连接器测试归入 `platform`）。
+- **未验证 / 保留项**：
+  - lite bridge 只带 canvas relay：没有 `/preview` 预览页、也没有本地 CLI agent 通道；VOO 面板内自带 Agent 若选择本地 CLI 仍需要完整 bridge 或 App。DSH 的 `mcp__voo__*` 不受影响。
+  - 在线反代模式依赖网络；离线场景仍需本地 `dist/`（`npm run build` 或 `editorDir`）。编辑器构建来源读取 App asar 的方案未实现。
+  - 当前运行页面仍是旧构建（本轮只改插件/Host，未改 `src/`，无需重建 dist）；未 push、未部署；`package.json` 的外部改动仍不属于本轮。
+
 ## 设计稿容器结构：卡片/按钮必须是嵌套 Frame，不再用圆角矩形叠兄弟内容：2026-11-03
 
 - **基线版本**：`6933cf1b`（单一 VOO Harness 插件）；本轮修正“生成设计稿时组件应是 Frame 容器”的结构问题。

@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_BRIDGE_PORT,
   DEFAULT_EDITOR_PORT,
+  DEFAULT_EDITOR_URL,
   resolveEditorPanelOptions,
 } from "../../plugins/voo/lib/options.js";
 import { resolveEditorFile, startEditorServer } from "../../plugins/voo/lib/editor-server.js";
@@ -47,8 +48,9 @@ function makeEditorBuild() {
   return editorDir;
 }
 
-async function startServer(editorDir) {
-  const server = await startEditorServer({ host: "127.0.0.1", port: 0, editorDir });
+async function startServer(editorDirOrOptions) {
+  const options = typeof editorDirOrOptions === "string" ? { editorDir: editorDirOrOptions } : editorDirOrOptions;
+  const server = await startEditorServer({ host: "127.0.0.1", port: 0, ...options });
   servers.push(server);
   return server;
 }
@@ -94,6 +96,7 @@ describe("resolveEditorPanelOptions", () => {
       port: 4173,
       bridgePort: 4179,
       editorDir: path.join(REPO_ROOT, "dist"),
+      editorUrl: "https://voo.run/editor/",
       repoDir: REPO_ROOT,
       bridge: true,
     });
@@ -331,7 +334,7 @@ describe("integrated VOO bundle", () => {
     // one install mounts both halves whatever directory the bundle sits in.
     expect(rows[0].name).toBe("./index.js");
     expect(fs.existsSync(path.join(packageDir, "index.js"))).toBe(true);
-    expect(rows[0].config).toEqual({ port: 4173, editorDir: "", bridge: true });
+    expect(rows[0].config).toEqual({ port: 4173, editorDir: "", editorUrl: "https://voo.run/editor/", bridge: true });
 
     // The canvas MCP client spawns an absolute script entry inside this checkout.
     expect(rows[1].name).toBe("@deepseek-ai/dsh-mcp-client");
@@ -341,5 +344,88 @@ describe("integrated VOO bundle", () => {
     // The model bridge row resolves beside the patch, from inside this package.
     expect(rows[2].name).toBe("./lib/model-bridge.js");
     expect(fs.existsSync(path.join(packageDir, "lib", "model-bridge.js"))).toBe(true);
+  });
+});
+
+describe("standalone (app-less) editor source", () => {
+  it("defaults to the hosted editor and accepts overrides", () => {
+    expect(DEFAULT_EDITOR_URL).toBe("https://voo.run/editor/");
+    expect(resolveEditorPanelOptions().editorUrl).toBe(DEFAULT_EDITOR_URL);
+    expect(resolveEditorPanelOptions({ editorUrl: "https://example.test/editor" }).editorUrl).toBe("https://example.test/editor/");
+    expect(resolveEditorPanelOptions({ editorUrl: "off" }).editorUrl).toBeNull();
+    process.env.VOO_EDITOR_PANEL_URL = "https://env.test/editor/";
+    try {
+      expect(resolveEditorPanelOptions({}).editorUrl).toBe("https://env.test/editor/");
+      expect(resolveEditorPanelOptions({ editorUrl: "off" }).editorUrl).toBeNull();
+    } finally {
+      delete process.env.VOO_EDITOR_PANEL_URL;
+    }
+  });
+
+  it("proxies the hosted editor when no local build exists", async () => {
+    const upstream = http.createServer((request, response) => {
+      if (request.url === "/editor/" || request.url === "/editor/index.html") {
+        response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        response.end(`<html><body>${INDEX_MARKER}_UPSTREAM</body></html>`);
+        return;
+      }
+      if (request.url === "/editor/assets/app-abc123.js") {
+        response.writeHead(200, { "content-type": "text/javascript; charset=utf-8" });
+        response.end(`export const marker = "${ASSET_MARKER}";`);
+        return;
+      }
+      response.writeHead(404, { "content-type": "text/plain" });
+      response.end("not found");
+    });
+    await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+    const emptyDir = path.join(tempRoot(), "empty-build");
+    fs.mkdirSync(emptyDir);
+    const server = await startServer({ editorDir: emptyDir, editorUrl: `http://127.0.0.1:${upstream.address().port}/editor/` });
+    try {
+      expect(server.mode).toBe("proxy");
+      expect(server.hasBuild).toBe(false);
+      const health = await request(server, "/__voo/health");
+      expect(JSON.parse(health.body)).toMatchObject({ ok: true, mode: "proxy", hasBuild: false });
+
+      const root = await request(server, "/");
+      expect(root.response.status).toBe(200);
+      expect(root.response.headers.get("content-type")).toContain("text/html");
+      expect(root.response.headers.get("cache-control")).toBe("no-store");
+      expect(root.body).toContain(INDEX_MARKER);
+
+      const asset = await request(server, "/assets/app-abc123.js");
+      expect(asset.response.status).toBe(200);
+      expect(asset.response.headers.get("content-type")).toContain("javascript");
+      expect(asset.body).toContain(ASSET_MARKER);
+
+      // Extension-less routes are SPA paths and fall back to the hosted entry.
+      const spa = await request(server, "/deep/route");
+      expect(spa.body).toContain(INDEX_MARKER);
+
+      const missing = await request(server, "/missing.css");
+      expect(missing.response.status).toBe(404);
+    } finally {
+      await closeServer(server);
+      await new Promise((resolve) => upstream.close(resolve));
+    }
+  });
+
+  it("shows a readable page when the hosted editor is unreachable", async () => {
+    const emptyDir = path.join(tempRoot(), "empty-build");
+    fs.mkdirSync(emptyDir);
+    // Reserve then release a port so nothing answers there.
+    const probe = http.createServer(() => {});
+    await new Promise((resolve) => probe.listen(0, "127.0.0.1", resolve));
+    const deadPort = probe.address().port;
+    await new Promise((resolve) => probe.close(resolve));
+    const server = await startServer({ editorDir: emptyDir, editorUrl: `http://127.0.0.1:${deadPort}/editor/` });
+    try {
+      const page = await request(server, "/");
+      expect(page.response.status).toBe(502);
+      expect(page.body).toContain("无法加载 VOO 编辑器");
+      expect(page.body).toContain("Could not reach the hosted VOO editor");
+    } finally {
+      await closeServer(server);
+    }
   });
 });

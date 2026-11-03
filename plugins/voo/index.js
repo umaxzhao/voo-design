@@ -30,7 +30,12 @@ export function apply(ctx, config = {}) {
 
     const boot = async () => {
       try {
-        server = await startEditorServer({ host: options.host, port: options.port, editorDir: options.editorDir });
+        server = await startEditorServer({
+          host: options.host,
+          port: options.port,
+          editorDir: options.editorDir,
+          editorUrl: options.editorUrl,
+        });
       } catch (error) {
         console.error(
           `[voo] cannot serve the editor on http://${options.host}:${options.port}: ${describe(error)}. ` +
@@ -42,8 +47,13 @@ export function apply(ctx, config = {}) {
         shutdown(server, "editor server");
         return;
       }
-      const buildNote = server.hasBuild ? "" : ` (no build at ${options.editorDir}; run npm run build in the VOO repository)`;
-      console.info(`[voo] editor served at ${server.url}/?embed${buildNote}`);
+      const sourceNote =
+        server.mode === "local"
+          ? server.editorDir
+          : server.mode === "proxy"
+            ? `proxying ${server.editorUrl}`
+            : `no build and no hosted editor (${server.editorDir})`;
+      console.info(`[voo] editor served at ${server.url}/?embed (${sourceNote})`);
       if (!options.bridge) return;
       try {
         bridge = await ensureCliBridge({ repoDir: options.repoDir, port: options.bridgePort });
