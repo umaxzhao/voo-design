@@ -42,6 +42,7 @@ export const EDITOR_MODULES = [
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow",
       "nested-project-roundtrip", "pages_dnd", "browser-html-root-background", "browser-html-root-background-cold-reopen",
+      "jpg-webp-export-roundtrip",
     ],
     remaining: [
       "Interrupted native writes, signed installer recovery and every legacy document version are not certified by browser round trips.",
