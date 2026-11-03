@@ -71,8 +71,17 @@ await withEditorBrowser(async ({ page, errors }) => {
   const toolsMenu = drawer.getByRole("menu", { name: /Browser tools|浏览器工具/i });
   assert.equal(await toolsMenu.getByRole("menuitem", { name: /Pick Element|选取元素/i }).count(), 0);
   assert.equal(await toolsMenu.getByRole("menuitem", { name: /Import Page|导入整页/i }).count(), 0);
-  await page.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i }).waitFor();
+  const externalAction = toolsMenu.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i });
+  await externalAction.waitFor();
+  await externalAction.focus();
+  assert.ok(await externalAction.evaluate(element => element === document.activeElement));
   await page.screenshot({ path: editorArtifactPath("voo-browser-split-mobile.png") });
+  // Escape dismisses the top menu first and returns focus to its live trigger.
+  await page.keyboard.press("Escape");
+  await toolsMenu.waitFor({ state: "detached" });
+  assert.equal(await drawer.count(), 1);
+  const toolsTrigger = drawer.getByRole("button", { name: /Browser tools|浏览器工具/i });
+  assert.ok(await toolsTrigger.evaluate(element => element === document.activeElement));
   await page.keyboard.press("Escape");
   await drawer.waitFor({ state: "detached" });
   assert.equal(await trigger.getAttribute("aria-pressed"), "false");
