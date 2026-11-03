@@ -180,7 +180,8 @@ await withEditorBrowser(async ({ page }) => {
       if (unit === "group") e.selectGroup("source-group");
     }, unit);
     const ordinaryBefore = await snapshot(), ordinaryIndex = await index();
-    const start = await point(unit === "group" ? { x: 110, y: 105 } : undefined);
+    // Empty Frame interiors start a marquee; its visible edge still moves it.
+    const start = await point(unit === "group" ? { x: 110, y: 105 } : { x: 100, y: 42 });
     await page.mouse.move(start.x, start.y); await page.mouse.down();
     await page.mouse.move(start.x + 40, start.y + 20, { steps: 4 }); await settled();
     assert.notEqual(await snapshot(), ordinaryBefore, "the actual ordinary drag must change geometry before cancellation");

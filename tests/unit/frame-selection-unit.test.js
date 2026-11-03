@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createEngineNodesController } from "../../src/canvas/editor/editor_engine_nodes.js";
 import { createSelection } from "../../src/canvas/editor/editor_selection.js";
 import { nodeAtPoint } from "../../src/canvas/editor/doc_ops_nodes.js";
-import { frameSelectionUnit } from "../../src/canvas/editor/frame-selection-unit.js";
+import { frameSelectionUnit, isFrameEdgeHit } from "../../src/canvas/editor/frame-selection-unit.js";
 import { topLevelGroupOf } from "../../src/canvas/editor/scene_model_groups.js";
 
 const box = { x: 0, y: 0, width: 400, height: 300, visible: true };
@@ -20,6 +20,18 @@ function controller(nodes) {
 }
 
 describe("Frame selection boundaries", () => {
+  it("keeps a screen-sized inner edge draggable at different zooms", () => {
+    for (const zoom of [0.5, 1, 2]) {
+      const toDocPoint = (x, y) => ({ x: x / zoom, y: y / zoom });
+      for (const [x, y] of [[200 * zoom, 2], [200 * zoom, 300 * zoom - 2],
+        [2, 150 * zoom], [400 * zoom - 2, 150 * zoom]]) {
+        const event = { clientX: x, clientY: y };
+        expect(isFrameEdgeHit(frame, toDocPoint(x, y), toDocPoint, event)).toBe(true);
+      }
+      const interior = { clientX: 200 * zoom, clientY: 8 };
+      expect(isFrameEdgeHit(frame, toDocPoint(interior.clientX, interior.clientY), toDocPoint, interior)).toBe(false);
+    }
+  });
   it("keeps a direct child independent while preserving structural ancestry queries", () => {
     const doc = { nodes: [frame, first, second] };
     expect(frameSelectionUnit(doc, first)).toBe(first);
