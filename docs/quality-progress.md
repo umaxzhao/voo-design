@@ -1,5 +1,13 @@
 # 项目检查总进度
 
+## GATE99-HOME-01：Home settings locator 复测（2026-11-03 UTC）
+
+- **归属与状态**：`workspace` / `ui-home-settings`，本项 locator 已验证；模块与全门禁仍为 partial，不继承其他历史 pass。
+- **独立基线**：detached `99fa82ff026ada8afc3ffc3a961676612674c03b`；原样 e2e exit 1，在第 175 行等待未打开设置弹窗内的 Mobile app radio 达 30 秒。原测试 SHA256 `3c02002f275f555e974efa33097af2f6cb3891cbe1e72b7c9a83f9f5214d254b` 前后一致；诊断原始日志与 trace 位于 `/Users/tt/Documents/Codex/2026-11-02/task/gate99-home-20261103T041840Z-evidence`。
+- **分类与改动**：locator / 前置导航过时；Generation settings 打开后同一 radio 可见且能选中，未发现本项所指的产品或环境失败。独立复现后仅借鉴候选 `6d197a0e` 的导航顺序，采用具名 trigger/dialog；不直接 cherry-pick，原有 49 个断言与 `setDefaultTimeout(30000)` 全部保留。产品、fixture 和 WIN titlebar 文件零改动。
+- **已执行证据**：完整单项 e2e `candidate-run.log` exit 0（10 个记录组，blockedRequests=0）；验证测试 SHA256 `eb8662ac164d5d0d187f6e6525dc54757cd55830a1ae19a79d6026310541baaa`，对应基线 99fa82ff + `candidate-navigation-only.patch`；AST 保真、语法、ESLint/格式、模块登记与 design lint 均 exit 0。准确命令、退出码及图像由同目录 JSON/log 保存。
+- **剩余边界**：未重新运行完整 release 门禁，未测平台安装包或 Mac GUI；本项不能代替 WIN titlebar 负责人或其他套件验收。仅本地独立副本提交，无 push、workflow 或发布。
+
 ## VOO 设计编辑器进驻 DeepSeek Harness 右侧面板：2026-11-03
 
 - **基线版本**：`3657d11e`（`merge/consolidate-all-branches`，工作树在改动前干净）；本轮改动为新增插件包与单测，未推送。

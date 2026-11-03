@@ -171,19 +171,15 @@ await withEditorBrowser(async ({ page, origin }) => {
   await home.getByRole("button", { name: "AuditHome.voo", exact: true }).waitFor();
   checks.push("starred, search, list/grid switch, browser project creation and nested Move to all mutate the actual workspace");
 
-  // Select mobile design type on home directly via radio button
-  await home.getByRole("radio", { name: /Mobile app|移动应用/i }).click();
-
-  // Advanced generation settings (Style, Design System, Candidates, Size) open through Settings trigger
-  const advancedTrigger = home.locator('button[aria-haspopup="dialog"]').first();
-  if (await advancedTrigger.count()) {
-    await advancedTrigger.click();
-    const advanced = page.getByRole("dialog").first();
-    await advanced.waitFor();
-    await page.keyboard.press("Escape");
-    await advanced.waitFor({ state: "detached" });
-  }
-  checks.push("generation type is selected directly via radio and advanced settings opens in dialog");
+  // Design type is an advanced setting, so open its dialog before choosing it.
+  const advancedTrigger = home.getByRole("button", { name: "Generation settings", exact: true });
+  await advancedTrigger.click();
+  const advanced = page.getByRole("dialog", { name: "Generation settings", exact: true });
+  await advanced.waitFor();
+  await advanced.getByRole("radio", { name: /Mobile app|移动应用/i }).click();
+  await page.keyboard.press("Escape");
+  await advanced.waitFor({ state: "detached" });
+  checks.push("generation type is selected inside the advanced settings dialog");
 
   const settingsOpener = page.getByRole("button", { name: "Settings", exact: true });
   await settingsOpener.click();
