@@ -87,7 +87,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     }] } });
     (await import("/tests/e2e/inspector-audit-panel.mjs")).mountAuditPanel("variables", "child");
   });
-  await page.getByTestId("editor-color-variable-select").click();
+  await page.locator("#inspector-audit-host").getByTestId("editor-color-variable-select").click();
   await page.locator('[role="listbox"]:visible').getByRole("option", { name: "Accent", exact: true }).click();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("child").fillVariableId), "accent");
   assert.equal(await sample(230, 140), "#123456");
@@ -124,6 +124,8 @@ await withEditorBrowser(async ({ page, tool }) => {
   await tool("undo"); assert.equal(await sample(75, 75), "#ff0000");
   checks.push("legacy page opens as a free canvas frame with visible paint and children moving together, undoing once");
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
+  const settingsLabel = await page.evaluate(async () => (await import("/src/shared/i18n.js")).t("welcome.prompt.settingsLabel"));
+  await page.getByRole("button", { name: settingsLabel, exact: true }).click();
   assert.equal(await page.getByRole("radiogroup").count(), 1);
   const mobileRadio = page.getByRole("radio", { name: /Mobile app|移动应用/i });
   await mobileRadio.click();
@@ -140,6 +142,8 @@ await withEditorBrowser(async ({ page, tool }) => {
 await withEditorBrowser(async ({ page }) => {
   const checks = [];
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
+  const settingsLabel = await page.evaluate(async () => (await import("/src/shared/i18n.js")).t("welcome.prompt.settingsLabel"));
+  await page.getByRole("button", { name: settingsLabel, exact: true }).tap();
   const root = page.locator(".welcome-prompt-root");
   assert.equal(await page.evaluate(() => matchMedia("(hover: none) and (pointer: coarse)").matches), true);
   assert.equal(await page.getByRole("radiogroup").count(), 1);
