@@ -5,7 +5,6 @@ import {
   withInstanceCamera,
   withInstanceView,
 } from "../editor/instance-view.js";
-import { normalizeCornerRadius } from "../editor/scene_model_core.js";
 import { mixedLayerSegments } from "./editor-mixed-layer-segments.js";
 
 function vectorSource(node) {
@@ -134,21 +133,7 @@ function SceneLayers({
           </div>
         );
       }
-      if (node.kind === "rect" || node.kind === "ellipse") {
-        return (
-          <div
-            key={node.id}
-            style={{
-              ...commonStyle,
-              background: node.fill,
-              borderRadius:
-                node.kind === "ellipse"
-                  ? "50%"
-                  : normalizeCornerRadius(node.cornerRadius),
-            }}
-          />
-        );
-      }
+      // Use the common vector painter for shape paint stacks, including opacity.
       if (node.width > 0 && node.height > 0) {
         return (
           <img

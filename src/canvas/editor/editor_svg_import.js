@@ -354,7 +354,15 @@ function resolveGradient(def, defsMap) {
   if (dx !== 0 || dy !== 0) {
     angle = Math.round(((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360);
   }
-  return `linear-gradient(${angle}deg, ${stopStrings.join(", ")})`;
+  const gradient = `linear-gradient(${angle}deg, ${stopStrings.join(", ")})`;
+  // CSS angle alone loses the edited origin and length of SVG direction lines.
+  const fullAxisLine = (y1 === y2 && Math.min(x1, x2) === 0 && Math.max(x1, x2) === 1) ||
+    (x1 === x2 && Math.min(y1, y2) === 0 && Math.max(y1, y2) === 1);
+  if (!fullAxisLine && def.attrs.gradientUnits !== "userSpaceOnUse" && !def.attrs.gradientTransform) {
+    const line = [x1, y1, x2, y2].map((value) => `${Number((value * 100).toFixed(6))}%`);
+    return `${gradient} /* voo-gradient-line: ${line.join(" ")} */`;
+  }
+  return gradient;
 }
 
 function resolvePaintServer(value, defsMap) {
@@ -408,6 +416,12 @@ function parsePaintProps(attrs, inherited = {}, defsMap = null) {
     "stroke-width",
   );
   const rawOpacity = getStyleOrAttr(attrs, style, "opacity");
+  const paintOpacity = (key, fallback) => {
+    const raw = getStyleOrAttr(attrs, style, key);
+    if (raw === undefined || raw === "inherit") return fallback ?? 1;
+    const value = parseNum(raw, 1) / (String(raw).trim().endsWith("%") ? 100 : 1);
+    return Math.max(0, Math.min(1, value));
+  };
   const rawLineCap = getStyleOrAttr(
     attrs,
     style,
@@ -457,6 +471,8 @@ function parsePaintProps(attrs, inherited = {}, defsMap = null) {
     fill: fill || "transparent",
     stroke: stroke || "transparent",
     strokeWidth,
+    fillOpacity: paintOpacity("fill-opacity", inherited.fillOpacity),
+    strokeOpacity: paintOpacity("stroke-opacity", inherited.strokeOpacity),
     opacity,
     strokeCap,
     strokeJoin,
@@ -768,33 +784,14 @@ export function parseSvgStringToNodes(svgString) {
       return;
     }
 
-    if (tag === "path") {
+    if (["path", "rect", "circle", "ellipse", "line", "polyline", "polygon"].includes(tag)) {
       const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
-      if (node) nodes.push(node);
-      return;
-    }
-
-    if (tag === "rect") {
-      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
-      if (node) nodes.push(node);
-      return;
-    }
-
-    if (tag === "circle" || tag === "ellipse") {
-      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
-      if (node) nodes.push(node);
-      return;
-    }
-
-    if (tag === "line") {
-      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
-      if (node) nodes.push(node);
-      return;
-    }
-
-    if (tag === "polyline" || tag === "polygon") {
-      const node = parseShapeNode(element, matrix, paint, effectiveClipId, parentGroupId);
-      if (node) nodes.push(node);
+      if (node) {
+        // Paint alpha is independent of layer opacity and must reach the renderer.
+        node.fillOpacity = paint.fillOpacity;
+        node.strokeOpacity = paint.strokeOpacity;
+        nodes.push(node);
+      }
       return;
     }
 
@@ -847,6 +844,8 @@ export function parseSvgStringToNodes(svgString) {
           if (textAnchor === "middle") textNode.align = "center";
           else if (textAnchor === "end") textNode.align = "right";
           textNode.opacity = tPaint.opacity;
+          textNode.fillOpacity = tPaint.fillOpacity;
+          textNode.strokeOpacity = tPaint.strokeOpacity;
           if (parentGroupId) textNode.parentId = parentGroupId;
           if (effectiveClipId) textNode.clipTo = effectiveClipId;
           nodes.push(textNode);
@@ -895,6 +894,8 @@ export function parseSvgStringToNodes(svgString) {
       if (textAnchor === "middle") textNode.align = "center";
       else if (textAnchor === "end") textNode.align = "right";
       textNode.opacity = paint.opacity;
+      textNode.fillOpacity = paint.fillOpacity;
+      textNode.strokeOpacity = paint.strokeOpacity;
       if (parentGroupId) textNode.parentId = parentGroupId;
       if (effectiveClipId) textNode.clipTo = effectiveClipId;
       nodes.push(textNode);
