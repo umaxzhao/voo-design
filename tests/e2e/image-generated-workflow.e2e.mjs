@@ -51,7 +51,7 @@ await withEditorBrowser(async ({
     assert.ok(size.width >= 1024 && size.height >= 1024);
     // Edit the actual inspector rather than replacing the imported bitmap.
     for (const [name, key, value] of [["W", "width", 240], ["H", "height", 240], ["X", "x", 180], ["Y", "y", 100]]) {
-      const field = panel.getByRole("spinbutton", {
+      const field = panel.getByRole("textbox", {
         name,
         exact: true
       });
@@ -193,16 +193,20 @@ await withEditorBrowser(async ({
   });
   await audit.record("portable-snapshot-download", async () => {
     assert.ok(expected, "Edited pixels must have passed");
-    const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", {
-      name: "Export project as a portable .zip snapshot",
-      exact: true
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog").filter({
+      has: page.getByRole("combobox")
+    });
+    await palette.getByRole("combobox").fill("snapshot");
+    const [download] = await Promise.all([page.waitForEvent("download"), palette.getByRole("option").filter({
+      hasText: "Export project as a portable .zip snapshot"
     }).click()]);
     snapshot = await readFile(await download.path());
     assert.equal(snapshot.subarray(0, 2).toString(), "PK");
     assert.ok(snapshot.length > 100000);
     await download.saveAs(resolve(directory, "generated-edit.zip"));
     return {
-      actualTitlebarExport: true,
+      actualSnapshotCommand: true,
       archiveBytes: snapshot.length
     };
   });
