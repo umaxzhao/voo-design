@@ -29,6 +29,8 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
       "src/shared/media-export.js", "src/canvas/editor/export_filename.js",
+      "src/canvas/editor/psd_export.js", "tests/unit/psd_frame_fidelity.test.js",
+      "scripts/real-browser-export-psd.mjs",
       "src/canvas/components/editor_hooks/use_editor_apply.js", "src/canvas/components/image_editor.jsx",
       "tests/unit/save_formats.test.js", "tests/unit/export_filename.test.js", "tests/unit/voo_file_save.test.js",
       "src/canvas/editor/editor_engine_history*", "src/canvas/undo*", "tests/unit/coalesced_update_history.test.js",

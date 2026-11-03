@@ -73,10 +73,13 @@ function collectLayer(layer, parentId, out, assets) {
       name,
     };
     out.push(group);
-    const bounds = collectLayers(layer.children, group.id, out, assets);
+    let bounds = collectLayers(layer.children, group.id, out, assets);
     if (!bounds) {
-      out.splice(groupIndex, 1);
-      return null;
+      const left = layer.left ?? 0;
+      const top = layer.top ?? 0;
+      const width = Math.max(0, (layer.right ?? left) - left);
+      const height = Math.max(0, (layer.bottom ?? top) - top);
+      bounds = { x: left, y: top, width, height };
     }
     Object.assign(group, bounds);
     return bounds;

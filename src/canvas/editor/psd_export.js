@@ -280,26 +280,96 @@ function adjustmentLayer(node) {
   }
 }
 
-/** #rrggbb → ag-psd RGB colour. */
-function hexToPsdColor(hex) {
-  const match = /^#?([0-9a-f]{6})$/i.exec(String(hex ?? ""));
-  if (!match) return { r: 0, g: 0, b: 0 };
-  const value = parseInt(match[1], 16);
-  return {
-    r: (value >> 16) & 255,
-    g: (value >> 8) & 255,
-    b: value & 255,
-  };
+/**
+ * Parses a paint/color representation into an RGBA descriptor { r, g, b, a } (0-255).
+ * Returns null if the paint is unsupported or cannot be resolved, avoiding silent black fallbacks.
+ */
+function parsePsdColor(paint) {
+  if (!paint) return null;
+  if (typeof paint !== "string") {
+    if (typeof paint.color === "string") return parsePsdColor(paint.color);
+    if (typeof paint.fill === "string") return parsePsdColor(paint.fill);
+    return null;
+  }
+  const str = paint.trim();
+  if (str === "transparent") return null;
+
+  // 8-digit hex: #rrggbbaa
+  const hex8 = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(str);
+  if (hex8) {
+    return {
+      r: parseInt(hex8[1], 16),
+      g: parseInt(hex8[2], 16),
+      b: parseInt(hex8[3], 16),
+      a: parseInt(hex8[4], 16),
+    };
+  }
+
+  // 4-digit hex: #rgba
+  const hex4 = /^#?([0-9a-f])([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(str);
+  if (hex4) {
+    return {
+      r: parseInt(hex4[1] + hex4[1], 16),
+      g: parseInt(hex4[2] + hex4[2], 16),
+      b: parseInt(hex4[3] + hex4[3], 16),
+      a: parseInt(hex4[4] + hex4[4], 16),
+    };
+  }
+
+  // 6-digit hex: #rrggbb
+  const hex6 = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(str);
+  if (hex6) {
+    return {
+      r: parseInt(hex6[1], 16),
+      g: parseInt(hex6[2], 16),
+      b: parseInt(hex6[3], 16),
+      a: 255,
+    };
+  }
+
+  // 3-digit hex: #rgb
+  const hex3 = /^#?([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(str);
+  if (hex3) {
+    return {
+      r: parseInt(hex3[1] + hex3[1], 16),
+      g: parseInt(hex3[2] + hex3[2], 16),
+      b: parseInt(hex3[3] + hex3[3], 16),
+      a: 255,
+    };
+  }
+
+  // rgb(...) or rgba(...)
+  const rgbMatch = /^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)$/i.exec(str);
+  if (rgbMatch) {
+    const alphaFloat = rgbMatch[4] !== undefined ? parseFloat(rgbMatch[4]) : 1;
+    return {
+      r: Math.min(255, Math.max(0, parseInt(rgbMatch[1], 10))),
+      g: Math.min(255, Math.max(0, parseInt(rgbMatch[2], 10))),
+      b: Math.min(255, Math.max(0, parseInt(rgbMatch[3], 10))),
+      a: Math.min(255, Math.max(0, Math.round(alphaFloat * 255))),
+    };
+  }
+
+  // Return null for gradients, CSS functions, or unrecognized strings.
+  // Never default to silent black { r: 0, g: 0, b: 0 }.
+  return null;
 }
 
-/** An opaque, document-sized RGBA buffer filled with one colour. */
+/** #rrggbb / #rgb → ag-psd RGB colour. */
+function hexToPsdColor(hex) {
+  const parsed = parsePsdColor(hex);
+  return parsed ?? { r: 0, g: 0, b: 0 };
+}
+
+/** An RGBA buffer filled with one colour, preserving alpha. */
 function solidColorImageData(color, width, height) {
   const data = new Uint8ClampedArray(width * height * 4);
+  const { r, g, b, a = 255 } = color;
   for (let i = 0; i < width * height; i += 1) {
-    data[i * 4] = color.r;
-    data[i * 4 + 1] = color.g;
-    data[i * 4 + 2] = color.b;
-    data[i * 4 + 3] = 255;
+    data[i * 4] = r;
+    data[i * 4 + 1] = g;
+    data[i * 4 + 2] = b;
+    data[i * 4 + 3] = a;
   }
   return { width, height, data };
 }
@@ -331,11 +401,96 @@ export function buildPsd({ doc, renderNode, renderComposite }) {
         if (node.kind === NODE_KIND.ADJUSTMENT) return adjustmentLayer(node);
         if (node.kind === NODE_KIND.GROUP) {
           const children = walk(groupChildren(doc, node.id)).filter(Boolean);
-          if (children.length === 0) return null;
+          const isFrame = Boolean(node.isFrame || node.frame);
+          const bounds = boundsOf(node);
+          const width = Math.max(0, bounds.right - bounds.left);
+          const height = Math.max(0, bounds.bottom - bounds.top);
+
+          // Frame background fill & multi-fill support
+          const fills = Array.isArray(node.fills)
+            ? node.fills.filter((p) => p && p.visible !== false)
+            : [];
+          const singleFill = node.fill ?? (isFrame ? node.backgroundColor : null);
+          const hasSingleFill = Boolean(
+            singleFill && singleFill !== "transparent" && node.fillHidden !== true,
+          );
+          const hasPaint = (fills.length > 0 || hasSingleFill) && width > 0 && height > 0;
+
+          if (hasPaint) {
+            let fillLayer = null;
+            // 1. Render Frame background through the caller's renderNode to faithfully
+            // capture gradients, multi-fills, RGBA alpha, and corner radii without duplicating children.
+            if (renderNode) {
+              const frameBgNode = {
+                id: `${node.id}-frame-bg`,
+                kind: NODE_KIND.RECT,
+                name: `${node.name || "Frame"} Background`,
+                x: bounds.left,
+                y: bounds.top,
+                width,
+                height,
+                fill: node.fill ?? (isFrame ? node.backgroundColor : null),
+                fills: node.fills,
+                fillOpacity: node.fillOpacity,
+                fillHidden: node.fillHidden,
+                cornerRadius: node.cornerRadius,
+                cornerRadii: node.cornerRadii,
+                visible: true,
+                opacity: 1,
+              };
+              const rendered = renderNode(frameBgNode);
+              if (rendered?.imageData) {
+                fillLayer = {
+                  name: `${node.name || "Frame"} Background`,
+                  top: bounds.top,
+                  left: bounds.left,
+                  bottom: bounds.bottom,
+                  right: bounds.right,
+                  // fillOpacity is already baked into rendered pixel data;
+                  // layer opacity is 1 so group-level opacity is applied exactly once to the group composite.
+                  opacity: 1,
+                  blendMode: PSD_BLEND_DEFAULT,
+                  imageData: rendered.imageData,
+                };
+              }
+            }
+
+            // 2. Direct solid/RGBA fallback if renderNode did not return pixels.
+            // Never fall back to silent black { r: 0, g: 0, b: 0 } for unparseable paints.
+            if (!fillLayer) {
+              const primaryFill = singleFill ?? fills[0]?.fill ?? fills[0]?.color;
+              const parsedColor = parsePsdColor(primaryFill);
+              if (parsedColor) {
+                const effectiveAlpha = Math.round(
+                  (parsedColor.a ?? 255) *
+                    (typeof node.fillOpacity === "number" ? node.fillOpacity : 1),
+                );
+                const colorWithAlpha = { ...parsedColor, a: effectiveAlpha };
+                fillLayer = {
+                  name: `${node.name || "Frame"} Background`,
+                  top: bounds.top,
+                  left: bounds.left,
+                  bottom: bounds.bottom,
+                  right: bounds.right,
+                  // fillOpacity is baked into pixel data; layer opacity is 1 so group opacity applies once.
+                  opacity: 1,
+                  blendMode: PSD_BLEND_DEFAULT,
+                  imageData: solidColorImageData(colorWithAlpha, width, height),
+                };
+              }
+            }
+
+            if (fillLayer) {
+              children.push(fillLayer);
+            }
+          }
+
+          if (children.length === 0 && !isFrame) return null;
           return {
-            name: node.name || "Group",
-            ...boundsOf(node),
+            name: node.name || (isFrame ? "Frame" : "Group"),
+            ...bounds,
             opened: true,
+            opacity: typeof node.opacity === "number" ? node.opacity : 1,
             children,
           };
         }
@@ -351,20 +506,22 @@ export function buildPsd({ doc, renderNode, renderComposite }) {
 
   let background = null;
   if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
-    const color = hexToPsdColor(doc.backgroundColor);
-    // A real bottom layer carrying the page colour, so the flattened look the
-    // editor showed is reproducible from the layer stack alone.
-    background = {
-      name: "Background",
-      top: 0,
-      left: 0,
-      bottom: doc.height,
-      right: doc.width,
-      opacity: 1,
-      blendMode: PSD_BLEND_DEFAULT,
-      imageData: solidColorImageData(color, doc.width, doc.height),
-    };
-    children.push(background);
+    const color = parsePsdColor(doc.backgroundColor);
+    if (color) {
+      // A real bottom layer carrying the page colour, so the flattened look the
+      // editor showed is reproducible from the layer stack alone.
+      background = {
+        name: "Background",
+        top: 0,
+        left: 0,
+        bottom: doc.height,
+        right: doc.width,
+        opacity: 1,
+        blendMode: PSD_BLEND_DEFAULT,
+        imageData: solidColorImageData(color, doc.width, doc.height),
+      };
+      children.push(background);
+    }
   }
 
   const psd = { width: doc.width, height: doc.height, children };
