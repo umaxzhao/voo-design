@@ -83,7 +83,7 @@ await withEditorBrowser(async ({ page, errors }) => {
   checks.push(`factory rect visible=${initial.visible}, fill ${initial.fill}`);
 
   // Colour variables: create, bind, edit the value (propagates), then unlink and undo/redo.
-  await page.getByTestId("editor-color-variable-create").click();
+  await page.getByTestId("editor-color-variables-section").getByRole("button").first().click();
   await settlePanels(page);
   const created = await state();
   assert.ok(created.legacy + created.collections >= 1, `create must store a colour variable: ${JSON.stringify(created)}`);
