@@ -1,5 +1,14 @@
 # 项目检查总进度
 
+## 快速 Enter/Escape 数值显示同步 — 2026-11-03
+
+- 范围：`inspector.field-commit`；固定基线 `0944e200160e0f80ccb81197c16eb6e8039ca28e` 的全新独立副本，仅改 `BoundedNumberInput` 和对应回归/登记。未改 history、保存引擎、image_editor、pointer、CSS 或其他 owner 的树。
+- 修前：原30轮脚本完整 exit1，第19轮 Enter 后 node/input=150、history38，立即 Escape 后 node150/history38 保留、input暂100，首个后续观察帧恢复150；确定性单测也复现同一模型/显示分歧。属于显示 publication 不同步，不能说数据丢失。
+- 候选：局部 draft 状态渲染不重放旧 props，新的父级 props 发布在 layout 阶段同步；同值合并 Enter/Undo 仍接受父发布。空值/无效表达式使用最新提交边界，IME 合成键不提前 Enter/Escape 结束输入。原 Enter/blur、Escape 还原和一次提交路径保留，无等待、阈值或断言放宽。
+- 回归：13项确定性输入/session单测；原受控同值Undo测试保留并追加故意不发布新props的真实DOM输入用例；实际 inspector X 快速输入、即时Esc及一次键盘Undo/Redo新增断言，原像素、geometry、history检查保留。
+- 修后初测：13项单测、原30轮立即断言及完整inspector-controls均exit0。普通本地提交后的固定HEAD全量unit/lint/modules/build、受影响浏览器套件及更多30轮的真实exit见 `/Users/tt/Desktop/voo-linux-qa/c-rapid-numeric-fix-20261103T122024Z/REPORT.md` 与 `DELIVERY.json`，未执行/失败不能继承初测通过。
+- 范围仍partial：macOS arm64 headless Chromium、hasTouch仅模拟；Mac GUI旧拒绝不重试，原生Linux/Windows、实体触摸和物理IME未测。无push/CI/release。旧60e/7d/B a3f失败与本轮before证据均保留；retouch原失败不变、不重跑。
+
 ## UI 安全区与绿框门禁合同（2026-11-03）
 
 - 独立基线 `3dec4ef2`；保留用户要求的零额外4px外间距，物理安全区保护不减。修正非零安全区时顶栏黑端旁的绿色盖边，并将 `pages_dnd` 的旧 padding 数字断言换成可见边框/安全区/命中合同；原拖动业务断言保留并在非零安全区执行。

@@ -1,5 +1,15 @@
 # Panel Control Audit Report (WB-02)
 
+## Rapid numeric publication — 2026-11-03
+
+- Capability: `inspector.field-commit`; existing defect, not a new input feature.
+- Baseline: `0944e200160e0f80ccb81197c16eb6e8039ca28e`, own isolated clone. The unchanged 30-round reproduction exited 1 at zero-based round 18: Enter committed X=150/history38; immediate Escape left model/history intact but briefly showed 100 until the next observed frame. Earlier 60e/7d/a3f failures remain evidence.
+- Cause: every unfocused child-state render replayed the old `value` prop into both the display and committed refs before the parent published its latest model. The field now synchronizes on parent props publication before paint, preserving local committed boundaries across child-only renders. A same-value parent publication remains authoritative for coalesced Enter/Undo; focused expressions remain drafts.
+- Scope: `bounded_number_input.jsx` only for product code. No history/storage/image_editor/pointer/CSS changes. Invalid/empty drafts fall back to the latest committed value; composition Enter/Escape keys retain IME cancellation priority. Existing Enter-via-blur and Escape restoration/transaction behavior stays intact.
+- Regressions: deterministic retained-old-props Enter/new-edit/Escape; same-value parent Undo; focused expressions, clamping/precision/arrows, invalid and empty values, unchanged/mixed field semantics, synthetic composition guards and one-step actual history. The existing `inspector-controls` checkpoint assertions remain; a delayed-publication DOM fixture and inspector rapid X keyboard Undo/Redo assertions are additive.
+- Validation: original 30-round script SHA256 `273ada119e172e80198cebda1a3556002ccf771f507a85f0dd83d3e23482de63`, immediate checks and the separate 20-frame observations unchanged. Precommit 13 units, all 30 UI rounds and the complete inspector-controls command exit0. Exact committed revision and subsequent full gates/affected suites are bound externally in `/Users/tt/Desktop/voo-linux-qa/c-rapid-numeric-fix-20261103T122024Z/DELIVERY.json`; check its real exits before claiming those contexts verified.
+- Limits: headless Chromium on macOS arm64, simulated touch/composition only. Native Mac/Linux/Windows, physical IME/touch and untested fields remain unverified. No claim of eliminating every race, no push/CI/release, no Mac GUI retry or PID224 action. Original retouch failure stays open and is outside this work.
+
 ## Welcome settings entry — 2026-10-31
 
 - Capability: `workspace.settings-entry`; ownership: workspace; regression: `ui-home-settings`.

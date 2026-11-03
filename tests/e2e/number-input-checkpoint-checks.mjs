@@ -30,4 +30,51 @@ export async function verifyNumberInputCheckpoint(page) {
       delete window.__numberCheckpoint;
     });
   }
+  await verifyDelayedNumberPublication(page);
+}
+
+/** Enter/cancel must not need a future parent render to show the committed value. */
+async function verifyDelayedNumberPublication(page) {
+  await page.evaluate(async () => {
+    const { mountDelayedNumberPublication } = await import("/tests/e2e/inspector-audit-panel.mjs");
+    mountDelayedNumberPublication();
+  });
+  const input = page.getByRole("textbox", { name: "Delayed checkpoint", exact: true });
+  const state = () => page.evaluate(() => ({ value: window.__numberPublication.value, commits: window.__numberPublication.commits }));
+  try {
+    await input.fill("150");
+    await input.press("Enter");
+    assert.equal(await input.inputValue(), "150");
+    assert.deepEqual(await state(), { value: 150, commits: [150] });
+    await input.fill("222");
+    await input.press("Escape");
+    assert.equal(await input.inputValue(), "150", "Escape immediately restores the latest Enter despite retained old props");
+    assert.deepEqual(await state(), { value: 150, commits: [150] });
+    await input.fill("");
+    await input.blur();
+    assert.equal(await input.inputValue(), "150");
+    assert.deepEqual(await state(), { value: 150, commits: [150] });
+
+    // Synthetic composition checks key routing only; physical IME is separate.
+    await input.fill("222");
+    await input.dispatchEvent("compositionstart");
+    await input.press("Enter");
+    await input.press("Escape");
+    assert.equal(await input.inputValue(), "222");
+    assert.equal(await input.evaluate(element => document.activeElement === element), true);
+    assert.deepEqual(await state(), { value: 222, commits: [150] });
+    await input.dispatchEvent("compositionend");
+    await input.press("Escape");
+    assert.equal(await input.inputValue(), "150");
+    assert.deepEqual(await state(), { value: 150, commits: [150] });
+    await page.evaluate(() => window.__numberPublication.publish());
+    assert.equal(await input.inputValue(), "150");
+  } finally {
+    await page.evaluate(() => {
+      window.__numberPublicationRoot.unmount();
+      document.getElementById("number-publication-host").remove();
+      delete window.__numberPublicationRoot;
+      delete window.__numberPublication;
+    });
+  }
 }

@@ -81,3 +81,23 @@ export function mountNumberCheckpoint() {
   window.__numberCheckpointRoot = createRoot(host);
   window.__numberCheckpointRoot.render(React.createElement(Field));
 }
+
+/** Retain old parent props until explicitly published, without delaying input events. */
+export function mountDelayedNumberPublication() {
+  const host = document.createElement("div");
+  host.id = "number-publication-host";
+  document.body.append(host);
+  const record = { value: 100, commits: [] };
+  window.__numberPublication = record;
+  function Field() {
+    const [, refresh] = useReducer(version => version + 1, 0);
+    record.publish = refresh;
+    return React.createElement(BoundedNumberInput, {
+      ariaLabel: "Delayed checkpoint", value: record.value, min: -360, max: 360,
+      onValueChange: value => { record.value = value; },
+      onCommit: () => { record.commits.push(record.value); },
+    });
+  }
+  window.__numberPublicationRoot = createRoot(host);
+  window.__numberPublicationRoot.render(React.createElement(Field));
+}

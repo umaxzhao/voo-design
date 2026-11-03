@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { createEditorGestureTransaction } from "../../shared/editor-gesture-transaction.js";
 
 const NUMBER_INPUT_GESTURE_KEY = "bounded-number-input";
@@ -24,22 +24,24 @@ function evaluateMathExpression(str) {
 }
 
 /** Number input that validates on commit without blocking multi-digit typing. */
-export default function BoundedNumberInput({
-  value,
-  min,
-  max,
-  step = 1,
-  onValueChange,
-  onCommit = undefined,
-  className = undefined,
-  ariaLabel,
-  inputRef = undefined,
-  disabled = false,
-  precision = 0,
-}) {
+export default function BoundedNumberInput(props) {
+  const {
+    value,
+    min,
+    max,
+    step = 1,
+    onValueChange,
+    onCommit = undefined,
+    className = undefined,
+    ariaLabel,
+    inputRef = undefined,
+    disabled = false,
+    precision = 0,
+  } = props;
   const [draft, setDraft] = useState(String(value));
   const draftRef = useRef(String(value));
   const focusedRef = useRef(false);
+  const composingRef = useRef(false);
   const committedValueRef = useRef(value);
   const emittedValueRef = useRef(value);
   const onCommitRef = useRef(onCommit);
@@ -52,7 +54,7 @@ export default function BoundedNumberInput({
     });
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!focusedRef.current) {
       const nextDraft = String(value);
       committedValueRef.current = value;
@@ -62,9 +64,11 @@ export default function BoundedNumberInput({
         setDraft(nextDraft);
       }
     }
-    // Commit and immediate undo can publish the same value as the last render.
-    // Reconcile every unfocused render, while preserving focused typing drafts.
-  });
+    // A child draft render retains its props object and must not replay stale
+    // values over a local commit. A new parent publication remains authoritative,
+    // including a coalesced commit/Undo whose numeric value is unchanged.
+    // Reconcile before paint; focused drafts still belong to the current edit.
+  }, [props]);
 
   // Integer fields keep the original `Math.round`; decimal fields opt in with
   // `precision` so line-height/letter-spacing can be typed instead of only
@@ -76,7 +80,7 @@ export default function BoundedNumberInput({
 
   const normalize = (rawValue) => {
     const parsed = evaluateMathExpression(String(rawValue));
-    const safeValue = Number.isFinite(parsed) ? parsed : value;
+    const safeValue = Number.isFinite(parsed) ? parsed : committedValueRef.current;
     return Math.min(max, Math.max(min, roundToPrecision(safeValue)));
   };
 
@@ -132,12 +136,16 @@ export default function BoundedNumberInput({
           emitValue(roundToPrecision(parsed));
         }
       }}
+      onCompositionStart={() => { composingRef.current = true; }}
+      onCompositionEnd={() => { composingRef.current = false; }}
       onBlur={() => {
+        composingRef.current = false;
         focusedRef.current = false;
         commit();
       }}
       onKeyDown={(event) => {
         event.stopPropagation();
+        if (composingRef.current || event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229) return;
         if (event.key === "Enter") {
           event.currentTarget.blur();
           return;

@@ -227,6 +227,7 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
+      "tests/unit/bounded-number-publication.test.jsx", "tests/e2e/number-input-checkpoint-checks.mjs",
       "src/canvas/components/scrub_field.jsx", "src/canvas/components/bounded_number_input.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
       "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",

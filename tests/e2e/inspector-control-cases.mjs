@@ -23,6 +23,25 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal((await styles(field)).height, 32);
   assert.ok((await styles(panel)).radius >= 16, "Keep the large floating panel rounded");
   const original = await page.evaluate(() => window.__vooEditor.getNode("audit-rect"));
+  const initialHistory = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
+  await x.fill(String(original.x + 50)); await x.press("Enter");
+  await x.fill(String(original.x + 122)); await x.press("Escape");
+  assert.equal(await x.inputValue(), String(original.x + 50), "Rapid Escape immediately shows the latest committed X");
+  const rapidState = () => page.evaluate(() => ({
+    x: window.__vooEditor.getNode("audit-rect").x,
+    history: window.__vooEditor.getCurrentHistoryIndex(),
+  }));
+  assert.deepEqual(await rapidState(), { x: original.x + 50, history: initialHistory + 1 });
+  await page.keyboard.press("Control+z"); await settle();
+  assert.deepEqual(await rapidState(), { x: original.x, history: initialHistory });
+  assert.equal(await x.inputValue(), String(original.x));
+  await page.keyboard.press("Control+Shift+z"); await settle();
+  assert.deepEqual(await rapidState(), { x: original.x + 50, history: initialHistory + 1 });
+  assert.equal(await x.inputValue(), String(original.x + 50));
+  await page.keyboard.press("Control+z"); await settle();
+  assert.deepEqual(await rapidState(), { x: original.x, history: initialHistory });
+  mark("rapid Enter/Escape preserves immediate X display and exactly one real keyboard Undo/Redo step");
+
   assert.equal(await panel.getByRole("button", { name: "Stroke type", exact: true }).count(), 0,
     "Stroke uses the swatch as its only paint editor, matching Fill");
   const stroke = panel.getByRole("button", { name: "Stroke", exact: true });
