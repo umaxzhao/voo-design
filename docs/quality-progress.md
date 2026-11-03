@@ -1,5 +1,24 @@
 # 项目检查总进度
 
+## 设计稿容器结构：卡片/按钮必须是嵌套 Frame，不再用圆角矩形叠兄弟内容：2026-11-03
+
+- **基线版本**：`6933cf1b`（单一 VOO Harness 插件）；本轮修正“生成设计稿时组件应是 Frame 容器”的结构问题。
+- **问题**：Agent 用 `build_layout` 生成界面时，卡片/面板/按钮被做成“圆角 `rect` + 同级文本”的扁平结构（见图中的 “Pro plan” 卡）。视觉正确，但图层树与真实 DOM 不一致：组件不能整体选中/移动/裁剪，Auto Layout 也无法套用。
+- **修复（三条引导，覆盖两种 Agent 与自动反馈）**：
+  1. `src/canvas/agent/canvas_tools_build_layout.js`：工具描述新增强约束 **“CONTAINERS ARE FRAMES, NEVER ROUNDED RECTS”** —— 卡片、面板、按钮、导航行、徽章、列表行、区块都必须 `type: frame`（fill/cornerRadius/stroke 落在 frame 上），文本与控件作为子节点；禁止把内容叠在同级圆角 rect 上。DSH 对话 Agent 只能看到工具描述，这条对它最有效。
+  2. `src/canvas/agent/design_quality/prompt.js`：新增规则 3b，对 VOO 内置 Agent 强调同一约束，并要求图层树镜像 DOM。
+  3. `src/canvas/agent/design_quality/lint.js`：新增 `flatContainer`（权重 8）——面积 ≥4000 的圆角 rect 内部包含 ≥2 个兄弟内容节点（其中至少 1 个文本）时，提示改为 Frame 并嵌套子节点；小圆角按钮（单标签）不误报。`capture_canvas` 会附带 lint 报告，因此 Agent 下一轮会自我纠正。
+- **登记**：`scripts/editor-module-catalog.mjs` 的 `platform` 模块新增 `platform.container-frame-structure`，并把 `tests/unit/design_quality_lint.test.js`、`tests/unit/design_quality_prompt.test.js` 与 `package.json` 归入其路径。
+- **验收证据**：
+  1. 单测：`npx vitest run tests/unit/design_quality_lint.test.js tests/unit/design_quality_prompt.test.js` → 61/61 通过（新增 flatContainer 正例/反例：Frame 容器通过、小按钮不报）；相关 `design_quality_bench_*`、`scene-model-lint`、`agent_tool_order_*` 22/22 通过；`canvas_tools_build_layout` + `canvas_agent_build_layout` 37/37 通过。
+  2. 门禁：`node scripts/editor-checks.mjs --check` registration valid；`--changed --json` → `unmapped: []`、`fullReleaseRequired: false`。
+  3. 构建：`npx vite build` 17.04s 成功，`dist/index.html` 已更新（面板 `GET /` 200）；`node scripts/mcp-server.mjs` tools/list → 74 个工具，`build_layout` 描述含新规则；已 `set_plugin` 重启 `mcp-voo` 行使新描述进入新会话。
+  4. 现场演示：把 “Pro plan” 卡重建为嵌套 Frame —— `frame 卡片(16,736,208,112, r14) > [标题, 正文, frame 升级按钮(104×28, r9) > 标签]`，旧 5 个节点删除；`find_layers` 显示卡片为容器，`capture_canvas` 前后视觉一致。
+- **未验证 / 保留项**：
+  - 当前面板页面仍加载旧构建（新 hash 资源），需刷新右栏标签后页面内 `lint_design` 才返回 `flatContainer`；新会话的 DSH Agent 才会拿到更新后的工具描述。
+  - 既有文档里遗留的 rect 卡（KPI/图表/侧栏卡）会被新规则标记，这是预期反馈，未在本轮回填重做。
+  - 未 push、未部署；`package.json` 的外部改动仍不属于本轮。
+
 ## 整合为单一 VOO Harness 插件（面板 + 画布工具 + 模型桥）：2026-11-03
 
 - **基线版本**：`3657d11e` + 上一轮面板提交 `ab87ef7b`；本轮把三个 VOO 相关安装收拢为一个包 `voo`（`plugins/voo`），工作树原有未提交改动仅为本轮内容。

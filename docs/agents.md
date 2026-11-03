@@ -17,7 +17,7 @@ kept in sync with undo/redo:
 | Tool | Effect |
 | :--- | :--- |
 | `resize_document` | Sets active document dimensions through the shared constraint-aware engine operation. |
-| `build_layout` | Builds a structured layout from a description. |
+| `build_layout` | Builds a structured layout from a description. Containers (cards, panels, buttons, nav rows, badges, section bands) are `frame` layers with their text/icons nested as children — a painted rounded `rect` with sibling content is a lint `flatContainer` finding, not a card. |
 | `stream_layout` | Streams incremental layout/HTML onto the canvas with live progressive rendering and commits upon completion. |
 | `generate_image` | Generates and places an image layer. |
 | `generate_image_web` | Finds and places a web image. |

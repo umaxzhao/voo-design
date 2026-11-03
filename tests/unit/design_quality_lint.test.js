@@ -28,6 +28,7 @@ describe('lint geometry and tokens', () => {
     ['evenTemplateSpacing', [0,1,2].map(i => rect(`${i}`, { x: i*120, autoLayout: { gap: 16 } }))],
     ['flatHierarchy', [text('a'), text('b', { y: 100, fontSize: 20 })]],
     ['noFocal', [0,1,2].map(i => rect(`${i}`, { x: i*120, width: 100+i*10 }))],
+    ['flatContainer', [rect('card', { width: 300, height: 200, cornerRadius: 12 }), text('title', { x: 20, y: 20, width: 200 }), text('body', { x: 20, y: 60, width: 200 })]],
   ])('detects %s', (rule, nodes) => {
     expect(rules(nodes)).toContain(rule);
     const result = lintDesign({ nodes });
@@ -41,6 +42,27 @@ describe('lint geometry and tokens', () => {
   it('uses WCAG large text and bold thresholds', () => {
     expect(rules([text('a', { fontSize: 24, fill: '#888888' })])).not.toContain('contrast');
     expect(rules([text('a', { fontSize: 18, fontWeight: 700, fill: '#888888' })])).toContain('contrast');
+  });
+  it('flags rounded-rect cards whose content is painted as siblings', () => {
+    const flat = lintDesign({ nodes: [
+      rect('card', { width: 320, height: 180, cornerRadius: 14, fill: '#12161c' }),
+      text('card title', { x: 20, y: 20, width: 200, height: 24, fill: '#ffffff' }),
+      text('card body', { x: 20, y: 60, width: 200, height: 18, fill: '#8a94a2' }),
+    ] });
+    expect(flat.issues.filter(issue => issue.rule === 'flatContainer')).toHaveLength(1);
+    expect(flat.issues.find(issue => issue.rule === 'flatContainer').fix).toContain('Frame');
+    // A Frame container that owns the same content passes, and so does a small
+    // rounded button with a single label.
+    const framed = rules([
+      rect('card', { kind: 'frame', width: 320, height: 180, cornerRadius: 14, fill: '#12161c' }),
+      text('card title', { parentId: 'card', x: 20, y: 20, width: 200, height: 24, fill: '#ffffff' }),
+      text('card body', { parentId: 'card', x: 20, y: 60, width: 200, height: 18, fill: '#8a94a2' }),
+    ]);
+    expect(framed).not.toContain('flatContainer');
+    expect(rules([
+      rect('btn', { x: 400, width: 104, height: 36, cornerRadius: 8, fill: '#6ee7b7' }),
+      text('btn label', { x: 424, y: 408, width: 60, height: 18, fill: '#06231b' }),
+    ])).not.toContain('flatContainer');
   });
   it('checks earlier containing backgrounds and ancestor fills', () => {
     expect(rules([rect('bg', { fill: '#111111' }), text('a', { fill: '#222222' })])).toContain('contrast');

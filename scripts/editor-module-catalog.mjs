@@ -254,13 +254,15 @@ export const EDITOR_MODULES = [
       "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
       "tests/unit/agent_tool_order_and_lucide_paths.test.js",
       "tests/unit/voo_editor_panel.test.js",
+      "tests/unit/design_quality_lint.test.js", "tests/unit/design_quality_prompt.test.js",
+      "package.json",
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
-      "platform.harness-editor-panel",
+      "platform.harness-editor-panel", "platform.container-frame-structure",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions", "pending-integration", "agent-model-catalog", "editor-loading",
