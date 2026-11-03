@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { HEX_COLOUR, HexField } from "./colour_swatch.jsx";
-import { CollapsibleSection } from "./property_section.jsx";
+import { StaticSection } from "./property_section.jsx";
 import {
   IconMinus,
   IconSliders,
@@ -126,9 +126,11 @@ export default function ColorVariablesSection({
 
   return (
     <>
-    <CollapsibleSection
+    <StaticSection
       title={t("editor.variables.title")}
       storageKey="editor.colorVariables"
+      testId="editor-color-variables-section"
+      emptyState={bindableVariables.length === 0}
       extra={
         <div className="flex items-center gap-0.5">
           {canCreate ? (
@@ -263,7 +265,7 @@ export default function ColorVariablesSection({
           <span>{t("editor.variables.create")}</span>
         </button>
       </div>
-    </CollapsibleSection>
+    </StaticSection>
     {/* Portalled: kept outside the fold so the manager never unmounts with it. */}
     <VariablesPanel
       open={managerOpen}

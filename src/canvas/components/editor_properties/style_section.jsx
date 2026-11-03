@@ -13,7 +13,7 @@
 import PropTypes from "prop-types";
 import { useMemo, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
-import { CollapsibleSection, SectionAddButton } from "./property_section.jsx";
+import { StaticSection, SectionAddButton } from "./property_section.jsx";
 import {
   IconAdd,
   IconClose,
@@ -268,7 +268,7 @@ export default function StyleSection({ object, styles = null, styleActions = nul
   const shownTypes = showAll ? types : appliedTypes;
 
   return (
-    <CollapsibleSection
+    <StaticSection
       title={tv("styles.title")}
       storageKey="editor.styles"
       testId="editor-style-section"
@@ -305,7 +305,7 @@ export default function StyleSection({ object, styles = null, styleActions = nul
           </p>
         ) : null}
       </div>}
-    </CollapsibleSection>
+    </StaticSection>
   );
 }
 

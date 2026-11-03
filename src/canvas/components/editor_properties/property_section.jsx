@@ -16,14 +16,14 @@ export const sectionTitleClass =
 
 /** The separator and vertical rhythm every section in the panel shares. */
 // One vertical rhythm for every group, empty or not: the divider sits centred
-// between the previous group's last row and the next group's header (12px on
+// between the previous group's last row and the next group's header (8px on
 // each side). Empty groups share this class, so their spacing matches exactly.
 const sectionRhythmClass =
-  "border-t border-white/10 py-3 first:border-t-0 first:pt-0";
+  "border-t border-white/10 py-2 first:border-t-0 first:pt-0";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
-  "flex min-w-0 items-center justify-between gap-2 px-1 pb-2 select-none";
+  "flex min-h-6 min-w-0 items-center justify-between gap-2 px-1 pb-2 select-none";
 
 /** The child wrapper shared by every section, so all rows share one inset. */
 export const sectionBodyClass = "space-y-2 px-0.5";
@@ -178,7 +178,7 @@ CollapsibleSection.propTypes = {
 };
 
 const emptySectionHeaderClass =
-  "flex min-w-0 items-center justify-between gap-2 px-1 select-none";
+  "flex min-h-6 min-w-0 items-center justify-between gap-2 px-1 select-none";
 
 function hasSectionBody(children, emptyState) {
   if (emptyState !== undefined) {
@@ -204,9 +204,8 @@ function hasSectionBody(children, emptyState) {
 }
 
 /**
- * A panel group that shares CollapsibleSection's header, spacing and fold
- * persistence (it is expanded by default). Kept as a separate name so call
- * sites read as "fixed group" versus "opt-in fold".
+ * An always-open panel group using the same header and spacing as optional
+ * collapsible groups. Historical fold preferences never hide its controls.
  */
 export function StaticSection({
   title,
