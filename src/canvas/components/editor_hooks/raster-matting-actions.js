@@ -76,7 +76,7 @@ const removeBackground = async (modelReady = false) => {
 
 const selectSubject = async (node, modelReady = false) => {
     if (!isCurrent()) return false;
-    if (!engine) return;
+    if (!engine) return false;
     const targetNode =
       node?.kind === "image"
         ? node
@@ -85,13 +85,13 @@ const selectSubject = async (node, modelReady = false) => {
           : engine.getDocument()?.nodes?.find((n) => n.kind === "image");
     if (!targetNode) {
       engine.setRegionHint?.("editor.region.needImage");
-      return;
+      return false;
     }
     if (
       !modelReady &&
       !(await ensureMattingModel(() => selectSubject(targetNode, true)))
     )
-      return;
+      return false;
     setLassoBusy(true);
     setMaskError(false);
     setMaskProgress(null);
@@ -115,12 +115,13 @@ const selectSubject = async (node, modelReady = false) => {
         const selection = await selectionFromMatte(matte, targetNode);
         if (!selection) {
           engine.setRegionHint?.("editor.objectSelect.nothing");
-          return;
+          return false;
         }
         if (!isCurrent()) return false;
       engine.setPixelSelection(selection);
         engine.setRegionHint?.(null);
         reportRefinementSkipped(engine, refinement, MATTE_REFINE_TOO_LARGE);
+        return true;
       } finally {
         bitmap.close?.();
       }
@@ -129,6 +130,7 @@ const selectSubject = async (node, modelReady = false) => {
       console.error("select subject failed", err);
       engine.setRegionHint?.("editor.objectSelect.failed");
       setMaskError(repaintFailureCode(err));
+      return false;
     } finally {
       setMaskProgress(null);
       setLassoBusy(false);
@@ -142,11 +144,11 @@ const runSelectionCutout = async (
     modelReady = false,
   ) => {
     if (!isCurrent()) return false;
-    if (!engine || !node || lassoBusy) return;
+    if (!engine || !node || lassoBusy) return false;
     if (!modelReady) {
       const resume = () =>
         runSelectionCutout(node, toLayerSelection, onDone, true);
-      if (!(await ensureMattingModel(resume))) return;
+      if (!(await ensureMattingModel(resume))) return false;
     }
     setLassoBusy(true);
     setMaskError(false);
@@ -173,6 +175,7 @@ const runSelectionCutout = async (
       const applied = await engine.applyMask(node.id, matte);
         if (!applied) throw new Error("maskDiscarded");
         reportRefinementSkipped(engine, refinement, MATTE_REFINE_TOO_LARGE);
+        return true;
       } finally {
         bitmap.close?.();
       }
@@ -180,6 +183,7 @@ const runSelectionCutout = async (
       if (!isCurrent()) return false;
       console.error("selection cutout failed", err);
       setMaskError(repaintFailureCode(err));
+      return false;
     } finally {
       setMaskProgress(null);
       setLassoBusy(false);

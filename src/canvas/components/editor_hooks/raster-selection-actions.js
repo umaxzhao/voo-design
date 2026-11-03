@@ -148,11 +148,11 @@ const runObjectStroke = async ({
     const node = engine
       ?.getDocument()
       ?.nodes.find((entry) => entry.id === nodeId);
-    if (!engine || !node) return;
+    if (!engine || !node) return false;
     if (intent !== "remove" && !modelReady) {
       const resume = () =>
         runObjectStroke({ nodeId, points, intent, size, modelReady: true });
-      if (!(await ensureMattingModel(resume))) return;
+      if (!(await ensureMattingModel(resume))) return false;
     }
     setLassoBusy(true);
     setMaskError(false);
@@ -175,7 +175,7 @@ const runObjectStroke = async ({
           engine.setRegionHint("editor.remove.working");
           await runRemoveBrush(nodeId, bitmap, local, (size ?? 48) * scaleX);
           engine.setRegionHint(null);
-          return;
+          return true;
         }
         engine.setRegionHint("editor.objectSelect.working");
         const { runLocalMatting, MATTE_REFINE_TOO_LARGE } =
@@ -194,7 +194,7 @@ const runObjectStroke = async ({
           // A whole model run that produces no selection is a failure the
           // user must see, not guidance that may fade in a breath.
           engine.setRegionHint("editor.objectSelect.nothing", "error");
-          return;
+          return false;
         }
         const mode =
           pendingObjectStroke.mode ?? engine.getSelectionMode?.() ?? "replace";
@@ -215,6 +215,7 @@ const runObjectStroke = async ({
         engine.commit?.("editor.history.entry.objectSelection");
         engine.setRegionHint(null);
         reportRefinementSkipped(engine, refinement, MATTE_REFINE_TOO_LARGE);
+        return true;
       } finally {
         bitmap.close?.();
       }
@@ -231,6 +232,7 @@ const runObjectStroke = async ({
         "error",
       );
       setMaskError(repaintFailureCode(err));
+      return false;
     } finally {
       setMaskProgress(null);
       setLassoBusy(false);
