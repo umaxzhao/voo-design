@@ -1,5 +1,25 @@
 # 项目检查总进度
 
+## 面板嵌入模式修复 + 网页版绿色边框对称：2026-11-04
+
+- **基线版本**：`4094ed39`（在线部署 `4094ed39`）；用户反馈“网页版加载在面板里仍是完整窗口、左侧绿边比右侧宽”。
+- **根因（两条独立问题）**：
+  1. **嵌入判定用了假值**：`App.jsx` 用 `URLSearchParams.get("embed")` 判断，`?embed` 的值为空字符串（falsy），所以面板 iframe 虽然带 `?embed`，页面仍按非嵌入渲染（显示标题栏与绿色窗口边框）；而 `mcp_link_boot.js` 用的是 `.has("embed")`，导致“画布能连 bridge、但浏览器 chrome 没隐藏”。
+  2. **绿边不对称**：`.app-root-frame` 有 4px 四周 padding，非嵌入模式的根背景是 `linear-gradient(-90deg, … )`，薄荷绿落在左侧；于是左侧“4px 绿色背景 + 2px 绿边框 = 6px”，右侧“4px 黑背景 + 2px 绿边框 = 2px”，视觉上左宽右窄。像素实测与用户截图一致（左 6px / 右 2px）。
+- **修复**：
+  1. 新增 `src/shared/embed_mode.js`（`isEmbedQuery`/`isEmbedPage`），按“参数是否存在”判定；`App.jsx` 与 `mcp_link_boot.js` 共用同一规则，`?embed` / `?embed=1` / `?minimal` 都算嵌入；面板客户端 iframe URL 改为显式 `?embed=1`。
+  2. 非嵌入模式根背景固定为 `#000`（斜绿渐变只保留在标题栏自身的品牌渐变里），绿框左右各 2px，完全对称。
+  3. 嵌入模式新增 `.app-root-frame[data-embed="true"] { padding: 0 }`，面板内编辑器真正满幅（此前仍有 4px 黑边）。
+- **验收证据**：
+  1. 单测：新增 `tests/unit/embed_mode.test.js`（9 个查询用例 + 空值/`false` 值仍视为嵌入 + 非浏览器安全），`voo_editor_panel` 24/24；`editor-checks --changed` → `unmapped: []`。
+  2. Playwright 实测（1210×955，干净构建端口 4174）：
+     - 修复前（在线旧构建）：`?embed` → `data-embed=null`、有标题栏；中缝像素左 6px / 右 2px 绿边；
+     - 修复后：`?embed` 与 `?embed=1` → `data-embed=true`、无标题栏、根 padding 0、shell 边框 0、满幅 1210×955；无任何绿边；
+     - 修复后网页版（无参数）：标题栏保留、根背景纯黑、左右各 2px 绿边（对称）。
+  3. 构建与部署：干净构建（HEAD + 本轮 4 个文件，不含工作树里其他人的 pen/stroke 改动）`npx vite build` 6.38s；部署后线上入口脚本与本地构建一致。
+- **环境修复（必要的副作用）**：仓库根 `package.json` 曾被外部打包流程改写（删掉 scripts/devDependencies、版本 1.0.0-beta.3），`node_modules` 被裁到仅生产依赖，导致无法构建/测试。本轮从 `HEAD` 恢复清单（保留 beta.3 版本号）并 `npm ci` 重装完整依赖。工作树中他人未提交的 `editor_pen_subbar.jsx` / `stroke_style_icons.jsx` 未纳入构建与提交，保持原样。
+- **保留项**：面板已打开的 iframe 需刷新一次才能加载新构建（刷新后即嵌入模式，无绿框）；未 push（GitHub 无写凭据）；发布部署见下一条记录。
+
 ## 编辑器源码策略：默认使用网页版（hosted），本地构建降为可选：2026-11-03
 
 - **基线版本**：`fc485b62`；按“使用网页版链接更合理”的结论调整默认策略。

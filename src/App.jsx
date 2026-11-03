@@ -12,6 +12,7 @@ const BrowserDrawer = lazy(() => import("./canvas/components/browser_drawer/brow
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
 import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
+import { isEmbedPage } from "./shared/embed_mode.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
 import {
@@ -19,10 +20,7 @@ import {
   VOO_FILE_VERSION,
 } from "../electron/voo_format.js";
 
-const isEmbed = typeof window !== "undefined" && Boolean(
-  new URLSearchParams(window.location.search).get("embed") ||
-  new URLSearchParams(window.location.search).get("minimal")
-);
+const isEmbed = isEmbedPage();
 
 export default function App() {
   const activeDocumentId = useDesignStore(s => s.activeDocumentId);
@@ -147,9 +145,10 @@ export default function App() {
     <main
       data-embed={isEmbed ? "true" : undefined}
       className="app-root-frame relative flex h-full w-full select-none flex-col"
-      style={isEmbed ? { background: "#000" } : {
-        background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
-      }}
+      // The window behind the workspace frame stays black so the mint frame
+      // border reads the same width on every side; the title bar keeps its own
+      // brand gradient (that is the only place the mint band belongs).
+      style={{ background: "#000" }}
     >
       {!isEmbed && <CrashRecoveryPrompt />}
       {!isEmbed && <ImageSizeNotice />}

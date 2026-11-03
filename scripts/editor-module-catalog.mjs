@@ -240,6 +240,7 @@ export const EDITOR_MODULES = [
     id: "platform",
     title: "Agent, runtime and platform integration",
     paths: [
+      "src/App.jsx", "src/index.css", "src/shared/embed_mode.js",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
@@ -254,8 +255,9 @@ export const EDITOR_MODULES = [
       "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
       "tests/unit/agent_tool_order_and_lucide_paths.test.js",
       "tests/unit/voo_editor_panel.test.js",
+      "src/canvas/components/editor_pen_subbar.jsx",
       "tests/unit/design_quality_lint.test.js", "tests/unit/design_quality_prompt.test.js",
-      "tests/unit/voo_bridge_lite.test.js",
+      "tests/unit/voo_bridge_lite.test.js", "tests/unit/embed_mode.test.js",
       "tests/unit/portable-agent-plugin.test.js", "tests/unit/dsh_connector_plugin.test.js",
       "package.json",
     ],

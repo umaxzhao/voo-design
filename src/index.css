@@ -397,6 +397,11 @@
   transition: border-color 0.25s ease;
 }
 
+.app-root-frame[data-embed="true"] {
+  /* A panel/webview embeds the page edge-to-edge: no window padding, no frame. */
+  padding: 0;
+}
+
 .app-root-frame[data-embed="true"] .editor-shell {
   border: none;
   border-radius: 0;

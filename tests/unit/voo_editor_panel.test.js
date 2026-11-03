@@ -320,8 +320,11 @@ describe("integrated VOO bundle", () => {
     for (const key of [".", "./client", "./lib/model-bridge.js", "./locale/*.json", "./icon"]) {
       expect(manifest.exports[key], `exports ${key}`).toBeDefined();
     }
-    // The boot graph loads a bundle's Client module by package name.
-    expect(fs.readFileSync(path.join(packageDir, "client.js"), "utf8")).toContain("id: 'voo'");
+    // The boot graph loads a bundle's Client module by package name, and the
+    // iframe asks for the embedded editor explicitly.
+    const client = fs.readFileSync(path.join(packageDir, "client.js"), "utf8");
+    expect(client).toContain("id: 'voo'");
+    expect(client).toContain("?embed=1");
   });
 
   it("keeps exactly one insert with the panel, canvas MCP and model bridge rows", () => {

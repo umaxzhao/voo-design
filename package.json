@@ -1,7 +1,7 @@
 {
   "name": "voo-design",
   "productName": "VOO Design",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "license": "MIT",
   "description": "Professional Vector, Motion & 3D Design Editor",
   "main": "electron/main.cjs",
@@ -81,7 +81,7 @@
   "build": {
     "appId": "run.voo.design",
     "productName": "VOO Design",
-    "copyright": "Copyright © VOO Design contributors",
+    "copyright": "Copyright \u00a9 VOO Design contributors",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -177,7 +177,7 @@
       "icon": "build/icon.png",
       "category": "Graphics",
       "synopsis": "Professional vector, motion & design editor",
-      "description": "VOO Design — local Figma-class UI editor with Affinity-style image tools and a Pencil-class design agent.",
+      "description": "VOO Design \u2014 local Figma-class UI editor with Affinity-style image tools and a Pencil-class design agent.",
       "target": [
         "AppImage",
         "deb"
