@@ -147,7 +147,7 @@ export const EDITOR_MODULES = [
     id: "vectors",
     title: "Shapes, paths and Boolean geometry",
     paths: [
-      "tests/unit/figma/*",
+      "tests/unit/figma/*", "tests/e2e/boolean-opacity-reference.mjs",
       "src/canvas/editor/shape_geometry.js", "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
       "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js", "tests/unit/pen_curve_math.test.js",

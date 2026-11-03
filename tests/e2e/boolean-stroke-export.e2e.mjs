@@ -120,7 +120,7 @@ await withEditorBrowser(async ({ page }) => {
     gpuCanvas.style.cssText = "position:fixed;left:-10000px;top:0";
     document.body.append(gpuCanvas);
     const host = await createSkiaHost(gpuCanvas);
-    let native;
+    let native, matrix;
     try {
       host.resize(320, 300, 1);
       async function skiaAlphaPixels(node, background, points) {
@@ -133,12 +133,18 @@ await withEditorBrowser(async ({ page }) => {
         try {
           const image = new Image(); image.src = url; await image.decode();
           const canvas = document.createElement("canvas"); canvas.width = 320; canvas.height = 300;
-          const ctx = canvas.getContext("2d"); ctx.drawImage(image, 0, 0); return rgba(ctx, points);
+          const ctx = canvas.getContext("2d"); ctx.drawImage(image, 0, 0);
+          const stageImage = new Image(); stageImage.src = gpuCanvas.toDataURL("image/png"); await stageImage.decode();
+          const stage = document.createElement("canvas"); stage.width = 320; stage.height = 300;
+          const stageCtx = stage.getContext("2d"); stageCtx.drawImage(stageImage, 0, 0);
+          return { pixels: rgba(ctx, points), stage: rgba(stageCtx, points) };
         } finally { URL.revokeObjectURL(url); }
       }
-      alpha.skia = await skiaAlphaPixels(alphaNode, "#ffffff", alphaPoints.slice(0, 2));
-      alphaTransparent.skia = await skiaAlphaPixels(alphaNode, "transparent", alphaPoints);
-      colorAlpha.skia = await skiaAlphaPixels(colorAlphaNode, "transparent", alphaPoints);
+      alpha.skia = (await skiaAlphaPixels(alphaNode, "#ffffff", alphaPoints.slice(0, 2))).pixels;
+      alphaTransparent.skia = (await skiaAlphaPixels(alphaNode, "transparent", alphaPoints)).pixels;
+      colorAlpha.skia = (await skiaAlphaPixels(colorAlphaNode, "transparent", alphaPoints)).pixels;
+      const { opacityMatrix } = await import("/tests/e2e/boolean-opacity-reference.mjs");
+      matrix = await opacityMatrix({ host, gpuCanvas, base, renderCanvas: pixels, renderSkia: skiaAlphaPixels });
       const gpuDoc = { id: "boolean-native", width: 320, height: 300, isCanvasRoot: true,
         nodes: [{ ...base, fill: "transparent", opacity: 0.5 }] };
       const snapshot = await host.draw({ docs: [gpuDoc], revision: 1, backgroundColor: "#ffffff",
@@ -158,7 +164,7 @@ await withEditorBrowser(async ({ page }) => {
     const large = await pixels({ ...base, strokeAlign: "outside", sources: [
       { type: "path", x: 0, y: 0, w: 100, h: 100, points: manyPoints },
       { type: "path", x: 0, y: 0, w: 0, h: 0, points: [] }] }, [[55, 110], [85, 110]]);
-    return { operations, alignments, seam, hidden, extras, noFill, alpha, alphaReference, alphaTransparent, transparentReference, colorAlpha, colorAlphaReference, nested, distant, rotatedSource, thinRotated, curved, triple, fallback, native, large };
+    return { matrix, operations, alignments, seam, hidden, extras, noFill, alpha, alphaReference, alphaTransparent, transparentReference, colorAlpha, colorAlphaReference, nested, distant, rotatedSource, thinRotated, curved, triple, fallback, native, large };
   });
   const WHITE = [255, 255, 255, 255], BLUE = [0, 0, 255, 255], RED = [255, 0, 0, 255];
   const assertPixels = (actual, expected, label) => {
@@ -192,6 +198,22 @@ await withEditorBrowser(async ({ page }) => {
       }
     }
   }
+  for (const item of result.matrix) {
+    const label = `matrix/${item.opacity}/${item.background}/${item.colorAlpha}`;
+    for (const [backend, samples] of Object.entries(item.actual)) {
+      const refBackend = backend === "skia" || backend === "stage" ? backend : "canvas";
+      const reference = item.refs.overlap[refBackend];
+      samples.forEach((pixel, i) => pixel.forEach((value, channel) => assert.ok(
+        Math.abs(value - reference[i][channel]) <= 1,
+        `${label}/${backend}/${i}/${channel}: ${value} != ${reference[i][channel]}`)));
+    }
+    if (!item.colorAlpha) for (const backend of ["canvas", "skia", "stage"]) {
+      const single = item.refs.single[backend], overlap = item.refs.overlap[backend];
+      // Opaque red covers blue completely; one red paint must match the stack.
+      single[0].forEach((value, channel) => assert.ok(Math.abs(value - overlap[0][channel]) <= 1,
+        `${label}/${backend}/single-overlap/${channel}`));
+    }
+  }
   assertPixels(result.nested, [BLUE, WHITE, RED, BLUE], "nested subtraction retains holes and inner border");
   assertPixels(result.distant, [RED, BLUE, WHITE], "distant transformed stroke and cutout");
   assertPixels(result.rotatedSource, [BLUE, WHITE, BLUE], "source rotation is retained");
@@ -209,7 +231,7 @@ await withEditorBrowser(async ({ page }) => {
   result.native[1].forEach((value, channel) => assert.ok(Math.abs(value - [255, 127, 127, 255][channel]) <= 1,
     `CanvasKit Boolean alpha channel ${channel}: ${value}`));
   assertPixels(result.large, [RED, BLUE], "150000-anchor outside stroke avoids argument-count overflow");
-  console.log(JSON.stringify({ passed: [
+  console.log(JSON.stringify({ opacityMatrix: result.matrix, passed: [
     "all four Boolean fills agree between Canvas2D, engine PNG and SVG",
     "all four operations support inside, center and outside merged boundary strokes",
     "overlap seams are unstroked, hidden paint retains fill and extra strokes are independent",
