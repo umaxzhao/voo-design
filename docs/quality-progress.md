@@ -18,7 +18,8 @@
      - 修复后网页版（无参数）：标题栏保留、根背景纯黑、左右各 2px 绿边（对称）。
   3. 构建与部署：干净构建（HEAD + 本轮 4 个文件，不含工作树里其他人的 pen/stroke 改动）`npx vite build` 6.38s；部署后线上入口脚本与本地构建一致。
 - **环境修复（必要的副作用）**：仓库根 `package.json` 曾被外部打包流程改写（删掉 scripts/devDependencies、版本 1.0.0-beta.3），`node_modules` 被裁到仅生产依赖，导致无法构建/测试。本轮从 `HEAD` 恢复清单（保留 beta.3 版本号）并 `npm ci` 重装完整依赖。工作树中他人未提交的 `editor_pen_subbar.jsx` / `stroke_style_icons.jsx` 未纳入构建与提交，保持原样。
-- **保留项**：面板已打开的 iframe 需刷新一次才能加载新构建（刷新后即嵌入模式，无绿框）；未 push（GitHub 无写凭据）；发布部署见下一条记录。
+- **部署与线上验证**：`63451570` 已部署到 `https://voo.run/editor/`（备份 `la2:/srv/voo-run/editor-backups/63451570-20261103T164220Z`）。线上入口脚本与干净构建一致（`index-CGWEDjTu.js`）；Playwright 复测：网页版无参数左右各 2px 绿边（对称），`?embed` 与 `?embed=1` 均无标题栏、无绿边、满幅 1210×955；面板代理 `127.0.0.1:4173/?embed` 同样为嵌入模式。
+- **保留项**：面板里已打开的 iframe 需刷新一次才能加载新构建；未 push（GitHub 无写凭据）；仓库 `dist/` 已同步为同一构建（仅供本地预览 / `editorSource: local` 使用）。
 
 ## 编辑器源码策略：默认使用网页版（hosted），本地构建降为可选：2026-11-03
 
