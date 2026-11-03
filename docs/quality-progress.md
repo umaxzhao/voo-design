@@ -1,5 +1,12 @@
 # 项目检查总进度
 
+## LINUX-STYLE01 — scoped opacity repair, 2026-11-03
+
+- Pinned reproduction: `aad8cafc1c415817e3d55e0e1deb6854164abc65`, own standalone clone; fill RGBA `[255,0,0,128]`, overlapping stroke `[85,0,170,192]`. Layer alpha was applied separately per paint. Reuse the existing isolated-style compositor and wrap expanded SVG paint siblings once; own paint opacity is preserved.
+- Evidence: `/Users/tt/Desktop/voo-linux-qa/linux-style01-20261103T040609Z/` (raw exit codes, before/after pixels, source hashes, final revision in report). Registered capability `compositing.alpha`; new assertions stay in existing `container-opacity` suite. UF23 files, including the shared catalog, are explicitly excluded; the existing unit path is unmapped and therefore requires the full gate.
+- Scoped checks: 40 targeted units and full units 5178 passed / 4 skipped; design lint, module registration, build, stroke-controls and image-layer-alpha passed. Seven new browser checks cover 0/25/50/100% layer alpha, own paint alpha, multi-fill/multi-stroke, PNG/SVG, and one-step API undo/redo. The full container suite still has an Opacity locator failure; baseline comparison and full verifier results are recorded externally, not promoted to pass here.
+- Coverage remains partial: this is macOS arm64 headless Chromium with Canvas2D/export evidence, not Linux native certification, physical gestures, performance, every backdrop/custom-blend combination or public 56005464/beta3 acceptance. No original repository edits, push, workflow or release.
+
 ## VOO 设计编辑器进驻 DeepSeek Harness 右侧面板：2026-11-03
 
 - **基线版本**：`3657d11e`（`merge/consolidate-all-branches`，工作树在改动前干净）；本轮改动为新增插件包与单测，未推送。

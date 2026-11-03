@@ -28,7 +28,11 @@ export function backdropStyleNode(node, generation, fullResolution = false, bypa
   return projectedStyleNode(node, generation, fullResolution, bypassAdjustments, false);
 }
 export function needsStyleIsolation(node, state) {
-  return !state?.isolatedStyle && !isCustomBlendMode(node.blendMode) && !(node.backgroundBlur > 0) && !node.effects?.glass?.enabled && INNER_STYLES.some(kind => node.effects?.[kind]?.enabled);
+  // Paints overlap inside a layer. Applying its alpha to each paint makes a
+  // 50% fill plus a 50% stroke accumulate to 75% instead of one 50% layer.
+  const translucent = (node.opacity ?? 1) < 1;
+  return !state?.isolatedStyle && !isCustomBlendMode(node.blendMode) && !(node.backgroundBlur > 0) && !node.effects?.glass?.enabled &&
+    (translucent || INNER_STYLES.some(kind => node.effects?.[kind]?.enabled));
 }
 
 /** Inner styles operate on the layer's alpha, never the already painted page. */

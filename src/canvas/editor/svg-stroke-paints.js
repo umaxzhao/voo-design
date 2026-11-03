@@ -55,6 +55,12 @@ function alignedMarkup(node, render, defs, paintIndex) {
 /** Keep each stroke independent while reusing the established node exporters. */
 export function svgStrokeMarkup(node, render, defs) {
   if (node.visible === false) return [];
+  // Inside/outside strokes and paint lists expand one layer into SVG siblings.
+  // Their own alpha stays local; the layer alpha wraps the completed stack once.
+  if ((node.opacity ?? 1) < 1) {
+    const body = svgStrokeMarkup({ ...node, opacity: 1 }, render, defs);
+    return [`<g opacity="${number(node.opacity)}">${body.join("")}</g>`];
+  }
   if (Array.isArray(node.fills) && node.kind !== NODE_KIND.IMAGE) {
     // Match the compositor's bottom-to-top fill order. Each paint owns its
     // alpha/visibility, while the node's strokes are emitted exactly once.

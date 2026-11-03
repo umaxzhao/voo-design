@@ -43,6 +43,61 @@ await withEditorBrowser(async ({ page, tool }) => {
     }
     checks.push(label);
   };
+  // LINUX-STYLE01: paint alpha belongs inside the layer; layer alpha is applied once.
+  const paintLayer = { id: "paint-layer", kind: "rect", visible: true,
+    x: 40, y: 40, width: 120, height: 120, fill: "#ff0000", fillOpacity: 1,
+    stroke: "#0000ff", strokeWidth: 20, strokeOpacity: 1, strokeAlign: "inside" };
+  for (const opacity of [0, 0.25, 0.5, 1]) {
+    const alpha = Math.round(255 * opacity);
+    await check(`LINUX-STYLE01 fill/stroke at layer opacity ${opacity}`,
+      [{ ...paintLayer, opacity }], [[100, 100], [45, 100]],
+      opacity === 0 ? [[0, 0, 0, 0], [0, 0, 0, 0]]
+        : [[255, 0, 0, alpha], [0, 0, 255, alpha]], null, "transparent");
+  }
+  await check("LINUX-STYLE01 own paint alpha remains independent",
+    [{ ...paintLayer, opacity: 0.5, fillOpacity: 0.5, strokeOpacity: 0.5 }],
+    [[100, 100], [45, 100]], [[255, 0, 0, 64], [85, 0, 170, 96]], null, "transparent");
+  // Use an independent two-surface Canvas reference: premultiplied 8-bit
+  // rounding makes red 126 here, rather than the idealized floating-point 128.
+  const mixedFill = await page.evaluate(() => {
+    const source = document.createElement("canvas"); source.width = source.height = 1;
+    const paint = source.getContext("2d");
+    paint.fillStyle = "#ff0000"; paint.fillRect(0, 0, 1, 1);
+    paint.globalAlpha = 0.5; paint.fillStyle = "#0000ff"; paint.fillRect(0, 0, 1, 1);
+    const target = document.createElement("canvas"); target.width = target.height = 1;
+    const context = target.getContext("2d"); context.globalAlpha = 0.5;
+    context.drawImage(source, 0, 0);
+    return [...context.getImageData(0, 0, 1, 1).data];
+  });
+  await check("LINUX-STYLE01 multi-fill and multi-stroke composite before layer opacity",
+    [{ ...paintLayer, opacity: 0.5,
+      fills: [{ fill: "#ff0000", opacity: 1 }, { fill: "#0000ff", opacity: 0.5 },
+        { fill: "#ffffff", visible: false }],
+      strokes: [{ stroke: "#00ff00", strokeWidth: 8, strokeOpacity: 1 },
+        { stroke: "#ffffff", strokeWidth: 20, visible: false }] }],
+    [[100, 100], [45, 100], [55, 100]],
+    [mixedFill, [0, 255, 0, 128], [0, 0, 255, 128]], null, "transparent");
+  const history = await page.evaluate(async node => {
+    const e = window.__vooEditor;
+    e.setDoc({ ...e.getDocument(), isCanvasRoot: false, width: 200, height: 200,
+      backgroundColor: "transparent", nodes: [node] });
+    const read = async () => {
+      const image = new Image(); image.src = await e.exportFullResPng(); await image.decode();
+      const canvas = document.createElement("canvas"); canvas.width = image.width; canvas.height = image.height;
+      const context = canvas.getContext("2d"); context.drawImage(image, 0, 0);
+      return [[100, 100], [45, 100]].map(([x, y]) => [...context.getImageData(x, y, 1, 1).data]);
+    };
+    const before = await read();
+    e.updateNode(node.id, { opacity: 0.5 }); const after = await read();
+    await e.undo(); const undo = await read(); await e.redo(); const redo = await read();
+    return { before, after, undo, redo, opacity: e.getNode(node.id).opacity };
+  }, { ...paintLayer, opacity: 1 });
+  assert.deepEqual(history.before, [[255, 0, 0, 255], [0, 0, 255, 255]]);
+  assert.deepEqual(history.after, [[255, 0, 0, 128], [0, 0, 255, 128]]);
+  assert.deepEqual(history.undo, history.before);
+  assert.deepEqual(history.redo, history.after);
+  assert.equal(history.opacity, 0.5);
+  checks.push("LINUX-STYLE01 API opacity edit has exact PNG pixels and one-step undo/redo");
   await check("ordinary Group composites overlapping children once instead of multiplying alpha per child",
     [group(), rect("a"), rect("b", { x: 130 })], [[100, 120], [150, 120], [220, 120]], [PINK, PINK, PINK]);
   const blended = {

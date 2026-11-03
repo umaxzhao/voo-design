@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { containerOpacity, createContainerOpacityPlan, containerPaintNode } from "../../src/canvas/editor/container-opacity.js";
+import { needsStyleIsolation, isolatedStyleNode } from "../../src/canvas/editor/render-isolated-style.js";
 import { documentToSvg } from "../../src/canvas/editor/editor_svg.js";
 import { requiresCanvas2dMediaFallback } from "../../src/canvas/editor/skia_scene_adapter.js";
 
@@ -76,5 +77,30 @@ describe("isolated container opacity", () => {
       .toThrow("svg-unsupported-isolated-blend:linear-burn");
     expect(() => documentToSvg({ ...doc, nodes: [{ ...g, maskBase: true, blendMode: "subtract" }] }))
       .toThrow("svg-unsupported-isolated-blend:subtract");
+  });
+});
+
+
+describe("LINUX-STYLE01 layer paint opacity", () => {
+  it("isolates translucent paint stacks and applies layer opacity only at composition", () => {
+    const node = rect("paint", { opacity: 0.5, fillOpacity: 1,
+      stroke: "#0000ff", strokeWidth: 10, strokeOpacity: 1 });
+    expect(needsStyleIsolation(node)).toBe(true);
+    expect(needsStyleIsolation(node, { isolatedStyle: true })).toBe(false);
+    expect(isolatedStyleNode(node)).toMatchObject({ opacity: 1, fillOpacity: 1, strokeOpacity: 1 });
+    expect(node.opacity).toBe(0.5);
+    expect(needsStyleIsolation({ ...node, opacity: 1 })).toBe(false);
+  });
+
+  it("exports one layer opacity around multiple fills and strokes", () => {
+    const node = rect("paint", { opacity: 0.5, fillOpacity: 0.4,
+      fills: [{ fill: "#ff0000", opacity: 0.5 }, { fill: "#00ff00", opacity: 1 }],
+      stroke: "#0000ff", strokeWidth: 10,
+      strokes: [{ stroke: "#ffff00", strokeWidth: 4 }] });
+    const svg = documentToSvg({ width: 100, height: 100, nodes: [node] });
+    expect(svg.match(/(?<!-)opacity="0.5"/g)).toHaveLength(1);
+    expect(svg).toContain('<g opacity="0.5">');
+    expect(svg).toContain('fill-opacity="0.5"');
+    expect(node.fills[0].opacity).toBe(0.5);
   });
 });
