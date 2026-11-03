@@ -7,6 +7,13 @@
 - Combination unit/lint/build and affected real-browser exits, exact final revision, conflict receipts and source hashes belong to `closure-acceptance-evidence/combo-b8-frame-ui-selection-b-20261103T090717Z-4077/REPORT.md` and its verification JSON. Historical branch passes do not certify this combination.
 - Scope stays local web/source validation. Existing Mac GUI refusal is not retried; PID224, original b8, user package/profile and frozen tree are untouched. Native Mac/Linux/Windows, physical IME/DPI, e0's unfixed gestures and a full release gate remain separate. No push, new CI or release.
 
+## 可见窗口底边与绿框阴影修复（2026-11-03）
+
+- 在独立 `voo-ui-frame-followup`、基线 `66d7609d` 复现两处问题：旧预览固定 1440×1000 虚拟视口超出真实浏览器内容区；全局浮动控件的阴影覆盖底角与部分侧边。既有窗口和用户未保存文档均保留。
+- 后续预览改为 `viewport:null`，新建正常 1200×800 窗口。产品 CSS 在 workspace 顶层重绘 2px 绿框及四角外侧绿填充，保留 16px 圆角、顶部绿至黑渐变、结构分割线；绘制层不接受指针事件。
+- 强化已有 `editor-frame-pixels`：完整左右及底边物理像素宽度、四角圆弧实色锚点、内侧圆角切口。20 组浅深/宽度/DPR 页面通过；旧版同断言失败。圆弧抗锯齿与背景混色不能用整块颜色掩码逐像素相等代替，因此保留最初失败记录，不宣称整块掩码完全一致。
+- 真实 headful 窗口补测：3 个窗口尺寸 × 浅深，以及适配窗口中的 DPR1/2 仿真，共 10 组捕获、16 张包含滚动后的内容区截图；逐条边缘连续性、等宽和圆弧实色像素通过。物理显示器仅观测 DPR1，DPR2 为仿真；页面截图不是 OS 整窗截图。用户实际反馈来自哪个原窗口尚未得到答复，不能推定其 Mac 原生版本。
+- 最终提交、检查退出码、可见预览地址与窗口 metrics 统一记录在同级 `evidence/FRAME-VISIBLE-EDGES-REPORT.md`。未重试被拒的 Mac 原生 GUI；不宣称原生 VOO、其他 OS 或完整 release gate 通过。未 push/部署/发布。
 
 ## UI 导出输入补测与修复（2026-11-03）
 

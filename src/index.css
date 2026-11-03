@@ -418,6 +418,7 @@
 /* Floating panel shadows stay inside the content edge, clear of the mint rim. */
 .app-root-frame[data-editor-page="true"] {
   --editor-frame-radius: 16px;
+  --editor-frame-color: #b2ffd6;
   --mobile-frame-inset-radius: var(--editor-frame-radius);
   --mobile-content-radius: calc(var(--editor-frame-radius) - 2px);
   border-radius: var(--editor-frame-radius);
@@ -427,6 +428,20 @@
     env(safe-area-inset-bottom, 0px);
   overflow: clip;
   overflow-clip-margin: content-box;
+}
+
+/* Keep the structural frame above global floating-control shadows. The outer
+ * fill is clipped to the workspace, so it cannot cover the title gradient. */
+.app-root-frame[data-editor-page="true"] > [data-testid="editor-workspace-layout"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  border: 2px solid var(--editor-frame-color);
+  border-radius: var(--editor-frame-radius);
+  outline: 16px solid var(--editor-frame-color);
+  clip-path: inset(0);
+  pointer-events: none;
 }
 
 /* The root clips the status gradient once, so its black end reaches the corner. */
