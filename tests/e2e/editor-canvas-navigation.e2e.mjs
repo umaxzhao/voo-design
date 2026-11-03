@@ -23,6 +23,17 @@ await withEditorBrowser(async ({ page, tool }) => {
     await page.mouse.move(point.x + delta.x, point.y + delta.y, { steps: 6 }); await page.mouse.up();
     await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
   };
+  const dragFrameLabel = async (frameId, delta) => {
+    const target = page.locator(`[data-testid="editor-canvas-frame-label"][data-frame-id="${frameId}"]`);
+    await target.waitFor();
+    const box = await target.boundingBox(); assert.ok(box, `Frame label ${frameId} must be visible`);
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)
+      ?.closest('[data-testid="editor-canvas-frame-label"]')?.getAttribute("data-frame-id"), point);
+    assert.equal(hit, frameId, "The drag must hit the intended Frame label");
+    const origin = await docPoint({ x: 0, y: 0 }), end = await docPoint(delta);
+    await drag(point, { x: end.x - origin.x, y: end.y - origin.y });
+  };
   const emptyPoint = () => page.evaluate(() => {
     const stage = document.querySelector('[data-testid="editor-pages"]').getBoundingClientRect();
     for (const [x, y] of [[0.55, 0.75], [0.6, 0.8], [0.5, 0.85], [0.7, 0.65]]) {
@@ -142,16 +153,32 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 110]);
   checks.push("a child inside the current free-canvas Frame moves and repaints independently with one-step undo");
 
-  // The opposite direction: with the Frame selected, its own empty surface is
-  // the Frame's drag handle and moves the whole Frame (and its content) at once.
+  // A selected Frame's empty body starts a marquee without moving artwork.
   await page.evaluate(() => window.__vooEditor.selectExactly(["current-frame"]));
   await settled();
-  const frameSurface = await docPoint({ x: 300, y: 240 });
-  await drag(frameSurface, { x: 30, y: 20 });
+  const beforeBodyMarquee = await page.evaluate(() => ({
+    nodes: structuredClone(window.__vooEditor.getDocument().nodes),
+    history: window.__vooEditor.getCurrentHistoryIndex(),
+    pixel: window.__vooEditor.sampleColorAt({ x: 140, y: 120 }),
+  }));
+  const frameSurface = await docPoint({ x: 95, y: 85 });
+  const frameMarqueeEnd = await docPoint({ x: 185, y: 155 });
+  await drag(frameSurface, { x: frameMarqueeEnd.x - frameSurface.x, y: frameMarqueeEnd.y - frameSurface.y });
+  assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["frame-child"],
+    "Frame body drag creates a marquee selecting the child");
+  assert.deepEqual(await page.evaluate(() => ({
+    nodes: structuredClone(window.__vooEditor.getDocument().nodes),
+    history: window.__vooEditor.getCurrentHistoryIndex(),
+    pixel: window.__vooEditor.sampleColorAt({ x: 140, y: 120 }),
+  })), beforeBodyMarquee, "Frame body marquee preserves nodes, pixel and history");
+  checks.push("selected Frame body creates a marquee without moving Frame or child");
+
+  // Whole-Frame movement keeps its real title-label entry and one-step undo.
+  await dragFrameLabel("current-frame", { x: 30, y: 20 });
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [110, 140]);
   await tool("undo");
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 110]);
-  checks.push("dragging the selected Frame's empty surface moves the whole Frame with one-step undo");
+  checks.push("dragging the selected Frame label moves the whole Frame with one-step undo");
 
   await page.evaluate(async () => {
     const e = window.__vooEditor;
@@ -171,7 +198,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     return { id: frame?.id, x: frame?.x, y: frame?.y, childX: child?.x, childY: child?.y };
   });
   assert.ok(pastedFrame.id && pastedFrame.id !== "current-frame");
-  await drag(await docPoint({ x: pastedFrame.x + 250, y: pastedFrame.y + 150 }), { x: 30, y: 20 });
+  await dragFrameLabel(pastedFrame.id, { x: 30, y: 20 });
   assert.deepEqual(await page.evaluate(id => {
     const e = window.__vooEditor;
     const frame = e.getNode(id);
