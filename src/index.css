@@ -394,6 +394,9 @@
   border: 2px solid #b2ffd6;
   border-radius: 16px;
   overflow: hidden;
+  /* Mint behind the inner sheet so the rounded frame reads as one continuous
+     stroke at every corner instead of chipping to the window colour. */
+  background: #b2ffd6;
   transition: border-color 0.25s ease;
 }
 
@@ -405,6 +408,7 @@
 .app-root-frame[data-embed="true"] .editor-shell {
   border: none;
   border-radius: 0;
+  background: transparent;
 }
 
 .editor-shell-inner {
