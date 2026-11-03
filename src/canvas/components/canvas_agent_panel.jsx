@@ -32,6 +32,7 @@ import {
   EXTENSION_STATUS,
 } from "../agent/extension_detection.js";
 import { applySafeImageResult } from "../agent/image_replacement_guard.js";
+import { hasSelectedImageReference, splitImageModelId } from "../agent/image_model_route.js";
 import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import { getDiscoveredModels } from "./agent-panel/model_discovery.js";
 import { useSelectionContext } from "./agent-panel/use_selection_context.js";
@@ -318,18 +319,27 @@ export default function CanvasAgentPanel({ onClose }) {
         if (mode === "image") {
           // Image Mode: produces generative image assets registered in the document/IndexedDB
           if (isWebImageModel(model)) {
-            const providerName = model.includes("gemini") ? "gemini" : "chatgpt";
-            const res = await executeCanvasTool("generate_image_web", {
-              provider: providerName,
-              prompt: text,
-              count: 1,
-            }, { signal: controller.signal });
-            reply = res?.ok === false
-              ? `生图未完成: ${res.error || res.code}`
-              : t("agent.image.webSuccess") || "已通过浏览器扩展生成图片并置入画布。";
+            // The web bridge has no reference-image field: refuse rather than
+            // generate without the selected original and claim it was used.
+            if (hasSelectedImageReference(targetContext)) {
+              reply = t("agent.image.webReferenceUnsupported");
+            } else {
+              const providerName = model.includes("gemini") ? "gemini" : "chatgpt";
+              const res = await executeCanvasTool("generate_image_web", {
+                provider: providerName,
+                prompt: text,
+                count: 1,
+              }, { signal: controller.signal });
+              reply = res?.ok === false
+                ? `生图未完成: ${res.error || res.code}`
+                : t("agent.image.webSuccess") || "已通过浏览器扩展生成图片并置入画布。";
+            }
           } else {
+            const route = splitImageModelId(model);
             const res = await executeCanvasTool("generate_image", {
               prompt: text,
+              providerId: route.providerId,
+              modelId: route.modelId,
             }, { signal: controller.signal });
             reply = res?.placed
               ? t("agent.image.generateSuccess") || "图片已生成并置入画布。"

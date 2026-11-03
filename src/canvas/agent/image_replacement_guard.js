@@ -91,7 +91,24 @@ export async function applySafeImageResult(editor, {
     return { ok: true, action: "replaced", layerId: targetLayerId };
   }
 
-  // Fallback: Safe insertion as a fresh layer so work is never lost
+  // Fallback: safe insertion as a fresh layer so work is never lost.
+  // Metadata is applied inside the same engine operation as the insert, so the
+  // whole result is ONE history entry and a single Undo removes it completely.
+  const insertPatch = {};
+  if (imageId) insertPatch.imageId = imageId;
+  if (Number.isFinite(width) && width > 0) insertPatch.width = width;
+  if (Number.isFinite(height) && height > 0) insertPatch.height = height;
+  if (name) insertPatch.name = name;
+  const actionName = "AI: Insert image (target modified or missing)";
+
+  if (typeof editor.prepareImageInsertion === "function" && typeof editor.insertPreparedImages === "function") {
+    const prepared = await editor.prepareImageInsertion(imageUrl);
+    const [node] = editor.insertPreparedImages([{ prepared, point: null, patch: insertPatch }], actionName);
+    return { ok: true, action: "inserted", layerId: node?.id || null };
+  }
+
+  // Legacy path for editors without the atomic domain operation: insert, then patch and commit.
+  // This can produce two history entries and is kept only for those editors.
   const point = null; // defaults to viewport center / intelligent positioning
   let insertedNode = null;
   if (typeof editor.insertImage === "function") {
@@ -100,15 +117,10 @@ export async function applySafeImageResult(editor, {
 
   const newLayerId = insertedNode?.id || null;
   if (newLayerId) {
-    const postPatch = {};
-    if (imageId) postPatch.imageId = imageId;
-    if (Number.isFinite(width) && width > 0) postPatch.width = width;
-    if (Number.isFinite(height) && height > 0) postPatch.height = height;
-    if (name) postPatch.name = name;
-    if (Object.keys(postPatch).length > 0) {
-      editor.updateNode?.(newLayerId, postPatch);
+    if (Object.keys(insertPatch).length > 0) {
+      editor.updateNode?.(newLayerId, insertPatch);
     }
-    editor.commitEditorDocument?.({ message: "AI: Insert image (target modified or missing)" });
+    editor.commitEditorDocument?.({ message: actionName });
   }
 
   return { ok: true, action: "inserted", layerId: newLayerId };

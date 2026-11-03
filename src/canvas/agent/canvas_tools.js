@@ -472,8 +472,10 @@ function selectedReference(editor) {
 
 async function generateImage(args, { signal } = {}) {
   const editor = requireEditor();
-  const providerId = getSetting(AGENT_SETTING.IMAGE_PROVIDER_ID);
-  const modelId = getSetting(AGENT_SETTING.IMAGE_MODEL_ID);
+  // Explicit route from the composer wins; the global settings remain the
+  // fallback for tool calls that do not name a model.
+  const providerId = args.providerId || getSetting(AGENT_SETTING.IMAGE_PROVIDER_ID);
+  const modelId = args.modelId || getSetting(AGENT_SETTING.IMAGE_MODEL_ID);
   if (!providerId || !modelId) {
     throw Object.assign(new Error(TOOL_ERROR.NO_IMAGE_MODEL), { code: TOOL_ERROR.NO_IMAGE_MODEL });
   }

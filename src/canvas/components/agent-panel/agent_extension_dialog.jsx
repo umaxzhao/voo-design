@@ -71,10 +71,17 @@ export default function AgentExtensionDialog({
           icon: RefreshCw,
         };
       case EXTENSION_STATUS.MISSING:
-      default:
         return {
           label: t("agent.extension.statusMissing") || "未检测到扩展 (需加载本地包)",
           color: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+          icon: AlertCircle,
+        };
+      // UNKNOWN and any unexpected value must not be presented as "missing".
+      case EXTENSION_STATUS.UNKNOWN:
+      default:
+        return {
+          label: t("agent.extension.statusUnknown") || "检测结果不明确 (请重新检测)",
+          color: "bg-amber-500/15 text-amber-300 border-amber-500/30",
           icon: AlertCircle,
         };
     }
