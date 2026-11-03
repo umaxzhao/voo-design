@@ -171,8 +171,11 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.equal(focus.insideArtboard, true, "Focus remains on the artboard");
   assert.equal(focus.interactive, false, "Focus is not on a toolbar or title control");
   await drag(page, point, { x: point.x + 48, y: point.y + 28 });
-  await page.waitForFunction(async previous => {
-    const state = (await import("/src/store/design_store.js")).useDesignStore.getState();
+  await page.evaluate(async () => {
+    window.__marqueeLiveStore = (await import("/src/store/design_store.js")).useDesignStore;
+  });
+  await page.waitForFunction(previous => {
+    const state = window.__marqueeLiveStore.getState();
     const rect = document.querySelector("[data-editor-artboard]").getBoundingClientRect();
     return state.editorCamera.panX !== previous.camera.panX && rect.x !== previous.board.x;
   }, before);
