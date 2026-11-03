@@ -104,9 +104,12 @@ if (!prior) await session("chain", async (page) => {
 for (const artifact of artifacts) {
   try { await session(`reopen-${artifact.stage}-${artifact.format}`, async (page) => {
     await importThroughUi(page, artifact);
-    await page.waitForFunction(async () => {
+    await page.evaluate(async () => {
       const { useDesignStore } = await import("/src/store/design_store.js");
-      const id = useDesignStore.getState().editingNodeId;
+      window.__uf23PollStore = useDesignStore;
+    });
+    await page.waitForFunction(() => {
+      const id = window.__uf23PollStore.getState().editingNodeId;
       return (window.__vooEditors?.[id] ?? window.__vooEditor)?.getDocument().nodes.length > 0;
     });
     await settle(page);
