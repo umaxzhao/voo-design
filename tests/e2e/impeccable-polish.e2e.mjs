@@ -10,7 +10,7 @@ const evidenceDir = await mkdtemp(editorArtifactPath("impeccable-polish-"));
 console.log(JSON.stringify({ evidenceDir }));
 
 await withEditorBrowser(async ({ page, errors }) => {
-  await checkContextSubmenus(page);
+  await checkContextSubmenus(page, join(evidenceDir, "context-menu.png"));
   const editor = page.getByTestId("design-editor");
   const brand = page
     .getByTestId("editor-top-bar")

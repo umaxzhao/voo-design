@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 
 /** Exercise actual right-click, pointer traversal, keyboard navigation and menu actions. */
-export async function checkContextSubmenus(page) {
+export async function checkContextSubmenus(page, screenshotPath) {
+  if (!screenshotPath) throw new TypeError("Context submenu checks require a caller-owned screenshot path");
   await page.setViewportSize({ width: 800, height: 900 });
   const open = async () => {
     await page.keyboard.press("Escape");
@@ -121,7 +122,7 @@ export async function checkContextSubmenus(page) {
     await page.getByTestId("editor-menu-copy-export-submenu").click();
     await page.getByTestId("editor-menu-copy-export-options").waitFor();
   }
-  await page.screenshot({ path: "/tmp/voo-context-menu-fixed.png" });
+  await page.screenshot({ path: screenshotPath });
   await page.mouse.click(8, 870);
   assert.equal(await root.count(), 0);
   assert.equal(
