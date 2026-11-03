@@ -1,33 +1,37 @@
 # 项目检查总进度
 
-## PSD — JPEG 与 WebP 真实 UI 导出、新进程文件 Chooser 回导、UndoRedo 及冷开验收（2026-11-03）
+## PSD — JPEG 与 WebP 真实 UI 导出、新进程 Web DOM Chooser 回导、交互式 UndoRedo 及冷开验收（2026-11-03）
 
-- **固定基线与提交**：基线 `b8ae8039a291e841f786b29f90af00e4f4c89653`，独立副本 `/Users/tt/Documents/Codex/2026-11-02/task/b8-export-jpg-webp-20261103T083400Z`，验证 Commit `b33e6085f3efb8340b70a2525fd93281d5fb3b60`（Tree `01557fbfdf557f1291640d74710a4ca7980bff56`，clean）。
-- **实测退出码**：`0`（全 4 阶段通过，耗时约 35s）。
+- **固定基线与提交**：基线 `b8ae8039a291e841f786b29f90af00e4f4c89653`，独立副本 `/Users/tt/Documents/Codex/2026-11-02/task/b8-export-jpg-webp-20261103T083400Z`，验证 Commit `b33e6085f3efb8340b70a2525fd93281d5fb3b60`，增量交互 UI 补证与版本范围更正见后续提交。
+- **实测退出码**：`0`（全 4 阶段通过）。
 - **实测执行日志与回执路径**：
   - 日志：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip.log`
-  - 回执：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip-receipt.json`
+  - 原回执 (保留不抹)：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip-receipt.json`
+  - 新回执 (v2 交互UI+真实浏览器版本)：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip-receipt-v2.json`
   - 详细报告：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/REPORT.md`
-- **真实进程与操作链路**：
-  1. **真实 UI 导出（Process 1，Node PID 95584，Browser PID 95599）**：
+- **真实浏览器版本与环境**：
+  - Playwright npm 包：`1.64.1`
+  - 实际运行 Chromium 浏览器二进制版本：`156.0.8078.4`（通过 `browser.version()` 与 CDP `Browser.getVersion` 抓取，协议版本 1.3，V8 15.6.75）
+- **真实进程与操作链路（v2 实测）**：
+  1. **真实 UI 导出（Process 1，Node PID 32423，Browser PID 32449）**：
      - 点击顶栏导出按钮 `titlebar-export`，唤起 `design-export-dialog`；
      - 选择 JPEG 格式，下载 `export-test.jpg`（3,915 B，SHA-256 `3e2b492ce949a28eb9a6c4991bd536d7058ccc72b4880b60976e333e11146b30`）；
      - 选择 WebP 格式，下载 `export-test.webp`（1,388 B，SHA-256 `b4d4b0c3470bb5ca10251f54fa6726324227d977225a245ad9157bccff95f5e2`）。
-  2. **新进程文件 Chooser 回导与像素对比（Process 2，Node PID 95584，Browser PID 95840）**：
-     - 在独立新进程中通过画板右键菜单 `editor-menu-import-media` 触发原生 `filechooser` 分别回导 JPEG 与 WebP；
+  2. **新进程文件 Chooser 回导与像素对比（Process 2，Node PID 32423，Browser PID 32574）**：
+     - 在独立新进程中通过画板右键菜单 `editor-menu-import-media` 触发浏览器 Web DOM `filechooser` 分别回导 JPEG 与 WebP；
      - JPEG 资产：600×400，Painted 240,000，像素哈希 `2819355748`（强制不透明白底保真）；
      - WebP 资产：600×400，Painted 60,800，像素哈希 `656127927`（透明背景与图层 Alpha 严格保真）。
-  3. **Undo / Redo 历史验证（Process 2，Browser PID 95840）**：
-     - JPEG 执行 Undo 节点清零，Redo 恢复节点且像素哈希严格等于 `2819355748`（`pixelMatch: true`）；
-     - WebP 执行 Undo 节点恢复为 1，Redo 恢复节点且像素哈希严格等于 `656127927`（`pixelMatch: true`）；
-     - 保存工程快照 `reimport-snapshot.zip`（22,595 B，SHA-256 `36f880fcdbd0ce7e4fbf6883f88e334c11e276e3529b6b3709e4a8f2b64a84d6`）。
-  4. **冷启动新进程（Process 3，Node PID 95584，Browser PID 96017）**：
-     - 全新冷启动 Chromium 进程，从 Welcome 仪表盘顶栏 `Import project file` 经真实文件 chooser 打开快照包；
+  3. **交互式 UI 按钮与键盘 Undo / Redo 历史验证（Process 2，Browser PID 32574）**：
+     - JPEG: 点击底栏 `EditorZoom` 的交互式 UI 按钮（`page.getByRole("button", { name: /Undo|撤销/ })` 与 `/Redo|重做/`），节点数 1 → 0 → 1，解码位图像素哈希严格等于 `2819355748`（`pixelMatch: true`）；
+     - WebP: 聚焦画板并按下交互式键盘快捷键（`Meta+z` 与 `Meta+Shift+z`），节点数 2 → 1 → 2，解码位图像素哈希严格等于 `656127927`（`pixelMatch: true`）；
+     - 保存工程快照 `reimport-snapshot.zip`（22,596 B，SHA-256 `0ce14b2b5143645b9ba61e77f69cfbf8d470375205e2616a067537b9dc1f6710`）。
+  4. **冷启动新进程（Process 3，Node PID 32423，Browser PID 32678）**：
+     - 全新冷启动 Chromium 进程，从 Welcome 仪表盘顶栏 `Import project file` 经 Web DOM filechooser 打开快照包；
      - JPEG 与 WebP 资产在冷启动环境下自动水合完成，冷开 JPEG 像素哈希 `2819355748`、WebP 像素哈希 `656127927`，与热态哈希完全一致（`exactMatchWithWarm: true`）。
-- **受限边界**：
-  - macOS arm64 Headless Chromium 1.64.1 自动化端到端实测；Mac 原生图形窗口与 Linux 标记为未测（不以 headless 浏览器冒充原生 OS）；
-  - PID 224（`mac-arm64/VOO Design.app`）未受干扰保持运行；
-  - 产品代码、`ExportSection`、`presets` 与渲染器零修改，无 push、无 CI/Release。
+- **受限边界与分层说明**：
+  - **文件选择器边界**：采用 Playwright `page.waitForEvent('filechooser')` 拦截隐藏 `<input type="file">`，覆盖 Web DOM 文件摄入与解码链路，不触达 macOS 原生 `NSOpenPanel`；
+  - **历史机制边界**：交互式 UI 按钮与键盘快捷键调度，区别于 MCP 桥工具调用；
+  - **平台与代码边界**：运行于 macOS arm64 Headless Chromium 156.0.8078.4；Mac 原生图形窗口与 Linux 标记为未测；PID 224（`mac-arm64/VOO Design.app`）未受干扰保持运行；产品代码、`ExportSection`、`presets` 零修改，无 push、无 CI/Release。
 
 ## LINUX-STYLE01 — scoped opacity repair, 2026-11-03
 

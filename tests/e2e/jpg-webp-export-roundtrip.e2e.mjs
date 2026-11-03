@@ -16,15 +16,34 @@ function sha256(buf) {
   return createHash("sha256").update(buf).digest("hex");
 }
 
-async function getBrowserPid(page) {
-  const cdp = await page.context().browser().newBrowserCDPSession();
-  const info = await cdp.send("SystemInfo.getProcessInfo");
-  return info.processInfo.find((x) => x.type === "browser")?.id ?? null;
+async function getBrowserMetadata(page) {
+  const browser = page.context().browser();
+  const cdp = await browser.newBrowserCDPSession();
+  const [procInfo, versionInfo] = await Promise.all([
+    cdp.send("SystemInfo.getProcessInfo"),
+    cdp.send("Browser.getVersion"),
+  ]);
+  const browserPid = procInfo.processInfo.find((x) => x.type === "browser")?.id ?? null;
+  return {
+    browserPid,
+    browserVersion: browser.version(),
+    cdp: versionInfo,
+  };
 }
 
 const receipt = {
-  task: "JPG and WebP real UI export, filechooser re-import into fresh browser process, asset pixel comparison, Undo/Redo, and cold reopen",
+  task: "JPG and WebP real UI export, filechooser re-import into fresh browser process, asset pixel comparison, interactive UI & keyboard Undo/Redo, and cold reopen",
   timestamp: new Date().toISOString(),
+  commit: "b33e6085f3efb8340b70a2525fd93281d5fb3b60",
+  tree: "01557fbfdf557f1291640d74710a4ca7980bff56",
+  baseline: "b8ae8039a291e841f786b29f90af00e4f4c89653",
+  scopeClassification: {
+    fileChooserScope: "Browser Web DOM FileChooser (Playwright page.waitForEvent('filechooser') handling hidden <input type='file'> via context menu trigger; NOT native macOS NSOpenPanel/Finder dialog)",
+    undoRedoScope: "Interactive UI button click (editor_actions IconUndo / IconRedo) and keyboard shortcuts (Meta+z / Meta+Shift+z); distinguishing from bridge MCP tool history",
+    browserEnvironment: "Headless Chromium (actual version from browser.version() and CDP Browser.getVersion; NOT Playwright npm package version)",
+    platformScope: "Web browser automation (macOS arm64 Chromium); Mac native GUI window (PID 224) and Linux are untested/held separately",
+  },
+  environment: {},
   steps: {},
 };
 
@@ -38,8 +57,20 @@ let warmWebpAsset = null;
 console.log("=== STEP 1: Real UI Export of JPEG and WebP ===");
 await withEditorBrowser(async ({ page, errors }) => {
   const nodePid = process.pid;
-  const browserPid = await getBrowserPid(page);
-  console.log(`[Step 1] Node PID: ${nodePid}, Browser PID: ${browserPid}`);
+  const meta = await getBrowserMetadata(page);
+  console.log(`[Step 1] Node PID: ${nodePid}, Browser PID: ${meta.browserPid}, Browser Version: ${meta.browserVersion}`);
+
+  receipt.environment = {
+    playwrightPackage: "1.64.1",
+    actualBrowser: {
+      product: meta.cdp.product,
+      browserVersion: meta.browserVersion,
+      cdpProtocolVersion: meta.cdp.protocolVersion,
+      cdpRevision: meta.cdp.revision,
+      userAgent: meta.cdp.userAgent,
+      v8JsVersion: meta.cdp.jsVersion,
+    },
+  };
 
   // Setup test document with distinct colors and shapes
   await page.evaluate(() => {
@@ -204,7 +235,9 @@ await withEditorBrowser(async ({ page, errors }) => {
   receipt.steps.step1_real_ui_export = {
     status: "passed",
     nodePid,
-    browserPid,
+    browserPid: meta.browserPid,
+    actualBrowserVersion: meta.browserVersion,
+    cdpProduct: meta.cdp.product,
     controls: {
       exportTrigger: 'data-testid="titlebar-export"',
       dialog: 'data-testid="design-export-dialog"',
@@ -246,16 +279,16 @@ await withEditorBrowser(async ({ page, errors }) => {
 }, { openDocument: true, mcpLink: true });
 
 // =========================================================================
-// STEP 2 & 3: Filechooser Re-import in New Browser Process + Asset Pixel Comparison + Undo/Redo
+// STEP 2 & 3: Filechooser Re-import in New Browser Process + Asset Pixels + Interactive Undo/Redo
 // =========================================================================
-console.log("=== STEP 2 & 3: Filechooser Re-import in New Browser Process, Asset Pixels, Undo/Redo ===");
+console.log("=== STEP 2 & 3: Filechooser Re-import in New Browser Process, Asset Pixels, Interactive Undo/Redo ===");
 const snapshotZipPath = path.join(EVIDENCE_DIR, "reimport-snapshot.zip");
 
 await withEditorBrowser(async ({ page, errors, tool }) => {
   const nodePid = process.pid;
-  const browserPid = await getBrowserPid(page);
-  console.log(`[Step 2/3] Node PID: ${nodePid}, Fresh Browser PID: ${browserPid}`);
-  assert.notEqual(browserPid, receipt.steps.step1_real_ui_export.browserPid, "Step 2 must run in a separate fresh browser process");
+  const meta = await getBrowserMetadata(page);
+  console.log(`[Step 2/3] Node PID: ${nodePid}, Fresh Browser PID: ${meta.browserPid}, Browser Version: ${meta.browserVersion}`);
+  assert.notEqual(meta.browserPid, receipt.steps.step1_real_ui_export.browserPid, "Step 2 must run in a separate fresh browser process");
 
   // Reset document to clean empty canvas
   await page.evaluate(() => {
@@ -289,7 +322,7 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
   };
 
   // --- 2A: Re-import JPEG via Real UI filechooser ---
-  console.log("[Step 2] Importing JPEG via real context menu and filechooser...");
+  console.log("[Step 2] Importing JPEG via context menu and Web DOM filechooser...");
   const point = await clientPoint(300, 200);
   await page.mouse.click(point.x, point.y, { button: "right" });
 
@@ -351,16 +384,32 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
   console.log(`[Step 2] JPEG asset decoded: 600x400, painted: ${jpegAssetInfo.painted}, hash: ${jpegAssetInfo.hash}`);
   warmJpegAsset = jpegAssetInfo;
 
-  // --- STEP 3A: Undo/Redo on JPEG ---
-  console.log("[Step 3] Testing Undo/Redo on JPEG...");
-  await tool("undo");
-  const countAfterUndoJpeg = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
-  assert.equal(countAfterUndoJpeg, 0, "Undo must remove imported JPEG image node");
-  console.log("[Step 3] JPEG Undo verified: node count reverted to 0");
+  // --- STEP 3A: Interactive UI Button Undo/Redo on JPEG ---
+  console.log("[Step 3A] Testing Interactive UI Button Undo/Redo on JPEG...");
+  const undoBtn = page.getByRole("button", { name: /Undo|撤销/ });
+  await undoBtn.waitFor({ state: "visible" });
+  assert.equal(await undoBtn.isDisabled(), false, "Undo button must be enabled after JPEG import");
+  await undoBtn.click();
 
-  await tool("redo");
+  await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.length === 0);
+  const countAfterUndoJpeg = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
+  assert.equal(countAfterUndoJpeg, 0, "Interactive UI Button Undo must remove imported JPEG image node");
+  console.log("[Step 3A] JPEG Interactive UI Button Undo verified: node count reverted to 0");
+
+  const redoBtn = page.getByRole("button", { name: /Redo|重做/ });
+  await redoBtn.waitFor({ state: "visible" });
+  await page.waitForFunction(() => {
+    const b = Array.from(document.querySelectorAll("button")).find(
+      (el) => /Redo|重做/i.test(el.getAttribute("aria-label") || el.textContent)
+    );
+    return b && !b.disabled;
+  });
+  assert.equal(await redoBtn.isDisabled(), false, "Redo button must be enabled after Undo");
+  await redoBtn.click();
+
+  await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.length === 1);
   const countAfterRedoJpeg = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
-  assert.equal(countAfterRedoJpeg, 1, "Redo must restore imported JPEG image node");
+  assert.equal(countAfterRedoJpeg, 1, "Interactive UI Button Redo must restore imported JPEG image node");
   const redoJpegHash = await page.evaluate(() => {
     const e = window.__vooEditor;
     const node = e.getDocument().nodes.find((n) => n.kind === "image");
@@ -375,11 +424,11 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
     for (let i = 0; i < data.length; i++) hash = Math.imul(hash ^ data[i], 16777619);
     return hash >>> 0;
   });
-  assert.equal(redoJpegHash, jpegAssetInfo.hash, "Redo restored exact JPEG asset pixels");
-  console.log(`[Step 3] JPEG Redo verified: restored exact pixel hash ${redoJpegHash}`);
+  assert.equal(redoJpegHash, jpegAssetInfo.hash, "Interactive UI Button Redo restored exact JPEG asset pixels");
+  console.log(`[Step 3A] JPEG Interactive UI Button Redo verified: restored exact pixel hash ${redoJpegHash}`);
 
   // Re-import WebP as a second image node in the document
-  console.log("[Step 2] Importing WebP via real context menu and filechooser...");
+  console.log("[Step 2] Importing WebP via context menu and Web DOM filechooser...");
   const pointWebp = await clientPoint(300, 200);
   await page.mouse.click(pointWebp.x, pointWebp.y, { button: "right" });
 
@@ -441,16 +490,20 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
   console.log(`[Step 2] WebP asset decoded: 600x400, painted: ${webpAssetInfo.painted}, hash: ${webpAssetInfo.hash}`);
   warmWebpAsset = webpAssetInfo;
 
-  // --- STEP 3B: Undo/Redo on WebP ---
-  console.log("[Step 3] Testing Undo/Redo on WebP...");
-  await tool("undo");
+  // --- STEP 3B: Interactive Keyboard Shortcut Undo/Redo on WebP ---
+  console.log("[Step 3B] Testing Interactive Keyboard Shortcut Undo/Redo on WebP...");
+  const isMac = process.platform === "darwin";
+  await page.locator("[data-editor-artboard]").click();
+  await page.keyboard.press(isMac ? "Meta+z" : "Control+z");
+  await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.length === 1);
   const countAfterUndoWebp = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
-  assert.equal(countAfterUndoWebp, 1, "Undo on WebP leaves only 1 node (JPEG)");
-  console.log("[Step 3] WebP Undo verified: node count reverted to 1");
+  assert.equal(countAfterUndoWebp, 1, "Keyboard Undo on WebP leaves only 1 node (JPEG)");
+  console.log(`[Step 3B] WebP Keyboard Undo (${isMac ? "Meta+z" : "Control+z"}) verified: node count reverted to 1`);
 
-  await tool("redo");
+  await page.keyboard.press(isMac ? "Meta+Shift+z" : "Control+Shift+z");
+  await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.length === 2);
   const countAfterRedoWebp = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
-  assert.equal(countAfterRedoWebp, 2, "Redo on WebP restores both image nodes");
+  assert.equal(countAfterRedoWebp, 2, "Keyboard Redo on WebP restores both image nodes");
   const redoWebpHash = await page.evaluate((targetId) => {
     const e = window.__vooEditor;
     const node = e.getDocument().nodes.find((n) => n.id === targetId);
@@ -465,8 +518,8 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
     for (let i = 0; i < data.length; i++) hash = Math.imul(hash ^ data[i], 16777619);
     return hash >>> 0;
   }, webpAssetInfo.nodeId);
-  assert.equal(redoWebpHash, webpAssetInfo.hash, "Redo restored exact WebP asset pixels");
-  console.log(`[Step 3] WebP Redo verified: restored exact pixel hash ${redoWebpHash}`);
+  assert.equal(redoWebpHash, webpAssetInfo.hash, "Keyboard Redo restored exact WebP asset pixels");
+  console.log(`[Step 3B] WebP Keyboard Redo (${isMac ? "Meta+Shift+z" : "Control+Shift+z"}) verified: restored exact pixel hash ${redoWebpHash}`);
 
   // Save portable ZIP snapshot containing both imported assets for Step 4 Cold Reopen
   console.log("[Step 2] Saving snapshot containing imported assets for cold reopen...");
@@ -481,12 +534,13 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
   receipt.steps.step2_reimport_and_pixels = {
     status: "passed",
     nodePid,
-    browserPid,
+    browserPid: meta.browserPid,
+    actualBrowserVersion: meta.browserVersion,
     controls: {
       canvasArtboard: "[data-editor-artboard]",
       contextMenuTrigger: "mouse.click(button='right')",
       importMenuItem: 'data-testid="editor-menu-import-media"',
-      fileChooser: "page.waitForEvent('filechooser')",
+      fileChooser: "page.waitForEvent('filechooser') (Web DOM input[type=file])",
     },
     jpegImport: {
       nodeId: jpegAssetInfo.nodeId,
@@ -521,15 +575,17 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
     },
   };
 
-  receipt.steps.step3_undo_redo = {
+  receipt.steps.step3_interactive_undo_redo = {
     status: "passed",
     jpeg: {
+      mechanism: "Interactive UI Button Click (page.getByRole('button', { name: /Undo|撤销/ }) & /Redo|重做/)",
       undoNodeCount: countAfterUndoJpeg,
       redoNodeCount: countAfterRedoJpeg,
       redoPixelHash: redoJpegHash,
       pixelMatch: redoJpegHash === jpegAssetInfo.hash,
     },
     webp: {
+      mechanism: `Interactive Keyboard Shortcuts (${isMac ? "Meta+z" : "Control+z"} & ${isMac ? "Meta+Shift+z" : "Control+Shift+z"})`,
       undoNodeCount: countAfterUndoWebp,
       redoNodeCount: countAfterRedoWebp,
       redoPixelHash: redoWebpHash,
@@ -544,13 +600,13 @@ await withEditorBrowser(async ({ page, errors, tool }) => {
 console.log("=== STEP 4: Cold Reopen in Fresh Browser Process ===");
 await withEditorBrowser(async ({ page, errors }) => {
   const nodePid = process.pid;
-  const browserPid = await getBrowserPid(page);
-  console.log(`[Step 4] Node PID: ${nodePid}, Cold Reopen Browser PID: ${browserPid}`);
-  assert.notEqual(browserPid, receipt.steps.step1_real_ui_export.browserPid, "Step 4 must run in fresh browser PID");
-  assert.notEqual(browserPid, receipt.steps.step2_reimport_and_pixels.browserPid, "Step 4 must run in fresh browser PID");
+  const meta = await getBrowserMetadata(page);
+  console.log(`[Step 4] Node PID: ${nodePid}, Cold Reopen Browser PID: ${meta.browserPid}, Browser Version: ${meta.browserVersion}`);
+  assert.notEqual(meta.browserPid, receipt.steps.step1_real_ui_export.browserPid, "Step 4 must run in fresh browser PID");
+  assert.notEqual(meta.browserPid, receipt.steps.step2_reimport_and_pixels.browserPid, "Step 4 must run in fresh browser PID");
 
   // Import snapshot from Welcome dashboard via real file chooser
-  console.log("[Step 4] Importing snapshot from welcome screen via real file chooser...");
+  console.log("[Step 4] Importing snapshot from welcome screen via Web DOM file chooser...");
   await importZipFromWelcome(page, snapshotZipPath);
 
   // Await document loaded and image bitmaps decoded in fresh runtime
@@ -617,10 +673,11 @@ await withEditorBrowser(async ({ page, errors }) => {
   receipt.steps.step4_cold_reopen = {
     status: "passed",
     nodePid,
-    browserPid,
+    browserPid: meta.browserPid,
+    actualBrowserVersion: meta.browserVersion,
     controls: {
       welcomeImportButton: 'data-testid="editor-top-bar" > button[name="Import project file (⌘O / Ctrl+O)"]',
-      fileChooser: "page.waitForEvent('filechooser')",
+      fileChooser: "page.waitForEvent('filechooser') (Web DOM input[type=file])",
     },
     coldAssets: {
       jpeg: {
@@ -643,9 +700,10 @@ await withEditorBrowser(async ({ page, errors }) => {
   };
 }, { openDocument: false, mcpLink: false });
 
-// Save final receipt JSON
+// Save final receipts:
+// 1. Save new receipt v2
 receipt.exitCode = 0;
 receipt.overallStatus = "ALL_PASSED";
-const receiptPath = path.join(EVIDENCE_DIR, "jpg-webp-roundtrip-receipt.json");
-await writeFile(receiptPath, JSON.stringify(receipt, null, 2));
-console.log(`\n=== Verification completed successfully! Receipt written to ${receiptPath} ===\n`);
+const receiptV2Path = path.join(EVIDENCE_DIR, "jpg-webp-roundtrip-receipt-v2.json");
+await writeFile(receiptV2Path, JSON.stringify(receipt, null, 2));
+console.log(`\n=== Verification completed successfully! New receipt v2 written to ${receiptV2Path} ===\n`);
