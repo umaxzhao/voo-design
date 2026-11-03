@@ -13,7 +13,12 @@
   - `/?harness=1`：标题栏存在、左右绿边各 6px、窗口 padding 4px。
   - `/?embed`、`/?embed=1`：无标题栏、无绿边、满幅 1210×955（最小 webview 语义不变）。
   - 单测：`embed_mode` + `voo_editor_panel` 共 44/44 通过（含 harness 查询矩阵、`wantsHarnessPanel` 矩阵、302 重定向实测）。
-- **保留项**：面板内已开标签需刷新一次（服务端会 302 到 harness）；在线部署与面板实测见下一条记录。
+- **部署与线上验证**：`6d8bfae7` 已部署到 `https://voo.run/editor/`（备份 `la2:/srv/voo-run/editor-backups/6d8bfae7-20261103T165712Z`）。线上入口脚本与新构建一致（`index-BxyNQWA-.js`）；Playwright + bridge 实测：
+  - `127.0.0.1:4173/?embed` → 302 → `?harness=1`：标题栏存在、左右绿边各 **6px**、窗口 padding 4px、`voo_status` 侧 `canvasConnected=true`（harness 页面确实连上了 bridge）；
+  - 线上 `/` 与 `/?harness=1`：标题栏保留、左右各 6px 绿边（对称）；
+  - 线上 `/?embed=1`：无标题栏、无绿边、满幅（最小 webview 语义未变）；
+  - 单测 44/44（含重定向与 harness 查询矩阵）。
+- **保留项**：面板内已开标签刷新一次即恢复完整界面（服务端会 302 到 harness，无需重启 DSH）；未 push（GitHub 无写凭据）；仓库 `dist/` 已同步为同一构建。
 
 ## 面板嵌入模式修复 + 网页版绿色边框对称：2026-11-04
 
