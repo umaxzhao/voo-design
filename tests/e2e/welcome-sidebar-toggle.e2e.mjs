@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 await withEditorBrowser(async ({ page, errors }) => {
@@ -11,41 +12,36 @@ await withEditorBrowser(async ({ page, errors }) => {
   await page.waitForTimeout(400);
 
   const toggleBtn = page.getByTestId("welcome-sidebar-toggle");
-  await toggleBtn.waitFor();
   const sidebar = page.getByTestId("welcome-sidebar");
-  assert.equal(await sidebar.isVisible(), true, "1440px desktop: sidebar is visible by default");
-
-  // Verify toggle button does not overlap search input when sidebar is expanded on desktop
+  await sidebar.waitFor();
+  await page.screenshot({ path: editorArtifactPath("welcome-wide-before-check.png") });
+  assert.equal(await toggleBtn.isVisible(), false, "1440px desktop: compact menu is absent");
+  assert.equal(await sidebar.isVisible(), true, "1440px desktop: navigation remains available");
   const searchInput = page.locator("[data-search-field]");
-  const btnBox1440 = await toggleBtn.boundingBox();
   const searchBox1440 = await searchInput.boundingBox();
-  const overlapsSearch = !(
-    btnBox1440.x + btnBox1440.width <= searchBox1440.x ||
-    searchBox1440.x + searchBox1440.width <= btnBox1440.x ||
-    btnBox1440.y + btnBox1440.height <= searchBox1440.y ||
-    searchBox1440.y + searchBox1440.height <= btnBox1440.y
-  );
-  assert.equal(overlapsSearch, false, "Toggle button and search input do not overlap in 1440px expanded state");
-
   const searchCenterTarget = await page.evaluate(({ x, y }) => {
     return document.elementFromPoint(x, y)?.getAttribute("data-search-field");
   }, { x: searchBox1440.x + searchBox1440.width / 2, y: searchBox1440.y + searchBox1440.height / 2 });
   assert.equal(searchCenterTarget, "true", "Center of search box hits search input itself");
 
-  // Toggle to collapse
-  await toggleBtn.click();
-  await page.waitForTimeout(200);
-  assert.equal(await sidebar.isVisible(), false, "Sidebar collapses after clicking toggle button");
-  assert.equal(await toggleBtn.getAttribute("aria-expanded"), "false");
-
-  // Verify preference remembered in localStorage
-  const storedValue = await page.evaluate(() => localStorage.getItem("voo-welcome-sidebar-expanded"));
-  assert.equal(storedValue, "false", "Collapse preference persisted to localStorage");
-
-  // Toggle to expand again
-  await toggleBtn.click();
-  await page.waitForTimeout(200);
-  assert.equal(await sidebar.isVisible(), true, "Sidebar expands after clicking toggle button again");
+  // A legacy desktop collapse preference cannot strand navigation after its
+  // compact entry is removed. Test boundary transitions even when expanded
+  // state stays false: responsive layout must still update.
+  await page.evaluate(() => localStorage.setItem("voo-welcome-sidebar-expanded", "false"));
+  for (const width of [850, 769, 768, 767, 390, 769, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForFunction(expected => document.querySelector('.welcome-dashboard')?.dataset.sidebarExpanded === String(expected), width > 768);
+    assert.equal(await toggleBtn.isVisible(), width <= 768, `${width}: compact entry follows the existing768 breakpoint`);
+    assert.equal(await sidebar.isVisible(), width > 768, `${width}: default sidebar layout`);
+    if (width <= 768) {
+      const box = await toggleBtn.boundingBox();
+      assert.ok(box.width >= 44 && box.height >= 44, `${width}: 44px target including breakpoint`);
+      assert.equal(await toggleBtn.locator("svg [stroke], svg[stroke]").count(), 0, "filled glyph has no stroked geometry");
+      assert.equal(await toggleBtn.locator("svg rect").count(), 2, "filled navigation blocks");
+    }
+    await page.screenshot({ path: editorArtifactPath(`welcome-menu-${width}.png`) });
+  }
+  assert.equal(await page.evaluate(() => localStorage.getItem("voo-welcome-sidebar-expanded")), "false", "legacy preference is preserved, not erased");
 
   // 2. Narrow screen and 590px: default collapsed with circular button
   await page.setViewportSize({ width: 590, height: 800 });
@@ -94,5 +90,5 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.equal(await sidebar.isVisible(), false, "Sidebar automatically closes after selecting a nav item on narrow screen");
 
   assert.deepEqual(errors, []);
-  console.log("Welcome sidebar collapse/expand, 590px overlay and focus management passed.");
+  console.log("Desktop compact-entry visibility, filled glyph, resize boundaries, legacy preference safety and unchanged590px overlay/focus routes passed.");
 });

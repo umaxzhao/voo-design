@@ -20,10 +20,13 @@ function readStoredExpanded() {
 
 export function useWelcomeSidebarState() {
   const [expanded, setExpanded] = useState(readStoredExpanded);
+  const [isNarrow, setIsNarrow] = useState(isNarrowScreen);
 
   useEffect(() => {
     const handleResize = () => {
-      if (isNarrowScreen()) {
+      const narrow = isNarrowScreen();
+      setIsNarrow(narrow);
+      if (narrow) {
         // Narrow screens default to collapsed floating overlay
         setExpanded(false);
       } else {
@@ -63,8 +66,10 @@ export function useWelcomeSidebarState() {
   }, []);
 
   return {
-    expanded,
-    isNarrow: isNarrowScreen(),
+    // A hidden compact entry must not strand a desktop's saved collapsed state.
+    // Retain the old preference value without changing narrow-screen click routes.
+    expanded: isNarrow ? expanded : true,
+    isNarrow,
     toggle,
     close,
   };

@@ -1,6 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { AlignLeft } from "lucide-react";
 import { WelcomeSidebar } from "./welcome_sidebar.jsx";
 
 export function WelcomeCollapsibleSidebar({
@@ -28,7 +27,7 @@ export function WelcomeCollapsibleSidebar({
 }) {
   return (
     <>
-      {/* Floating Circular Sidebar Toggle Button */}
+      {/* Compact navigation entry; desktop navigation stays visible. */}
       <button
         ref={sidebarToggleRef}
         type="button"
@@ -37,9 +36,12 @@ export function WelcomeCollapsibleSidebar({
         aria-expanded={sidebarExpanded}
         aria-controls="welcome-sidebar"
         onClick={toggleSidebar}
-        className="welcome-sidebar-toggle-btn absolute left-3 top-3 z-30 flex size-9 md:size-9 max-md:size-11 items-center justify-center rounded-full border border-white/10 bg-neutral-900/90 text-neutral-300 shadow-pop backdrop-blur-md transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4] cursor-pointer"
+        className="welcome-sidebar-toggle-btn absolute left-3 top-3 z-30 hidden size-11 max-[768px]:flex items-center justify-center rounded-full border border-white/10 bg-neutral-900/90 text-neutral-300 shadow-pop backdrop-blur-md transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4] cursor-pointer"
       >
-        <AlignLeft size={16} />
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <rect x="2" y="3" width="5" height="14" rx="1.5" />
+          <rect x="9" y="3" width="9" height="14" rx="1.5" opacity="0.55" />
+        </svg>
       </button>
 
       {/* Narrow Screen Overlay Backdrop */}
