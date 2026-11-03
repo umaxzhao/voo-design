@@ -4,7 +4,7 @@
 
 - 独立基线 `3dec4ef2`；保留用户要求的零额外4px外间距，物理安全区保护不减。修正非零安全区时顶栏黑端旁的绿色盖边，并将 `pages_dnd` 的旧 padding 数字断言换成可见边框/安全区/命中合同；原拖动业务断言保留并在非零安全区执行。
 - 详见 [UI safe-area audit](audits/ui-safearea-contract-20261103.md)；最终提交、原失败及检查退出码由同级 `evidence/SAFEAREA-CONTRACT-REPORT.md`/`safearea-verification.json` 固定。新增32组主题/尺寸/指针/安全区/DPR组合，不能当原生硬件通过。
-- 原整合130步门禁仅21步通过、step22失败、108步未执行；本轮只做授权相关检查，不重启全门禁，不升级为全项目通过。无push/发布/部署或已打开文档改动。
+- 原整合130步报告仍为21步通过、step22失败、108步未执行；后续在clean3dec上独立诊断剩余108套，107pass/1fail（responsive同类旧合同）。两份运行来源分列；本次响应式套件复用可见安全区合同并完整跑至末尾，不重启全门禁、不升级为全项目通过。无push/发布/部署或已打开文档改动。
 
 ## Isolated b8 + Frame/UI/selection combination — 2026-11-03
 
