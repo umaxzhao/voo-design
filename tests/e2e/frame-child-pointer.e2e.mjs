@@ -69,7 +69,15 @@ await withEditorBrowser(async ({ page }) => {
   checks.push("dragging the child moves its real pixels independently of its sibling and Frame and undoes once");
 
   await page.evaluate(() => window.__vooEditor.selectExactly([]));
-  await drag({ x: 300, y: 230 }, { x: 30, y: 20 });
+  const frameLabel = page.locator(`[data-testid="editor-canvas-frame-label"][data-frame-id="${seed.frame}"]`);
+  await frameLabel.waitFor();
+  const labelBox = await frameLabel.boundingBox();
+  assert.ok(labelBox, "Frame label is a visible move entry");
+  await page.mouse.move(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(labelBox.x + labelBox.width / 2 + 30, labelBox.y + labelBox.height / 2 + 20, { steps: 6 });
+  await page.mouse.up();
+  await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
   const frameMove = await page.evaluate(seed => ({ first: window.__vooEditor.getNode(seed.first),
     second: window.__vooEditor.getNode(seed.second), frame: window.__vooEditor.getNode(seed.frame) }), seed);
   assert.deepEqual([frameMove.frame.x, frameMove.frame.y], [30, 20]);
@@ -80,7 +88,7 @@ await withEditorBrowser(async ({ page }) => {
     const node = window.__vooEditor.getNode(id); return [node.x, node.y];
   }, seed.frame), [0, 0]);
   assert.equal(await pixel({ x: 116, y: 116 }), "#ff0000");
-  checks.push("dragging the empty Frame surface moves the Frame and both children together in one undoable gesture");
+  checks.push("dragging the Frame label moves the Frame and both children together in one undoable gesture");
 
   await page.evaluate(() => {
     const e = window.__vooEditor;

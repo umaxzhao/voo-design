@@ -382,7 +382,7 @@ export function createTransformPointerGestures(ctx) {
     }
 
     const bodyHit = api.getTool() === TOOL.SELECT ? api.nodeAtPoint(point) : null;
-    if (bodyHit && isFrameSelectionBoundary(bodyHit)) {
+    if (bodyHit && isFrameSelectionBoundary(bodyHit) && !bodyHit.parentId && !api.isSelected(bodyHit.id)) {
       // Preserve frame clicks; a drag on otherwise empty frame space starts a marquee.
       setGesture({ kind: "frameMarqueePending", start: point,
         startScreen: { x: event.clientX, y: event.clientY },
