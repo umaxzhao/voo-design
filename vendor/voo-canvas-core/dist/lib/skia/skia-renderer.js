@@ -2,7 +2,7 @@ import { loadCanvasKit } from "./canvas-kit-loader.js";
 import { SkiaFontManager } from "./font-manager.js";
 import { SkiaResourceManager } from "./resource-manager.js";
 import { SkiaScenePainter } from "./skia-scene-painter.js";
-import { drawSceneElements } from "./skia-scene-draw.js";
+import { drawSceneElements, parseSkiaColor } from "./skia-scene-draw.js";
 import { SkiaExportService } from "./skia-export-service.js";
 import { inspectSceneTextLayouts, } from "./text-layout-inspection.js";
 import { SkiaContextMenuPainter } from "./skia-context-menu-painter.js";
@@ -132,7 +132,7 @@ export class SkiaRenderer {
         const canvasKit = this.requireCanvasKit();
         const surface = this.acquireSurface();
         const canvas = surface.getCanvas();
-        canvas.clear(canvasKit.parseColorString(snapshot.backgroundColor));
+        canvas.clear(parseSkiaColor(canvasKit, snapshot.backgroundColor));
         canvas.save();
         canvas.scale(viewport.devicePixelRatio, viewport.devicePixelRatio);
         canvas.translate(viewport.x, viewport.y);

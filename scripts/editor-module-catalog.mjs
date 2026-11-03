@@ -121,6 +121,11 @@ export const EDITOR_MODULES = [
     title: "Masks, clipping and rendering",
     paths: [
       "src/canvas/editor/clipping-chain-cache.js", "src/canvas/editor/layer-pass-document.js",
+      "vendor/voo-canvas-core/dist/lib/skia/skia-scene-draw.js",
+      "vendor/voo-canvas-core/dist/lib/skia/skia-scene-painter.js",
+      "vendor/voo-canvas-core/dist/lib/skia/skia-renderer.js",
+      "vendor/voo-canvas-core/dist/lib/skia/skia-export-service.js",
+      "tests/unit/skia-paint-alpha.test.js",
       "tests/e2e/selection-size-label-checks.mjs", "tests/unit/container_selection_chrome.test.js",
       "tests/unit/clipping-chain-cache.test.js", "tests/unit/layer-pass-document.test.js",
       "src/canvas/editor/chrome*", "src/canvas/editor/render*", "src/canvas/editor/skia*",
