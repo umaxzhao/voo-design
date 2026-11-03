@@ -1,0 +1,3 @@
+# Frozen WIP preservation
+
+Seventy complete original per-file patches preserve staged, unstaged and small untracked source material. They have not been applied, tested or accepted. Baseline revisions, layer boundaries and SHA-256 values are recorded in the manifest. Renames are captured as separate deletion/addition patches; some counterparts and evidence remain local for privacy or incomplete review. Public patches are not a complete integration patchset. A patch review does not authorize copying an entire source file whose inherited content was outside the reviewed patch. Source refs, indexes, stashes and working trees remain unchanged.

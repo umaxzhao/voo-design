@@ -1,0 +1,232 @@
+diff --git a/tests/e2e/structural-lines.e2e.mjs b/tests/e2e/structural-lines.e2e.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..bbe3a12483c9568a3a9a0c3a206f85909af5c6f2
+--- /dev/null
++++ b/tests/e2e/structural-lines.e2e.mjs
+@@ -0,0 +1,226 @@
++import assert from "node:assert/strict";
++import { mkdir, writeFile } from "node:fs/promises";
++import { withEditorBrowser } from "./editor-browser-fixture.mjs";
++import { scanBorders } from "./ui-border-scanner.mjs";
++
++/**
++ * Measures the outer frame and module dividers on the real web editor.
++ * Run before and after a change with VOO_STRUCTURE_LABEL=before|after; the
++ * evidence directory then holds same-viewport screenshots and JSON measurements.
++ */
++const label = process.env.VOO_STRUCTURE_LABEL ?? "after";
++const evidence =
++  process.env.VOO_STRUCTURE_EVIDENCE ?? `/tmp/ui-border-evidence/${label}`;
++const VIEWPORTS = [
++  { name: "wide", width: 1600, height: 1000 },
++  { name: "narrow", width: 1024, height: 720 },
++];
++const THEMES = ["dark", "light"];
++const STATES = [
++  ["empty", []],
++  ["shape", ["border-rect"]],
++  ["frame", ["border-frame"]],
++  ["text", ["border-text"]],
++  ["image", ["image"]],
++  ["multi", ["border-rect", "border-text"]],
++];
++const FRAME_COLOR = { dark: "rgb(178, 255, 214)", light: "rgb(167, 255, 212)" };
++
++await mkdir(evidence, { recursive: true });
++const report = { label, states: [], interactions: {}, failures: [] };
++
++await withEditorBrowser(
++  async ({ page, errors }) => {
++    let blocked = 0;
++    await page.route("**/*", async (route) => {
++      if (
++        route.request().method() === "POST" &&
++        /generate|completions|images|auth\/(login|register)/i.test(route.request().url())
++      ) {
++        blocked++;
++        await route.fulfill({ status: 503, body: "measurement forbids generation and auth" });
++      } else await route.continue();
++    });
++    await page.evaluate(async () => {
++      const { createRectNode, createTextNode, createGroupNode } =
++        await import("/src/canvas/editor/scene_model.js");
++      const e = window.__vooEditor;
++      e.setDoc({
++        ...e.getDocument(),
++        isCanvasRoot: true,
++        nodes: [
++          {
++            ...createGroupNode({ x: 20, y: 20, width: 700, height: 500 }),
++            id: "border-frame",
++            name: "Frame",
++            isFrame: true,
++            fill: "#ffffff",
++          },
++          {
++            ...createRectNode({ x: 70, y: 70, width: 140, height: 100, fill: "#ff0000", stroke: "#0000ff", strokeWidth: 6 }),
++            id: "border-rect",
++            parentId: "border-frame",
++          },
++          {
++            ...createTextNode({ x: 250, y: 100, text: "Structural lines", fontSize: 24 }),
++            id: "border-text",
++            parentId: "border-frame",
++          },
++        ],
++      });
++      const canvas = document.createElement("canvas");
++      canvas.width = 100;
++      canvas.height = 80;
++      canvas.getContext("2d").fillRect(0, 0, 100, 80);
++      const image = await e.insertImage(canvas.toDataURL(), { x: 400, y: 120 });
++      window.__borderImage = image.id;
++      e.updateNode(image.id, { parentId: "border-frame" });
++    });
++
++    const frame = () => page.evaluate(() => {
++      const el = document.querySelector('[data-testid="editor-shell"]');
++      if (!el) return null;
++      const s = getComputedStyle(el);
++      return {
++        host: `${el.tagName}.${String(el.className).split(" ")[0]}[data-testid=editor-shell]`,
++        marker: el.getAttribute("data-ui-structure"),
++        sides: ["Top", "Right", "Bottom", "Left"].map((side) => ({
++          side,
++          width: s[`border${side}Width`],
++          style: s[`border${side}Style`],
++          color: s[`border${side}Color`],
++        })),
++        radius: s.borderTopLeftRadius,
++      };
++    });
++    const select = async (ids) => {
++      await page.evaluate((ids) => {
++        const e = window.__vooEditor;
++        e.setTool("select");
++        e.selectExactly(ids.map((id) => (id === "image" ? window.__borderImage : id)));
++      }, ids);
++      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
++    };
++    const configure = async (viewport, theme) => {
++      await page.setViewportSize({ width: viewport.width, height: viewport.height });
++      await page.evaluate(async (theme) => {
++        const { setEditorTheme } = await import("/src/canvas/use_editor_theme.js");
++        setEditorTheme(theme);
++      }, theme);
++      // The outer frame animates border-color for 0.25s; sample only after it settles.
++      await page.waitForTimeout(400);
++      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
++    };
++
++    for (const viewport of VIEWPORTS)
++      for (const theme of THEMES) {
++        await configure(viewport, theme);
++        for (const [state, ids] of STATES) {
++          await select(ids);
++          const name = `${viewport.name}-${theme}-${state}`;
++          const { decorative, structural } = await scanBorders(page);
++          const shell = await frame();
++          const entry = { name, frame: shell, decorativeCount: decorative.length, structural };
++          report.states.push(entry);
++          await page.screenshot({ path: `${evidence}/${name}.png` });
++          const solid = shell?.sides.every((s) => s.width === "2px" && s.style === "solid" && s.color === FRAME_COLOR[theme]);
++          if (!solid) report.failures.push(`${name}: outer frame not painted as 2px solid ${FRAME_COLOR[theme]}`);
++          if (decorative.length) report.failures.push(`${name}: ${decorative.length} decorative border(s): ${JSON.stringify(decorative).slice(0, 300)}`);
++          if (!structural.some((s) => s.id === "editor-top-bar"))
++            report.failures.push(`${name}: title bar divider not measured`);
++        }
++      }
++
++    // Interactions, dark theme, wide viewport, shape selected.
++    await configure(VIEWPORTS[0], "dark");
++    await select(["border-rect"]);
++    const panel = page.getByTestId("editor-properties-panel");
++    const expandable = panel.locator("button[aria-expanded]:visible").first();
++    if (await expandable.count()) {
++      const before = await expandable.getAttribute("aria-expanded");
++      await expandable.click();
++      const after = await expandable.getAttribute("aria-expanded");
++      await page.screenshot({ path: `${evidence}/wide-dark-shape-expanded-toggled.png` });
++      await expandable.click();
++      report.interactions.expandCollapse = { before, after, restored: await expandable.getAttribute("aria-expanded") };
++    } else report.interactions.expandCollapse = "not present in this state";
++
++    report.interactions.scroll = await panel.evaluate((root) => {
++      const scroller = [root, ...root.querySelectorAll("*")].find((el) => el.scrollHeight > el.clientHeight + 4);
++      if (!scroller) return "no scrollable region";
++      const top = scroller.scrollTop;
++      scroller.scrollTop = scroller.scrollHeight;
++      return { scrollTopBefore: top, scrollTopAfter: scroller.scrollTop, max: scroller.scrollHeight - scroller.clientHeight };
++    });
++    await page.screenshot({ path: `${evidence}/wide-dark-shape-scrolled.png` });
++
++    const dropdown = panel.locator("[aria-haspopup]:visible").first();
++    if (await dropdown.count()) {
++      await dropdown.click();
++      await page.waitForTimeout(150);
++      const open = await page.locator('[role="listbox"]:visible, [role="menu"]:visible').count();
++      report.interactions.dropdown = { ariaExpanded: await dropdown.getAttribute("aria-expanded"), openPopups: open };
++      await page.screenshot({ path: `${evidence}/wide-dark-shape-dropdown.png` });
++      await page.keyboard.press("Escape");
++    } else report.interactions.dropdown = "not present in this state";
++
++    // Keyboard focus: Tab through the panel and record the indicator on each stop.
++    await panel.locator("button:visible, input:visible, select:visible, textarea:visible, [tabindex]:visible").first().focus();
++    const focusStops = [];
++    for (let i = 0; i < 6; i++) {
++      await page.keyboard.press("Tab");
++      const probe = await page.evaluate(() => {
++        const el = document.activeElement;
++        if (!el || el === document.body) return null;
++        const s = getComputedStyle(el);
++        return {
++          tag: el.tagName,
++          label: el.getAttribute("aria-label") ?? el.getAttribute("data-testid") ?? el.textContent.trim().slice(0, 30),
++          focusVisible: el.matches(":focus-visible"),
++          outline: `${s.outlineStyle} ${s.outlineWidth}`,
++          boxShadow: s.boxShadow,
++        };
++      });
++      if (probe) focusStops.push(probe);
++    }
++    report.interactions.keyboardFocus = focusStops;
++    // Text fields and selects must show focus too; outline-none alone is not feedback.
++    const fields = panel.locator("input:visible, textarea:visible, select:visible");
++    const fieldCount = Math.min(await fields.count(), 12);
++    const fieldFocus = [];
++    for (let i = 0; i < fieldCount; i++) {
++      const field = fields.nth(i);
++      await field.focus();
++      fieldFocus.push(
++        await field.evaluate((el) => {
++          const s = getComputedStyle(el);
++          return {
++            tag: el.tagName,
++            label: el.getAttribute("aria-label") ?? el.getAttribute("placeholder") ?? el.name ?? "",
++            focusVisible: el.matches(":focus-visible"),
++            outline: `${s.outlineStyle} ${s.outlineWidth}`,
++            boxShadow: s.boxShadow,
++          };
++        }),
++      );
++    }
++    report.interactions.fieldFocus = fieldFocus;
++    const gaps = [...focusStops, ...fieldFocus].filter(
++      (stop) => stop.focusVisible && stop.outline.startsWith("none") && stop.boxShadow === "none",
++    );
++    report.interactions.focusGaps = gaps.map((gap) => gap.tag + " " + gap.label);
++    if (gaps.length) report.failures.push(`${gaps.length} focused control(s) show no focus indicator: ${gaps.map((g) => g.label).join(", ")}`);
++    await page.screenshot({ path: `${evidence}/wide-dark-shape-focus.png` });
++
++    report.blockedRequests = blocked;
++    report.pageErrors = errors.length;
++    if (errors.length) report.failures.push(`page errors: ${errors.length}`);
++  },
++  { viewport: { width: VIEWPORTS[0].width, height: VIEWPORTS[0].height } },
++);
++
++await writeFile(`${evidence}/measurements.json`, JSON.stringify(report, null, 2));
++console.log(`structural-lines ${label}: ${report.states.length} states, ${report.failures.length} failure(s)`);
++console.log(`evidence: ${evidence}`);
++for (const failure of report.failures) console.log(`  FAIL ${failure}`);
++assert.equal(report.failures.length, 0, "structural-line measurements failed; see measurements.json");

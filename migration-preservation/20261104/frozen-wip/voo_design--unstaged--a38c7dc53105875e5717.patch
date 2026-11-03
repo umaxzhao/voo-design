@@ -1,0 +1,85 @@
+diff --git a/src/canvas/components/editor_pen_subbar.jsx b/src/canvas/components/editor_pen_subbar.jsx
+index b38ab92bb85b19fb7d96af1868f612744cc8afdc..1cac490798ec06c6db769a120db29de9aea0fd70 100644
+--- a/src/canvas/components/editor_pen_subbar.jsx
++++ b/src/canvas/components/editor_pen_subbar.jsx
+@@ -8,19 +8,62 @@
+  */
+ 
+ import PropTypes from "prop-types";
+-import {
+-  IconBend,
+-  IconClose,
+-  IconCut,
+-  IconLasso,
+-  IconMove,
+-} from "../icons.jsx";
++import { IconCut, IconLasso } from "../icons.jsx";
+ import { useI18n } from "../use_i18n.js";
+ 
++const GLYPH_STROKE = {
++  fill: "none",
++  stroke: "currentColor",
++  strokeLinecap: "round",
++  strokeLinejoin: "round",
++};
++
++/** Arrow pointer: move the selected anchors. */
++function PointerGlyph({ size = 16 }) {
++  return (
++    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
++      <path
++        d="M4 2.6 L4 12.2 L6.6 9.8 L8.4 13.4 L10 12.6 L8.3 9.1 L11.9 9.1 Z"
++        strokeWidth="1.4"
++        {...GLYPH_STROKE}
++      />
++    </svg>
++  );
++}
++
++/** A curve with its node and two handles: adjust the curve's handles. */
++function HandlesGlyph({ size = 16 }) {
++  return (
++    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
++      <path
++        d="M2.8 11.6 C5.6 3.8 10.4 12.2 13.2 4.4"
++        strokeWidth="1.3"
++        {...GLYPH_STROKE}
++      />
++      <circle cx="8" cy="8" r="1.5" fill="currentColor" />
++      <circle cx="4.6" cy="6.6" r="1" fill="currentColor" />
++      <circle cx="11.4" cy="9.4" r="1" fill="currentColor" />
++    </svg>
++  );
++}
++
++/** Check mark: finish anchor editing. */
++function DoneGlyph({ size = 16 }) {
++  return (
++    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
++      <path
++        d="M3.2 8.6 L6.6 12 L12.8 4.6"
++        strokeWidth="1.6"
++        {...GLYPH_STROKE}
++      />
++    </svg>
++  );
++}
++
+ const SUB_TOOLS = [
+-  { id: "move", icon: IconMove, labelKey: "editor.pen.subMove" },
++  { id: "move", icon: PointerGlyph, labelKey: "editor.pen.subMove" },
+   { id: "lasso", icon: IconLasso, labelKey: "editor.pen.subLasso" },
+-  { id: "bend", icon: IconBend, labelKey: "editor.pen.subBend" },
++  { id: "bend", icon: HandlesGlyph, labelKey: "editor.pen.subBend" },
+   { id: "cut", icon: IconCut, labelKey: "editor.pen.subCut" },
+ ];
+ 
+@@ -68,7 +111,7 @@ export default function EditorPenSubbar({
+         title={t("editor.pen.closeEdit")}
+         className="rounded-full p-2 text-neutral-400 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900"
+       >
+-        <IconClose size={16} />
++        <DoneGlyph size={16} />
+       </button>
+     </div>
+   );

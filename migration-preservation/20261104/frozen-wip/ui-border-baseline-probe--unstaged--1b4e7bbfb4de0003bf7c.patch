@@ -1,0 +1,102 @@
+diff --git a/tests/e2e/ui-border-scanner.mjs b/tests/e2e/ui-border-scanner.mjs
+index 5d879644e871c21aa3c567526283fd387a642cbc..4022babb2f54ce7cc3cc3cd534963569932f23b1 100644
+--- a/tests/e2e/ui-border-scanner.mjs
++++ b/tests/e2e/ui-border-scanner.mjs
+@@ -1,9 +1,46 @@
+-/** Inspect actual interface paint; artwork, guides and keyboard focus are separate. */
++import { createRequire } from "node:module";
++
++const require = createRequire(import.meta.url);
++const { STRUCTURAL_CSS } = require("../../design/structural-lines.cjs");
++
++/**
++ * Inspect actual interface paint. Three classes are kept apart:
++ * - decorative: any painted border or ring on a control or surface (a failure);
++ * - structural: the outer frame and registered module dividers (must exist);
++ * - artwork / guides / focus are excluded by `[data-ui-guide]` and `:focus-visible`.
++ *
++ * Returns the decorative findings, for the existing `assert.deepEqual` gates.
++ */
+ export async function scanUiBorders(page) {
+-  return page.evaluate(() => {
+-    const findings = [];
++  return (await scanBorders(page)).decorative;
++}
++
++/** Full classification, including measured structural lines. */
++export async function scanBorders(page) {
++  const registry = STRUCTURAL_CSS.map((entry) => ({
++    selector: entry.selector,
++    role: entry.role,
++  }));
++  return page.evaluate((registryEntries) => {
++    const decorative = [];
++    const structural = [];
++    const CONTROL_ROLES = new Set([
++      "button", "checkbox", "combobox", "dialog", "listbox", "menu",
++      "menuitem", "option", "radio", "slider", "switch", "tab", "textbox",
++    ]);
+     const alpha = (color) =>
+       color !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(color);
++    const isControl = (el) =>
++      el.matches("button, input, select, textarea, a") ||
++      CONTROL_ROLES.has(el.getAttribute("role"));
++    const matchesRegistry = (el) =>
++      registryEntries.find((entry) => {
++        try {
++          return el.matches(entry.selector);
++        } catch {
++          return false;
++        }
++      });
+     for (const el of document.querySelectorAll("body *")) {
+       if (
+         !(el instanceof HTMLElement) ||
+@@ -41,8 +78,34 @@ export async function scanUiBorders(page) {
+         !el.matches(":focus-visible") &&
+         /\s0px\s0px\s0px\s[1-9][\d.]*px/.test(ring) &&
+         !/rgba\(0, 0, 0, 0\)/.test(ring);
+-      if (sides.length || hasRing)
+-        findings.push({
++      if (!sides.length && !hasRing) continue;
++      const describe = (kind) => ({
++        kind,
++        tag: el.tagName,
++        id: el.getAttribute("data-testid"),
++        label: el.getAttribute("aria-label"),
++        marker: el.getAttribute("data-ui-structure"),
++        classes: String(el.className).slice(0, 160),
++        registryRole: matchesRegistry(el)?.role ?? null,
++        rect: [rect.x, rect.y, rect.width, rect.height].map((v) => Math.round(v)),
++        sides: sides.map((side) => ({
++          side,
++          width: style[`border${side}Width`],
++          style: style[`border${side}Style`],
++          color: style[`border${side}Color`],
++        })),
++        ring: hasRing ? ring : undefined,
++      });
++      const isFrame = el.getAttribute("data-ui-structure") === "frame";
++      const isDivider =
++        el.getAttribute("data-ui-structure") === "divider" &&
++        !isControl(el) &&
++        sides.length <= 2;
++      const isRegistered = Boolean(matchesRegistry(el)) && !isControl(el);
++      if (!hasRing && (isFrame || isDivider || isRegistered)) {
++        structural.push(describe(isFrame ? "frame" : "divider"));
++      } else {
++        decorative.push({
+           tag: el.tagName,
+           id: el.getAttribute("data-testid"),
+           label: el.getAttribute("aria-label"),
+@@ -50,7 +113,8 @@ export async function scanUiBorders(page) {
+           sides,
+           ring: hasRing ? ring : undefined,
+         });
++      }
+     }
+-    return findings;
+-  });
++    return { decorative, structural };
++  }, registry);
+ }

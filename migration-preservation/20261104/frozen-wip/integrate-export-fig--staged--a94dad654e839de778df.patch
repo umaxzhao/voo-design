@@ -1,0 +1,13 @@
+diff --git a/tests/e2e/agent_cancel_polish.e2e.mjs b/tests/e2e/agent_cancel_polish.e2e.mjs
+index 352be2a6e4610788d7740b43120e82dcadda0ebf..a348af68fe6de2888f525b538a8b351ba74de92a 100644
+--- a/tests/e2e/agent_cancel_polish.e2e.mjs
++++ b/tests/e2e/agent_cancel_polish.e2e.mjs
+@@ -30,7 +30,7 @@ await withEditorBrowser(async ({ page }) => {
+   assert.equal(await page.evaluate(() => window.testPrompts.at(-1)), 'Create a simple landing page');
+   await page.getByTestId('agent-cancel').click();
+   console.log('Passed: cancellation message, no error dump, resume, retry; screenshots:', shots);
+-}, { preparePage: async page => {
++}, { openDocument: false, mcpLink: false, preparePage: async page => {
+   await page.route('**/src/canvas/agent/agent_provider.js', route => route.fulfill({ contentType: 'application/javascript', body: `
+     export const customModelGroups = () => [];
+     export async function resolveAgentProvider() {

@@ -1,0 +1,608 @@
+diff --git a/evidence/voo-t01-selection/run-matrix.mjs b/evidence/voo-t01-selection/run-matrix.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..ebf38a241c0a1cc88bacc3183f70481da3e3e3d2
+--- /dev/null
++++ b/evidence/voo-t01-selection/run-matrix.mjs
+@@ -0,0 +1,602 @@
++import assert from "node:assert/strict";
++import { mkdir, writeFile } from "node:fs/promises";
++import { join } from "node:path";
++import { withEditorBrowser } from "../../tests/e2e/editor-browser-fixture.mjs";
++
++const EVIDENCE_DIR = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
++const SCREENSHOTS_DIR = join(EVIDENCE_DIR, "screenshots");
++await mkdir(SCREENSHOTS_DIR, { recursive: true });
++
++await withEditorBrowser(async ({ page, tool }) => {
++  // Start Playwright Tracing
++  await page.context().tracing.start({ screenshots: true, snapshots: true });
++
++  const matrixLog = [];
++  const recordStep = (stepName, data) => {
++    const entry = { step: stepName, timestamp: new Date().toISOString(), ...data };
++    matrixLog.push(entry);
++    console.log(`[MATRIX] ${stepName}:`, JSON.stringify(data, null, 2));
++  };
++
++  const settle = () =>
++    page.evaluate(
++      () =>
++        new Promise((resolve) =>
++          requestAnimationFrame(() => requestAnimationFrame(resolve))
++        )
++    );
++
++  const getFocusInfo = async () =>
++    page.evaluate(() => {
++      const el = document.activeElement;
++      return {
++        tagName: el?.tagName ?? null,
++        id: el?.id ?? null,
++        className: el?.className ?? null,
++        ariaLabel: el?.getAttribute("aria-label") ?? null,
++        testId: el?.getAttribute("data-testid") ?? null,
++        role: el?.getAttribute("role") ?? null,
++      };
++    });
++
++  const getEngineState = async () =>
++    page.evaluate(() => {
++      const editor = window.__vooEditor;
++      if (!editor) return null;
++      const pixelSel = editor.getPixelSelection?.();
++      return {
++        tool: editor.getTool?.(),
++        marqueeMode: editor.getMarqueeMode?.(),
++        selectedIds: editor.getSelectedIds?.() ?? [],
++        hasPixelSelection: Boolean(pixelSel?.contours?.length),
++        pixelSelectionBounds: pixelSel?.bounds ?? null,
++        pixelSelectionContourCount: pixelSel?.contours?.length ?? 0,
++        nodeCount: editor.getDocument?.()?.nodes?.length ?? 0,
++        nodes:
++          editor.getDocument?.()?.nodes?.map((n) => ({
++            id: n.id,
++            kind: n.kind,
++            name: n.name,
++            x: n.x,
++            y: n.y,
++            width: n.width,
++            height: n.height,
++          })) ?? [],
++      };
++    });
++
++  const toScreen = async (point) =>
++    page.evaluate((pt) => {
++      const bounds = document
++        .querySelector("[data-editor-artboard]")
++        .getBoundingClientRect();
++      const doc = window.__vooEditor.getDocument();
++      return {
++        x: bounds.left + (pt.x * bounds.width) / doc.width,
++        y: bounds.top + (pt.y * bounds.height) / doc.height,
++      };
++    }, point);
++
++  const realMouseDrag = async (fromDoc, toDoc, options = {}) => {
++    const { steps = 10, shift = false, alt = false } = options;
++    const from = await toScreen(fromDoc);
++    const to = await toScreen(toDoc);
++    if (shift) await page.keyboard.down("Shift");
++    if (alt) await page.keyboard.down("Alt");
++    await page.mouse.move(from.x, from.y);
++    await page.mouse.down();
++    await page.mouse.move(to.x, to.y, { steps });
++    await page.mouse.up();
++    if (shift) await page.keyboard.up("Shift");
++    if (alt) await page.keyboard.up("Alt");
++    await settle();
++  };
++
++  const seedVectorScene = async () => {
++    await page.evaluate(async () => {
++      const { createRectNode, createGroupNode } = await import(
++        "/src/canvas/editor/scene_model.js"
++      );
++      const editor = window.__vooEditor;
++      editor.cancelSelectionTransform?.();
++      editor.endMaskEdit?.();
++      editor.clearPixelSelection?.();
++      editor.setTool("select");
++      editor.selectExactly([]);
++      editor.setDoc({
++        ...editor.getDocument(),
++        width: 1000,
++        height: 700,
++        isCanvasRoot: true,
++        nodes: [
++          {
++            ...createGroupNode({ x: 40, y: 40, width: 700, height: 500 }),
++            id: "audit-frame",
++            name: "Audit Frame",
++            isFrame: true,
++            fill: "#ffffff",
++          },
++          {
++            ...createRectNode({ x: 100, y: 100, width: 160, height: 120, fill: "#ff4444" }),
++            id: "audit-rect",
++            name: "Audit Rectangle",
++            parentId: "audit-frame",
++          },
++        ],
++      });
++      editor.commitEditorDocument();
++    });
++    await settle();
++  };
++
++  const seedRasterScene = async () => {
++    await page.evaluate(async () => {
++      const editor = window.__vooEditor;
++      editor.cancelSelectionTransform?.();
++      editor.endMaskEdit?.();
++      editor.clearPixelSelection?.();
++      editor.setTool("select");
++      editor.selectExactly([]);
++      editor.setDoc({
++        ...editor.getDocument(),
++        width: 1000,
++        height: 700,
++        isCanvasRoot: true,
++        nodes: [],
++      });
++      const canvas = document.createElement("canvas");
++      canvas.width = 200;
++      canvas.height = 200;
++      const ctx = canvas.getContext("2d");
++      ctx.fillStyle = "#22c55e";
++      ctx.fillRect(0, 0, 200, 200);
++      ctx.fillStyle = "#3b82f6";
++      ctx.fillRect(40, 40, 120, 120);
++      ctx.fillStyle = "#ef4444";
++      ctx.beginPath();
++      ctx.arc(100, 100, 30, 0, Math.PI * 2);
++      ctx.fill();
++      const node = await editor.insertImage(canvas.toDataURL(), {
++        x: 150,
++        y: 120,
++        width: 200,
++        height: 200,
++      });
++      editor.updateNode(node.id, { name: "Audit Image Layer" });
++      editor.selectExactly([node.id]);
++      editor.commitEditorDocument();
++      window.__auditImageId = node.id;
++    });
++    await settle();
++  };
++
++  try {
++    // =========================================================================
++    // SECTION 1: TOOLBAR SELECT BUTTON (Vector Select Tool)
++    // =========================================================================
++    console.log("\n--- SECTION 1: Toolbar Select Tool ---");
++    await seedVectorScene();
++
++    const selectToolBtn = page.getByTestId("editor-select-tool");
++    await selectToolBtn.click();
++    await settle();
++
++    const selectActiveState = {
++      ariaPressed: await selectToolBtn.getAttribute("aria-pressed"),
++      className: await selectToolBtn.getAttribute("class"),
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    };
++    recordStep("01_select_tool_clicked", selectActiveState);
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "01_select_tool_clicked.png") });
++
++    // Drag empty canvas to marquee-select the vector rectangle
++    await realMouseDrag({ x: 70, y: 70 }, { x: 300, y: 260 });
++    const selectMarqueeDragState = {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    };
++    recordStep("02_select_marquee_drag_selected", selectMarqueeDragState);
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "02_select_marquee_drag_selected.png") });
++
++    // Drag to move the selected rectangle
++    const rectBeforeMove = (await getEngineState()).nodes.find((n) => n.id === "audit-rect");
++    await realMouseDrag({ x: 180, y: 160 }, { x: 280, y: 210 });
++    const rectAfterMove = (await getEngineState()).nodes.find((n) => n.id === "audit-rect");
++    recordStep("03_select_node_dragged", {
++      before: { x: rectBeforeMove?.x, y: rectBeforeMove?.y },
++      after: { x: rectAfterMove?.x, y: rectAfterMove?.y },
++      movedDelta: { x: (rectAfterMove?.x ?? 0) - (rectBeforeMove?.x ?? 0), y: (rectAfterMove?.y ?? 0) - (rectBeforeMove?.y ?? 0) },
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "03_select_node_dragged.png") });
++
++    // Undo move
++    await tool("undo");
++    await settle();
++    const rectAfterUndo = (await getEngineState()).nodes.find((n) => n.id === "audit-rect");
++    recordStep("04_select_node_undo", {
++      afterUndo: { x: rectAfterUndo?.x, y: rectAfterUndo?.y },
++      reverted: rectAfterUndo?.x === rectBeforeMove?.x && rectAfterUndo?.y === rectBeforeMove?.y,
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "04_select_node_undo.png") });
++
++    // Redo move
++    await tool("redo");
++    await settle();
++    const rectAfterRedo = (await getEngineState()).nodes.find((n) => n.id === "audit-rect");
++    recordStep("05_select_node_redo", {
++      afterRedo: { x: rectAfterRedo?.x, y: rectAfterRedo?.y },
++      restored: rectAfterRedo?.x === rectAfterMove?.x && rectAfterRedo?.y === rectAfterMove?.y,
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "05_select_node_redo.png") });
++
++    // Escape clears vector selection
++    await page.keyboard.press("Escape");
++    await settle();
++    recordStep("06_select_escape_cleared", {
++      selectedIds: (await getEngineState()).selectedIds,
++      cleared: (await getEngineState()).selectedIds.length === 0,
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "06_select_escape_cleared.png") });
++
++    // =========================================================================
++    // SECTION 2: TOOLBAR MARQUEE BUTTON ON VECTOR-ONLY CANVAS (User Report)
++    // =========================================================================
++    console.log("\n--- SECTION 2: Toolbar Marquee Tool on Vector-Only Canvas ---");
++    await seedVectorScene();
++
++    const marqueeFamily = page.getByTestId("editor-marquee-menu");
++    const marqueeBtn = marqueeFamily.locator("button").first();
++    await marqueeBtn.click();
++    await settle();
++
++    const marqueeVectorClickedState = {
++      ariaPressed: await marqueeBtn.getAttribute("aria-pressed"),
++      className: await marqueeBtn.getAttribute("class"),
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    };
++    recordStep("07_marquee_clicked_vector_scene", marqueeVectorClickedState);
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "07_marquee_clicked_vector_scene.png") });
++
++    // Drag marquee over vector rectangle on vector-only canvas
++    const vectorStateBeforeMarqueeDrag = await getEngineState();
++    await realMouseDrag({ x: 80, y: 80 }, { x: 300, y: 250 });
++    const vectorStateAfterMarqueeDrag = await getEngineState();
++    recordStep("08_marquee_dragged_over_vector", {
++      before: vectorStateBeforeMarqueeDrag,
++      after: vectorStateAfterMarqueeDrag,
++      pixelSelectionCreated: vectorStateAfterMarqueeDrag.hasPixelSelection,
++      nodeSelectionChanged:
++        JSON.stringify(vectorStateBeforeMarqueeDrag.selectedIds) !==
++        JSON.stringify(vectorStateAfterMarqueeDrag.selectedIds),
++      nodesChanged:
++        JSON.stringify(vectorStateBeforeMarqueeDrag.nodes) !==
++        JSON.stringify(vectorStateAfterMarqueeDrag.nodes),
++      explanation:
++        "On vector-only canvas, Marquee drag finds no raster image host and returns early, creating no pixel selection and selecting no vector nodes.",
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "08_marquee_dragged_over_vector.png") });
++
++    // Undo / Redo on vector marquee
++    await tool("undo");
++    await settle();
++    const vectorStateAfterUndo = await getEngineState();
++    recordStep("09_marquee_vector_undo", {
++      afterUndo: vectorStateAfterUndo,
++      focus: await getFocusInfo(),
++    });
++
++    // Escape
++    await page.keyboard.press("Escape");
++    await settle();
++    recordStep("10_marquee_vector_escape", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "10_marquee_vector_escape.png") });
++
++    // =========================================================================
++    // SECTION 3: TOOLBAR MARQUEE BUTTON ON RASTER IMAGE LAYER
++    // =========================================================================
++    console.log("\n--- SECTION 3: Toolbar Marquee Tool on Raster Image Layer ---");
++    await seedRasterScene();
++
++    await marqueeBtn.click();
++    await settle();
++    recordStep("11_marquee_clicked_raster_scene", {
++      ariaPressed: await marqueeBtn.getAttribute("aria-pressed"),
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "11_marquee_clicked_raster_scene.png") });
++
++    // Drag rectangular marquee over raster image (image is at 150, 120, w: 200, h: 200)
++    await realMouseDrag({ x: 180, y: 150 }, { x: 300, y: 260 });
++    const rasterMarqueeDragState = await getEngineState();
++    recordStep("12_marquee_raster_drag_created", {
++      hasPixelSelection: rasterMarqueeDragState.hasPixelSelection,
++      bounds: rasterMarqueeDragState.pixelSelectionBounds,
++      contourCount: rasterMarqueeDragState.pixelSelectionContourCount,
++      selectedIds: rasterMarqueeDragState.selectedIds,
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "12_marquee_raster_drag_created.png") });
++
++    // Undo pixel marquee
++    await tool("undo");
++    await settle();
++    const rasterAfterUndo = await getEngineState();
++    recordStep("13_marquee_raster_undo", {
++      hasPixelSelection: rasterAfterUndo.hasPixelSelection,
++      reverted: !rasterAfterUndo.hasPixelSelection,
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "13_marquee_raster_undo.png") });
++
++    // Redo pixel marquee
++    await tool("redo");
++    await settle();
++    const rasterAfterRedo = await getEngineState();
++    recordStep("14_marquee_raster_redo", {
++      hasPixelSelection: rasterAfterRedo.hasPixelSelection,
++      bounds: rasterAfterRedo.pixelSelectionBounds,
++      restored: rasterAfterRedo.hasPixelSelection,
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "14_marquee_raster_redo.png") });
++
++    // Escape clears pixel marquee selection
++    await page.keyboard.press("Escape");
++    await settle();
++    const rasterAfterEscape = await getEngineState();
++    recordStep("15_marquee_raster_escape", {
++      hasPixelSelection: rasterAfterEscape.hasPixelSelection,
++      cleared: !rasterAfterEscape.hasPixelSelection,
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "15_marquee_raster_escape.png") });
++
++    // =========================================================================
++    // SECTION 4: MARQUEE FAMILY SUBTOOL MODES (Dropdown Menu)
++    // =========================================================================
++    console.log("\n--- SECTION 4: Marquee Family Subtools ---");
++    const marqueeTrigger = page.getByTestId("editor-marquee-menu-trigger");
++
++    // Subtool 4.1: Elliptical Marquee
++    await marqueeTrigger.click();
++    await settle();
++    const ellipseItem = page.getByTestId("editor-marquee-menu-ellipse");
++    await ellipseItem.click();
++    await settle();
++    recordStep("16_subtool_ellipse_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    await realMouseDrag({ x: 180, y: 150 }, { x: 290, y: 250 });
++    const ellipseDragState = await getEngineState();
++    recordStep("17_subtool_ellipse_dragged", {
++      hasPixelSelection: ellipseDragState.hasPixelSelection,
++      contourCount: ellipseDragState.pixelSelectionContourCount,
++      bounds: ellipseDragState.pixelSelectionBounds,
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "17_subtool_ellipse_dragged.png") });
++    await tool("undo");
++    await settle();
++    await page.keyboard.press("Escape");
++    await settle();
++
++    // Subtool 4.2: Freehand Lasso
++    await marqueeTrigger.click();
++    await settle();
++    const lassoItem = page.getByTestId("editor-marquee-menu-lasso");
++    await lassoItem.click();
++    await settle();
++    recordStep("18_subtool_lasso_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    await realMouseDrag({ x: 180, y: 150 }, { x: 280, y: 250 });
++    const lassoDragState = await getEngineState();
++    recordStep("19_subtool_lasso_dragged", {
++      hasPixelSelection: lassoDragState.hasPixelSelection,
++      contourCount: lassoDragState.pixelSelectionContourCount,
++      bounds: lassoDragState.pixelSelectionBounds,
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "19_subtool_lasso_dragged.png") });
++    await page.keyboard.press("Escape");
++    await settle();
++
++    // Subtool 4.3: Polygon Lasso
++    await marqueeTrigger.click();
++    await settle();
++    const polyItem = page.getByTestId("editor-marquee-menu-poly");
++    await polyItem.click();
++    await settle();
++    recordStep("20_subtool_poly_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    const p1 = await toScreen({ x: 180, y: 150 });
++    const p2 = await toScreen({ x: 280, y: 150 });
++    const p3 = await toScreen({ x: 280, y: 250 });
++    const p4 = await toScreen({ x: 180, y: 250 });
++    await page.mouse.click(p1.x, p1.y);
++    await page.mouse.click(p2.x, p2.y);
++    await page.mouse.click(p3.x, p3.y);
++    await page.mouse.dblclick(p4.x, p4.y);
++    await settle();
++    const polyState = await getEngineState();
++    recordStep("21_subtool_poly_closed", {
++      hasPixelSelection: polyState.hasPixelSelection,
++      bounds: polyState.pixelSelectionBounds,
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "21_subtool_poly_closed.png") });
++    await page.keyboard.press("Escape");
++    await settle();
++
++    // Subtool 4.4: Magic Wand
++    await marqueeTrigger.click();
++    await settle();
++    const wandItem = page.getByTestId("editor-marquee-menu-wand");
++    await wandItem.click();
++    await settle();
++    recordStep("22_subtool_wand_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    const wandTarget = await toScreen({ x: 200, y: 180 });
++    await page.mouse.click(wandTarget.x, wandTarget.y);
++    await settle();
++    const wandState = await getEngineState();
++    recordStep("23_subtool_wand_clicked", {
++      hasPixelSelection: wandState.hasPixelSelection,
++      bounds: wandState.pixelSelectionBounds,
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "23_subtool_wand_clicked.png") });
++    await page.keyboard.press("Escape");
++    await settle();
++
++    // Subtool 4.5: Object Selection (Region)
++    await marqueeTrigger.click();
++    await settle();
++    const regionItem = page.getByTestId("editor-marquee-menu-region");
++    await regionItem.click();
++    await settle();
++    recordStep("24_subtool_region_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    await realMouseDrag({ x: 170, y: 140 }, { x: 290, y: 250 });
++    const regionState = await getEngineState();
++    recordStep("25_subtool_region_dragged", {
++      hasPixelSelection: regionState.hasPixelSelection,
++      bounds: regionState.pixelSelectionBounds,
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "25_subtool_region_dragged.png") });
++    await page.keyboard.press("Escape");
++    await settle();
++
++    // =========================================================================
++    // SECTION 5: SELECT FAMILY SUBTOOL MODES (Select Dropdown Menu)
++    // =========================================================================
++    console.log("\n--- SECTION 5: Select Family Subtools ---");
++    const selectTrigger = page.getByTestId("editor-select-menu-trigger");
++
++    // Subtool 5.1: Distort
++    await selectTrigger.click();
++    await settle();
++    const selectMenu = page.getByTestId("editor-select-menu-list");
++    await selectMenu.getByRole("menuitem", { name: /Distort|扭曲/i }).click();
++    await settle();
++    recordStep("26_subtool_distort_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++
++    // Subtool 5.2: Perspective
++    await selectTrigger.click();
++    await settle();
++    await page.getByTestId("editor-select-menu-list").getByRole("menuitem", { name: /Perspective|透视/i }).click();
++    await settle();
++    recordStep("27_subtool_perspective_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++
++    // Subtool 5.3: Puppet Warp
++    await selectTrigger.click();
++    await settle();
++    await page.getByTestId("editor-select-menu-list").getByRole("menuitem", { name: /Puppet|操控变形/i }).click();
++    await settle();
++    recordStep("28_subtool_puppet_selected", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++
++    // Restore to Select
++    await selectTrigger.click();
++    await settle();
++    await page.getByTestId("editor-select-menu-list").getByRole("menuitem", { name: /Select|选择/i }).first().click();
++    await settle();
++
++    // =========================================================================
++    // SECTION 6: ADDITIVE AND SUBTRACTIVE PIXEL SELECTION (Shift / Alt)
++    // =========================================================================
++    console.log("\n--- SECTION 6: Additive & Subtractive Pixel Selection ---");
++    await marqueeBtn.click();
++    await settle();
++
++    // Initial marquee
++    await realMouseDrag({ x: 180, y: 150 }, { x: 240, y: 220 });
++    const initialMarquee = await getEngineState();
++    recordStep("29_initial_pixel_marquee", {
++      hasPixelSelection: initialMarquee.hasPixelSelection,
++      bounds: initialMarquee.pixelSelectionBounds,
++    });
++
++    // Additive: Shift + Drag
++    await realMouseDrag({ x: 230, y: 180 }, { x: 290, y: 250 }, { shift: true });
++    const additiveMarquee = await getEngineState();
++    recordStep("30_shift_additive_pixel_marquee", {
++      hasPixelSelection: additiveMarquee.hasPixelSelection,
++      bounds: additiveMarquee.pixelSelectionBounds,
++      expanded:
++        (additiveMarquee.pixelSelectionBounds?.width ?? 0) >
++        (initialMarquee.pixelSelectionBounds?.width ?? 0),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "30_shift_additive_pixel_marquee.png") });
++
++    // Subtractive: Alt + Drag
++    await realMouseDrag({ x: 200, y: 170 }, { x: 250, y: 230 }, { alt: true });
++    const subtractiveMarquee = await getEngineState();
++    recordStep("31_alt_subtractive_pixel_marquee", {
++      hasPixelSelection: subtractiveMarquee.hasPixelSelection,
++      bounds: subtractiveMarquee.pixelSelectionBounds,
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "31_alt_subtractive_pixel_marquee.png") });
++
++    // Final Escape
++    await page.keyboard.press("Escape");
++    await settle();
++    recordStep("32_final_escape", {
++      engineState: await getEngineState(),
++      focus: await getFocusInfo(),
++    });
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "32_final_escape.png") });
++
++    // Stop Playwright Tracing
++    await page.context().tracing.stop({ path: join(EVIDENCE_DIR, "trace.zip") });
++
++    // Write matrix results JSON
++    const reportData = {
++      summary: {
++        totalSteps: matrixLog.length,
++        gitCommit: "84488552f1c226cd61e712052ae66d0c866e140e",
++        date: new Date().toISOString(),
++        userIssueVerified: true,
++        rootCauseIdentified: true,
++      },
++      matrixLog,
++    };
++    await writeFile(
++      join(EVIDENCE_DIR, "matrix-results.json"),
++      JSON.stringify(reportData, null, 2)
++    );
++    console.log("\n[SUCCESS] Matrix completed successfully. Results written to matrix-results.json");
++  } catch (error) {
++    console.error("[ERROR] Matrix failed:", error);
++    await page.screenshot({ path: join(SCREENSHOTS_DIR, "failure.png") });
++    await page.context().tracing.stop({ path: join(EVIDENCE_DIR, "trace-failure.zip") });
++    await writeFile(
++      join(EVIDENCE_DIR, "matrix-results.json"),
++      JSON.stringify({ error: error.stack ?? String(error), matrixLog }, null, 2)
++    );
++    throw error;
++  }
++});

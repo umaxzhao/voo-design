@@ -1,0 +1,16 @@
+diff --git a/tests/audit/vitest.config.js b/tests/audit/vitest.config.js
+deleted file mode 100644
+index 3ae6b03f0b4f32f3bdb9515d07884d996163bac9..0000000000000000000000000000000000000000
+--- a/tests/audit/vitest.config.js
++++ /dev/null
+@@ -1,10 +0,0 @@
+-import { defineConfig } from "vitest/config";
+-
+-export default defineConfig({
+-  test: {
+-    globals: true,
+-    environment: "node",
+-    include: ["tests/audit/**/*.audit.test.js"],
+-    cache: { dir: "/private/tmp/voo-panel-audit-vitest-cache" },
+-  },
+-});

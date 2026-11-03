@@ -1,0 +1,16 @@
+diff --git a/tests/unit/canvas_agent_designer_workflow.test.js b/tests/unit/canvas_agent_designer_workflow.test.js
+index 10d790a4a89351c8b9f964ea5ac39ea32c31fa64..4277ddbdd92e5ca4716c69c824fd5e59b9b579ac 100644
+--- a/tests/unit/canvas_agent_designer_workflow.test.js
++++ b/tests/unit/canvas_agent_designer_workflow.test.js
+@@ -23,6 +23,11 @@ const CORE_TOOL_NAMES = [
+   "new_document",
+   "resize_document",
+   "capture_canvas",
++  "create_comment",
++  "delete_comment",
++  "list_comments",
++  "reply_comment",
++  "resolve_comment",
+ ];
+ 
+ /** Prompt words that are protocol/status vocabulary rather than tool names. */

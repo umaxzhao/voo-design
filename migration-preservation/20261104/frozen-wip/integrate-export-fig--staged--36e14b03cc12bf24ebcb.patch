@@ -1,0 +1,15 @@
+diff --git a/tests/audit/vitest.audit.config.js b/tests/audit/vitest.audit.config.js
+deleted file mode 100644
+index 6b4d2e903c9a7bd7ad408031e2143457398e8b67..0000000000000000000000000000000000000000
+--- a/tests/audit/vitest.audit.config.js
++++ /dev/null
+@@ -1,9 +0,0 @@
+-import { defineConfig } from "vitest/config";
+-
+-export default defineConfig({
+-  test: {
+-    globals: true,
+-    environment: "node",
+-    include: ["tests/audit/**/*.audit.test.js"],
+-  },
+-});

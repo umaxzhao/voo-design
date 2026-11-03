@@ -1,0 +1,13 @@
+diff --git a/tests/unit/collab_session.test.js b/tests/unit/collab_session.test.js
+index 6c83e9a17d12929ec07017da0299e0693f57d36d..79b75cf89e4e8433899f11f8061844ee79bb115f 100644
+--- a/tests/unit/collab_session.test.js
++++ b/tests/unit/collab_session.test.js
+@@ -86,7 +86,7 @@ test("starting a session puts you in your own roster", () => {
+     state.peers.map((p) => p.peerId),
+     ["me"],
+   );
+-  assert.ok(state.link.includes(`/editor/?r=${room}#k=`), state.link);
++  assert.ok(state.link.startsWith(`https://voo.run/editor/?r=${room}#k=`), state.link);
+ });
+ 
+ test("starting an already-live room reuses the same id, not a new one", () => {

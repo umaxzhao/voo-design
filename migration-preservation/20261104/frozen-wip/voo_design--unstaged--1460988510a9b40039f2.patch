@@ -1,0 +1,258 @@
+diff --git a/src/canvas/components/editor_properties/stroke_style_icons.jsx b/src/canvas/components/editor_properties/stroke_style_icons.jsx
+index ce2a5534a698bbbd55f39c7d7bbf71d8506a0b27..22a61615375dfea8411540e88b2aee3b7ea91b63 100644
+--- a/src/canvas/components/editor_properties/stroke_style_icons.jsx
++++ b/src/canvas/components/editor_properties/stroke_style_icons.jsx
+@@ -1,13 +1,14 @@
+ import PropTypes from "prop-types";
+ 
+ /**
+- * Custom vector icons for the stroke properties panel:
+- * - strokeLinejoin: miter, round, bevel
+- * - strokeLinecap: butt, round, square
+- * - strokeDash: solid, dashed, dotted, custom
+- * - pen anchor editing: corner, smooth, delete
+- *
+- * Each glyph is authored on a 16x16 icon grid using stroke="currentColor".
++ * Vector glyphs for the stroke and pen-anchor controls. Every glyph sits on a
++ * 16x16 grid, uses stroke="currentColor" and one stroke weight family, so the
++ * panel reads as one set. Each glyph shows the property it sets, not a
++ * neighbouring idea:
++ * - strokeLinejoin: miter, round, bevel (the outer corner of a path)
++ * - strokeLinecap: butt, round, square (the line end, with end guides)
++ * - strokeDash: solid, dashed, dotted, custom (uneven dash lengths)
++ * - pen anchor editing: corner, smooth, delete (the anchor node itself)
+  */
+ 
+ export function StrokeJoinIcon({ join, size = 15 }) {
+@@ -20,21 +21,11 @@ export function StrokeJoinIcon({ join, size = 15 }) {
+       aria-hidden="true"
+       data-stroke-join={join}
+     >
+-      {/* Light dashed baseline indicating the inner corner axes */}
+       <path
+-        d="M 4 13.5 L 4 4 L 13.5 4"
++        d="M3.2 12.8 L3.2 3.2 L12.8 3.2"
+         stroke="currentColor"
+-        strokeWidth="0.75"
+-        strokeDasharray="1.5 1.5"
+-        opacity="0.3"
+-      />
+-      {/* Heavy stroke showing the geometric corner join */}
+-      <path
+-        d="M 4 13.5 L 4 4 L 13.5 4"
+-        stroke="currentColor"
+-        strokeWidth="2.75"
++        strokeWidth="2.8"
+         strokeLinejoin={join}
+-        strokeLinecap="butt"
+       />
+     </svg>
+   );
+@@ -55,27 +46,17 @@ export function StrokeCapIcon({ cap, size = 15 }) {
+       aria-hidden="true"
+       data-stroke-cap={cap}
+     >
+-      {/* Reference line marking the anchor endpoint position at x=10 */}
+-      <line
+-        x1="10"
+-        y1="2.5"
+-        x2="10"
+-        y2="13.5"
++      {/* End guides mark where the line stops; round and square caps extend past them. */}
++      <path
++        d="M5.5 3 V13 M10.5 3 V13"
+         stroke="currentColor"
+-        strokeWidth="1"
+-        strokeDasharray="1.5 1.5"
+-        opacity="0.35"
++        strokeWidth="0.9"
++        opacity="0.4"
+       />
+-      {/* Reference anchor point */}
+-      <circle cx="10" cy="8" r="0.8" fill="currentColor" opacity="0.6" />
+-      {/* The stroked line: butt stops at x=10; round / square extend past it */}
+-      <line
+-        x1="2.5"
+-        y1="8"
+-        x2="10"
+-        y2="8"
++      <path
++        d="M5.5 8 H10.5"
+         stroke="currentColor"
+-        strokeWidth="3.25"
++        strokeWidth="3"
+         strokeLinecap={cap}
+       />
+     </svg>
+@@ -98,67 +79,35 @@ export function StrokeDashIcon({ dash, size = 15 }) {
+       data-stroke-dash={dash}
+     >
+       {dash === "solid" && (
+-        <line
+-          x1="2"
+-          y1="8"
+-          x2="14"
+-          y2="8"
++        <path
++          d="M2 8 H14"
+           stroke="currentColor"
+           strokeWidth="2"
+           strokeLinecap="round"
+         />
+       )}
+       {dash === "dashed" && (
+-        <>
+-          <line
+-            x1="2"
+-            y1="8"
+-            x2="6.5"
+-            y2="8"
+-            stroke="currentColor"
+-            strokeWidth="2"
+-            strokeLinecap="round"
+-          />
+-          <line
+-            x1="9.5"
+-            y1="8"
+-            x2="14"
+-            y2="8"
+-            stroke="currentColor"
+-            strokeWidth="2"
+-            strokeLinecap="round"
+-          />
+-        </>
++        <path
++          d="M2 8 H6 M10 8 H14"
++          stroke="currentColor"
++          strokeWidth="2"
++          strokeLinecap="round"
++        />
+       )}
+       {dash === "dotted" && (
+         <>
+-          <circle cx="3" cy="8" r="1.35" fill="currentColor" />
+-          <circle cx="8" cy="8" r="1.35" fill="currentColor" />
+-          <circle cx="13" cy="8" r="1.35" fill="currentColor" />
++          <circle cx="3" cy="8" r="1.1" fill="currentColor" />
++          <circle cx="8" cy="8" r="1.1" fill="currentColor" />
++          <circle cx="13" cy="8" r="1.1" fill="currentColor" />
+         </>
+       )}
+       {dash === "custom" && (
+-        <>
+-          <line
+-            x1="2"
+-            y1="8"
+-            x2="6"
+-            y2="8"
+-            stroke="currentColor"
+-            strokeWidth="2"
+-            strokeLinecap="round"
+-          />
+-          <circle cx="8.5" cy="8" r="1.2" fill="currentColor" />
+-          <line
+-            x1="11"
+-            y1="8"
+-            x2="14"
+-            y2="8"
+-            stroke="currentColor"
+-            strokeWidth="2"
+-            strokeLinecap="round"
+-          />
+-        </>
++        <path
++          d="M2 8 H9 M11.5 8 H13.5"
++          stroke="currentColor"
++          strokeWidth="2"
++          strokeLinecap="round"
++        />
+       )}
+     </svg>
+   );
+@@ -182,17 +131,17 @@ export function PenAnchorIcon({ type, size = 14 }) {
+       {type === "corner" && (
+         <>
+           <path
+-            d="M 2.5 13 L 8 4.5 L 13.5 13"
++            d="M3 12.6 L8 4 L13 12.6"
+             stroke="currentColor"
+-            strokeWidth="1.5"
++            strokeWidth="1.4"
+             strokeLinecap="round"
+             strokeLinejoin="miter"
+           />
+           <rect
+-            x="6.5"
+-            y="3"
+-            width="3"
+-            height="3"
++            x="6.9"
++            y="2.9"
++            width="2.2"
++            height="2.2"
+             fill="currentColor"
+             stroke="none"
+           />
+@@ -201,51 +150,27 @@ export function PenAnchorIcon({ type, size = 14 }) {
+       {type === "smooth" && (
+         <>
+           <path
+-            d="M 2.5 12.5 C 4.5 5.5, 11.5 5.5, 13.5 12.5"
++            d="M2.6 12.2 C4.4 4.8 11.6 4.8 13.4 12.2"
+             stroke="currentColor"
+-            strokeWidth="1.5"
++            strokeWidth="1.4"
+             strokeLinecap="round"
+           />
+-          <line
+-            x1="3"
+-            y1="6.8"
+-            x2="13"
+-            y2="6.8"
+-            stroke="currentColor"
+-            strokeWidth="0.8"
+-            strokeDasharray="1 1"
+-            opacity="0.65"
+-          />
+-          <circle cx="3" cy="6.8" r="1" fill="currentColor" />
+-          <circle cx="13" cy="6.8" r="1" fill="currentColor" />
+-          <rect
+-            x="6.5"
+-            y="5.3"
+-            width="3"
+-            height="3"
+-            fill="currentColor"
+-            stroke="none"
+-          />
++          <circle cx="8" cy="8.2" r="1.3" fill="currentColor" stroke="none" />
+         </>
+       )}
+       {type === "delete" && (
+         <>
+-          <rect
+-            x="3"
+-            y="4.5"
+-            width="5.5"
+-            height="5.5"
+-            rx="0.75"
++          <circle
++            cx="8"
++            cy="8"
++            r="5.3"
+             stroke="currentColor"
+-            strokeWidth="1.2"
++            strokeWidth="1.3"
+           />
+-          <line
+-            x1="10.5"
+-            y1="7.25"
+-            x2="14.5"
+-            y2="7.25"
++          <path
++            d="M5.4 8 H10.6"
+             stroke="currentColor"
+-            strokeWidth="1.5"
++            strokeWidth="1.4"
+             strokeLinecap="round"
+           />
+         </>

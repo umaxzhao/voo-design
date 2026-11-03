@@ -1,0 +1,20 @@
+diff --git a/src/canvas/agent/session_history.js b/src/canvas/agent/session_history.js
+index 0ad250ec676be0da9925e85d609443694aafd3c7..e2727583d6520db83ab4b88b7335c00442edd653 100644
+--- a/src/canvas/agent/session_history.js
++++ b/src/canvas/agent/session_history.js
+@@ -54,12 +54,12 @@ export function deleteSessionFromList(sessions, sessionId) {
+   return sessions.filter((session) => session.id !== sessionId);
+ }
+ 
+-/** Rename one saved conversation without changing its transcript or order. */
+ export function renameSessionInList(sessions, sessionId, title) {
+-  const nextTitle = String(title ?? "").trim();
++  const normalizedTitle = String(title ?? "").trim();
++  if (!normalizedTitle) return sessions;
+   return sessions.map((session) =>
+     session.id === sessionId
+-      ? { ...session, title: nextTitle, updatedAt: Date.now() }
++      ? { ...session, title: normalizedTitle, updatedAt: Date.now() }
+       : session,
+   );
+ }

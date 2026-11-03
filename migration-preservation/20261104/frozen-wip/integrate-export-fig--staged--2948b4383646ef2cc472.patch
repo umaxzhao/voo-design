@@ -1,0 +1,14 @@
+diff --git a/tests/e2e/titlebar-file-actions.e2e.mjs b/tests/e2e/titlebar-file-actions.e2e.mjs
+index 1442f3fd86bd14341fec06faac5efed7061c6369..68faa0a147825f88a8a14ec509b8ef795481bb50 100644
+--- a/tests/e2e/titlebar-file-actions.e2e.mjs
++++ b/tests/e2e/titlebar-file-actions.e2e.mjs
+@@ -113,7 +113,8 @@ await withEditorBrowser(
+     );
+     const shareTrigger = bar.getByRole("button", { name: "Share", exact: true });
+     await shareTrigger.click();
+-    const shareDialog = bar.getByRole("dialog", { name: "Share", exact: true });
++    // Global popovers are portaled outside the title bar to stay above canvas.
++    const shareDialog = page.getByRole("dialog", { name: "Share", exact: true });
+     await shareDialog.waitFor({ state: "visible" });
+     const shareBounds = await shareDialog.boundingBox();
+     assert.ok(shareBounds, "the share dialog should have a visible box");
