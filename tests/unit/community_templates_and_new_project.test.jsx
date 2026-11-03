@@ -233,7 +233,7 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("p-4 lg:p-8");
     expect(html).toContain("grid grid-cols-1 sm:grid-cols-3");
     expect(html).toContain("whitespace-nowrap");
-    expect(html).toContain('role="radiogroup"');
+    expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain("prompt-composer relative");
     expect(html).toContain("min-w-0");
   });
@@ -259,11 +259,13 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(main[0]).toContain("overflow-y-auto");
   });
 
-  it("renders 8 design types directly on home with radiogroup and leaves other settings in dialog", () => {
+  it("keeps generation settings behind one advanced entry", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
-    expect(html).toContain('role="radiogroup"');
-    const radios = html.match(/role="radio"/g) ?? [];
-    expect(radios).toHaveLength(8);
+    expect(html).toContain('aria-label="生成设置"');
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain('data-advanced-open="false"');
+    expect(html).not.toContain('role="radiogroup"');
+    expect(html).not.toContain('role="radio"');
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {

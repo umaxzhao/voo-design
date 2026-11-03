@@ -31,15 +31,14 @@ function visibleText(node) {
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 describe("title bar actions", () => {
-  it.each([false, true])("gates welcome import/new on action readiness=%s", ready => {
+  it.each([false, true])("gates welcome import while queued New remains available (readiness=%s)", ready => {
     state.welcomeOpen = true;
     state.welcomeActionsReady = ready;
     vi.stubGlobal("window", {});
     try {
       const actions = buttons(AppTitleBar());
-      for (const title of ["titlebar.openTitle", "welcome.header.new"]) {
-        expect(actions.find(button => button.props.title === title).props.disabled).toBe(!ready);
-      }
+      expect(actions.find(button => button.props.title === "titlebar.openTitle").props.disabled).toBe(!ready);
+      expect(Boolean(actions.find(button => button.props.title === "welcome.header.new").props.disabled)).toBe(false);
       state.welcomeOpen = false;
       const editing = buttons(AppTitleBar());
       expect(editing.find(button => button.props.title === "titlebar.openTitle").props.disabled).toBe(false);
