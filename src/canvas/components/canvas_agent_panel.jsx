@@ -137,7 +137,8 @@ export default function CanvasAgentPanel({ onClose }) {
   const checkExtension = useCallback(async () => {
     setExtensionStatus(EXTENSION_STATUS.CHECKING);
     try {
-      const status = await probeExtensionStatus();
+      const res = await probeExtensionStatus();
+      const status = res?.status || EXTENSION_STATUS.UNKNOWN;
       setExtensionStatus(status);
       return status;
     } catch {
@@ -168,7 +169,7 @@ export default function CanvasAgentPanel({ onClose }) {
       if (isWebImageModel(imgModel)) {
         const route = imgModel.includes("gemini") ? "gemini" : "chatgpt";
         setExtensionRoute(route);
-        const status = await probeExtensionStatus();
+        const { status } = await probeExtensionStatus();
         setExtensionStatus(status);
         if (status !== EXTENSION_STATUS.READY) {
           setExtensionDialogOpen(true);
@@ -190,7 +191,7 @@ export default function CanvasAgentPanel({ onClose }) {
       if (isWebImageModel(modelId)) {
         const route = modelId.includes("gemini") ? "gemini" : "chatgpt";
         setExtensionRoute(route);
-        const status = await probeExtensionStatus();
+        const { status } = await probeExtensionStatus();
         setExtensionStatus(status);
         if (status !== EXTENSION_STATUS.READY) {
           setExtensionDialogOpen(true);

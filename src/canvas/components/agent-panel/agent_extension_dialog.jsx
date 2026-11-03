@@ -58,6 +58,12 @@ export default function AgentExtensionDialog({
           color: "bg-amber-500/15 text-amber-300 border-amber-500/30",
           icon: AlertCircle,
         };
+      case EXTENSION_STATUS.TIMEOUT:
+        return {
+          label: t("agent.extension.statusTimeout") || "检测超时 (Chrome 扩展无响应)",
+          color: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+          icon: AlertCircle,
+        };
       case EXTENSION_STATUS.CHECKING:
         return {
           label: t("agent.extension.statusChecking") || "检测扩展中…",
@@ -165,7 +171,7 @@ export default function AgentExtensionDialog({
 
         {/* Path / Folder Action */}
         <div className="flex items-center gap-2">
-          {isDesktop ? (
+          {isDesktop && typeof window.vooDesktop?.revealExtensionFolder === "function" ? (
             <button
               type="button"
               onClick={handleOpenFolder}

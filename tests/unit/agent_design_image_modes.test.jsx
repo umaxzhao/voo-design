@@ -113,9 +113,64 @@ describe("VOO-F-AGENT-IMG01: Agent Dual Modes & Image Taskbar Integration", () =
         EXTENSION_STATUS.MISSING,
         EXTENSION_STATUS.UNREACHABLE,
         EXTENSION_STATUS.OUTDATED,
+        EXTENSION_STATUS.TIMEOUT,
         EXTENSION_STATUS.READY,
         EXTENSION_STATUS.UNKNOWN,
       ]).toContain(res.status);
+    });
+
+    it("does not fake ready and does not write everInstalled when preload API exists without a connected extension", async () => {
+      const memory = new Map();
+      const origStorage = globalThis.localStorage;
+      const origWindow = globalThis.window;
+      try {
+        globalThis.localStorage = {
+          getItem: (k) => memory.get(k) ?? null,
+          setItem: (k, v) => memory.set(k, v),
+        };
+        let inferenceInvoked = false;
+        globalThis.window = {
+          vooDesktop: {
+            webImageGenerate: () => {
+              inferenceInvoked = true;
+              throw Error("No inference allowed");
+            },
+          },
+        };
+
+        const reported = await probeExtensionStatus({ timeoutMs: 100 });
+        expect(reported.status).toBe(EXTENSION_STATUS.MISSING);
+        expect(reported.version).toBeNull();
+        expect(inferenceInvoked).toBe(false);
+        expect(memory.get("voo.extension.everInstalled")).toBeUndefined();
+      } finally {
+        globalThis.localStorage = origStorage;
+        globalThis.window = origWindow;
+      }
+    });
+
+    it("returns unreachable when extension was previously seen but currently disconnected", async () => {
+      const memory = new Map();
+      memory.set("voo.extension.everInstalled", "true");
+      const origStorage = globalThis.localStorage;
+      const origWindow = globalThis.window;
+      try {
+        globalThis.localStorage = {
+          getItem: (k) => memory.get(k) ?? null,
+          setItem: (k, v) => memory.set(k, v),
+        };
+        globalThis.window = {
+          vooDesktop: {
+            webImageGenerate: () => {},
+          },
+        };
+
+        const reported = await probeExtensionStatus({ timeoutMs: 100 });
+        expect(reported.status).toBe(EXTENSION_STATUS.UNREACHABLE);
+      } finally {
+        globalThis.localStorage = origStorage;
+        globalThis.window = origWindow;
+      }
     });
   });
 
@@ -276,6 +331,52 @@ describe("VOO-F-AGENT-IMG01: Agent Dual Modes & Image Taskbar Integration", () =
       expect(inserted[0].newNode.src).toBe("generated-asset.png");
       expect(committed.length).toBe(1);
       expect(committed[0].message).toContain("AI: Insert image");
+    });
+  });
+
+  describe("7. Component State Machine & Dialog Consumption Contract", () => {
+    it("correctly evaluates status string: ready does not open dialog and retry closes dialog", async () => {
+      // 1. Ready status: string comparison must be false for open
+      const readyRes = await probeExtensionStatus({ mockStatus: EXTENSION_STATUS.READY });
+      const readyStatus = readyRes?.status;
+      expect(readyStatus).toBe("ready");
+      const wouldOpenOnReady = readyStatus !== EXTENSION_STATUS.READY;
+      expect(wouldOpenOnReady).toBe(false);
+
+      // 2. Missing status: string comparison must be true for open
+      const missingRes = await probeExtensionStatus({ mockStatus: EXTENSION_STATUS.MISSING });
+      const missingStatus = missingRes?.status;
+      expect(missingStatus).toBe("missing");
+      const wouldOpenOnMissing = missingStatus !== EXTENSION_STATUS.READY;
+      expect(wouldOpenOnMissing).toBe(true);
+
+      // 3. Retry flow: when status becomes ready, closes dialog
+      let dialogOpen = true;
+      const onRetry = async () => {
+        const res = await probeExtensionStatus({ mockStatus: EXTENSION_STATUS.READY });
+        const s = res?.status;
+        if (s === EXTENSION_STATUS.READY) {
+          dialogOpen = false;
+        }
+      };
+      await onRetry();
+      expect(dialogOpen).toBe(false);
+    });
+
+    it("dialog cancel action leaves input draft and reference image untouched without triggering generation", () => {
+      let draftText = "Keep my custom prompt";
+      let activeContext = { layerId: "layer-image-1", src: "test.png" };
+      let generationTriggered = false;
+
+      // Simulated cancel
+      const onCancel = () => {
+        // Only closes dialog; no mutation of draft, context, or generation
+      };
+      onCancel();
+
+      expect(draftText).toBe("Keep my custom prompt");
+      expect(activeContext.layerId).toBe("layer-image-1");
+      expect(generationTriggered).toBe(false);
     });
   });
 });

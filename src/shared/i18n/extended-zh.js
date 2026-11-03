@@ -2344,6 +2344,7 @@ export default {
   "agent.extension.statusReady": "扩展已就绪",
   "agent.extension.statusUnreachable": "已安装但未连接 (请检查 Chrome 是否运行及扩展是否启用)",
   "agent.extension.statusOutdated": "扩展版本需更新",
+  "agent.extension.statusTimeout": "检测超时 (Chrome 扩展无响应)",
   "agent.extension.statusChecking": "正在检测扩展连接…",
   "agent.extension.statusMissing": "未检测到扩展 (需加载本地包)",
   "agent.extension.stepsTitle": "安装与连接步骤：",

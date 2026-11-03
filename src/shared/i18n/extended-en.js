@@ -2419,6 +2419,7 @@ export default {
   "agent.extension.statusReady": "Extension is ready",
   "agent.extension.statusUnreachable": "Installed but not connected (check if Chrome is running and extension is enabled)",
   "agent.extension.statusOutdated": "Extension update required",
+  "agent.extension.statusTimeout": "Detection timed out (extension not responding)",
   "agent.extension.statusChecking": "Probing extension connection…",
   "agent.extension.statusMissing": "Extension not detected (load unpacked package)",
   "agent.extension.stepsTitle": "Setup steps:",

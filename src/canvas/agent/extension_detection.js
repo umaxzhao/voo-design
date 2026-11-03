@@ -19,6 +19,7 @@ export const EXTENSION_STATUS = Object.freeze({
   MISSING: "missing",
   UNREACHABLE: "unreachable",
   OUTDATED: "outdated",
+  TIMEOUT: "timeout",
   CHECKING: "checking",
   UNKNOWN: "unknown",
 });
@@ -84,52 +85,69 @@ export function isExtensionCompatible(extensionVersion) {
  * @param {string} [options.mockStatus] Injected status for testing
  * @returns {Promise<{ status: string, version: string | null, error?: string }>}
  */
-export async function probeExtensionStatus({ timeoutMs = 1500, mockStatus = null } = {}) {
+export async function probeExtensionStatus(options = {}) {
+  const opts = typeof options === "number" ? { timeoutMs: options } : (options || {});
+  const { timeoutMs = 1500, mockStatus = null } = opts;
+
   // Test hook override
   if (mockStatus) {
-    return { status: mockStatus, version: mockStatus === EXTENSION_STATUS.READY ? "0.1.0" : null };
+    if (mockStatus === EXTENSION_STATUS.READY) {
+      recordExtensionSeen("0.1.0");
+      return { status: EXTENSION_STATUS.READY, version: "0.1.0" };
+    }
+    return { status: mockStatus, version: null };
   }
   if (typeof globalThis !== "undefined" && globalThis.__VOO_TEST_EXTENSION_STATUS__) {
     const status = globalThis.__VOO_TEST_EXTENSION_STATUS__;
-    return { status, version: status === EXTENSION_STATUS.READY ? "0.1.0" : null };
+    if (status === EXTENSION_STATUS.READY) {
+      recordExtensionSeen("0.1.0");
+      return { status: EXTENSION_STATUS.READY, version: "0.1.0" };
+    }
+    return { status, version: null };
   }
 
   // 1. Electron Desktop Environment
   if (typeof window !== "undefined" && window.vooDesktop) {
-    // Check if webImageGenerate bridge method exists
-    if (!window.vooDesktop.webImageGenerate) {
-      return { status: EXTENSION_STATUS.OUTDATED, version: null, error: "needsDesktopApp" };
-    }
-
-    // In desktop, extension connects via local loopback bridge
-    // If extension guide is available:
-    if (typeof window.vooDesktop.extensionGuide === "function") {
+    // If desktop exposes an explicit extension status/probe API:
+    if (typeof window.vooDesktop.extensionStatus === "function") {
       try {
-        const guide = await Promise.race([
-          window.vooDesktop.extensionGuide(),
+        const res = await Promise.race([
+          window.vooDesktop.extensionStatus(),
           new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs)),
         ]);
-        if (!guide?.manifestPresent) {
-          return { status: hasSeenExtension() ? EXTENSION_STATUS.UNREACHABLE : EXTENSION_STATUS.MISSING, version: null };
+        if (res?.connected) {
+          const version = res.version || "0.1.0";
+          recordExtensionSeen(version);
+          return isExtensionCompatible(version)
+            ? { status: EXTENSION_STATUS.READY, version }
+            : { status: EXTENSION_STATUS.OUTDATED, version };
         }
-      } catch {
-        // Timeout or error reading guide
+      } catch (err) {
+        if (err?.message === "timeout") {
+          return { status: EXTENSION_STATUS.TIMEOUT, version: null };
+        }
+        return { status: EXTENSION_STATUS.UNKNOWN, version: null, error: err?.message };
       }
     }
 
-    // If extension was previously seen or verified:
-    recordExtensionSeen("0.1.0");
-    return { status: EXTENSION_STATUS.READY, version: "0.1.0" };
+    // Notice: preload exposes webImageGenerate unconditionally, but that does NOT mean
+    // a real Chrome extension is currently installed or connected. Do NOT call webImageGenerate
+    // (which triggers inference/launch) and do NOT fake ready or write everInstalled.
+    if (hasSeenExtension()) {
+      return { status: EXTENSION_STATUS.UNREACHABLE, version: null };
+    }
+    return { status: EXTENSION_STATUS.MISSING, version: null };
   }
 
-  // 2. Web Browser Environment
-  if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+  // 2. Web Browser Environment with Chrome messaging
+  if (typeof chrome !== "undefined" && typeof chrome.runtime?.sendMessage === "function") {
     try {
       const { detectBridge } = await import("../bridge.js");
-      const bridge = await Promise.race([
-        detectBridge({ timeoutMs }),
-        new Promise((resolve) => setTimeout(() => resolve(null), timeoutMs)),
-      ]);
+      const timer = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), timeoutMs)
+      );
+
+      const bridge = await Promise.race([detectBridge({ timeoutMs }), timer]);
 
       if (bridge) {
         const version = bridge.extensionVersion || "0.1.0";
@@ -139,12 +157,15 @@ export async function probeExtensionStatus({ timeoutMs = 1500, mockStatus = null
         }
         return { status: EXTENSION_STATUS.READY, version };
       }
-    } catch {
-      // Bridge probe threw
+    } catch (err) {
+      if (err?.message === "timeout") {
+        return { status: EXTENSION_STATUS.TIMEOUT, version: null };
+      }
+      return { status: EXTENSION_STATUS.UNKNOWN, version: null, error: err?.message };
     }
   }
 
-  // 3. Unreachable vs Missing determination
+  // 3. Fallback: Missing vs Unreachable
   if (hasSeenExtension()) {
     return { status: EXTENSION_STATUS.UNREACHABLE, version: null };
   }
