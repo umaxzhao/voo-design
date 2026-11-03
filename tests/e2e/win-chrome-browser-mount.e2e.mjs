@@ -31,10 +31,13 @@ await withEditorBrowser(
     const welcome = page.locator(".welcome-dashboard");
     await welcome.waitFor({ state: "visible" });
 
-    // Verify store is initialized in welcome state
-    const isWelcome = await page.evaluate(async () => {
+    // Verify store is initialized in welcome state (preload store for synchronous polling)
+    await page.evaluate(async () => {
       const { useDesignStore } = await import("/src/store/design_store.js");
-      return Boolean(useDesignStore.getState().welcomeOpen);
+      window.__useDesignStore = useDesignStore;
+    });
+    const isWelcome = await page.evaluate(() => {
+      return Boolean(window.__useDesignStore.getState().welcomeOpen);
     });
     assert.equal(isWelcome, true, "Real browser initial state must be welcomeOpen === true");
     assert.equal(await page.evaluate(() => Boolean(window.__vooEditor)), false, "Editor must not be initialized yet");
@@ -103,15 +106,14 @@ await withEditorBrowser(
     assert.equal(validResult.defaultPrevented, true, "Valid Ctrl+N must prevent browser default");
 
     // Wait for the document creation to finish and editor to mount
-    await page.waitForFunction(async () => {
-      const { useDesignStore } = await import("/src/store/design_store.js");
-      const state = useDesignStore.getState();
-      return Boolean(window.__vooEditor && !state.welcomeOpen);
-    }, null, { timeout: 30000 });
+    await page.waitForFunction(
+      () => Boolean(window.__vooEditor && !window.__useDesignStore.getState().welcomeOpen),
+      null,
+      { timeout: 30000 }
+    );
 
-    const docsCount = await page.evaluate(async () => {
-      const { useDesignStore } = await import("/src/store/design_store.js");
-      return useDesignStore.getState().openDocuments.length;
+    const docsCount = await page.evaluate(() => {
+      return window.__useDesignStore.getState().openDocuments.length;
     });
     assert.equal(docsCount, 1, "Exactly one document must be created by Ctrl+N");
 
