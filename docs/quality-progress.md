@@ -1,5 +1,34 @@
 # 项目检查总进度
 
+## 文本 40k 选框墨迹包络与 W3C 坐标规范对齐（2026-11-04）
+
+- 独立安全副本 `smoke-core-bede797a-supp-20261104T014500Z`，基线 `265f3531a4fba16d5c2033d61832b627cb03a28d`（基于 `bede797a`），无 `alternates`，纯本地依赖。
+- 真实缺陷复现：UF-TEXT-BOUNDS-20261103，暗色画布上 12px Inter 的文本 "40k" 选框锁定在 18×15，字母 'k' 的右斜笔画突围至绿框外侧；根因为 fallback 字体度量锁定、排版 advance 与视觉 ink 混淆、以及 W3C 规范中 `actualBoundingBoxLeft`（正值表示基线锚点向左延伸距离）的符号反例。
+- 核心修复：
+  1. `src/canvas/editor/chrome_selection.js`：尺寸芯片优先读取 `node.effectiveLocal`，确保外框与尺寸标签（如 22 × 15）同步；
+  2. `src/canvas/editor/editor_engine_init.js` 与 `editor_engine.js`：补全 `document.fonts.addEventListener("loadingdone")` 的解绑机制并在引擎 dispose 时彻底注销，字体就绪后执行非破坏性自适应重测，同步 `appliedSnapshot`，不产生多余脏标记与历史记录；
+  3. `src/canvas/editor/image_alpha_bounds.js`：导出 `getTextVisualBounds`，严格遵循 W3C Canvas2D TextMetrics 标准计算每行真实墨迹边界 `[localAnchorX - actualBoundingBoxLeft - strokeHalf, localAnchorX + actualBoundingBoxRight + strokeHalf]`，统筹居中/右对齐偏移、多行及描边，为 auto-size 文本赋予精确的 `effectiveLocal` 双向外接矩形；严格隔离固定宽（`boxWidth > 0`）文本，保留固定宽换行契约。
+- 验证记录（实测限定，不继承非目标范围）：
+  - 纯数学与几何单测：`tests/unit/text_visual_bounds_math.test.js`（6/6 pass，涵盖 W3C 符号向左延伸、40k 场景、居中对齐、描边扩展、固定宽隔离、盒内零溢出）；
+  - 冷重开签名保持单测：`tests/unit/cold_reopen_text_geometry.test.js`（6/6 pass，验证 persistedTextSignatures 拦截 0px 尺寸重测漂移）；
+  - 核心排版与初始化回归单测：`tests/unit/text_layout_cache.test.js`（14/14 pass）、`tests/unit/editor_engine_init.test.js` 与 `editor_engine_init_fonts.test.js`（5/5 pass）；
+  - 浏览器 E2E 隔离 ROI 像素判定：`tests/e2e/test-text-bounds-40k-verification.mjs`：
+    - 实测局部 20px padding ROI 内针对限定颜色阈值（`r > 100, g > 105, b > 115`，排除 `rgb(82, 82, 82)` 暗色底）的横向像素断言通过：`frameMinX: 19`, `frameMaxX: 203`, `textMinX: 27`, `textMaxX: 197`，横向左右留有 8px 与 6px 内衬裕量；
+    - Node D Italic 断言：通过 `box.x <= node.x` 与 `box.width >= node.width`，未在此处深入断言真实斜体负 bearing 字形墨迹；
+    - 历史变更测试：通过 `e.undo()` 与 `e.redo()` API 接口调用断言坐标恢复，未注入操作系统底层物理键盘事件；
+    - 保存回环测试：通过同浏览器页面内 `serialiseDocument` 与 `e.open({ savedDoc })` 往返并断言 `width >= 21.9`，未启动新独立进程测试文件系统真冷开，亦未断言全局多节点几何严格 0px。
+- 静态检查与 Lint 执行记录：
+  - `node scripts/check-design.mjs`：真实 exit 0（1479 文件匹配 Design.md）；
+  - `node scripts/editor-checks.mjs --check`：真实 exit 0（registration: valid）；
+  - 通用 Prettier 格式化：项目 package.json 未声明独立 prettier bin，未单独执行，实事求是记录为未跑。
+- 未验范围与保留边界：
+  - 物理键盘快捷键（Meta+Z/Ctrl+Z）未测；
+  - 独立新浏览器进程/物理文件冷开未测；
+  - 真实字体非空 FontFace 生效与字形级严格负 bearing 未做深入断言；
+  - ROI 像素检查仅为指定颜色阈值的横向包围，未覆盖全部垂直墨迹与任意复杂字形；
+  - 外部依赖、其他操作系统与未跑套件保持未验。
+- 外部证据归档：测试日志与独立截图证据完整固化在外部专用目录 `evidence:text-bounds-fix-e0-20261104T0400Z (local evidence only; logs and screenshots are not included in this branch)`，不污染 Git 源码树；保持本地任务分支，无 push/deploy/release/CI。
+
 ## 首页窄屏菜单显示与实心图标（2026-11-03）
 
 - 独立 `voo-ui-welcome-menu`，基线 `a6591d86`。最新截图 `libfile_275c0c343ca881918672479a013e34e5` 已通过官方Library物化并实看。核实现有断点768px，旧按钮无宽屏隐藏限制、使用lucide线描，桌面可记忆侧栏折叠。

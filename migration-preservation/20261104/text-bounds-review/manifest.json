@@ -1,0 +1,75 @@
+{
+  "kind": "Reviewed text fix derivative; not original historical commits or new functional acceptance.",
+  "baseCommit": "265f3531a4fba16d5c2033d61832b627cb03a28d",
+  "sourceFixCommit": "a022b5bca0d2881d10eb447a7c52dec7d91856a6",
+  "sourceDocumentationCommit": "aad13fb455a723cd4fd306b30916ac39df275ac1",
+  "sourceCommitsAreNotAncestorsOfDerivative": true,
+  "records": [
+    {
+      "path": "src/canvas/editor/editor_engine_init.js",
+      "sourceCommit": "aad13fb455a723cd4fd306b30916ac39df275ac1",
+      "sourceBlob": "f16dc6f30e71a62387e156a4e9ab702d31c972c3",
+      "sourceSha256": "2eb3b8cdb0506ab7e94fc45b0d9af0b57f8a2122f88e531ed4f8bdd676e9e90f",
+      "preservedSha256": "2eb3b8cdb0506ab7e94fc45b0d9af0b57f8a2122f88e531ed4f8bdd676e9e90f",
+      "byteIdenticalToSource": true,
+      "transformations": []
+    },
+    {
+      "path": "tests/e2e/test-text-bounds-40k-verification.mjs",
+      "sourceCommit": "aad13fb455a723cd4fd306b30916ac39df275ac1",
+      "sourceBlob": "b69271477ad0f92bd5cb731509dee364c4f0ecd7",
+      "sourceSha256": "017925919e9382e3561d8d62b82877fdb4334f4983faf6d1ae96055bb77d7f0e",
+      "preservedSha256": "017925919e9382e3561d8d62b82877fdb4334f4983faf6d1ae96055bb77d7f0e",
+      "byteIdenticalToSource": true,
+      "transformations": []
+    },
+    {
+      "path": "scripts/editor-module-catalog.mjs",
+      "sourceCommit": "aad13fb455a723cd4fd306b30916ac39df275ac1",
+      "sourceBlob": "16abc0b2712209ea90856cbaa3f8b32059b9927a",
+      "sourceSha256": "a3410b6b31e79560a9e4b93888aaa1b93fdf85d7e53c0412fcc0d9580e4bc0f4",
+      "preservedSha256": "a3410b6b31e79560a9e4b93888aaa1b93fdf85d7e53c0412fcc0d9580e4bc0f4",
+      "byteIdenticalToSource": true,
+      "transformations": []
+    },
+    {
+      "path": "docs/quality-progress.md",
+      "sourceCommit": "aad13fb455a723cd4fd306b30916ac39df275ac1",
+      "sourceBlob": "a619762152534f470d9fe2c945dcb12df56160ac",
+      "sourceSha256": "51aaa063b3d2c3a155753f12934dff20b97de08ec8f7b10a9e00fd75f69680c6",
+      "preservedSha256": "8c2c01057a9b9b45b6016f2794dead1b6e35cec6fe0d35c59df1b285ef0cc833",
+      "byteIdenticalToSource": false,
+      "transformations": [
+        {
+          "kind": "Replace one newly added personal absolute evidence path with relative evidence identifier and explicit non-transfer notice.",
+          "occurrences": 1
+        }
+      ]
+    }
+  ],
+  "excluded": [
+    "Uncommitted supplementary test script",
+    "Original commits and their local evidence path",
+    "Local test logs and screenshots",
+    "Trace and private checkpoints"
+  ],
+  "validation": {
+    "ownerReportedUnitAssertions": 31,
+    "context": "Owner reports tested dirty content matches a022; no independently captured execution tree hash.",
+    "browserRoi": "Threshold-selected horizontal bounds only.",
+    "history": "Engine API calls only.",
+    "roundtrip": "Same-page serialization/open only.",
+    "open": [
+      "Actual loaded Inter face/source",
+      "Browser keyboard shortcuts",
+      "Download and independent new-browser import",
+      "OS physical keyboard and native GUI",
+      "Strict negative bearing",
+      "All vertical and antialias ink pixels"
+    ],
+    "prettierAttemptExit": 127,
+    "standaloneFormatting": "Unavailable; not passed",
+    "eslint": "No pass evidence",
+    "testsExecutedByPreservation": false
+  }
+}

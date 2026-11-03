@@ -34,6 +34,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_hooks/use_editor_apply.js", "src/canvas/components/image_editor.jsx",
       "tests/unit/save_formats.test.js", "tests/unit/export_filename.test.js", "tests/unit/voo_file_save.test.js",
       "src/canvas/editor/editor_engine_history*", "src/canvas/editor/editor_undo_actions.js", "src/canvas/undo*", "tests/unit/coalesced_update_history.test.js", "src/canvas/editor/psd_export.js", "tests/unit/psd_frame_fidelity.test.js", "scripts/real-browser-export-psd.mjs",
+      "src/canvas/editor/editor_engine_init*",
     ],
     related: ["workspace","layers","images","platform"],
     features: [
@@ -173,6 +174,7 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
       "src/canvas/components/editor_properties/text*", "src/canvas/components/font_picker.jsx", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
+      "src/canvas/editor/image_alpha_bounds.js", "tests/unit/text_visual_bounds_math.test.js", "tests/e2e/*text-bounds*", "tests/e2e/test-boxwidth.mjs", "tests/e2e/find-18x15.mjs", "tests/e2e/render-and-screenshot.mjs", "tests/e2e/test-ink-analysis.mjs",
     ],
     related: ["selection","layout","compositing","documents","platform"],
     features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],

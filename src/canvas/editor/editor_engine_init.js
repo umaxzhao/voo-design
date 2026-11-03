@@ -122,15 +122,13 @@ export function createEngineInitController({
     if (!currentDoc) return;
     const wasClean = getAppliedSnapshot() === snapshotDoc();
     const measured = measureTextNodes(currentDoc, { force: true });
-    if (measured !== currentDoc) {
-      setDoc(measured, { commit: false });
-      if (wasClean) {
-        setAppliedSnapshot(snapshotDoc());
-      }
-      incDocVersion?.();
-      requestRender();
-      notify();
+    setDoc(measured, { commit: false });
+    if (wasClean) {
+      setAppliedSnapshot(snapshotDoc());
     }
+    incDocVersion?.();
+    requestRender();
+    notify();
   }
 
   const handleFontsDone = () => {

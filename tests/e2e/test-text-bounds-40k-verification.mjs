@@ -264,16 +264,14 @@ await withEditorBrowser(async ({ page }) => {
           if (x < frameMinX) frameMinX = x;
           if (x > frameMaxX) frameMaxX = x;
         }
-        // Grey text
+        // Grey text (#9ca3af, distinct from dark background rgb(82, 82, 82))
         if (
-          r > 80 &&
-          r < 180 &&
-          g > 80 &&
+          r > 100 &&
+          r < 170 &&
+          g > 105 &&
           g < 180 &&
-          b > 80 &&
-          b < 190 &&
-          Math.abs(r - g) < 25 &&
-          Math.abs(g - b) < 25
+          b > 115 &&
+          b < 190
         ) {
           textPixelCount++;
           if (x < textMinX) textMinX = x;
