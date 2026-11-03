@@ -34,6 +34,8 @@ await withEditorBrowser(
     // Verify store is initialized in welcome state
     const isWelcome = await page.evaluate(async () => {
       const { useDesignStore } = await import("/src/store/design_store.js");
+      // Preload the fixture observer once so subsequent polling stays synchronous.
+      window.__winChromeMountStore = useDesignStore;
       return Boolean(useDesignStore.getState().welcomeOpen);
     });
     assert.equal(isWelcome, true, "Real browser initial state must be welcomeOpen === true");
@@ -103,9 +105,8 @@ await withEditorBrowser(
     assert.equal(validResult.defaultPrevented, true, "Valid Ctrl+N must prevent browser default");
 
     // Wait for the document creation to finish and editor to mount
-    await page.waitForFunction(async () => {
-      const { useDesignStore } = await import("/src/store/design_store.js");
-      const state = useDesignStore.getState();
+    await page.waitForFunction(() => {
+      const state = window.__winChromeMountStore.getState();
       return Boolean(window.__vooEditor && !state.welcomeOpen);
     }, null, { timeout: 30000 });
 
