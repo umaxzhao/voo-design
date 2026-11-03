@@ -143,6 +143,192 @@ describe("connectorPatchDirs / rewriteConnectorPatch", () => {
     fs.writeFileSync(path.join(dir, "cordis.patch.yml"), "- insert:\n    - id: nothing\n");
     expect(() => rewriteConnectorPatch({ connectorPath: dir })).toThrow(/baked install path/);
   });
+
+  describe("WIN-YAML-01: virtual filesystem contract for Windows and escaped paths", () => {
+    // Virtual in-memory filesystem helper — explicitly labeled as a virtual FS contract,
+    // not native Windows I/O.
+    function createVirtualFs(filePath, initialContent) {
+      const storage = { [filePath]: initialContent };
+      return {
+        files: storage,
+        readFileSync(target) {
+          if (storage[target] != null) return storage[target];
+          const backslashPath = target.replace(/\//g, "\\");
+          if (storage[backslashPath] != null) return storage[backslashPath];
+          const slashPath = target.replace(/\\/g, "/");
+          if (storage[slashPath] != null) return storage[slashPath];
+          const err = new Error(`ENOENT: no such file or directory, open '${target}'`);
+          err.code = "ENOENT";
+          throw err;
+        },
+        writeFileSync(target, content) {
+          storage[target] = String(content);
+        },
+      };
+    }
+
+    // Parses a YAML scalar value to verify true syntax validity, not just raw substring presence
+    function parseYamlScalar(line) {
+      let val = line.trim();
+      if (val.startsWith("- ")) val = val.slice(2).trim();
+      else if (val.includes(":")) val = val.replace(/^[^:]+:\s*/, "").trim();
+      if (val.startsWith('"')) return JSON.parse(val);
+      if (val.startsWith("'") && val.endsWith("'")) return val.slice(1, -1);
+      return val;
+    }
+
+    it("rewrites Windows paths with JSON double-quotes, escaped backslashes and spaces, with idempotency", () => {
+      const bakedWin = "C:\\Program Files\\Build Machine\\VOO Design\\connector";
+      const installWin = "C:\\Users\\Jane Doe\\AppData\\Roaming\\VOO Design\\connectors\\voo";
+      const patchWinDouble = [
+        "- insert:",
+        "    - id: mcp-voo",
+        "      name: \"@deepseek-ai/dsh-mcp-client\"",
+        "      config:",
+        "        serverName: voo",
+        "        transport: stdio",
+        "        command: node",
+        "        args:",
+        `          - ${JSON.stringify(bakedWin + "\\scripts\\mcp-server.mjs")}`,
+        `        cwd: ${JSON.stringify(bakedWin)}`,
+        "        toolCallTimeoutMs: 65000",
+        "        failOnStartupError: false",
+        "",
+      ].join("\n");
+
+      const patchFile = installWin + "\\cordis.patch.yml";
+      const vfs = createVirtualFs(patchFile, patchWinDouble);
+
+      // 1. Rewrite execution
+      const result = rewriteConnectorPatch({
+        connectorPath: installWin,
+        fs: vfs,
+      });
+      expect(result.rewritten).toBe(true);
+
+      // 2. Structural & syntactic validation (not just string inclusion)
+      const writtenContent = vfs.files[patchFile];
+      expect(writtenContent).not.toContain(bakedWin);
+
+      const cwdLine = writtenContent.split("\n").find((l) => l.includes("cwd:"));
+      expect(cwdLine).toBeDefined();
+      const parsedCwd = parseYamlScalar(cwdLine);
+      expect(parsedCwd).toBe(installWin);
+
+      const argsLine = writtenContent.split("\n").find((l) => l.includes("- \"C:"));
+      expect(argsLine).toBeDefined();
+      const parsedArgs = parseYamlScalar(argsLine);
+      expect(parsedArgs).toBe(installWin + "\\scripts\\mcp-server.mjs");
+
+      // Verify valid YAML double-quote escape syntax: backslashes must be doubled
+      expect(writtenContent).toContain(`cwd: ${JSON.stringify(installWin)}`);
+      expect(writtenContent).toContain(
+        JSON.stringify(installWin + "\\scripts\\mcp-server.mjs"),
+      );
+
+      // 3. Idempotency: a second run does not change results
+      const secondRun = rewriteConnectorPatch({
+        connectorPath: installWin,
+        fs: vfs,
+      });
+      expect(secondRun.rewritten).toBe(false);
+      expect(vfs.files[patchFile]).toBe(writtenContent);
+    });
+
+    it("rewrites Windows paths using forward-slash formatting and spaces", () => {
+      const bakedSlash = "C:/Program Files/Build Machine/VOO Design/connector";
+      const installSlash = "C:/Users/Jane Doe/AppData/Roaming/VOO Design/connectors/voo";
+      const patchSlash = [
+        "- insert:",
+        "    - id: mcp-voo",
+        "      config:",
+        "        args:",
+        `          - "${bakedSlash}/scripts/mcp-server.mjs"`,
+        `        cwd: "${bakedSlash}"`,
+        "",
+      ].join("\n");
+
+      const patchFile = installSlash + "/cordis.patch.yml";
+      const vfs = createVirtualFs(patchFile, patchSlash);
+
+      const result = rewriteConnectorPatch({
+        connectorPath: installSlash,
+        fs: vfs,
+      });
+      expect(result.rewritten).toBe(true);
+
+      const written = vfs.files[patchFile];
+      const cwdLine = written.split("\n").find((l) => l.includes("cwd:"));
+      expect(parseYamlScalar(cwdLine)).toBe(installSlash);
+    });
+
+    it("rewrites Windows paths using single-quoted formatting", () => {
+      const bakedWin = "C:\\Program Files\\Build Machine\\VOO Design\\connector";
+      const installWin = "C:\\Users\\Jane Doe\\AppData\\Roaming\\VOO Design\\connectors\\voo";
+      const patchSingle = [
+        "- insert:",
+        "    - id: mcp-voo",
+        "      config:",
+        "        args:",
+        `          - '${bakedWin}\\scripts\\mcp-server.mjs'`,
+        `        cwd: '${bakedWin}'`,
+        "",
+      ].join("\n");
+
+      const patchFile = installWin + "\\cordis.patch.yml";
+      const vfs = createVirtualFs(patchFile, patchSingle);
+
+      const result = rewriteConnectorPatch({
+        connectorPath: installWin,
+        fs: vfs,
+      });
+      expect(result.rewritten).toBe(true);
+
+      const written = vfs.files[patchFile];
+      const cwdLine = written.split("\n").find((l) => l.includes("cwd:"));
+      expect(parseYamlScalar(cwdLine)).toBe(installWin);
+    });
+
+    it("handles non-Windows POSIX paths as a baseline control case", () => {
+      const bakedPosix = "/opt/voo-build/connector";
+      const installPosix = "/home/jane/.config/voo/connectors/voo";
+      const patchPosix = [
+        "- insert:",
+        "    - id: mcp-voo",
+        "      config:",
+        "        args:",
+        `          - "${bakedPosix}/scripts/mcp-server.mjs"`,
+        `        cwd: "${bakedPosix}"`,
+        "",
+      ].join("\n");
+
+      const patchFile = installPosix + "/cordis.patch.yml";
+      const vfs = createVirtualFs(patchFile, patchPosix);
+
+      const result = rewriteConnectorPatch({
+        connectorPath: installPosix,
+        fs: vfs,
+      });
+      expect(result.rewritten).toBe(true);
+
+      const written = vfs.files[patchFile];
+      const cwdLine = written.split("\n").find((l) => l.includes("cwd:"));
+      expect(parseYamlScalar(cwdLine)).toBe(installPosix);
+    });
+
+    it("demonstrates the failure mode before the fix on Windows escaped backslash paths", () => {
+      // Demonstrates why next.split(dir).join(connectorPath) fails:
+      // In YAML double-quoted scalars, dir contains double-escaped backslashes ("C:\\\\path").
+      // When dir is parsed as a normal string, it contains single backslashes ("C:\\path").
+      // A naive split(dir) finds 0 matches in next.
+      const bakedWin = "C:\\baked\\connector";
+      const patchContent = `cwd: ${JSON.stringify(bakedWin)}`;
+      // patchContent is: cwd: "C:\\baked\\connector" (literal double backslashes)
+      // bakedWin has single backslashes in memory
+      const naiveSplitMatches = patchContent.split(bakedWin);
+      expect(naiveSplitMatches.length).toBe(1); // 0 replacements performed!
+    });
+  });
 });
 
 describe("installDshConnector (packaged app)", () => {
