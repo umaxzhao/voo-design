@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1';
 const before = process.env.VOO_TABS_BEFORE === '1';
-const shots = join(tmpdir(), "voo-multi-document-tabs");
+const shots = process.env.VOO_TABS_SHOTS || join(tmpdir(), "voo-multi-document-tabs");
 await mkdir(shots, { recursive: true });
 await withEditorBrowser(async ({ page }) => {
   page.setDefaultTimeout(30000);
