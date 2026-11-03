@@ -29,6 +29,14 @@ async function verify(page, label) {
   await page.evaluate(() => { window.__vooEditor.selectExactly([]); window.__vooEditor.setTool("select"); });
   const initial = await snapshot(page);
   const a = worldToScreen(initial, 36, 24), b = worldToScreen(initial, 660, 440);
+  await page.evaluate(id => window.__vooEditor.selectExactly([id]), frameId);
+  const selectedFrameStart = worldToScreen(initial, 80, 80);
+  await drag(page, selectedFrameStart, b);
+  const selectedFrameResult = await snapshot(page);
+  assert.deepEqual(selectedFrameResult.selected, ids.slice(0, 2), `${label}: selected Frame blank drag is marquee`);
+  assert.deepEqual(selectedFrameResult.nodes, initial.nodes, `${label}: selected Frame does not move`);
+  assert.deepEqual(selectedFrameResult.history, initial.history, `${label}: selected Frame marquee adds no history`);
+  await page.evaluate(() => window.__vooEditor.selectExactly([]));
   await drag(page, a, b, `${label}-marquee.png`);
   let after = await snapshot(page);
   assert.deepEqual(after.selected, ids.slice(0, 2), `${label}: exactly A and B`);

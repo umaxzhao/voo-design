@@ -45,6 +45,17 @@ await withEditorBrowser(async ({ page }) => {
     await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 6 }); await page.mouse.up();
     await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
   };
+  const dragLabel = async (id, delta) => {
+    const label = page.locator(`[data-testid="editor-canvas-frame-label"][data-frame-id="${id}"]`);
+    await label.waitFor();
+    const box = await label.boundingBox(); assert.ok(box, "Frame label is a visible move entry");
+    const origin = await client({ x: 0, y: 0 }), target = await client(delta);
+    const screenDelta = { x: target.x - origin.x, y: target.y - origin.y };
+    console.log(JSON.stringify({ frameLabelWorldDelta: delta, screenDelta }));
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + screenDelta.x, box.y + box.height / 2 + screenDelta.y, { steps: 6 });
+    await page.mouse.up(); await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
+  };
   const selectedIds = () => page.evaluate(() => window.__vooEditor.getSelectedIds());
   const pixel = async (point) => { await settled(); return page.evaluate(point => window.__vooEditor.sampleColorAt(point), point); };
   const firstPoint = await client({ x: 116, y: 116 });
@@ -69,20 +80,7 @@ await withEditorBrowser(async ({ page }) => {
   checks.push("dragging the child moves its real pixels independently of its sibling and Frame and undoes once");
 
   await page.evaluate(() => window.__vooEditor.selectExactly([]));
-  const frameLabel = page.locator(`[data-testid="editor-canvas-frame-label"][data-frame-id="${seed.frame}"]`);
-  await frameLabel.waitFor();
-  const labelBox = await frameLabel.boundingBox();
-  assert.ok(labelBox, "Frame label is a visible move entry");
-  const screenOrigin = await client({ x: 0, y: 0 });
-  const screenTarget = await client({ x: 30, y: 20 });
-  const screenDelta = { x: screenTarget.x - screenOrigin.x, y: screenTarget.y - screenOrigin.y };
-  console.log(JSON.stringify({ frameLabelWorldDelta: { x: 30, y: 20 }, screenDelta }));
-  await page.mouse.move(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(labelBox.x + labelBox.width / 2 + screenDelta.x,
-    labelBox.y + labelBox.height / 2 + screenDelta.y, { steps: 6 });
-  await page.mouse.up();
-  await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
+  await dragLabel(seed.frame, { x: 30, y: 20 });
   const frameMove = await page.evaluate(seed => ({ first: window.__vooEditor.getNode(seed.first),
     second: window.__vooEditor.getNode(seed.second), frame: window.__vooEditor.getNode(seed.frame) }), seed);
   assert.deepEqual([frameMove.frame.x, frameMove.frame.y], [30, 20]);
@@ -155,7 +153,7 @@ await withEditorBrowser(async ({ page }) => {
     group("overlap-group", "overlap-moved", 80, 80), rect("overlap-child", "overlap-group", 90, 90),
   ], ["overlap-moved"]);
   const beforeOverlap = await hierarchy(["overlap-moved", "overlap-group", "overlap-child"]);
-  await drag({ x: 310, y: 250 }, { x: 30, y: 20 });
+  await dragLabel("overlap-moved", { x: 30, y: 20 });
   const afterOverlap = await hierarchy(["overlap-moved", "overlap-group", "overlap-child"]);
   console.log(JSON.stringify({ beforeOverlap, afterOverlap }));
   assert.deepEqual(afterOverlap, beforeOverlap.map(n => ({ ...n, x: n.x + 30, y: n.y + 20 })));
