@@ -1,5 +1,34 @@
 # 项目检查总进度
 
+## PSD — JPEG 与 WebP 真实 UI 导出、新进程文件 Chooser 回导、UndoRedo 及冷开验收（2026-11-03）
+
+- **固定基线与提交**：基线 `b8ae8039a291e841f786b29f90af00e4f4c89653`，独立副本 `/Users/tt/Documents/Codex/2026-11-02/task/b8-export-jpg-webp-20261103T083400Z`，验证 Commit `b33e6085f3efb8340b70a2525fd93281d5fb3b60`（Tree `01557fbfdf557f1291640d74710a4ca7980bff56`，clean）。
+- **实测退出码**：`0`（全 4 阶段通过，耗时约 35s）。
+- **实测执行日志与回执路径**：
+  - 日志：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip.log`
+  - 回执：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip-receipt.json`
+  - 详细报告：`/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/REPORT.md`
+- **真实进程与操作链路**：
+  1. **真实 UI 导出（Process 1，Node PID 95584，Browser PID 95599）**：
+     - 点击顶栏导出按钮 `titlebar-export`，唤起 `design-export-dialog`；
+     - 选择 JPEG 格式，下载 `export-test.jpg`（3,915 B，SHA-256 `3e2b492ce949a28eb9a6c4991bd536d7058ccc72b4880b60976e333e11146b30`）；
+     - 选择 WebP 格式，下载 `export-test.webp`（1,388 B，SHA-256 `b4d4b0c3470bb5ca10251f54fa6726324227d977225a245ad9157bccff95f5e2`）。
+  2. **新进程文件 Chooser 回导与像素对比（Process 2，Node PID 95584，Browser PID 95840）**：
+     - 在独立新进程中通过画板右键菜单 `editor-menu-import-media` 触发原生 `filechooser` 分别回导 JPEG 与 WebP；
+     - JPEG 资产：600×400，Painted 240,000，像素哈希 `2819355748`（强制不透明白底保真）；
+     - WebP 资产：600×400，Painted 60,800，像素哈希 `656127927`（透明背景与图层 Alpha 严格保真）。
+  3. **Undo / Redo 历史验证（Process 2，Browser PID 95840）**：
+     - JPEG 执行 Undo 节点清零，Redo 恢复节点且像素哈希严格等于 `2819355748`（`pixelMatch: true`）；
+     - WebP 执行 Undo 节点恢复为 1，Redo 恢复节点且像素哈希严格等于 `656127927`（`pixelMatch: true`）；
+     - 保存工程快照 `reimport-snapshot.zip`（22,595 B，SHA-256 `36f880fcdbd0ce7e4fbf6883f88e334c11e276e3529b6b3709e4a8f2b64a84d6`）。
+  4. **冷启动新进程（Process 3，Node PID 95584，Browser PID 96017）**：
+     - 全新冷启动 Chromium 进程，从 Welcome 仪表盘顶栏 `Import project file` 经真实文件 chooser 打开快照包；
+     - JPEG 与 WebP 资产在冷启动环境下自动水合完成，冷开 JPEG 像素哈希 `2819355748`、WebP 像素哈希 `656127927`，与热态哈希完全一致（`exactMatchWithWarm: true`）。
+- **受限边界**：
+  - macOS arm64 Headless Chromium 1.64.1 自动化端到端实测；Mac 原生图形窗口与 Linux 标记为未测（不以 headless 浏览器冒充原生 OS）；
+  - PID 224（`mac-arm64/VOO Design.app`）未受干扰保持运行；
+  - 产品代码、`ExportSection`、`presets` 与渲染器零修改，无 push、无 CI/Release。
+
 ## LINUX-STYLE01 — scoped opacity repair, 2026-11-03
 
 - Pinned reproduction: `aad8cafc1c415817e3d55e0e1deb6854164abc65`, own standalone clone; fill RGBA `[255,0,0,128]`, overlapping stroke `[85,0,170,192]`. Layer alpha was applied separately per paint. Reuse the existing isolated-style compositor and wrap expanded SVG paint siblings once; own paint opacity is preserved.
