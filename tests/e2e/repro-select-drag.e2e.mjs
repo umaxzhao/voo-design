@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
-const EVIDENCE_DIR =
-  process.env.VOO_REPRO_EVIDENCE_DIR ||
-  "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/repro-marquee-select-b8-20261103";
+const EVIDENCE_DIR = mkdtempSync(editorArtifactPath("repro-select-drag/run-"));
+console.log(`Evidence directory: ${EVIDENCE_DIR}`);
 
 await mkdir(EVIDENCE_DIR, { recursive: true });
 
@@ -28,12 +31,12 @@ await withEditorBrowser(async ({ page, tool }) => {
 
   const matrixReport = {
     matrixRow: "Row 1: Default Select Empty Drag (Marquee vs Canvas Pan)",
-    baselineCommit: "b8ae8039a291e841f786b29f90af00e4f4c89653",
+    testedRevision: execFileSync("git", ["rev-parse", "HEAD"], { cwd: fileURLToPath(new URL("../../", import.meta.url)), encoding: "utf8" }).trim(),
     timestamp: new Date().toISOString(),
     environments: {
-      web: { status: "TESTED", details: "Playwright Chromium headless on Darwin x64" },
-      macNative: { status: "UNTESTED", reason: "Mac GUI requires interactive bundle signing / notarization; not claimed via browser" },
-      linuxNative: { status: "UNTESTED", reason: "Linux native build not executed on Darwin host; not claimed" },
+      web: { status: "TESTED", details: `Playwright Chromium headless on ${process.platform} ${process.arch}` },
+      macNative: { status: "UNTESTED", reason: "Mac native GUI was not executed in this browser run" },
+      linuxNative: { status: "UNTESTED", reason: "Linux native build was not executed in this browser run" },
     },
     scenarios: [],
     rootCauses: [],
