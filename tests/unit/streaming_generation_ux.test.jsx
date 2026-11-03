@@ -8,7 +8,8 @@ import { runAgentTurn } from "../../src/canvas/agent/canvas_agent.js";
 describe("streaming generation UX", () => {
   it("forwards the turn context through the panel's MCP tool dispatch", async () => {
     const source = readFileSync(new URL("../../src/canvas/components/canvas_agent_panel.jsx", import.meta.url), "utf8");
-    const dispatch = source.match(/executeTool: (.*),\n/)[1];
+    const normalized = source.replace(/\r\n/g, "\n");
+    const dispatch = normalized.match(/executeTool: (.*),\n/)[1];
     const controller = new AbortController();
     const context = { signal: controller.signal };
     const args = { query: "layers" };
@@ -27,6 +28,20 @@ describe("streaming generation UX", () => {
     expect(executeCanvasTool).not.toHaveBeenCalled();
     await executeTool("inspect_layer_tree", args, context);
     expect(executeCanvasTool).toHaveBeenCalledWith("inspect_layer_tree", args, context);
+  });
+
+  it("resolves identical MCP tool dispatch across both LF and CRLF line endings", () => {
+    const source = readFileSync(new URL("../../src/canvas/components/canvas_agent_panel.jsx", import.meta.url), "utf8");
+    const lfSource = source.replace(/\r\n/g, "\n");
+    const crlfSource = lfSource.replace(/\n/g, "\r\n");
+
+    const matchDispatch = (src) => src.replace(/\r\n/g, "\n").match(/executeTool: (.*),\n/)?.[1];
+    const lfDispatch = matchDispatch(lfSource);
+    const crlfDispatch = matchDispatch(crlfSource);
+
+    expect(lfDispatch).toBeDefined();
+    expect(crlfDispatch).toBeDefined();
+    expect(crlfDispatch).toBe(lfDispatch);
   });
 
   it("releases the turn immediately if a provider ignores its abort signal", async () => {
