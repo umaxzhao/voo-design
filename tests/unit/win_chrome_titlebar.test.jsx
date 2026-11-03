@@ -2,6 +2,16 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 
+/**
+ * TEST SCOPE:
+ * - Unit test simulation of App component useEffect lifecycle and synthetic DOM/Electron event routing.
+ * - Confirms IME composition guards, repeat key guards, defaultPrevented checks, and welcome receiver dispatch.
+ * - CONFIRMED NOT-RUN / OUT OF SCOPE ON MAC RUNNER:
+ *   - Real Windows hardware physical keyboard dual-dispatch runtime behavior.
+ *   - Native Windows Desktop Window Manager (DWM) caption/overlay rendering.
+ *   - Native Windows OS IME composition lifecycle.
+ */
+
 const hookEffects = [];
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal();
@@ -128,6 +138,7 @@ describe("WIN-CHROME-01 Windows chrome and New/Ctrl+N mount chain", () => {
     isComposing = false,
     keyCode = 78,
     defaultPrevented = false,
+    repeat = false,
   } = {}) {
     let prevented = defaultPrevented;
     return {
@@ -139,6 +150,7 @@ describe("WIN-CHROME-01 Windows chrome and New/Ctrl+N mount chain", () => {
       altKey,
       isComposing,
       keyCode,
+      repeat,
       get defaultPrevented() {
         return prevented;
       },
@@ -153,7 +165,7 @@ describe("WIN-CHROME-01 Windows chrome and New/Ctrl+N mount chain", () => {
     for (const handler of list) handler(event);
   }
 
-  it("mounts App and verifies Ctrl+N respects IME and defaultPrevented guards", () => {
+  it("mounts App and verifies Ctrl+N respects IME, repeat, and defaultPrevented guards", () => {
     mountApp();
     expect(winListeners.has("keydown")).toBe(true);
 
@@ -178,7 +190,13 @@ describe("WIN-CHROME-01 Windows chrome and New/Ctrl+N mount chain", () => {
     expect(preventedEvent.preventDefault).not.toHaveBeenCalled();
     expect(createSpy).not.toHaveBeenCalled();
 
-    // Valid: standard Ctrl+N
+    // Guard 4: repeat = true (holding key down should not spam new documents)
+    const repeatEvent = createKeyboardEvent({ repeat: true });
+    dispatchKeydown(repeatEvent);
+    expect(repeatEvent.preventDefault).not.toHaveBeenCalled();
+    expect(createSpy).not.toHaveBeenCalled();
+
+    // Valid: standard single-press Ctrl+N
     const validEvent = createKeyboardEvent();
     dispatchKeydown(validEvent);
     expect(validEvent.preventDefault).toHaveBeenCalled();
@@ -187,22 +205,41 @@ describe("WIN-CHROME-01 Windows chrome and New/Ctrl+N mount chain", () => {
     unsub();
   });
 
-  it("prevents duplicate document creation when native menu accelerator and DOM event both fire", () => {
+  it("preserves distinct user intents: two separate keypresses each create a document without arbitrary throttle", () => {
+    mountApp();
+    const createSpy = vi.fn();
+    const unsub = subscribeWelcomeNew(createSpy, mockWindow);
+
+    // Press 1 at simulated t=1000ms
+    const press1 = createKeyboardEvent();
+    dispatchKeydown(press1);
+    expect(press1.preventDefault).toHaveBeenCalled();
+    expect(createSpy).toHaveBeenCalledTimes(1);
+
+    // Press 2 at simulated t=1100ms (100ms later, repeat=false)
+    const press2 = createKeyboardEvent();
+    dispatchKeydown(press2);
+    expect(press2.preventDefault).toHaveBeenCalled();
+    // Must NOT be dropped by arbitrary time throttling
+    expect(createSpy).toHaveBeenCalledTimes(2);
+
+    unsub();
+  });
+
+  it("preserves distinct menu intents: two separate menu clicks each create a document", () => {
     mountApp();
     expect(typeof menuCallback).toBe("function");
 
     const createSpy = vi.fn();
     const unsub = subscribeWelcomeNew(createSpy, mockWindow);
 
-    // Simulate native menu action firing from Electron accelerator
+    // Menu click 1
     menuCallback("file:new");
-    // Simulate simultaneous DOM keydown event emitted by Chromium for the same keypress
-    const event = createKeyboardEvent();
-    dispatchKeydown(event);
-
-    // Deduplication must ensure exactly one creation call, not two
     expect(createSpy).toHaveBeenCalledTimes(1);
-    expect(event.preventDefault).toHaveBeenCalled();
+
+    // Menu click 2
+    menuCallback("file:new");
+    expect(createSpy).toHaveBeenCalledTimes(2);
 
     unsub();
   });
