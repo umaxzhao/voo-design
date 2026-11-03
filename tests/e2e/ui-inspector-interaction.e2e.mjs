@@ -1,6 +1,6 @@
 import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { runInspectorControlCases } from "./inspector-control-cases.mjs";
 import { runTypographyCases } from "./typography-inspector-cases.mjs";
@@ -57,14 +57,16 @@ await withEditorBrowser(async ({ page, tool }) => {
     await seed();
     const exportFormat = panel.getByRole("button", { name: "Format", exact: true });
     const exportAction = panel.getByRole("button", { name: "Export", exact: true });
-    const addExport = async () => {
-      await panel.getByTestId("properties-add-menu").getByRole("button").first().click();
-      await panel.getByTestId("properties-add-export").click();
+    const addExportButton = panel.getByRole("button", { name: "Add export settings", exact: true });
+    const assertExportEntry = async () => {
+      assert.ok(await panel.getByText("Export", { exact: true }).first().isVisible(), "Export header stays visible without opening a general add menu");
+      assert.equal(await addExportButton.count(), 1, "Export has one directly available + entry");
     };
+    const addExport = () => addExportButton.click();
     for (const id of ["audit-rect", "audit-frame", "audit-text", "audit-image"]) {
       await select([id]);
       assert.equal(await exportFormat.count(), 0, `${id} must not invent an export preset`);
-      assert.equal(await panel.getByRole("button", { name: "Add export settings", exact: true }).count(), 0, "the entire unconfigured export section is hidden");
+      await assertExportEntry(); // Contract update: only preset controls are opt-in.
       assert.equal(await exportAction.count(), 0);
     }
     await select(["audit-rect"]);
@@ -73,8 +75,30 @@ await withEditorBrowser(async ({ page, tool }) => {
     const configured = (await node()).exportPresets;
     assert.equal(configured.length, 1);
     assert.equal(await exportAction.count(), 1);
+    await assertExportEntry();
+    const beforeExport = await node();
+    const downloadPromise = page.waitForEvent("download");
+    await exportAction.click();
+    const download = await downloadPromise;
+    await download.saveAs(`${evidence}/configured-export.png`);
+    const exported = await page.evaluate(async base64 => {
+      const image = new Image(); image.src = `data:image/png;base64,${base64}`; await image.decode();
+      const canvas = document.createElement("canvas"); canvas.width = image.width; canvas.height = image.height;
+      const context = canvas.getContext("2d"); context.drawImage(image, 0, 0);
+      return { width: image.width, height: image.height, pixel: [...context.getImageData(80, 60, 1, 1).data] };
+    }, (await readFile(`${evidence}/configured-export.png`)).toString("base64"));
+    assert.deepEqual(exported, { width: 160, height: 120, pixel: [255, 0, 0, 255] });
+    assert.deepEqual(await node(), beforeExport, "real PNG export must not mutate layer geometry, paint or preset state");
+    await exportFormat.click();
+    const formatMenu = page.getByRole("listbox", { name: "Format", exact: true });
+    await formatMenu.waitFor();
+    await formatMenu.getByRole("option", { name: "PNG", exact: true }).focus();
+    await page.keyboard.press("Escape");
+    await formatMenu.waitFor({ state: "detached" });
+    assert.ok(await exportFormat.evaluate(element => element === document.activeElement));
     await tool("undo"); await settle();
     assert.equal(await exportFormat.count(), 0, "undo adding export removes its controls");
+    await assertExportEntry();
     await tool("redo"); await exportFormat.waitFor();
     assert.deepEqual((await node()).exportPresets, configured);
     await select(["audit-text"]);
@@ -89,9 +113,10 @@ await withEditorBrowser(async ({ page, tool }) => {
     await tool("undo"); await exportFormat.waitFor();
     await tool("redo"); await settle();
     assert.equal(await exportAction.count(), 0, "redo removing export hides it again");
-    mark("export is opt-in for shapes, Frames, text and images; add/remove persist per layer and undo/redo immediately follow document state");
+    await assertExportEntry();
+    mark("Export header/+ stay visible for shapes, Frames, text and images; preset add/remove and PNG pixels preserve layer state and one-step history; Escape restores format focus");
 
-    const x = panel.getByRole("spinbutton", { name: "X", exact: true });
+    const x = panel.getByRole("textbox", { name: "X", exact: true });
     await x.fill("150"); await x.press("Enter");
     assert.equal((await node()).x, 150);
     await x.fill("222"); await x.press("Escape");
@@ -99,7 +124,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     assert.equal(await x.inputValue(), "150");
     await tool("undo");
     assert.equal((await node()).x, 100, "one undo must skip the cancelled draft");
-    const y = panel.getByRole("spinbutton", { name: "Y", exact: true });
+    const y = panel.getByRole("textbox", { name: "Y", exact: true });
     await y.fill("140"); await y.blur();
     assert.equal((await node()).y, 140);
     await tool("undo"); assert.equal((await node()).y, 100);
@@ -135,7 +160,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await panel.getByRole("button", { name: "Fill visible", exact: true }).click();
     assert.equal((await node()).fills[0].visible, false);
     await tool("undo");
-    const strokeWidth = panel.getByRole("spinbutton", { name: "Outline width", exact: true });
+    const strokeWidth = panel.getByRole("textbox", { name: "Outline width", exact: true });
     await strokeWidth.fill("8"); await strokeWidth.press("Enter");
     assert.equal((await node()).strokeWidth, 8);
     await panel.getByRole("button", { name: "Inside", exact: true }).click();
@@ -143,14 +168,18 @@ await withEditorBrowser(async ({ page, tool }) => {
     await tool("undo"); await tool("undo");
     mark("fill menu keyboard selection/Escape, fill visibility and stroke width/alignment mutate actual paint state and undo");
 
-    await panel.getByRole("button", { name: "Add effect", exact: true }).click();
+    const addEffectButton = panel.getByRole("button", { name: "Add effect", exact: true });
+    // Finish scrolling before opening a popover that deliberately closes on scroll.
+    await addEffectButton.scrollIntoViewIfNeeded(); await settle();
+    await addEffectButton.click();
     const picker = page.getByTestId("editor-adjustment-picker");
     await picker.waitFor(); await inViewport(picker, "effect picker");
     await picker.getByTestId("adjustment-picker-search").fill("Drop shadow");
     await picker.getByRole("button", { name: "Drop shadow", exact: true }).click();
     assert.ok((await node()).effects.shadow);
     await tool("undo"); assert.equal((await node()).effects?.shadow, undefined);
-    await panel.getByRole("button", { name: "Add effect", exact: true }).click();
+    await addEffectButton.scrollIntoViewIfNeeded(); await settle();
+    await addEffectButton.click();
     await picker.waitFor(); await page.keyboard.press("Escape");
     await picker.waitFor({ state: "hidden" });
     assert.deepEqual(await selected(), ["audit-rect"]);
@@ -179,7 +208,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await select(["audit-frame"]);
     mark("alignment has one grouped quickbar home; single child aligns to its parent and root Frame to the canvas, each undoing once");
 
-    const width = panel.getByRole("spinbutton", { name: "W", exact: true });
+    const width = panel.getByRole("textbox", { name: "W", exact: true });
     await width.fill("720"); await width.press("Enter");
     assert.equal((await node("audit-frame")).width, 720);
     await tool("undo"); assert.equal((await node("audit-frame")).width, 700);
@@ -206,8 +235,8 @@ await withEditorBrowser(async ({ page, tool }) => {
 
     await seed();
     await select(["audit-text"]);
-    assert.equal(await panel.getByRole("spinbutton", { name: /^Font size/ }).inputValue(), "30");
-    const fontSize = panel.getByRole("spinbutton", { name: /^Font size/ });
+    assert.equal(await panel.getByRole("textbox", { name: /^Font size/ }).inputValue(), "30");
+    const fontSize = panel.getByRole("textbox", { name: /^Font size/ });
     await fontSize.fill("45"); await fontSize.press("Enter");
     assert.equal((await node("audit-text")).fontSize, 45);
     await tool("undo"); assert.equal((await node("audit-text")).fontSize, 30);
@@ -217,7 +246,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     assert.equal(await panel.getByRole("button", { name: "Align left", exact: true }).count(), 0);
     assert.equal(await panel.getByRole("button", { name: "Group", exact: true }).count(), 0);
     await select([]);
-    assert.equal(await panel.getByRole("spinbutton", { name: "X", exact: true }).count(), 0);
+    assert.equal(await panel.getByRole("textbox", { name: "X", exact: true }).count(), 0);
     mark("text/image/multi/no-selection inspector contexts switch without duplicate grouping/alignment quick actions");
 
     await row("audit-rect").getByText("Audit Rectangle", { exact: true }).click();
