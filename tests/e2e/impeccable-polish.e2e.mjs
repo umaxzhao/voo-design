@@ -4,7 +4,7 @@ import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { checkContextSubmenus } from "./context-submenu-checks.mjs";
 
 await withEditorBrowser(async ({ page, errors }) => {
-  await checkContextSubmenus(page);
+  await checkContextSubmenus(page, join(evidenceDir, "context-menu.png"));
   const editor = page.getByTestId("design-editor");
   const brand = page
     .getByTestId("editor-top-bar")
