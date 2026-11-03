@@ -8,7 +8,7 @@ import { importZipFromWelcome, saveZipSnapshot } from "./uf13-pen-join-helpers.m
 const EVIDENCE_DIR =
   process.env.VOO_EVIDENCE_DIR ||
   process.env.UF_EVIDENCE_DIR ||
-  "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z";
+  "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-v2-20261103T092500Z";
 
 await mkdir(EVIDENCE_DIR, { recursive: true });
 
@@ -32,11 +32,22 @@ async function getBrowserMetadata(page) {
 }
 
 const receipt = {
-  task: "JPG and WebP real UI export, filechooser re-import into fresh browser process, asset pixel comparison, interactive UI & keyboard Undo/Redo, and cold reopen",
+  task: "JPG and WebP real UI export, Web DOM filechooser re-import into fresh browser process, asset pixel comparison, interactive UI button & keyboard Undo/Redo, and cold reopen (v2 incremental verification)",
   timestamp: new Date().toISOString(),
-  commit: "b33e6085f3efb8340b70a2525fd93281d5fb3b60",
-  tree: "01557fbfdf557f1291640d74710a4ca7980bff56",
-  baseline: "b8ae8039a291e841f786b29f90af00e4f4c89653",
+  commitBinding: {
+    testedCommit: "7f9c014e6f0e3bdcbbc62ef0aaf23878810adc8f",
+    testedTree: "a547c39c6e86573a542ab0572b3ba2caec91d8ae",
+    baseline: "b8ae8039a291e841f786b29f90af00e4f4c89653",
+    v1Commit: "b33e6085f3efb8340b70a2525fd93281d5fb3b60",
+    v1Tree: "01557fbfdf557f1291640d74710a4ca7980bff56",
+    relationship: "Tested against commit 7f9c014e which implements the interactive UI button and keyboard shortcut Undo/Redo mechanisms, replacing previous MCP bridge history calls. It is an incremental regression on top of eac50921 -> b33e6085 -> b8ae8039.",
+  },
+  evidenceDirectory: EVIDENCE_DIR,
+  v1EvidenceIntegrity: {
+    receiptPath: "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip-receipt.json",
+    logPath: "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/b8-export-jpg-webp-20261103T083400Z/jpg-webp-roundtrip.log",
+    originalZipStatus: "NOT_PRESERVED (原 22,595 字节 / SHA-256 36f880fcdbd0ce7e4fbf6883f88e334c11e276e3529b6b3709e4a8f2b64a84d6 压缩包在初次 v2 执行时因写入未隔离同名路径被覆盖，无真实备份，如实记录未保全事实，绝不伪造恢复)",
+  },
   scopeClassification: {
     fileChooserScope: "Browser Web DOM FileChooser (Playwright page.waitForEvent('filechooser') handling hidden <input type='file'> via context menu trigger; NOT native macOS NSOpenPanel/Finder dialog)",
     undoRedoScope: "Interactive UI button click (editor_actions IconUndo / IconRedo) and keyboard shortcuts (Meta+z / Meta+Shift+z); distinguishing from bridge MCP tool history",
