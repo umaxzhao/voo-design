@@ -222,6 +222,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
     return window.__vooEditor.sampleColorAt({ x: 450, y: 90 });
   });
   assert.equal(updatedPixel, "#00ff00", `Canvas pixel at bound object must update to #00ff00 (got ${updatedPixel})`);
+  await page.screenshot({ path: "/Users/tt/Documents/Codex/2026-11-02/task/t02-uncovered-f340-20261103T0745Z-evidence/screenshot-variable-canvas-sync.png" });
 
   let varNode = await page.evaluate(() => window.__vooEditor.getNode("var-rect"));
   assert.equal(varNode.fill, "#00ff00", "Bound node fill property must update to match modified variable value");
@@ -355,6 +356,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
     return window.__vooEditor.sampleColorAt({ x: 450, y: 90 });
   });
   assert.equal(pixelAtVarRect, "#ff0000", `Cold reopen must render bound variable fill as #ff0000 on canvas (got ${pixelAtVarRect})`);
+  await page.screenshot({ path: "/Users/tt/Documents/Codex/2026-11-02/task/t02-uncovered-f340-20261103T0745Z-evidence/screenshot-cold-reopen.png" });
 
   // 6. Post-load edit and undo verification
   await page.evaluate(() => {
