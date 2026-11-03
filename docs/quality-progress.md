@@ -5,6 +5,7 @@
 - Test-only，固定基线 `41225de450ded0b562d0a861fe559947a44f4016`；仅两份既有套件改产物路径，产品源码与原业务断言/timeout不变。
 - `inspector-font-768-matrix-verification` 使用 `mkdtemp(editorArtifactPath(...))` 的每次唯一根目录保存16截图与matrix-results.json；`impeccable-polish` 同样将两截图放入每次唯一目录，移除旧e0绝对路径与固定/tmp路径。
 - 未运行未修套件：修前仅静态合同检查exit1；修后AST证明8/12处原assert、17/28处原交互及默认timeout合同不变。复用统一 `VOO_BROWSER_EVIDENCE_DIR` 与既有临时目录fallback，不添加新env或产品功能。
+- 单次验证matrix真实exit0（16截图+JSON），impeccable真实exit1，停在原context submenu外点关闭assert（1!=0），两目标截图未触达，未重跑或放宽业务断言。首轮漏查helper固定/tmp截图且实际写入，已额外将唯一调用的context-submenu-checks改为强制接收调用方唯一目录内截图路径；该最后补丁仅静态核对、尚未重新运行。
 - 两套各仅单次验证，使用独立证据根目录和禁止旧路径写入的审计守卫；精确本地commit、真实exit、产物hash及旧证据前后核对见 `/Users/tt/Desktop/voo-linux-qa/c-rapid-numeric-fix-20261103T122024Z/qa-artifact-isolation-20261103T132257Z/REPORT.md` / `DELIVERY.json`。未将路径修复扩展为产品、原生平台或整套release验收。
 
 ## 快速 Enter/Escape 数值显示同步 — 2026-11-03
