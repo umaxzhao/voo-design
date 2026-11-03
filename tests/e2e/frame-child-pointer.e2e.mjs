@@ -73,9 +73,14 @@ await withEditorBrowser(async ({ page }) => {
   await frameLabel.waitFor();
   const labelBox = await frameLabel.boundingBox();
   assert.ok(labelBox, "Frame label is a visible move entry");
+  const screenOrigin = await client({ x: 0, y: 0 });
+  const screenTarget = await client({ x: 30, y: 20 });
+  const screenDelta = { x: screenTarget.x - screenOrigin.x, y: screenTarget.y - screenOrigin.y };
+  console.log(JSON.stringify({ frameLabelWorldDelta: { x: 30, y: 20 }, screenDelta }));
   await page.mouse.move(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2);
   await page.mouse.down();
-  await page.mouse.move(labelBox.x + labelBox.width / 2 + 30, labelBox.y + labelBox.height / 2 + 20, { steps: 6 });
+  await page.mouse.move(labelBox.x + labelBox.width / 2 + screenDelta.x,
+    labelBox.y + labelBox.height / 2 + screenDelta.y, { steps: 6 });
   await page.mouse.up();
   await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
   const frameMove = await page.evaluate(seed => ({ first: window.__vooEditor.getNode(seed.first),
