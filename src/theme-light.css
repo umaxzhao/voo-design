@@ -28,9 +28,16 @@ html[data-theme="light"] .editor-shell {
   border-color: #a7ffd4 !important;
 }
 
-/* Editor pages: light margin uses the light body neutral (#f5f5f5), matching the title bar surface. */
-html[data-theme="light"] .app-root-frame[data-editor-page="true"] {
-  background: #f5f5f5;
+/* Match the complete editor surround to the light mint frame. */
+html[data-theme="light"] .app-root-frame[data-editor-page="true"],
+html[data-theme="light"] .app-root-frame[data-editor-page="true"] > [data-testid="editor-workspace-layout"] {
+  background: #a7ffd4 !important;
+}
+
+html[data-theme="light"] #root:has(> .app-root-frame[data-editor-page="true"]) {
+  background:
+    linear-gradient(-90deg, #000 70.123%, #b2ffd6 89.855%) top / 100% 32px no-repeat,
+    #a7ffd4;
 }
 
 html[data-theme="light"] .app-title-bar {
@@ -42,6 +49,12 @@ html[data-theme="light"] .app-title-brand-row,
 html[data-theme="light"] .app-title-bar .text-neutral-400,
 html[data-theme="light"] .app-title-bar .text-white {
   color: #171717 !important;
+}
+
+/* Editor status actions remain readable on the unchanged black gradient end. */
+html[data-theme="light"] .app-root-frame[data-editor-page="true"]
+  .app-title-actions > button:not([data-testid="titlebar-export"]):not(.text-black) {
+  color: #d4d4d4 !important;
 }
 
 html[data-theme="light"] .agent-composer {

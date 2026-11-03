@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { seedResponsiveDocument, settlePanels } from "./ui-responsive-editor-helpers.mjs";
 
-// T02 real-UI interaction: empty Styles and Modifiers groups are header-only (57px measured, the same as
+// T02 real-UI interaction: empty groups are header-only (24px action + 12px above/below + 1px divider).
+// Styles and Modifiers use the same 49px rhythm as
 // Stroke/Effects/Export). Clicking the title add entry must reveal content, adding a
 // modifier must leave the empty state, and one Undo / Redo must round-trip it.
-const EMPTY_HEIGHT = 57;
+const EMPTY_HEIGHT = 49;
 
 const sectionBox = (page, testId) =>
   page.getByTestId(testId).evaluate((element) => {
@@ -20,6 +21,20 @@ await withEditorBrowser(async ({ page, errors }) => {
   await seedResponsiveDocument(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await settlePanels(page);
+
+  for (const title of ["Stroke", "Effects", "Export", "Styles", "Modifiers"]) {
+    const box = await page.getByTestId("editor-properties-panel")
+      .locator(".inspector-section-title").filter({ hasText: new RegExp(`^${title}$`) })
+      .evaluate((element) => {
+        const section = element.closest(".border-t");
+        const style = getComputedStyle(section);
+        return { height: section.getBoundingClientRect().height,
+          top: style.paddingTop, bottom: style.paddingBottom };
+      });
+    assert.equal(box.height, EMPTY_HEIGHT, `${title}: equal empty group height`);
+    assert.equal(box.top, "12px", `${title}: top spacing`);
+    assert.equal(box.bottom, "12px", `${title}: bottom spacing`);
+  }
 
   // Styles: header-only when nothing is applied; the + entry expands the type list.
   assert.equal(await sectionBox(page, "editor-style-section"), EMPTY_HEIGHT, "Styles empty must be header-only");

@@ -144,9 +144,10 @@ export function CollapsibleSection({
   const toggle = () => {
     setOpen(toggleEditorPanelSectionState(sectionStorageKey, open));
   };
+  const hasBody = open && hasSectionBody(children, undefined);
   return (
     <div className={sectionRhythmClass} data-testid={testId}>
-      <div className={sectionHeaderClass}>
+      <div className={hasBody ? sectionHeaderClass : emptySectionHeaderClass}>
         <button
           type="button"
           onClick={toggle}
@@ -161,7 +162,7 @@ export function CollapsibleSection({
         </button>
         {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
       </div>
-      {open ? <div className={sectionBodyClass}>{children}</div> : null}
+      {hasBody ? <div className={sectionBodyClass}>{children}</div> : null}
     </div>
   );
 }

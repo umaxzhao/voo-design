@@ -402,9 +402,42 @@
   border-radius: 0;
 }
 
-/* Editor pages: the 4px root margin around the green frame is neutral on both sides (dark: black). */
+/* The status bar and workspace are separate surfaces. Outside the root's top
+ * corners continue the status gradient; below them continue the mint frame. */
+#root:has(> .app-root-frame[data-editor-page="true"]) {
+  background:
+    linear-gradient(-90deg, #000 70.123%, #b2ffd6 89.855%) top / 100% 32px no-repeat,
+    #b2ffd6;
+}
+
+.app-root-frame[data-editor-page="true"],
+.app-root-frame[data-editor-page="true"] > [data-testid="editor-workspace-layout"] {
+  background: #b2ffd6 !important;
+}
+
+/* Floating panel shadows stay inside the content edge, clear of the mint rim. */
 .app-root-frame[data-editor-page="true"] {
-  background: #000;
+  --editor-frame-radius: 16px;
+  --mobile-frame-inset-radius: var(--editor-frame-radius);
+  --mobile-content-radius: calc(var(--editor-frame-radius) - 2px);
+  border-radius: var(--editor-frame-radius);
+  padding:
+    env(safe-area-inset-top, 0px)
+    max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))
+    env(safe-area-inset-bottom, 0px);
+  overflow: clip;
+  overflow-clip-margin: content-box;
+}
+
+/* The root clips the status gradient once, so its black end reaches the corner. */
+.app-root-frame[data-editor-page="true"] > .app-title-bar {
+  background: linear-gradient(-90deg, #000 70.123%, #b2ffd6 89.855%) !important;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.app-root-frame[data-editor-page="true"] .editor-shell-inner {
+  border-radius: calc(var(--editor-frame-radius) - 2px);
 }
 
 .editor-shell-inner {

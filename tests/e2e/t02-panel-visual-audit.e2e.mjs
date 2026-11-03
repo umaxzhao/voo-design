@@ -20,7 +20,9 @@ const sectionReport = (page) =>
   page.evaluate(() => {
     const panel = document.querySelector('[data-testid="editor-properties-panel"]');
     if (!panel) return { panel: false };
-    return [...panel.querySelectorAll("[data-inspector-section]")].map((section) => {
+    const sections = [...new Set([...panel.querySelectorAll(".inspector-section-title")]
+      .map((title) => title.closest(".border-t")).filter(Boolean))];
+    return sections.map((section) => {
       const style = getComputedStyle(section);
       const title = section.querySelector("span.overflow-hidden")?.textContent?.trim() ?? null;
       const body = section.children[1] ?? null;
@@ -63,6 +65,13 @@ await withEditorBrowser(async ({ page, errors }) => {
     const panel = page.getByTestId("editor-properties-panel");
     await panel.waitFor();
     const sections = await sectionReport(page);
+    assert.ok(sections.length >= 5, `${viewport.name}: actual property sections must be measured`);
+    assert.ok(sections.some((section) => section.borderTop === "1px"),
+      `${viewport.name}: structural dividers must remain visible`);
+    for (const title of ["Stroke", "Effects", "Styles", "Modifiers", "Export"]) {
+      assert.ok(sections.some((section) => section.title === title),
+        `${viewport.name}: ${title} must be shown directly by default`);
+    }
     await panel.screenshot({ path: join(EVIDENCE, `${viewport.name}-properties-panel.png`) });
 
     const cross = await crossGeometry(page);

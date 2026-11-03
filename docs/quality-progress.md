@@ -1,5 +1,14 @@
 # 项目检查总进度
 
+## UI 专项：状态栏与编辑器绿框、空态间距（2026-11-03）
+
+- 独立副本 `2026-11-03/task/voo-ui-codex`，基线 `b8ae8039`；保留已审查的 #52 间距与测试入口四提交，未覆盖原冻结仓库或 e0 草稿。最终提交、源文件 hash、退出码和截图统一记录在同级 `evidence/REPORT.md`。
+- 最新用户意图：顶部状态栏独立保留左绿右黑渐变，黑色覆盖右上角；下面内容区单独完整 2px 绿色描边、四角 16px。去掉固定 4px 外间距，保留物理 safe-area；浅色主题也保留状态渐变及操作按钮对比度。浮动面板阴影裁切在内容边界内。
+- 修前真实像素：桌面黑色 4px 外沿、768px 左绿右黑；旧空 Styles/Modifiers/Export 高 57px，Stroke/Effects 高 49px。补齐 CollapsibleSection 空内容判定、Export 显式空状态后，五组统一 49px，上下各 12px，新增入口与内联导出保留。
+- 已执行：注册的 `editor-frame-pixels`（5 宽度 × 浅深 × 实际 DPR1/2，完整视口四角、状态栏黑绿两端、左右对称、上下半径及返回欢迎页）；`inspector-controls` 15 项；空分区真实新增/UndoRedo；PNG/JPEG 2x 导出尺寸与像素、变量绑定/解绑/UndoRedo；中心十字实际布局、独立命中与 Tab 可见焦点。
+- `t02-panel-visual-audit` 原来测得 0 个分区，不能证明面板结构。现改用实际标题/分组，增加非空、真实分割线与五个默认入口断言；1440/1100px × 浅深测得各 10 个分区。历史失败、初版预览与最新用户更正分别保留，不能互相冒充最终通过。
+- Mac 上已正常启动独立可见 Chromium 源码预览 `VOO Design — UI preview`，仅含自有 QA 样本；不是签名原生包或线上部署。旧 b8 Mac PID224/F1 未保存文档/profile 未操作。原生 Mac/Windows/Linux、物理 DPI、触控与实际安全区设备、完整 release gate 均未认证；选区 Esc 逻辑仍由 C 负责。
+
 ## LINUX-STYLE01 — scoped opacity repair, 2026-11-03
 
 - Pinned reproduction: `aad8cafc1c415817e3d55e0e1deb6854164abc65`, own standalone clone; fill RGBA `[255,0,0,128]`, overlapping stroke `[85,0,170,192]`. Layer alpha was applied separately per paint. Reuse the existing isolated-style compositor and wrap expanded SVG paint siblings once; own paint opacity is preserved.

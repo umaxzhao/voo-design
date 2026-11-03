@@ -164,8 +164,8 @@ export default function App() {
     };
   }, [firstRunOpen]);
 
-  // The root's 4px padding is the margin around the green editor frame. Editor pages take
-  // their neutral margin colour from the theme stylesheet (index.css / theme-light.css); the
+  // The root's safe-area padding surrounds the green editor frame. Editor pages take
+  // their matching mint surround from the theme stylesheet (index.css / theme-light.css); the
   // Welcome page keeps the root gradient.
   return (
     <main
