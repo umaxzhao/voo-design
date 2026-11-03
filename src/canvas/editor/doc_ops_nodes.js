@@ -121,6 +121,70 @@ export function updateNodes(doc, updates) {
           ? { strokeVariableId: null }
           : {}),
       };
+      if (
+        Object.hasOwn(patch, "fill") &&
+        !Object.hasOwn(patch, "fills") &&
+        Array.isArray(updated.fills) &&
+        updated.fills.length > 0
+      ) {
+        updated.fills = updated.fills.map((paint, index) =>
+          index === 0
+            ? {
+                ...paint,
+                fill: patch.fill,
+                ...(Object.hasOwn(patch, "fillOpacity")
+                  ? { opacity: patch.fillOpacity }
+                  : {}),
+                ...(Object.hasOwn(patch, "fillHidden")
+                  ? { visible: !patch.fillHidden }
+                  : {}),
+                ...(Object.hasOwn(patch, "fillBlendMode")
+                  ? { blendMode: patch.fillBlendMode }
+                  : {}),
+              }
+            : paint
+        );
+      } else if (
+        Object.hasOwn(patch, "fills") &&
+        !Object.hasOwn(patch, "fill") &&
+        Array.isArray(patch.fills) &&
+        patch.fills.length > 0
+      ) {
+        const lead = patch.fills[0];
+        if (lead?.fill !== undefined) updated.fill = lead.fill;
+        if (lead?.opacity !== undefined) updated.fillOpacity = lead.opacity;
+        if (lead?.visible !== undefined)
+          updated.fillHidden = lead.visible === false;
+        if (lead?.blendMode !== undefined)
+          updated.fillBlendMode = lead.blendMode;
+      } else if (
+        !Object.hasOwn(patch, "fills") &&
+        Array.isArray(updated.fills) &&
+        updated.fills.length > 0
+      ) {
+        if (
+          Object.hasOwn(patch, "fillOpacity") ||
+          Object.hasOwn(patch, "fillHidden") ||
+          Object.hasOwn(patch, "fillBlendMode")
+        ) {
+          updated.fills = updated.fills.map((paint, index) =>
+            index === 0
+              ? {
+                  ...paint,
+                  ...(Object.hasOwn(patch, "fillOpacity")
+                    ? { opacity: patch.fillOpacity }
+                    : {}),
+                  ...(Object.hasOwn(patch, "fillHidden")
+                    ? { visible: !patch.fillHidden }
+                    : {}),
+                  ...(Object.hasOwn(patch, "fillBlendMode")
+                    ? { blendMode: patch.fillBlendMode }
+                    : {}),
+                }
+              : paint
+          );
+        }
+      }
       if (patch.pen === true || (patch.kind === "path" && node.kind !== "path")) {
         delete updated.cornerRadius;
         delete updated.poly;

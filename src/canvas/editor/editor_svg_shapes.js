@@ -67,30 +67,44 @@ export function gradientDefs(nodes) {
           `<radialGradient id="${id}" cx="0" cy="0" r="1" gradientTransform="translate(${number(cx)} ${number(cy)}) scale(${number(rx)} ${number(ry)})">\n${stops}\n  </radialGradient>`,
         );
       } else {
-        let angle = 180;
-        if (typeof parsed.angle === "number" && Number.isFinite(parsed.angle)) {
-          angle = parsed.angle;
-        } else if (typeof parsed.angle === "string") {
-          const match = parsed.angle.match(/(-?\d+(?:\.\d+)?)/);
-          if (match) {
-            angle = parseFloat(match[1]);
-          } else if (/to right/i.test(parsed.angle)) {
-            angle = 90;
-          } else if (/to left/i.test(parsed.angle)) {
-            angle = 270;
-          } else if (/to bottom/i.test(parsed.angle)) {
-            angle = 180;
-          } else if (/to top/i.test(parsed.angle)) {
-            angle = 0;
+        const g = parsed.geometry ?? {};
+        let x1, y1, x2, y2;
+        if (
+          g.startX !== undefined &&
+          g.startY !== undefined &&
+          g.endX !== undefined &&
+          g.endY !== undefined
+        ) {
+          x1 = Math.round((g.startX / 100) * 1000) / 1000;
+          y1 = Math.round((g.startY / 100) * 1000) / 1000;
+          x2 = Math.round((g.endX / 100) * 1000) / 1000;
+          y2 = Math.round((g.endY / 100) * 1000) / 1000;
+        } else {
+          let angle = 180;
+          if (typeof parsed.angle === "number" && Number.isFinite(parsed.angle)) {
+            angle = parsed.angle;
+          } else if (typeof parsed.angle === "string") {
+            const match = parsed.angle.match(/(-?\d+(?:\.\d+)?)/);
+            if (match) {
+              angle = parseFloat(match[1]);
+            } else if (/to right/i.test(parsed.angle)) {
+              angle = 90;
+            } else if (/to left/i.test(parsed.angle)) {
+              angle = 270;
+            } else if (/to bottom/i.test(parsed.angle)) {
+              angle = 180;
+            } else if (/to top/i.test(parsed.angle)) {
+              angle = 0;
+            }
           }
+          const rad = (angle * Math.PI) / 180;
+          const dx = Math.sin(rad) * 0.5;
+          const dy = -Math.cos(rad) * 0.5;
+          x1 = Math.round((0.5 - dx) * 1000) / 1000;
+          y1 = Math.round((0.5 - dy) * 1000) / 1000;
+          x2 = Math.round((0.5 + dx) * 1000) / 1000;
+          y2 = Math.round((0.5 + dy) * 1000) / 1000;
         }
-        const rad = (angle * Math.PI) / 180;
-        const dx = Math.sin(rad) * 0.5;
-        const dy = -Math.cos(rad) * 0.5;
-        const x1 = Math.round((0.5 - dx) * 1000) / 1000;
-        const y1 = Math.round((0.5 - dy) * 1000) / 1000;
-        const x2 = Math.round((0.5 + dx) * 1000) / 1000;
-        const y2 = Math.round((0.5 + dy) * 1000) / 1000;
         defs.push(
           `<linearGradient id="${id}" x1="${number(x1)}" y1="${number(y1)}" x2="${number(x2)}" y2="${number(y2)}">\n${stops}\n  </linearGradient>`,
         );

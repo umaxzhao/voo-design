@@ -223,6 +223,12 @@ export function detachInstance(hostDoc, instanceId, componentDoc) {
     if (!node.parentId && instanceNode.parentId) {
       copy.parentId = instanceNode.parentId;
     }
+    if (Array.isArray(node.fills)) {
+      copy.fills = node.fills.map((paint) => ({ ...paint }));
+      if (copy.fill !== undefined && copy.fills.length > 0 && copy.fills[0].fill !== copy.fill) {
+        copy.fills[0] = { ...copy.fills[0], fill: copy.fill };
+      }
+    }
     if (node.kind === "path" && Array.isArray(node.points)) {
       const pointScaleX = node.baseWidth
         ? copy.width / node.baseWidth

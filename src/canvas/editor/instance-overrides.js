@@ -9,6 +9,8 @@
  */
 
 
+import { isCssGradient } from "../color_picker/gradient_fill.js";
+
 export const OVERRIDE_FIELDS = Object.freeze([
   "text",
   "fill",
@@ -60,8 +62,8 @@ function validate(field, value) {
   if (value === undefined || value === null) return;
   if (field === "text" && typeof value !== "string")
     throw new TypeError("A text override must be a string");
-  if (field === "fill" && !(typeof value === "string" && HEX_COLOR.test(value)))
-    throw new TypeError("A fill override must be a hex colour");
+  if (field === "fill" && !(typeof value === "string" && (HEX_COLOR.test(value) || isCssGradient(value))))
+    throw new TypeError("A fill override must be a hex colour or gradient");
   if (
     field === "stroke" &&
     !(typeof value === "string" &&
@@ -188,6 +190,68 @@ export function applyInstanceOverrides(sourceDoc, instance) {
     const result = { ...node, ...entry };
     if (Array.isArray(entry.effects)) {
       result.effects = entry.effects.map((effect) => ({ ...effect }));
+    }
+    if (
+      Object.hasOwn(entry, "fill") &&
+      !Object.hasOwn(entry, "fills") &&
+      Array.isArray(result.fills) &&
+      result.fills.length > 0
+    ) {
+      result.fills = result.fills.map((paint, index) =>
+        index === 0
+          ? {
+              ...paint,
+              fill: entry.fill,
+              ...(Object.hasOwn(entry, "fillOpacity")
+                ? { opacity: entry.fillOpacity }
+                : {}),
+              ...(Object.hasOwn(entry, "fillHidden")
+                ? { visible: !entry.fillHidden }
+                : {}),
+              ...(Object.hasOwn(entry, "fillBlendMode")
+                ? { blendMode: entry.fillBlendMode }
+                : {}),
+            }
+          : { ...paint }
+      );
+    } else if (
+      Object.hasOwn(entry, "fills") &&
+      !Object.hasOwn(entry, "fill") &&
+      Array.isArray(entry.fills) &&
+      entry.fills.length > 0
+    ) {
+      const lead = entry.fills[0];
+      if (lead?.fill !== undefined) result.fill = lead.fill;
+      if (lead?.opacity !== undefined) result.fillOpacity = lead.opacity;
+      if (lead?.visible !== undefined) result.fillHidden = lead.visible === false;
+      if (lead?.blendMode !== undefined) result.fillBlendMode = lead.blendMode;
+    } else if (
+      !Object.hasOwn(entry, "fills") &&
+      Array.isArray(result.fills) &&
+      result.fills.length > 0
+    ) {
+      if (
+        Object.hasOwn(entry, "fillOpacity") ||
+        Object.hasOwn(entry, "fillHidden") ||
+        Object.hasOwn(entry, "fillBlendMode")
+      ) {
+        result.fills = result.fills.map((paint, index) =>
+          index === 0
+            ? {
+                ...paint,
+                ...(Object.hasOwn(entry, "fillOpacity")
+                  ? { opacity: entry.fillOpacity }
+                  : {}),
+                ...(Object.hasOwn(entry, "fillHidden")
+                  ? { visible: !entry.fillHidden }
+                  : {}),
+                ...(Object.hasOwn(entry, "fillBlendMode")
+                  ? { blendMode: entry.fillBlendMode }
+                  : {}),
+              }
+            : { ...paint }
+        );
+      }
     }
     return result;
   });
