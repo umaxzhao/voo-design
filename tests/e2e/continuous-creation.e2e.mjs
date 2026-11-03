@@ -190,8 +190,11 @@ await withEditorBrowser(async ({ page }) => {
   await f.step("save-the-continuously-created-project", async () => {
     expected = projection((await f.snapshot()).nodes); frameId = frame.id; imageId = image.id;
     painted = await artwork(page, frame.id);
+    await page.keyboard.press("Control+k");
+    const palette = page.getByTestId("command-palette");
+    await palette.getByRole("combobox").fill("portable .zip snapshot");
     const [download] = await Promise.all([page.waitForEvent("download"),
-      page.getByRole("button", { name: "Export project as a portable .zip snapshot", exact: true }).click()]);
+      palette.getByRole("option").filter({ hasText: /portable \.zip snapshot/i }).click()]);
     archive = await readFile(await download.path()); assert.equal(archive.subarray(0, 2).toString(), "PK");
   });
   await f.finish();
