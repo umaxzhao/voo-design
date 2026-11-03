@@ -1,0 +1,17 @@
+diff --git a/src/canvas/components/editor_context_menu.jsx b/src/canvas/components/editor_context_menu.jsx
+index c7d91c7ad767c69a202b55c011ba92ac96db90a2..f0f7d700872846c8b2b2809c8167e703da1fae01 100644
+--- a/src/canvas/components/editor_context_menu.jsx
++++ b/src/canvas/components/editor_context_menu.jsx
+@@ -119,10 +119,10 @@ export default function EditorContextMenu({
+         items[nextIndex]?.focus();
+       }
+     };
+-    window.addEventListener("pointerdown", onPointerDown);
++    window.addEventListener("pointerdown", onPointerDown, true);
+     window.addEventListener("keydown", onKeyDown);
+     return () => {
+-      window.removeEventListener("pointerdown", onPointerDown);
++      window.removeEventListener("pointerdown", onPointerDown, true);
+       window.removeEventListener("keydown", onKeyDown);
+     };
+   }, [onClose, codeDialogOpen]);

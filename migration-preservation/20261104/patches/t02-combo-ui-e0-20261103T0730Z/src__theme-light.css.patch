@@ -1,0 +1,18 @@
+diff --git a/src/theme-light.css b/src/theme-light.css
+index 50b0d892a2cfc4a5c2889576b227d2bb0beea14e..c82247def240126599cd6e685fb5acec8581fa1c 100644
+--- a/src/theme-light.css
++++ b/src/theme-light.css
+@@ -28,9 +28,10 @@ html[data-theme="light"] .editor-shell {
+   border-color: #a7ffd4 !important;
+ }
+ 
+-/* Editor pages: light margin uses the light body neutral (#f5f5f5), matching the title bar surface. */
+-html[data-theme="light"] .app-root-frame[data-editor-page="true"] {
+-  background: #f5f5f5;
++/* Editor pages: light margin uses matching mint accent per green fill directive. */
++html[data-theme="light"] .app-root-frame[data-editor-page="true"],
++html[data-theme="light"] .app-root-frame[data-editor-page="true"] [data-testid="editor-workspace-layout"] {
++  background: #a7ffd4;
+ }
+ 
+ html[data-theme="light"] .app-title-bar {

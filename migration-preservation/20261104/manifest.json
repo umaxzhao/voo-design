@@ -1,0 +1,204 @@
+{
+  "scope": "Reviewed small WIP preservation; no source changes were applied.",
+  "records": [
+    {
+      "sourceId": "uf23-dualfill-20261103T003655Z",
+      "baselineHead": "950df98e91ef9b2faa244c293c37d5925fff6e6f",
+      "sourceRelativePath": "tests/e2e/uf23-ui-gap-checks.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/uf23-dualfill-20261103T003655Z/tests/e2e/uf23-ui-gap-checks.mjs",
+      "bytes": 9325,
+      "sha256": "e71b3c39b70a41d4d78bba3cb399e73b0a1bb39f7219d16568141d7ba3954348",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "uf23-dualfill-20261103T003655Z",
+      "baselineHead": "950df98e91ef9b2faa244c293c37d5925fff6e6f",
+      "sourceRelativePath": "tests/e2e/uf23-ui-gap-helpers.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/uf23-dualfill-20261103T003655Z/tests/e2e/uf23-ui-gap-helpers.mjs",
+      "bytes": 7427,
+      "sha256": "0077d701db4e3322c2a6ae598e9ad810238e7f51d0a245d66271f29a35610da5",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "uf13-control-38e4b8a7-20261103T2215",
+      "baselineHead": "38e4b8a7b6435dd07619ce8a67a4020a25c2b553",
+      "sourceRelativePath": "tests/e2e/uf13-pen-join-world-matrix.e2e.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/uf13-control-38e4b8a7-20261103T2215/tests/e2e/uf13-pen-join-world-matrix.e2e.mjs",
+      "bytes": 13301,
+      "sha256": "e120618a415e2b8167eae2e9e773605b71524b7eedcbf083ca73653af158ebb3",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "uf27-svg-font-56005464-20261103T2122",
+      "baselineHead": "560054648092f23eab48818744221cf7716cda63",
+      "sourceRelativePath": "tests/unit/svg_font_family_entities.test.js",
+      "preservedPath": "migration-preservation/20261104/untracked/uf27-svg-font-56005464-20261103T2122/tests/unit/svg_font_family_entities.test.js",
+      "bytes": 4335,
+      "sha256": "604b01a38859e23e644218697d0caa14a0d74061ae69b568d7e436402c8eb714",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "base-control-56005464-20261103T2140",
+      "baselineHead": "560054648092f23eab48818744221cf7716cda63",
+      "sourceRelativePath": "tests/e2e/browser-html-root-background-cold-reopen.e2e.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/base-control-56005464-20261103T2140/tests/e2e/browser-html-root-background-cold-reopen.e2e.mjs",
+      "bytes": 6168,
+      "sha256": "193fbdc3cacba17c46ef35549d5458985be472a44a0cbb0fb0dc2956d2a43926",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "base-control-56005464-20261103T2140",
+      "baselineHead": "560054648092f23eab48818744221cf7716cda63",
+      "sourceRelativePath": "tests/e2e/browser-html-root-background.e2e.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/base-control-56005464-20261103T2140/tests/e2e/browser-html-root-background.e2e.mjs",
+      "bytes": 5877,
+      "sha256": "41fbd60d748ee54e8e2b4801b2dd7056979869be8ed355eb06275ba0cf0ab08d",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "base-control-56005464-20261103T2140",
+      "baselineHead": "560054648092f23eab48818744221cf7716cda63",
+      "sourceRelativePath": "tests/e2e/dodge-burn-panel-controls.e2e.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/base-control-56005464-20261103T2140/tests/e2e/dodge-burn-panel-controls.e2e.mjs",
+      "bytes": 6957,
+      "sha256": "b9a175660002af71e55fd6df735ca08d0e4dafe76ff33eb3aa4ec47e85e31a17",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "base-control-56005464-20261103T2140",
+      "baselineHead": "560054648092f23eab48818744221cf7716cda63",
+      "sourceRelativePath": "tests/e2e/export-preview-bounds.e2e.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/base-control-56005464-20261103T2140/tests/e2e/export-preview-bounds.e2e.mjs",
+      "bytes": 5289,
+      "sha256": "b64a70ea42fc5e8aa34778b94fe9c84c4a8b007e92b06445560fa766c7c84219",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "obs-frame01-b8-05fc-20261103T0930Z",
+      "baselineHead": "b8ae8039a291e841f786b29f90af00e4f4c89653",
+      "sourceRelativePath": "tests/e2e/obs-frame01-diagnosis.e2e.mjs",
+      "preservedPath": "migration-preservation/20261104/untracked/obs-frame01-b8-05fc-20261103T0930Z/tests/e2e/obs-frame01-diagnosis.e2e.mjs",
+      "bytes": 22476,
+      "sha256": "b19890752c53c911dd6e255a8069b2b736b75390308f72e6303b6c23c74a7dbb",
+      "kind": "original-untracked",
+      "status": "WIP_NOT_ACCEPTED",
+      "publication": "REVIEWED_FOR_PUBLIC_PRESERVATION"
+    },
+    {
+      "sourceId": "uf27-svg-font-56005464-20261103T2122",
+      "baselineHead": "560054648092f23eab48818744221cf7716cda63",
+      "sourceRelativePath": "src/canvas/editor/editor_svg_import.js",
+      "preservedPath": "migration-preservation/20261104/patches/uf27-svg-font-56005464-20261103T2122/src__canvas__editor__editor_svg_import.js.patch",
+      "bytes": 947,
+      "sha256": "cba30f414a3287c6484a285719a85dd6440df0e1ba8f4270bdd004f2ef1f1e26",
+      "kind": "original-head-to-worktree-patch",
+      "status": "WIP_NOT_APPLIED_NOT_ACCEPTED"
+    },
+    {
+      "sourceId": "uf27-svg-font-56005464-20261103T2122",
+      "baselineHead": "560054648092f23eab48818744221cf7716cda63",
+      "sourceRelativePath": "src/canvas/editor/editor_svg_xml.js",
+      "preservedPath": "migration-preservation/20261104/patches/uf27-svg-font-56005464-20261103T2122/src__canvas__editor__editor_svg_xml.js.patch",
+      "bytes": 1293,
+      "sha256": "e674aad357c153fe1aba8f5fdfd1564925419d1352d27e65a27e0d8f5ed72430",
+      "kind": "original-head-to-worktree-patch",
+      "status": "WIP_NOT_APPLIED_NOT_ACCEPTED"
+    },
+    {
+      "sourceId": "menu-capture-control-20261103T135230Z",
+      "baselineHead": "e18344e64cac9370704bd65e7cce0f7781653df9",
+      "sourceRelativePath": "src/canvas/components/editor_context_menu.jsx",
+      "preservedPath": "migration-preservation/20261104/patches/menu-capture-control-20261103T135230Z/src__canvas__components__editor_context_menu.jsx.patch",
+      "bytes": 859,
+      "sha256": "87583a039f03ea840eadda9b62ba93ef4bc60090f7b2815d4e92bcadd919a5d8",
+      "kind": "original-head-to-worktree-patch",
+      "status": "WIP_NOT_APPLIED_NOT_ACCEPTED"
+    },
+    {
+      "sourceId": "t02-combo-ui-e0-20261103T0730Z",
+      "baselineHead": "45a5bc1e9d437896556b4db1c4c04c1c3a479d90",
+      "sourceRelativePath": "scripts/editor-module-catalog.mjs",
+      "preservedPath": "migration-preservation/20261104/patches/t02-combo-ui-e0-20261103T0730Z/scripts__editor-module-catalog.mjs.patch",
+      "bytes": 837,
+      "sha256": "4874e4f75c9ee572fac3c53ed31c979e098c65d72a932b6a6453370da6d22589",
+      "kind": "original-head-to-worktree-patch",
+      "status": "WIP_NOT_APPLIED_NOT_ACCEPTED"
+    },
+    {
+      "sourceId": "t02-combo-ui-e0-20261103T0730Z",
+      "baselineHead": "45a5bc1e9d437896556b4db1c4c04c1c3a479d90",
+      "sourceRelativePath": "src/index.css",
+      "preservedPath": "migration-preservation/20261104/patches/t02-combo-ui-e0-20261103T0730Z/src__index.css.patch",
+      "bytes": 1094,
+      "sha256": "843dc3f1944a58da15ed8d8f461520d1d76127f49e2fbd86ff93ae10138243b4",
+      "kind": "original-head-to-worktree-patch",
+      "status": "WIP_NOT_APPLIED_NOT_ACCEPTED"
+    },
+    {
+      "sourceId": "t02-combo-ui-e0-20261103T0730Z",
+      "baselineHead": "45a5bc1e9d437896556b4db1c4c04c1c3a479d90",
+      "sourceRelativePath": "src/theme-light.css",
+      "preservedPath": "migration-preservation/20261104/patches/t02-combo-ui-e0-20261103T0730Z/src__theme-light.css.patch",
+      "bytes": 838,
+      "sha256": "be3a4a19fac70183ca4bd1648c9a01a205ff5608a6aa3858ba8925862e358998",
+      "kind": "original-head-to-worktree-patch",
+      "status": "WIP_NOT_APPLIED_NOT_ACCEPTED"
+    },
+    {
+      "sourceId": "text-bounds-fix-e0-20261104T0100Z",
+      "baselineHead": "265f3531a4fba16d5c2033d61832b627cb03a28d",
+      "sourceRelativePath": "test-boxwidth-18.png",
+      "preservedPath": "migration-preservation/20261104/synthetic-images/test-boxwidth-18.png",
+      "bytes": 107056,
+      "sha256": "6b54455a5e1f3c088afd407f22389c136956bdeaf389abcc639e00c6495dee88",
+      "kind": "visually-reviewed-synthetic-image",
+      "status": "EVIDENCE_ONLY_NOT_ACCEPTANCE"
+    },
+    {
+      "sourceId": "text-bounds-fix-e0-20261104T0100Z",
+      "baselineHead": "265f3531a4fba16d5c2033d61832b627cb03a28d",
+      "sourceRelativePath": "test-fixed-40k-crop.png",
+      "preservedPath": "migration-preservation/20261104/synthetic-images/test-fixed-40k-crop.png",
+      "bytes": 13614,
+      "sha256": "191b3a2e9281881be316c12690da84d93ccb0f8763acf1b1c0d65d57acdd5c33",
+      "kind": "visually-reviewed-synthetic-image",
+      "status": "EVIDENCE_ONLY_NOT_ACCEPTANCE"
+    },
+    {
+      "sourceId": "text-bounds-fix-e0-20261104T0100Z",
+      "baselineHead": "265f3531a4fba16d5c2033d61832b627cb03a28d",
+      "sourceRelativePath": "test-fixed-40k-selected.png",
+      "preservedPath": "migration-preservation/20261104/synthetic-images/test-fixed-40k-selected.png",
+      "bytes": 113368,
+      "sha256": "8571a4bfbf61888144fe09687c96145e9cb28e6669843b7301c7953c24f59ff9",
+      "kind": "visually-reviewed-synthetic-image",
+      "status": "EVIDENCE_ONLY_NOT_ACCEPTANCE"
+    },
+    {
+      "sourceId": "text-bounds-fix-e0-20261104T0100Z",
+      "baselineHead": "265f3531a4fba16d5c2033d61832b627cb03a28d",
+      "sourceRelativePath": "test-render-40k.png",
+      "preservedPath": "migration-preservation/20261104/synthetic-images/test-render-40k.png",
+      "bytes": 103116,
+      "sha256": "c188818391f24ff79131674fb3c88c617fc154fefa6ee41adf462c30ce1b9c1a",
+      "kind": "visually-reviewed-synthetic-image",
+      "status": "EVIDENCE_ONLY_NOT_ACCEPTANCE"
+    }
+  ]
+}

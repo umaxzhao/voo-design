@@ -1,0 +1,40 @@
+diff --git a/src/index.css b/src/index.css
+index ca0e89aaf2875dac0f131ec365cb6a484abaff41..93795514ac7e06f32e12d21a080012fb6935c1e9 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -397,14 +397,33 @@
+   transition: border-color 0.25s ease;
+ }
+ 
++.app-root-frame {
++  box-sizing: border-box;
++  overflow: hidden;
++  border-radius: 16px;
++  padding-top: 0 !important;
++}
++
++.app-root-frame > .app-title-bar {
++  border-top-left-radius: 16px;
++  border-top-right-radius: 16px;
++}
++
+ .app-root-frame[data-embed="true"] .editor-shell {
+   border: none;
+   border-radius: 0;
+ }
+ 
+-/* Editor pages: the 4px root margin around the green frame is neutral on both sides (dark: black). */
++/*
++ * Editor pages: green frame outer margin filled with mint per user directive.
++ * Covers the former 4px neutral dark margin and eliminates outer dark strips and corner gaps.
++ */
+ .app-root-frame[data-editor-page="true"] {
+-  background: #000;
++  background: #b2ffd6;
++}
++
++.app-root-frame[data-editor-page="true"] [data-testid="editor-workspace-layout"] {
++  background: #b2ffd6;
+ }
+ 
+ .editor-shell-inner {

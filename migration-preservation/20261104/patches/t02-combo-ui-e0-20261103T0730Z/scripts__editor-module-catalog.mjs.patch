@@ -1,0 +1,12 @@
+diff --git a/scripts/editor-module-catalog.mjs b/scripts/editor-module-catalog.mjs
+index 38ffa748508abf31a9934751c45f1e75ad0afdaa..127843f2a90b14e108bfb75720f9a41258d9eff7 100644
+--- a/scripts/editor-module-catalog.mjs
++++ b/scripts/editor-module-catalog.mjs
+@@ -238,6 +238,7 @@ export const EDITOR_MODULES = [
+       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction",
+       "settings-i18n", "locale-lifecycle", "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu",
+       "impeccable-polish", "mobile-control-targets", "export-preview-bounds", "inspector-font-768-matrix-verification",
++      "t02-visual-audit",
+     ],
+     remaining: [
+       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",
