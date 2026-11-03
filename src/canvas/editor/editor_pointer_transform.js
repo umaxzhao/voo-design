@@ -25,7 +25,7 @@ import { createWarpPointerGestures } from "./editor_pointer_warp.js";
 import { createCropPointerGestures } from "./editor_pointer_crop.js";
 import { visibleSelectedNode } from "./editor_pointer_hit_test.js";
 import { frameMoveId, startNodeMoveGesture } from "./move-gesture-start.js";
-import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
+import { isFrameEdgeHit, isFrameSelectionBoundary } from "./frame-selection-unit.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { rotationCursorForPoint } from "./editor-cursors.js";
 import { resizeTextBox } from "./text-box-resize.js";
@@ -382,7 +382,8 @@ export function createTransformPointerGestures(ctx) {
     }
 
     const bodyHit = api.getTool() === TOOL.SELECT ? api.nodeAtPoint(point) : null;
-    if (bodyHit && isFrameSelectionBoundary(bodyHit) && !bodyHit.parentId && !event.altKey) {
+    if (bodyHit && isFrameSelectionBoundary(bodyHit) && !bodyHit.parentId && !event.altKey &&
+        !isFrameEdgeHit(bodyHit, point, api.toDocPoint, event)) {
       // Preserve frame clicks; a drag on otherwise empty frame space starts a marquee.
       setGesture({ kind: "frameMarqueePending", start: point,
         startScreen: { x: event.clientX, y: event.clientY },
