@@ -146,10 +146,11 @@ export const EDITOR_MODULES = [
       "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js", "tests/unit/pen_curve_math.test.js",
       "tests/unit/fill_none_and_svg_fidelity.test.js",
       "tests/unit/svg_text_anchor.test.js",
+      "tests/unit/svg_font_family_entities.test.js",
     ],
     related: ["selection","compositing","documents","inspector"],
-    features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
-    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity","uf13-pen-join-world-matrix","uf13-pen-join-curve-handles"],
+    features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties","vectors.svg-font-family-entities"],
+    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity","uf13-pen-join-world-matrix","uf13-pen-join-curve-handles","uf27-svg-font-ui-check"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
     ],

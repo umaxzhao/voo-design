@@ -14,6 +14,30 @@ export function escapeXml(value) {
   return String(value).replace(ESCAPE_RE, (ch) => ESCAPE_MAP[ch]);
 }
 
+const NAMED_ENTITIES = new Map([
+  ["amp", "&"],
+  ["lt", "<"],
+  ["gt", ">"],
+  ["quot", '"'],
+  ["apos", "'"],
+]);
+const ENTITY_RE = /&(#[xX][0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g;
+
+/**
+ * Decodes XML character references in one pass, so "&amp;#39;" becomes "&#39;"
+ * and not "'". Unknown named entities are kept as written.
+ */
+export function decodeXmlEntities(value) {
+  return String(value).replace(ENTITY_RE, (match, body) => {
+    if (body[0] === "#") {
+      const isHex = body[1] === "x" || body[1] === "X";
+      const code = isHex ? Number.parseInt(body.slice(2), 16) : Number.parseInt(body.slice(1), 10);
+      return Number.isFinite(code) && code <= 0x10ffff ? String.fromCodePoint(code) : match;
+    }
+    return NAMED_ENTITIES.get(body) ?? match;
+  });
+}
+
 export function number(value) {
   return Number.isFinite(value) ? Math.round(value * 100) / 100 : 0;
 }
