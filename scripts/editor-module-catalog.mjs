@@ -54,13 +54,14 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_free*", "src/canvas/components/editor_full*",
       "src/canvas/components/editor_page*", "src/canvas/editor/*viewport*", "src/canvas/editor/*snapp*",
       "src/canvas/editor/*tile*", "src/canvas/page_camera.js",
-      "src/canvas/components/editor_hooks/use_editor_canvas_gestures.js", "tests/unit/snap_grid_shape_drawing.test.js",
+      "src/canvas/components/editor_hooks/use_editor_canvas_gestures.js", "src/canvas/components/artboard-body-gesture.js", "tests/unit/snap_grid_shape_drawing.test.js",
     ],
     related: ["selection","layers","compositing","platform"],
     features: ["canvas.camera","canvas.world-coordinates","canvas.snapping","canvas.performance"],
     suites: [
       "editor-canvas-navigation", "editor-snapping", "frame-negative-space", "frame-surface-camera",
       "frame-adjustment-space", "root-contextual-toolbar", "canvas-zoom-preview",
+      "artboard-body-select-fix", "repro-select-drag",
     ],
     remaining: [
       "Hardware FPS/memory gates run separately; passing geometry tests does not establish performance parity.",

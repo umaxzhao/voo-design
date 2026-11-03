@@ -1,5 +1,13 @@
-/** Content and selection handles take precedence over dragging the artboard. */
-export function shouldDragArtboardBody(engine, clientX, clientY) {
+import { TOOL } from "../editor/editor_constants.js";
+
+/** Content and selection handles take precedence over dragging the artboard.
+ *
+ * In default Select mode (TOOL.SELECT), artboard empty space is reserved for
+ * marquee box selection of inner layers; artboard repositioning is handled via
+ * its Frame title label handle.
+ */
+export function shouldDragArtboardBody(engine, clientX, clientY, activeTool = null) {
+  if (activeTool === TOOL.SELECT) return false;
   if (!engine?.toDocPoint || !engine?.nodeAtPoint) return false;
   if (engine.hasHandleUnder?.({ clientX, clientY })) return false;
   // Path editing owns its midpoint/handle hit targets, including empty pixels.
