@@ -9,8 +9,8 @@ const sourceDoc = { width: 220, height: 160, backgroundColor: "transparent", nod
   fills: [{ fill: gradient, opacity: 1, visible: true }, { fill: "#00ff00", opacity: 0.35, visible: true }],
 }] };
 
-function svgOf(instance) {
-  const html = renderToStaticMarkup(<CanvasInstanceContent sourceDoc={sourceDoc} instance={instance}
+function svgOf(instance, doc = sourceDoc) {
+  const html = renderToStaticMarkup(<CanvasInstanceContent sourceDoc={doc} instance={instance}
     width={220} height={160} resolveCanvas={() => null} visited={new Set()} depth={0} />);
   const uri = /src="(data:image\/svg\+xml;charset=utf-8,[^"]+)"/.exec(html)?.[1];
   expect(uri, "Live instance must use the common vector painter").toBeDefined();
@@ -25,6 +25,13 @@ describe("live instance paint stack", () => {
     expect(svg).not.toContain("linearGradient");
     expect(sourceDoc.nodes[0].fills[0].fill).toBe(gradient);
     expect(sourceDoc.nodes[0].fills[1].opacity).toBe(0.35);
+  });
+
+  it("leaves overall layer opacity to the outer DOM layer", () => {
+    const doc = { ...sourceDoc, nodes: [{ ...sourceDoc.nodes[0], opacity: 0.5 }] };
+    const svg = svgOf({}, doc);
+    expect(svg).not.toContain('opacity="0.5"');
+    expect(svg).toContain('fill-opacity="0.35"');
   });
 
   it("retains the direction line and second paint before overrides", () => {

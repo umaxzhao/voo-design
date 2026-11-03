@@ -1,5 +1,14 @@
 # 项目检查总进度
 
+## UF23 live paint and SVG import correctness — 2026-11-03
+
+- Scope: existing `layout.components` live instance paint parity and `vectors.format-losses` SVG paint opacity/gradient direction import; base `950df98e`, isolated `uf23-correctness-20261103T063510Z`.
+- Reproduction: `uf23-correctness-20261103T063510Z-evidence/before.log` and `.exit` record real UI exit 1, with original pixels, screenshots, traces, FIG/SVG and ZIP files retained; old unit passes do not remove the hold.
+- Candidate: live vector shapes reuse the common multi-paint renderer, applying outer layer alpha once; SVG import retains independent paint alpha and applicable object-bounding-box gradient direction lines. No PSD or UF24/26/27 changes.
+- Acceptance: the evidence directory's `verification.json` binds the exact fixed revision and real `final-ui.exit`/logs to object-relative screenshot pixels, real chooser FIG/SVG reimports, instance/detached portable ZIP cold opens, and UI Undo/Redo. Only those recorded contexts can pass; a nonzero or missing final exit retains the hold.
+- Remaining: integration into A, full release gate, Electron/native picker, signed apps, Linux, arbitrary SVG transforms and broader component/media combinations are not certified by this audit.
+
+
 ## VOO 设计编辑器进驻 DeepSeek Harness 右侧面板：2026-11-03
 
 - **基线版本**：`3657d11e`（`merge/consolidate-all-branches`，工作树在改动前干净）；本轮改动为新增插件包与单测，未推送。
