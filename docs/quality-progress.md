@@ -1,5 +1,14 @@
 # 项目检查总进度
 
+## 协同共享文档资源范围 — 2026-11-03
+
+- 范围：`platform.collaboration-resource-scope`；固定候选 `c3dce2e4f989209220ae86b835e6f24ab9518e88`，改动仅在协同 bridge、对应单测与 module catalog。
+- 修前：离线 synthetic probe 在同一 `41225de4` 副本 exit 1。document 只引用 `shared-image`，但 `BLOB_HAVE` 同时公布 `other-document-image`；连入的 synthetic peer 请求后，bridge 读取该 ID 并发出 `BLOB_DATA`。
+- 修复：announce 与 Want/WantOriginal 都从当前 document snapshot 的既有 `imageIds` 求许可集；过滤 DB 读取 ID，并在异步读取返回及每个 chunk 发送前重新核查，避免 document 切换后续发旧资源。正常共享资源仍可读取并发送。
+- 验证：modules check、lint、build exit 0；`collab_resource_security`、`collab_transfer`、`collab_two_devices` 共 11 pass/1 skip。原 probe 在隔离修复副本 adapted run exit 0：只公布 `shared-image`，不读取或回复无关 ID。完整原始日志见 `/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/collab-resource-scope-41225-b-20261103T132335Z/`。
+- 范围仍 partial：离线 synthetic bridge 检查不是实际在线房间或多平台验收。单独的 workflow-level per-peer authorization 策略仍是明确 skip；本次不宣称其通过。不联网、不触碰冻结主仓库或 PID 224。
+
+
 ## 快速 Enter/Escape 数值显示同步 — 2026-11-03
 
 - 范围：`inspector.field-commit`；固定基线 `0944e200160e0f80ccb81197c16eb6e8039ca28e` 的全新独立副本，仅改 `BoundedNumberInput` 和对应回归/登记。未改 history、保存引擎、image_editor、pointer、CSS 或其他 owner 的树。
