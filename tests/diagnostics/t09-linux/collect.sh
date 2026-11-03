@@ -18,3 +18,7 @@ if [[ -d "$VOO_DIAG_SHOTS" ]]; then cp -R -- "$VOO_DIAG_SHOTS" "$VOO_DIAG_OUT/ga
 probe_out="$VOO_DIAG_OUT/probe"
 VOO_DIAG_OUT="$probe_out" node "$script_dir/t09-gate-probe.mjs" > "$VOO_DIAG_OUT/probe.log" 2>&1
 printf '%s\n' "$?" > "$VOO_DIAG_OUT/probe.exit"
+
+# Diagnostic only; preserves original gate failure and thresholds.
+VOO_AA_DIAG_OUT="$VOO_DIAG_OUT/aa-controls" node "$script_dir/t09-aa-control.mjs" > "$VOO_DIAG_OUT/aa-controls.log" 2>&1
+printf '%s\n' "$?" > "$VOO_DIAG_OUT/aa-controls.exit"
