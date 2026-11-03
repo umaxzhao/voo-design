@@ -14,6 +14,15 @@ export const DEFAULT_BRIDGE_PORT = 4179;
  * editor through the loopback origin, so the page can still link to the bridge.
  */
 export const DEFAULT_EDITOR_URL = "https://voo.run/editor/";
+/**
+ * Where the panel's editor comes from:
+ * - `hosted` (default): the web version at `editorUrl`, proxied through the
+ *   loopback origin so the page can link to the bridge. Always the latest build.
+ * - `local`: a local `dist/` build must exist — for previewing local changes.
+ * - `auto`: local build when present, otherwise the hosted web version.
+ */
+export const DEFAULT_EDITOR_SOURCE = "hosted";
+const EDITOR_SOURCES = new Set(["hosted", "local", "auto"]);
 
 function positivePort(value, fallback) {
   const port = Number(value);
@@ -61,7 +70,7 @@ export function discoverEditorBuild() {
  * and the local bridge lives at `<repo>/electron/cli_bridge_server.js`.
  *
  * @param {object} [config] the loader row's config.
- * @returns {{host: string, port: number, bridgePort: number, editorDir: string, editorUrl: string|null, repoDir: string, bridge: boolean}}
+ * @returns {{host: string, port: number, bridgePort: number, editorDir: string, editorUrl: string|null, source: "hosted"|"local"|"auto", repoDir: string, bridge: boolean}}
  */
 export function resolveEditorPanelOptions(config = {}) {
   // A blank row value means "use the default", so it must not shadow the env override.
@@ -75,12 +84,14 @@ export function resolveEditorPanelOptions(config = {}) {
     configuredPath(config.editorUrl) ??
     configuredPath(process.env.VOO_EDITOR_PANEL_URL) ??
     DEFAULT_EDITOR_URL;
+  const sourceSetting = configuredPath(config.editorSource) ?? configuredPath(process.env.VOO_EDITOR_PANEL_SOURCE) ?? DEFAULT_EDITOR_SOURCE;
   return {
     host: "127.0.0.1",
     port: positivePort(config.port, DEFAULT_EDITOR_PORT),
     bridgePort: positivePort(config.bridgePort, DEFAULT_BRIDGE_PORT),
     editorDir: path.resolve(editorSetting ?? path.join(repoDir, "dist")),
     editorUrl: editorUrlSetting === "off" ? null : ensureTrailingSlash(editorUrlSetting),
+    source: EDITOR_SOURCES.has(sourceSetting) ? sourceSetting : DEFAULT_EDITOR_SOURCE,
     repoDir,
     bridge: config.bridge !== false,
   };

@@ -97,6 +97,7 @@ describe("resolveEditorPanelOptions", () => {
       bridgePort: 4179,
       editorDir: path.join(REPO_ROOT, "dist"),
       editorUrl: "https://voo.run/editor/",
+      source: "hosted",
       repoDir: REPO_ROOT,
       bridge: true,
     });
@@ -334,7 +335,13 @@ describe("integrated VOO bundle", () => {
     // one install mounts both halves whatever directory the bundle sits in.
     expect(rows[0].name).toBe("./index.js");
     expect(fs.existsSync(path.join(packageDir, "index.js"))).toBe(true);
-    expect(rows[0].config).toEqual({ port: 4173, editorDir: "", editorUrl: "https://voo.run/editor/", bridge: true });
+    expect(rows[0].config).toEqual({
+      port: 4173,
+      editorSource: "hosted",
+      editorDir: "",
+      editorUrl: "https://voo.run/editor/",
+      bridge: true,
+    });
 
     // The canvas MCP client spawns an absolute script entry inside this checkout.
     expect(rows[1].name).toBe("@deepseek-ai/dsh-mcp-client");
@@ -347,12 +354,82 @@ describe("integrated VOO bundle", () => {
   });
 });
 
+describe("editor source policy", () => {
+  async function upstreamFixture() {
+    const upstream = http.createServer((request, response) => {
+      if (request.url === "/editor/" || request.url === "/editor/index.html") {
+        response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        response.end(`<html><body>${INDEX_MARKER}_HOSTED</body></html>`);
+        return;
+      }
+      response.writeHead(404, { "content-type": "text/plain" });
+      response.end("not found");
+    });
+    await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+    return { upstream, editorUrl: `http://127.0.0.1:${upstream.address().port}/editor/` };
+  }
+
+  it("uses the hosted web version by default even with a local build", async () => {
+    const { upstream, editorUrl } = await upstreamFixture();
+    const server = await startServer({ editorDir: makeEditorBuild(), editorUrl, source: "hosted" });
+    try {
+      expect(server.mode).toBe("proxy");
+      const page = await request(server, "/");
+      expect(page.body).toContain(`${INDEX_MARKER}_HOSTED`);
+      const health = JSON.parse((await request(server, "/__voo/health")).body);
+      expect(health).toMatchObject({ mode: "proxy", source: "hosted", hasBuild: true });
+    } finally {
+      await closeServer(server);
+      await new Promise((resolve) => upstream.close(resolve));
+    }
+  });
+
+  it("keeps the local build for the auto and local source policies", async () => {
+    const { upstream, editorUrl } = await upstreamFixture();
+    const autoServer = await startServer({ editorDir: makeEditorBuild(), editorUrl, source: "auto" });
+    const localServer = await startServer({ editorDir: makeEditorBuild(), editorUrl, source: "local" });
+    try {
+      expect(autoServer.mode).toBe("local");
+      expect(localServer.mode).toBe("local");
+      expect((await request(autoServer, "/")).body).toContain(INDEX_MARKER);
+      expect((await request(localServer, "/")).body).toContain(INDEX_MARKER);
+    } finally {
+      await closeServer(autoServer);
+      await closeServer(localServer);
+      await new Promise((resolve) => upstream.close(resolve));
+    }
+  });
+
+  it("shows the build guidance page when the local policy has no build", async () => {
+    const { upstream, editorUrl } = await upstreamFixture();
+    const emptyDir = path.join(tempRoot(), "empty-build");
+    fs.mkdirSync(emptyDir);
+    const server = await startServer({ editorDir: emptyDir, editorUrl, source: "local" });
+    try {
+      expect(server.mode).toBe("missing");
+      const page = await request(server, "/");
+      expect(page.response.status).toBe(200);
+      expect(page.body).toContain("VOO 编辑器尚未构建");
+      expect(page.body).not.toContain(`${INDEX_MARKER}_HOSTED`);
+    } finally {
+      await closeServer(server);
+      await new Promise((resolve) => upstream.close(resolve));
+    }
+  });
+});
+
 describe("standalone (app-less) editor source", () => {
   it("defaults to the hosted editor and accepts overrides", () => {
     expect(DEFAULT_EDITOR_URL).toBe("https://voo.run/editor/");
     expect(resolveEditorPanelOptions().editorUrl).toBe(DEFAULT_EDITOR_URL);
     expect(resolveEditorPanelOptions({ editorUrl: "https://example.test/editor" }).editorUrl).toBe("https://example.test/editor/");
     expect(resolveEditorPanelOptions({ editorUrl: "off" }).editorUrl).toBeNull();
+    // Source policy: the web version by default, local build on request, auto
+    // for a local-first dev preview.
+    expect(resolveEditorPanelOptions().source).toBe("hosted");
+    expect(resolveEditorPanelOptions({ editorSource: "auto" }).source).toBe("auto");
+    expect(resolveEditorPanelOptions({ editorSource: "local" }).source).toBe("local");
+    expect(resolveEditorPanelOptions({ editorSource: "weird" }).source).toBe("hosted");
     process.env.VOO_EDITOR_PANEL_URL = "https://env.test/editor/";
     try {
       expect(resolveEditorPanelOptions({}).editorUrl).toBe("https://env.test/editor/");

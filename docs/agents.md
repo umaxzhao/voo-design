@@ -297,10 +297,12 @@ produces the same bundle as a portable connector with the MCP runtime and
 `ws` vendored.
 
 The bundle is also **standalone**: it needs neither the VOO desktop app nor a
-repository checkout. When no local build exists the Host proxies the hosted
-editor (`editorUrl`, default `https://voo.run/editor/`) through the loopback
-origin, and when no repository bridge is available it starts the bundled
-`lib/bridge-lite.js` canvas relay instead. The lite bridge carries only the MCP
+repository checkout. The editor source is `editorSource = hosted` by default:
+the Host proxies the web version (`editorUrl`, default
+`https://voo.run/editor/`) through the loopback origin, so the panel always runs
+the deployed build and can still link to the bridge (`local` / `auto` preview a
+local `dist` instead). When no repository bridge is available it starts the
+bundled `lib/bridge-lite.js` canvas relay instead. The lite bridge carries only the MCP
 canvas channels (no local CLI-agent channels); everything the DeepSeek Harness
 tools call goes through it.
 

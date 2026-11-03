@@ -17,6 +17,10 @@
       config:
         # Loopback origin the right-Sidebar iframe loads.
         port: 4173
+        # Where the panel's editor comes from: 'hosted' (default) always uses the
+        # web version below; 'local' requires a dist/ build; 'auto' prefers a
+        # local build and falls back to the web version.
+        editorSource: 'hosted'
         # Empty: resolve the editor build by walking up from this package.
         editorDir: ''
         # Used when no local build exists: the hosted editor is proxied through

@@ -35,6 +35,7 @@ export function apply(ctx, config = {}) {
           port: options.port,
           editorDir: options.editorDir,
           editorUrl: options.editorUrl,
+          source: options.source,
         });
       } catch (error) {
         console.error(

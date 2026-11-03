@@ -1,5 +1,16 @@
 # 项目检查总进度
 
+## 编辑器源码策略：默认使用网页版（hosted），本地构建降为可选：2026-11-03
+
+- **基线版本**：`fc485b62`；按“使用网页版链接更合理”的结论调整默认策略。
+- **改动**：新增 `editorSource`（`hosted` 默认 / `local` / `auto`，环境变量 `VOO_EDITOR_PANEL_SOURCE`）：
+  - `hosted`：面板始终加载 `editorUrl`（默认 `https://voo.run/editor/`）的网页版，经 `127.0.0.1:4173` 反代（保证 iframe origin 为 loopback 才能连 bridge），永远是最新部署构建；
+  - `local`：必须存在本地 `dist/`（`editorDir`/环境变量/向上查找），用于预览本地改动；缺失时显示构建提示页；
+  - `auto`：有本地构建用本地，否则用网页版。
+  - 安装 bundle 的 patch 显式写 `editorSource: 'hosted'`；`/__voo/health` 增加 `source` 字段。
+- **验收证据**：单测 `voo_editor_panel` 24/24（含 hosted 覆盖本地构建、auto/local 保持本地、local 无构建显示提示页、默认值/非法值回退/环境变量覆盖）；`voo_bridge_lite` 7/31 合计 31/31 通过；`editor-checks --changed` → `unmapped: []`。运行态重载插件行后：`/__voo/health` → `{"mode":"proxy","source":"hosted","editorUrl":"https://voo.run/editor/","hasBuild":true}`，`GET /` 返回托管构建（脚本 `index-wHkAGqs0.js`，本地 dist 为 `index-BXRN-V97.js`），`4179` bridge 正常，`voo_status` → `canvasConnected: true`。
+- **保留项**：当前面板里已打开的 iframe 仍运行切换前的本地页面，刷新标签后即加载网页版；文档存储在同一 origin（127.0.0.1:4173），切换来源不丢文档。未 push、未部署。
+
 ## 独立运行模式（无 VOO App、无仓库）：托管编辑器反代 + 内置 canvas bridge：2026-11-03
 
 - **基线版本**：`66beaa03`；本轮让单个 VOO Harness 插件在“只有 DSH + 网络”的机器上也能跑起来。

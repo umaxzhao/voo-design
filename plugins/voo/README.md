@@ -31,11 +31,14 @@ canvas.
 The bundle is self-sufficient: it needs neither the VOO desktop app nor a
 repository checkout.
 
-- **Editor source**: a local build is used when one is found (`editorDir`,
-  `VOO_EDITOR_PANEL_DIR`, or a `dist/` above the package). Without one the Host
-  proxies the hosted editor (`editorUrl`, default `https://voo.run/editor/`)
-  through the loopback origin, so the iframe still loads and can link to the
-  bridge. Set `editorUrl: 'off'` to require a local build instead.
+- **Editor source**: `editorSource` decides where the panel's editor comes
+  from. `hosted` (default) always serves the web version at `editorUrl`
+  (`https://voo.run/editor/`), proxied through the loopback origin so the page
+  can still link to the bridge — the panel is always the latest build.
+  `local` requires a build (`editorDir`, `VOO_EDITOR_PANEL_DIR`, or a `dist/`
+  above the package) for previewing local changes; `auto` prefers the local
+  build and falls back to the web version. Set `editorUrl: 'off'` to disable the
+  web version entirely.
 - **Canvas bridge**: an already-running bridge (VOO app or `npm run bridge`) is
   reused; otherwise the repository bridge starts when a checkout is available,
   and the bundled `lib/bridge-lite.js` starts when it is not. The lite bridge

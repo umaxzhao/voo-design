@@ -108,11 +108,20 @@ export function resolveEditorFile(editorDir, urlPath) {
  * @returns {Promise<{url: string, port: number, editorDir: string, editorUrl: string|null, hasBuild: boolean, mode: "local"|"proxy"|"missing", close: () => Promise<void>}>}
  */
 export async function startEditorServer(options) {
-  const { host = "127.0.0.1", port, editorDir, editorUrl = null, logger = console } = options;
+  const { host = "127.0.0.1", port, editorDir, editorUrl = null, source = "hosted", logger = console } = options;
   const indexPath = path.join(editorDir, "index.html");
   const upstream = editorUrl ? new URL(editorUrl) : null;
   const hasBuild = () => isFile(indexPath);
-  const mode = () => (hasBuild() ? "local" : upstream ? "proxy" : "missing");
+  /**
+   * `hosted` serves the web version, `local` requires a build, and `auto`
+   * prefers a local build (offline/development) but falls back to the web
+   * version. A server without an upstream can only serve a local build.
+   */
+  const mode = () => {
+    if (source === "local") return hasBuild() ? "local" : "missing";
+    if (source === "auto") return hasBuild() ? "local" : upstream ? "proxy" : "missing";
+    return upstream ? "proxy" : hasBuild() ? "local" : "missing";
+  };
 
   /** Proxy one request through the loopback origin to the hosted editor build. */
   const proxy = async (request, response, pathname, method) => {
@@ -198,6 +207,7 @@ export async function startEditorServer(options) {
         ok: true,
         service: "voo",
         mode: mode(),
+        source,
         editorDir,
         editorUrl,
         hasBuild: hasBuild(),
@@ -207,11 +217,12 @@ export async function startEditorServer(options) {
       return;
     }
 
+    if (mode() === "proxy") {
+      void proxy(request, response, pathname, method);
+      return;
+    }
+
     if (!hasBuild()) {
-      if (upstream) {
-        void proxy(request, response, pathname, method);
-        return;
-      }
       if (pathname === "/" || pathname === "/index.html") {
         response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
         response.end(method === "HEAD" ? undefined : MISSING_BUILD_PAGE);
