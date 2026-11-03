@@ -1,5 +1,12 @@
 # 项目检查总进度
 
+## QA 产物路径隔离 — 2026-11-03
+
+- Test-only，固定基线 `41225de450ded0b562d0a861fe559947a44f4016`；仅两份既有套件改产物路径，产品源码与原业务断言/timeout不变。
+- `inspector-font-768-matrix-verification` 使用 `mkdtemp(editorArtifactPath(...))` 的每次唯一根目录保存16截图与matrix-results.json；`impeccable-polish` 同样将两截图放入每次唯一目录，移除旧e0绝对路径与固定/tmp路径。
+- 未运行未修套件：修前仅静态合同检查exit1；修后AST证明8/12处原assert、17/28处原交互及默认timeout合同不变。复用统一 `VOO_BROWSER_EVIDENCE_DIR` 与既有临时目录fallback，不添加新env或产品功能。
+- 两套各仅单次验证，使用独立证据根目录和禁止旧路径写入的审计守卫；精确本地commit、真实exit、产物hash及旧证据前后核对见 `/Users/tt/Desktop/voo-linux-qa/c-rapid-numeric-fix-20261103T122024Z/qa-artifact-isolation-20261103T132257Z/REPORT.md` / `DELIVERY.json`。未将路径修复扩展为产品、原生平台或整套release验收。
+
 ## 快速 Enter/Escape 数值显示同步 — 2026-11-03
 
 - 范围：`inspector.field-commit`；固定基线 `0944e200160e0f80ccb81197c16eb6e8039ca28e` 的全新独立副本，仅改 `BoundedNumberInput` 和对应回归/登记。未改 history、保存引擎、image_editor、pointer、CSS 或其他 owner 的树。

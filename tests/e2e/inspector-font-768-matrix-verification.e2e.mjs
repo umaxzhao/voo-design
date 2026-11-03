@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
-const evidenceDir = "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/inspector-font-768-e0-20261103T0601Z/screenshots";
+const evidenceRoot = await mkdtemp(editorArtifactPath("inspector-font-768-"));
+const evidenceDir = join(evidenceRoot, "screenshots");
 await mkdir(evidenceDir, { recursive: true });
 
 console.log("=== Matrix Verification: 320/390/768/1440 × Light/Dark × En/Zh ===");
@@ -137,7 +140,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await setLocale("en");
   });
 
-  const matrixJsonPath = "/Users/tt/Documents/Codex/2026-11-02/task/closure-acceptance-evidence/inspector-font-768-e0-20261103T0601Z/matrix-results.json";
+  const matrixJsonPath = join(evidenceRoot, "matrix-results.json");
   await writeFile(matrixJsonPath, JSON.stringify(matrixResults, null, 2));
   console.log("All 16 matrix scenarios verified successfully. Results written to:", matrixJsonPath);
 });

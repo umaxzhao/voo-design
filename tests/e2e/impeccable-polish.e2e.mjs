@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
+import { mkdtemp } from "node:fs/promises";
+import { join } from "node:path";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 import { checkContextSubmenus } from "./context-submenu-checks.mjs";
+
+const evidenceDir = await mkdtemp(editorArtifactPath("impeccable-polish-"));
+console.log(JSON.stringify({ evidenceDir }));
 
 await withEditorBrowser(async ({ page, errors }) => {
   await checkContextSubmenus(page);
@@ -108,7 +114,7 @@ await withEditorBrowser(async ({ page, errors }) => {
     .click();
   await properties.getByTestId("properties-add-slot").click();
   await page.getByTestId("frame-slot-section").waitFor();
-  await page.screenshot({ path: "/tmp/voo-impeccable-fixed-tablet.png" });
+  await page.screenshot({ path: join(evidenceDir, "tablet.png") });
   await page.setViewportSize({ width: 390, height: 844 });
   await brand.click();
   const sidebar = page.getByTestId("welcome-sidebar");
@@ -121,7 +127,7 @@ await withEditorBrowser(async ({ page, errors }) => {
   await page.getByTestId("mobile-project-switcher").click();
   await page.getByRole("menuitem", { name: /Search files/i }).click();
   await page.locator(".welcome-mobile-search").waitFor({ state: "visible" });
-  await page.screenshot({ path: "/tmp/voo-impeccable-fixed-welcome.png" });
+  await page.screenshot({ path: join(evidenceDir, "welcome.png") });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: /Shortcuts.*Guide/i }).click();
   const guide = page
