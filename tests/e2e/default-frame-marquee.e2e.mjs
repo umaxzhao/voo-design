@@ -11,12 +11,17 @@ console.log(`Evidence directory: ${out}`);
 await mkdir(out, { recursive: true });
 const zip = `${out}/default-frame.zip`, records = [];
 let ids, frameId, savedNodes;
-const snapshot = page => page.evaluate(() => {
+const snapshot = page => page.evaluate(async () => {
+  const { useDesignStore } = await import("/src/store/design_store.js");
+  const current = useDesignStore.getState();
   const engine = window.__vooEditor, doc = engine.getDocument();
   const board = document.querySelector("[data-editor-artboard]").getBoundingClientRect();
   return { nodes: doc.nodes, root: doc.isCanvasRoot, width: doc.width, height: doc.height,
     board: { x: board.x, y: board.y, width: board.width, height: board.height },
-    camera: window.__vooStore?.editorCamera, layouts: window.__vooStore?.editorArtboardLayouts,
+    camera: structuredClone(current.editorCamera),
+    layouts: current.editorArtboardLayouts instanceof Map
+      ? { kind: "map", entries: structuredClone([...current.editorArtboardLayouts.entries()]) }
+      : { kind: "object", value: structuredClone(current.editorArtboardLayouts) },
     history: engine.getHistoryEntries().map(({ id, name }) => ({ id, name })), selected: engine.getSelectedIds() };
 });
 const worldToScreen = (state, x, y) => ({ x: state.board.x + x * state.board.width / state.width,
@@ -87,5 +92,57 @@ await withEditorBrowser(async ({ page }) => {
   assert.deepEqual(canonicalProjectNodes(restored.nodes), canonicalProjectNodes(savedNodes), "cold model including parent and geometry");
   await verify(page, "cold-open");
 }, { openDocument: false });
+// A separate real-browser negative control proves camera and board observations
+// change under Hand panning while the document model and artboard layouts do not.
+await withEditorBrowser(async ({ page, tool }) => {
+  await page.keyboard.press("Control+n");
+  await page.waitForFunction(() => window.__vooEditor?.getDocument()?.nodes.some(node => node.isFrame));
+  const created = await snapshot(page);
+  frameId = created.nodes.find(node => node.isFrame).id; ids = [];
+  for (const [index, x] of [120, 360, 840].entries()) {
+    const node = await tool("create_shape", { kind: "rect", name: `Pan probe ${index}`,
+      x, y: 120, width: 48, height: 48, fill: "#ff0000" });
+    ids.push(node.layerId);
+  }
+  await page.evaluate(({ ids, frameId }) => ids.forEach((id, index) => window.__vooEditor.updateNode(id,
+    { parentId: frameId, x: [120, 360, 840][index], y: 120, width: 48, height: 48 })), { ids, frameId });
+  const hand = page.locator('[data-testid="editor-toolbar"] button[aria-label="Hand"]').first();
+  await hand.click();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getTool()), "hand");
+  const before = await snapshot(page), point = worldToScreen(before, 700, 500);
+  const target = await page.evaluate(({ x, y }) => {
+    const board = document.querySelector("[data-editor-artboard]");
+    const stage = board?.firstElementChild, hit = document.elementFromPoint(x, y);
+    return { insideStage: Boolean(stage && hit && stage.contains(hit)), tag: hit?.tagName,
+      interactive: Boolean(hit?.closest('button, input, textarea, [role="dialog"], [data-editor-artboard-title]')) };
+  }, point);
+  assert.equal(target.insideStage, true, "Hand starts on the actual artboard stage");
+  assert.equal(target.interactive, false, "Hand starts away from buttons and titles");
+  await page.mouse.click(point.x, point.y);
+  const focus = await page.evaluate(() => ({ tag: document.activeElement?.tagName,
+    testId: document.activeElement?.getAttribute("data-testid"),
+    insideEditor: Boolean(document.activeElement?.closest('[data-testid="design-editor"]')),
+    insideArtboard: Boolean(document.activeElement?.closest('[data-editor-artboard]')),
+    interactive: Boolean(document.activeElement?.closest('button, input, textarea, [role="dialog"], [data-editor-artboard-title]')) }));
+  assert.equal(focus.insideEditor, true, "Focus remains in the editor");
+  assert.equal(focus.insideArtboard, true, "Focus remains on the artboard");
+  assert.equal(focus.interactive, false, "Focus is not on a toolbar or title control");
+  await drag(page, point, { x: point.x + 48, y: point.y + 28 });
+  await page.waitForFunction(async previous => {
+    const state = (await import("/src/store/design_store.js")).useDesignStore.getState();
+    const rect = document.querySelector("[data-editor-artboard]").getBoundingClientRect();
+    return state.editorCamera.panX !== previous.camera.panX && rect.x !== previous.board.x;
+  }, before);
+  const after = await snapshot(page);
+  assert.notDeepEqual(after.camera, before.camera, "live camera changes after Hand pan");
+  assert.notDeepEqual([after.board.x, after.board.y], [before.board.x, before.board.y], "board moves on screen");
+  assert.deepEqual(after.nodes, before.nodes, "Hand pan keeps document model");
+  assert.deepEqual(after.layouts, before.layouts, "Hand pan keeps artboard layout");
+  records.push({ label: "hand-pan-negative-control", point, target, focus,
+    before: { camera: before.camera, board: before.board, layouts: before.layouts },
+    after: { camera: after.camera, board: after.board, layouts: after.layouts } });
+  await page.locator('[data-testid="editor-toolbar"] button[aria-label="Select"]').first().click();
+  await verify(page, "after-real-hand-pan");
+}, {});
 await writeFile(`${out}/default-frame-marquee.json`, JSON.stringify({ zip, records }, null, 2));
 console.log(JSON.stringify({ passed: "default frame marquee, reverse, shift, geometry/history and cold ZIP", records }, null, 2));
