@@ -14,9 +14,16 @@
   2. 整合包 Host 半独立冒烟（`tmp/voo-integrated-smoke.mjs`，隔离端口 4174/4180）：编辑器 `/` 200 HTML、`assets/index-*.js` 200 JS、`/__voo/health` → `{ok:true,service:"voo",hasBuild:true}`，包内 bridge `/health` ok，dispose 后编辑器与 bridge 均关闭。
   3. 仓库 MCP 入口：`node scripts/mcp-server.mjs` initialize + tools/list → server `voo`、74 个工具；模型桥再导出模块 `name=voo-model-bridge`、`apply` 为函数。
   4. `npm run check:modules` 仍通过（12 模块 / 74 能力 / 99 套件）。
+  5. **运行态实测（本机 `desktop` profile，插件已在运行）**：
+     - 三服务：`4173/__voo/health` → `{ok:true,service:"voo",editorDir:".../dist",hasBuild:true}`；`4179/health` → `{ok:true,service:"voo-cli-bridge"}`；`4399/health` → `{ok:true,provider:"deepseek-account",model:"deepseek-flash"}`；`GET 4173/` 200 HTML。
+     - 面板↔bridge：用户在右侧栏打开 VOO 编辑器后，`mcp__voo__voo_status` → `{canvasConnected:true}`；`inspect_layer_tree`、`find_layers`、`describe_selection` 均作用到面板内文档。
+     - 写入/渲染/历史闭环：`create_shape`（rect 320×180 `#FF6B35`）→ 图层树 `totalCount: 2` → `capture_canvas` 截图出现橙色矩形（视觉证实）；`undo` 后回到 1 个 Frame，`redo` 后恢复 2 个节点，再 `undo` 回到用户原始状态（未留下测试图层）。
+     - 反向模型桥：`POST 4399/v1/chat/completions`（`model: deepseek-flash`，`Authorization: Bearer voo-local`）返回合法 `chat.completion`。
+     - 单插件核对：profile 依赖与 `dsh.profile.bundles` 中仅剩 `voo`。
 - **未验证 / 保留项**：
-  - **激活需要重启一次 DeepSeek Harness**：本次是在运行中的 Host 内替换同名包，Loader 仍缓存了旧的 `voo` 包解析（`ENOENT .../connectors/voo/index.js`），`set_plugin`/`set_bundle` 无法让旧解析失效；重启后按新 patch 重新组合即可正常加载。重启后的 Client 注册、`mcp__voo__*` 可用性、4173/4179/4399 三服务与 `voo_status` 尚未在本轮实测（留待重启后验证）。
-  - 便携连接器（`build-agent-plugin.mjs` 产物）在无仓库/无 `dist` 的机器上，面板会显示“尚未构建”提示页；编辑器构建来源的 App asar 直读方案未实现。
+  - 当前运行的 Host 仍是替换前启动的进程，Loader 缓存了 `voo` 包旧的 realpath；为免重启，本轮在 `~/Library/Application Support/VOO Design/connectors/voo/index.js` 放置了一个转发到仓库 Host 半的临时 shim（仅本机、不在仓库内）。**下次重启 DeepSeek Harness 后该 shim 不再需要**，重启后应复查三行激活与 Client 注册后删除；当前进程内 `set_plugin`/`set_bundle` 无法刷新该缓存。
+  - 已认证 Harness GUI 的面板外观（浅色/深色、悬浮/全屏）未截图核对，只验证到 Client 注册、页面连接与画布渲染截图。
+  - 便携连接器（`build-agent-plugin.mjs` 产物）在无仓库/无 `dist` 的机器上，面板会显示“尚未构建”提示页；编辑器构建来源读取 App asar 的方案未实现。
   - 本轮未运行编辑器浏览器套件（未改 `src/`、`electron/` 运行时代码）；未 push、未部署。
 
 ## VOO 设计编辑器进驻 DeepSeek Harness 右侧面板：2026-11-03
