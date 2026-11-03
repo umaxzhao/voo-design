@@ -152,14 +152,14 @@ export function strokeOf(node) {
     node.strokeHidden ||
     !(node.strokeWidth > 0)
   ) return undefined;
-  const strokeOpacity = node.strokeOpacity ?? node.opacity ?? 1;
+  const strokeOpacity = node.strokeOpacity ?? 1;
   if (strokeOpacity <= 0) return undefined;
   const strokeAlign =
     node.strokeAlign ??
     (node.kind === "rect" || node.kind === "ellipse" ? "inside" : undefined);
   return {
     color: node.stroke,
-    opacity: node.strokeOpacity ?? node.opacity ?? 1,
+    opacity: node.strokeOpacity ?? 1,
     width: node.strokeWidth ?? 1,
     ...(strokeAlign ? { align: strokeAlign } : {}),
   };

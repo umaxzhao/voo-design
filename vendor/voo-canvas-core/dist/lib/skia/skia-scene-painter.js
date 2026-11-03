@@ -1,3 +1,4 @@
+import { drawElementLayer, parseSkiaColor } from "./skia-scene-draw.js";
 import { calculateImageLayout } from "./image-layout.js";
 import { GALLERY_MAX_THUMBS, layoutGalleryThumbs } from "./gallery-layout.js";
 import { COMPARE_HANDLE_RADIUS, compareDividerX } from "./compare-slider.js";
@@ -253,20 +254,7 @@ export class SkiaScenePainter {
             this.drawFrameTitle(canvas, element);
     }
     drawElementWithBlendMode(canvas, element) {
-        const blendMode = element.blendMode ?? "pass-through";
-        if (blendMode === "pass-through") {
-            this.drawTransformedElement(canvas, element);
-            return;
-        }
-        this.configureLayerBlendPaint(blendMode);
-        try {
-            canvas.saveLayer(this.blendPaint);
-            this.drawTransformedElement(canvas, element);
-            canvas.restore();
-        }
-        finally {
-            this.blendPaint.setBlendMode(this.canvasKit.BlendMode.SrcOver);
-        }
+        drawElementLayer(this, canvas, element);
     }
     configureLayerBlendPaint(mode) {
         if (mode === "plus-darker") {
@@ -1306,8 +1294,9 @@ export class SkiaScenePainter {
     }
     configurePaint(paint, color, opacity, stroke, strokeWidth) {
         paint.setAntiAlias(true);
-        paint.setColor(this.canvasKit.parseColorString(color));
-        paint.setAlphaf(Math.max(0, Math.min(1, opacity)));
+        const rgba = parseSkiaColor(this.canvasKit, color);
+        paint.setColor(rgba);
+        paint.setAlphaf(rgba[3] * Math.max(0, Math.min(1, opacity)));
         paint.setStyle(stroke
             ? this.canvasKit.PaintStyle.Stroke
             : this.canvasKit.PaintStyle.Fill);

@@ -78,4 +78,31 @@ export function drawSceneElements(canvas, elements, painter, clipOperation) {
         canvas.restore();
     }
 }
-//# sourceMappingURL=skia-scene-draw.js.map
+
+/** CanvasKit does not recognize the CSS transparent keyword. */
+export function parseSkiaColor(canvasKit, color) {
+    return canvasKit.parseColorString(
+        color.trim().toLowerCase() === "transparent" ? "#00000000" : color);
+}
+
+/** Paint the completed element once; paint opacities remain inside its layer. */
+export function drawElementLayer(painter, canvas, element) {
+    const opacity = Math.max(0, Math.min(1, element.opacity ?? 1));
+    const blendMode = element.blendMode ?? "pass-through";
+    if (opacity === 1 && blendMode === "pass-through") {
+        painter.drawTransformedElement(canvas, element);
+        return;
+    }
+    // Blend and opacity share one layer so neither is applied per paint.
+    painter.configureLayerBlendPaint(blendMode === "pass-through" ? "normal" : blendMode);
+    painter.blendPaint.setAlphaf(opacity);
+    canvas.saveLayer(painter.blendPaint);
+    try {
+        painter.drawTransformedElement(canvas, { ...element, opacity: 1 });
+    }
+    finally {
+        canvas.restore();
+        painter.blendPaint.setAlphaf(1);
+        painter.blendPaint.setBlendMode(painter.canvasKit.BlendMode.SrcOver);
+    }
+}

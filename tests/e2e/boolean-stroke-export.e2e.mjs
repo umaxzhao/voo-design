@@ -14,11 +14,11 @@ await withEditorBrowser(async ({ page }) => {
       width: 150, height: 140, fill: "#0000ff", stroke: "#ff0000", strokeWidth: 10,
       operation: "union", sources: [source(0, 0), source(50, 40)] };
     const rgba = (ctx, points) => points.map(([x, y]) => [...ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data]);
-    async function pixels(node, points, crop = null, actualExport = false) {
+    async function pixels(node, points, crop = null, actualExport = false, background = "#ffffff") {
       const doc = { width: 320, height: 300, isCanvasRoot: false,
-        backgroundColor: "#ffffff", nodes: [node], crop };
+        backgroundColor: background, nodes: [node], crop };
       const canvas = document.createElement("canvas"); canvas.width = 320; canvas.height = 300;
-      const ctx = canvas.getContext("2d"); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 320, 300);
+      const ctx = canvas.getContext("2d"); ctx.fillStyle = background; ctx.fillRect(0, 0, 320, 300);
       if (crop) ctx.translate(-crop.x, -crop.y);
       drawNode(ctx, node, () => null);
       const svgImage = new Image();
@@ -59,6 +59,26 @@ await withEditorBrowser(async ({ page }) => {
     const noFill = await pixels({ ...base, fill: "transparent", strokeHidden: true }, [[90, 90]], null, true);
     const alpha = await pixels({ ...base, opacity: 0.5, fillOpacity: 0.5,
       strokeOpacity: 0.5, strokeAlign: "inside" }, [[65, 90], [90, 90]], null, true);
+    // Independent two-canvas reference: paint alpha belongs inside the layer,
+    // and layer opacity belongs only to the final composite, including on PNG.
+    const alphaPoints = [[65, 90], [90, 90], [10, 10]];
+    function referenceAlpha(background, colorAlpha = false) {
+      const layer = document.createElement("canvas"); layer.width = 320; layer.height = 300;
+      const paint = layer.getContext("2d"); paint.globalAlpha = colorAlpha ? 1 : 0.5;
+      paint.fillStyle = colorAlpha ? "#0000ff80" : "#0000ff"; paint.fillRect(60, 60, 100, 100);
+      paint.fillStyle = colorAlpha ? "#ff000080" : "#ff0000"; paint.fillRect(60, 60, 10, 100);
+      const output = document.createElement("canvas"); output.width = 320; output.height = 300;
+      const ctx = output.getContext("2d"); ctx.fillStyle = background; ctx.fillRect(0, 0, 320, 300);
+      ctx.globalAlpha = 0.5; ctx.drawImage(layer, 0, 0);
+      return rgba(ctx, alphaPoints);
+    }
+    const alphaNode = { ...base, opacity: 0.5, fillOpacity: 0.5, strokeOpacity: 0.5, strokeAlign: "inside" };
+    const colorAlphaNode = { ...alphaNode, fill: "#0000ff80", stroke: "#ff000080", fillOpacity: 1, strokeOpacity: 1 };
+    const alphaTransparent = await pixels(alphaNode, alphaPoints, null, true, "transparent");
+    const colorAlpha = await pixels(colorAlphaNode, alphaPoints, null, true, "transparent");
+    const alphaReference = referenceAlpha("#ffffff").slice(0, 2);
+    const transparentReference = referenceAlpha("transparent");
+    const colorAlphaReference = referenceAlpha("transparent", true);
     const nested = await pixels({ ...base, sources: [
       { type: "boolean", x: 0, y: 0, w: 100, h: 100, booleanOperation: "subtract",
         booleanSources: [source(0, 0), source(25, 25, 50, 50)] }, source(120, 0, 20, 20)],
@@ -100,9 +120,31 @@ await withEditorBrowser(async ({ page }) => {
     gpuCanvas.style.cssText = "position:fixed;left:-10000px;top:0";
     document.body.append(gpuCanvas);
     const host = await createSkiaHost(gpuCanvas);
-    let native;
+    let native, matrix;
     try {
       host.resize(320, 300, 1);
+      async function skiaAlphaPixels(node, background, points) {
+        const doc = { id: "boolean-alpha", width: 320, height: 300, isCanvasRoot: false,
+          backgroundColor: background, nodes: [node] };
+        const snapshot = await host.draw({ docs: [doc], revision: 2, backgroundColor: background,
+          viewport: { zoom: 1, panX: 0, panY: 0, width: 320, height: 300, devicePixelRatio: 1 } });
+        const bytes = await host.instance.exportSnapshot(snapshot, { format: "png", bounds: { x: 0, y: 0, width: 320, height: 300 } });
+        const url = URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+        try {
+          const image = new Image(); image.src = url; await image.decode();
+          const canvas = document.createElement("canvas"); canvas.width = 320; canvas.height = 300;
+          const ctx = canvas.getContext("2d"); ctx.drawImage(image, 0, 0);
+          const stageImage = new Image(); stageImage.src = gpuCanvas.toDataURL("image/png"); await stageImage.decode();
+          const stage = document.createElement("canvas"); stage.width = 320; stage.height = 300;
+          const stageCtx = stage.getContext("2d"); stageCtx.drawImage(stageImage, 0, 0);
+          return { pixels: rgba(ctx, points), stage: rgba(stageCtx, points) };
+        } finally { URL.revokeObjectURL(url); }
+      }
+      alpha.skia = (await skiaAlphaPixels(alphaNode, "#ffffff", alphaPoints.slice(0, 2))).pixels;
+      alphaTransparent.skia = (await skiaAlphaPixels(alphaNode, "transparent", alphaPoints)).pixels;
+      colorAlpha.skia = (await skiaAlphaPixels(colorAlphaNode, "transparent", alphaPoints)).pixels;
+      const { opacityMatrix } = await import("/tests/e2e/boolean-opacity-reference.mjs");
+      matrix = await opacityMatrix({ host, gpuCanvas, base, renderCanvas: pixels, renderSkia: skiaAlphaPixels });
       const gpuDoc = { id: "boolean-native", width: 320, height: 300, isCanvasRoot: true,
         nodes: [{ ...base, fill: "transparent", opacity: 0.5 }] };
       const snapshot = await host.draw({ docs: [gpuDoc], revision: 1, backgroundColor: "#ffffff",
@@ -122,7 +164,7 @@ await withEditorBrowser(async ({ page }) => {
     const large = await pixels({ ...base, strokeAlign: "outside", sources: [
       { type: "path", x: 0, y: 0, w: 100, h: 100, points: manyPoints },
       { type: "path", x: 0, y: 0, w: 0, h: 0, points: [] }] }, [[55, 110], [85, 110]]);
-    return { operations, alignments, seam, hidden, extras, noFill, alpha, nested, distant, rotatedSource, thinRotated, curved, triple, fallback, native, large };
+    return { matrix, operations, alignments, seam, hidden, extras, noFill, alpha, alphaReference, alphaTransparent, transparentReference, colorAlpha, colorAlphaReference, nested, distant, rotatedSource, thinRotated, curved, triple, fallback, native, large };
   });
   const WHITE = [255, 255, 255, 255], BLUE = [0, 0, 255, 255], RED = [255, 0, 0, 255];
   const assertPixels = (actual, expected, label) => {
@@ -142,12 +184,34 @@ await withEditorBrowser(async ({ page }) => {
   assertPixels(result.hidden, [BLUE, BLUE], "hidden stroke retains fill");
   assertPixels(result.extras, [[0, 255, 0, 255], BLUE], "independent extra stroke");
   assertPixels(result.noFill, [WHITE], "transparent fill leaves no black silhouette");
-  // Fill and stroke overlap, each at 0.25 effective alpha. Compare both paths
-  // with rounding tolerance rather than accepting a full-opacity substitute.
-  for (const [backend, pixels] of Object.entries(result.alpha)) {
-    for (const [i, expected] of [[0, [207, 143, 191, 255]], [1, [191, 191, 255, 255]]]) {
-      pixels[i].forEach((value, channel) => assert.ok(Math.abs(value - expected[channel]) <= 1,
-        `opacity ${backend}/${i}/${channel}: ${value} != ${expected[channel]}`));
+  // STYLE contract: composite fill/stroke first, then apply layer opacity once.
+  // Preserve the original one-channel rounding threshold across all backends.
+  for (const [actual, expected, label] of [
+    [result.alpha, result.alphaReference, "opacity"],
+    [result.alphaTransparent, result.transparentReference, "transparent opacity"],
+    [result.colorAlpha, result.colorAlphaReference, "source color alpha"],
+  ]) {
+    for (const [backend, pixels] of Object.entries(actual)) {
+      for (const [i, pixel] of pixels.entries()) {
+        pixel.forEach((value, channel) => assert.ok(Math.abs(value - expected[i][channel]) <= 1,
+          `${label} ${backend}/${i}/${channel}: ${value} != ${expected[i][channel]}`));
+      }
+    }
+  }
+  for (const item of result.matrix) {
+    const label = `matrix/${item.opacity}/${item.background}/${item.colorAlpha}`;
+    for (const [backend, samples] of Object.entries(item.actual)) {
+      const refBackend = backend === "skia" || backend === "stage" ? backend : "canvas";
+      const reference = item.refs.overlap[refBackend];
+      samples.forEach((pixel, i) => pixel.forEach((value, channel) => assert.ok(
+        Math.abs(value - reference[i][channel]) <= 1,
+        `${label}/${backend}/${i}/${channel}: ${value} != ${reference[i][channel]}`)));
+    }
+    if (!item.colorAlpha) for (const backend of ["canvas", "skia", "stage"]) {
+      const single = item.refs.single[backend], overlap = item.refs.overlap[backend];
+      // Opaque red covers blue completely; one red paint must match the stack.
+      single[0].forEach((value, channel) => assert.ok(Math.abs(value - overlap[0][channel]) <= 1,
+        `${label}/${backend}/single-overlap/${channel}`));
     }
   }
   assertPixels(result.nested, [BLUE, WHITE, RED, BLUE], "nested subtraction retains holes and inner border");
@@ -167,7 +231,7 @@ await withEditorBrowser(async ({ page }) => {
   result.native[1].forEach((value, channel) => assert.ok(Math.abs(value - [255, 127, 127, 255][channel]) <= 1,
     `CanvasKit Boolean alpha channel ${channel}: ${value}`));
   assertPixels(result.large, [RED, BLUE], "150000-anchor outside stroke avoids argument-count overflow");
-  console.log(JSON.stringify({ passed: [
+  console.log(JSON.stringify({ opacityMatrix: result.matrix, passed: [
     "all four Boolean fills agree between Canvas2D, engine PNG and SVG",
     "all four operations support inside, center and outside merged boundary strokes",
     "overlap seams are unstroked, hidden paint retains fill and extra strokes are independent",

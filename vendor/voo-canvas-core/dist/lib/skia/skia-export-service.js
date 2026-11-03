@@ -1,5 +1,5 @@
 import { createRasterPdf } from "./raster-pdf.js";
-import { drawSceneElements } from "./skia-scene-draw.js";
+import { drawSceneElements, parseSkiaColor } from "./skia-scene-draw.js";
 const MAX_EXPORT_DIMENSION = 32767;
 export class SkiaExportService {
     constructor(canvasKit, painter) {
@@ -34,7 +34,7 @@ export class SkiaExportService {
                 (options.format === "jpeg" || options.format === "pdf"
                     ? "#FFFFFF"
                     : snapshot.backgroundColor);
-            canvas.clear(this.canvasKit.parseColorString(background));
+            canvas.clear(parseSkiaColor(this.canvasKit, background));
             canvas.save();
             canvas.scale(scale, scale);
             canvas.translate(-options.bounds.x, -options.bounds.y);
