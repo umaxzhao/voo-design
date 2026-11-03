@@ -13,6 +13,8 @@ import {
   splitImageModelId,
   hasSelectedImageReference,
 } from "../../src/canvas/agent/image_model_route.js";
+import { IMAGE_MODEL_GROUPS, isWebImageModel } from "../../src/canvas/components/agent-panel/model_catalog.js";
+import { PROVIDER_ID } from "../../src/shared/providers.js";
 
 describe("Agent image review fixes (C01 / C02 / C03 / C04)", () => {
   describe("C01: unknown extension status is not presented as missing", () => {
@@ -33,9 +35,9 @@ describe("Agent image review fixes (C01 / C02 / C03 / C04)", () => {
   });
 
   describe("C02: selected image model is split into explicit provider and model", () => {
-    it("splits a 302 model id at the first colon", () => {
+    it("maps the composer 302 prefix to the registered 302ai provider id", () => {
       expect(splitImageModelId("302:qwen-image-3.0-pro")).toEqual({
-        providerId: "302",
+        providerId: "302ai",
         modelId: "qwen-image-3.0-pro",
       });
     });
@@ -45,6 +47,17 @@ describe("Agent image review fixes (C01 / C02 / C03 / C04)", () => {
         providerId: "dashscope",
         modelId: "qwen-image-plus",
       });
+    });
+
+    it("every API image model in the composer catalog resolves to a registered provider id", () => {
+      const registered = new Set(Object.values(PROVIDER_ID));
+      const apiModelIds = IMAGE_MODEL_GROUPS.flatMap((group) => group.models.map((model) => model.id)).filter(
+        (id) => !isWebImageModel(id),
+      );
+      expect(apiModelIds.length).toBeGreaterThan(0);
+      for (const id of apiModelIds) {
+        expect(registered.has(splitImageModelId(id).providerId), id).toBe(true);
+      }
     });
 
     it("fails fast on a malformed model id instead of guessing a provider", () => {
@@ -62,6 +75,17 @@ describe("Agent image review fixes (C01 / C02 / C03 / C04)", () => {
     it("reports true when any selected layer is an image", () => {
       expect(
         hasSelectedImageReference({ kind: "rect", selection: [{ kind: "rect" }, { kind: "image" }] }),
+      ).toBe(true);
+    });
+
+    it("reports true for the real Regenerate context that carries referenceImage without a node kind", () => {
+      expect(
+        hasSelectedImageReference({
+          type: "layer",
+          layerId: "layer-1",
+          name: "Image",
+          referenceImage: { layerId: "layer-1", src: "data:image/png;base64,AA==" },
+        }),
       ).toBe(true);
     });
 

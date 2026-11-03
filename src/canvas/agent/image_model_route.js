@@ -7,6 +7,17 @@
  * was configured before the user picked one.
  */
 
+import { PROVIDER_ID } from "../../shared/providers.js";
+
+/**
+ * Composer catalog prefixes that differ from the provider registry key.
+ * model_catalog.js groups 302.AI models under "302", but the registered
+ * provider id (providers.js PROVIDER_ID.AI_302) is "302ai".
+ */
+const CATALOG_PROVIDER_ALIASES = Object.freeze({
+  302: PROVIDER_ID.AI_302,
+});
+
 /**
  * Splits "<providerId>:<modelId>" at the first colon.
  * Fails fast on a malformed id instead of guessing a provider.
@@ -20,7 +31,11 @@ export function splitImageModelId(modelId) {
   if (index <= 0 || index === text.length - 1) {
     throw Object.assign(new Error(`invalidImageModel: ${text}`), { code: "invalidImageModel" });
   }
-  return { providerId: text.slice(0, index), modelId: text.slice(index + 1) };
+  const prefix = text.slice(0, index);
+  return {
+    providerId: CATALOG_PROVIDER_ALIASES[prefix] ?? prefix,
+    modelId: text.slice(index + 1),
+  };
 }
 
 /**
@@ -32,6 +47,8 @@ export function splitImageModelId(modelId) {
  */
 export function hasSelectedImageReference(context) {
   if (!context) return false;
+  // The real Regenerate action sets context.referenceImage without a node kind.
+  if (context.referenceImage) return true;
   const nodes = Array.isArray(context.selection) ? context.selection : [context];
   return nodes.some((node) => node?.kind === "image");
 }
