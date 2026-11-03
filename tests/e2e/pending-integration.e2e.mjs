@@ -28,7 +28,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   });
   let id = await seed();
   await page.evaluate(() => { const e = window.__vooEditor; e.setTool("fill"); e.setColor("#00ff00"); });
-  const tolerance = page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "Tolerance", exact: true });
+  const tolerance = page.getByTestId("editor-properties-panel").getByRole("textbox", { name: "Tolerance", exact: true });
   await tolerance.fill("0"); await tolerance.press("Enter");
   assert.equal(await page.evaluate(() => window.__vooEditor.getFillTolerance()), 0);
   await click({ x: 125, y: 150 }); await page.evaluate(() => window.__vooEditor.flushTransforms());

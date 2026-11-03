@@ -61,7 +61,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await page.getByTestId("editor-comments-toggle").click();
     await page.getByTestId("editor-comments-loading").waitFor();
     assert.equal(await page.getByTestId("editor-properties-panel").count(), 1);
-    assert.equal(await page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true }).count(), 0);
+    assert.equal(await page.getByTestId("editor-properties-panel").getByRole("textbox", { name: "W", exact: true }).count(), 0);
     await expectHit(page.getByTestId("editor-comments-loading").getByRole("button", { name: "Close comments", exact: true }));
     assert.equal(await page.getByTestId("editor-pages").isVisible(), true);
     assert.deepEqual(await selected(), ["comment-loading-target"]);
@@ -81,7 +81,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   await panel.waitFor();
   assert.equal(await page.getByTestId("editor-properties-panel").count(), 1);
   assert.equal(await panel.locator("xpath=ancestor::aside").getAttribute("data-testid"), "editor-properties-panel");
-  assert.equal(await page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true }).count(), 0);
+  assert.equal(await page.getByTestId("editor-properties-panel").getByRole("textbox", { name: "W", exact: true }).count(), 0);
   const allFilter = panel.getByRole("button", { name: /^All\b/ });
   await expectHit(allFilter);
   await allFilter.click();
@@ -111,7 +111,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.equal(await panel.count(), 1);
   await page.keyboard.press("Escape");
   await panel.waitFor({ state: "hidden" });
-  await page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true }).waitFor();
+  await page.getByTestId("editor-properties-panel").getByRole("textbox", { name: "W", exact: true }).waitFor();
   assert.deepEqual(await selected(), ["comment-loading-target"]);
   checks.push("warm Escape unwinds draft, placement mode and panel one at a time without changing artwork selection");
 
@@ -189,7 +189,7 @@ await withEditorBrowser(async ({ page, errors }) => {
     e.selectExactly(["standalone-mode-target"]);
   });
   const rail = page.getByTestId("editor-properties-panel");
-  const width = rail.getByRole("spinbutton", { name: "W", exact: true });
+  const width = rail.getByRole("textbox", { name: "W", exact: true });
   await width.waitFor();
   const before = await page.evaluate(() => JSON.stringify(window.__vooEditor.getDocument()));
   const pattern = /\/src\/canvas\/components\/editor_comments_surface\.jsx(?:\?|$)/;
