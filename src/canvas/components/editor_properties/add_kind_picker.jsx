@@ -61,14 +61,21 @@ export const LAYER_EFFECT_KINDS = ["layerBlur", "backgroundBlur", "noise"];
  * One tappable kind in the left column. The glyph carries what the kind does
  * and the accent carries which group it belongs to, so the row needs no dot.
  */
-function KindButton({ kind, accent, label, onClick }) {
+function KindButton({ kind, accent, label, onClick, disabled = false, disabledReason = "" }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="flex items-center gap-1.5 rounded-xl bg-neutral-800 px-2.5 py-1.5 text-left text-[11px] font-mono text-neutral-200 hover:bg-neutral-700 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      title={disabled ? disabledReason : label}
+      aria-disabled={disabled}
+      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-left text-[11px] font-mono transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+        disabled
+          ? "bg-neutral-900/60 text-neutral-500 opacity-50 cursor-not-allowed"
+          : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700 hover:text-white"
+      }`}
     >
-      <span className="shrink-0" style={{ color: accent }}>
+      <span className="shrink-0" style={{ color: disabled ? "#6b7280" : accent }}>
         <KindIcon kind={kind} />
       </span>
       <span className="truncate">{label}</span>
@@ -81,18 +88,34 @@ KindButton.propTypes = {
   accent: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   onClick: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  disabledReason: PropTypes.string,
 };
 
 /** A titled group of kinds in the left column. */
-function KindGroup({ title, accent, kinds, labelOf, onPick }) {
+function KindGroup({
+  title,
+  subtitle = null,
+  accent,
+  kinds,
+  labelOf,
+  onPick,
+  disabled = false,
+  disabledReason = "",
+}) {
   if (kinds.length === 0) return null;
   return (
     <div>
       <div
-        className="mb-1.5 px-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold"
-        style={{ color: accent }}
+        className="mb-1.5 px-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold flex items-center justify-between"
+        style={{ color: disabled ? "#6b7280" : accent }}
       >
         <span>{title}</span>
+        {subtitle ? (
+          <span className="text-[9px] font-normal tracking-normal text-neutral-500 lowercase">
+            {subtitle}
+          </span>
+        ) : null}
       </div>
       <div className="grid grid-cols-2 gap-1">
         {kinds.map((kind) => (
@@ -102,6 +125,8 @@ function KindGroup({ title, accent, kinds, labelOf, onPick }) {
             accent={accent}
             label={labelOf(kind)}
             onClick={() => onPick(kind)}
+            disabled={disabled}
+            disabledReason={disabledReason}
           />
         ))}
       </div>
@@ -111,10 +136,13 @@ function KindGroup({ title, accent, kinds, labelOf, onPick }) {
 
 KindGroup.propTypes = {
   title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
   accent: PropTypes.string.isRequired,
   kinds: PropTypes.arrayOf(PropTypes.string).isRequired,
   labelOf: PropTypes.func.isRequired,
   onPick: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  disabledReason: PropTypes.string,
 };
 
 /**
@@ -162,9 +190,9 @@ export default function AddKindPicker({
       visibleEffects.length +
       visibleLayerEffects.length >
     0;
-  // Templates are useful for frames/groups too (adjustments apply to the whole
-  // layer), so the column follows the handler rather than the image kind.
-  const showPresets = Boolean(onApplyPreset);
+  // Preset templates are composed of image adjustments, so the column is only
+  // active for image layers.
+  const showPresets = Boolean(onApplyPreset) && isImage;
   const sample = useMemo(
     () => bitmap ?? PRESET_SAMPLE,
     [bitmap],
@@ -217,17 +245,23 @@ export default function AddKindPicker({
         <div className="ui-scroll min-h-0 flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col gap-3">
           <KindGroup
             title={t("editor.layers.adjustments")}
+            subtitle={!isImage ? t("editor.props.imageOnlyShort") : null}
             accent={ACCENT.adjustment}
             kinds={visibleAdjustments}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
+            disabled={!isImage}
+            disabledReason={t("editor.props.imageOnlyFilter")}
           />
           <KindGroup
             title={t("editor.layers.filters")}
+            subtitle={!isImage ? t("editor.props.imageOnlyShort") : null}
             accent={ACCENT.filter}
             kinds={visibleFilters}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
+            disabled={!isImage}
+            disabledReason={t("editor.props.imageOnlyFilter")}
           />
           {showEffects ? (
             <KindGroup

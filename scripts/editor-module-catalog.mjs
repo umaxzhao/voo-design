@@ -175,14 +175,15 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/*paint*", "src/canvas/editor/*raster*", "src/canvas/editor/*adjust*",
       "src/canvas/editor/*filter*", "src/canvas/editor/*crop*", "src/canvas/editor/*bitmap*",
       "src/canvas/editor/*matting*", "src/canvas/editor/*upscal*", "src/canvas/editor/*repair*",
-      "src/canvas/raster/*",
+      "src/canvas/raster/*", "tests/unit/uf22_vector_image_filter_guard.test.jsx",
     ],
     related: ["selection","compositing","documents","inspector"],
-    features: ["images.retouch","images.pixel-selections","images.adjustments","images.local-models","images.patch-direction"],
+    features: ["images.retouch","images.pixel-selections","images.adjustments","images.local-models","images.patch-direction","images.vector-filter-guard"],
     suites: [
       "drawing-retouch", "patch-direction", "raster-loading", "image-action-loading", "image-interaction-boundaries",
       "image-adjustments-complete", "image-selections-warp", "image-toolbar-complete", "image-agent-complete",
       "image-inspector-core", "gl-spatial-parity", "generated-output", "image-export-formats", "dodge-burn-panel-controls",
+      "uf22-vector-blur-acceptance", "uf22-repro-star-blur",
     ],
     remaining: [
       "Real model/network and hardware memory/FPS gates are separate from offline browser checks; video is excluded from this audit.",
