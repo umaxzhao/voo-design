@@ -1,5 +1,8 @@
 /** Lightweight settings shared by onboarding, model menus and the agent runtime. */
 export const AGENT_SETTING = Object.freeze({
+  MODE: "agent.mode",
+  DESIGN_MODEL_ID: "agent.model.design",
+  IMAGE_MODE_MODEL_ID: "agent.model.image",
   API_KEY: "agent.apiKey",
   BASE_URL: "agent.baseUrl",
   MODEL: "agent.model",
@@ -17,6 +20,9 @@ export const AGENT_SETTING = Object.freeze({
 });
 
 export const AGENT_DEFAULTS = Object.freeze({
+  mode: "design",
+  defaultDesignModel: "antigravity:gemini-3.8-flash-high",
+  defaultImageModel: "web:chatgpt",
   confirmBeforeImage: true,
   useSelectionByDefault: true,
   defaultImageSize: "1024x1024",

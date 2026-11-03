@@ -10,7 +10,7 @@ import {
 } from "./model_discovery.js";
 
 /** Both pickers share one capability-filtered catalog and discovery lifecycle. */
-export function useModelGroups() {
+export function useModelGroups(mode = "design") {
   const service = useLocalService();
   useSyncExternalStore(
     subscribeModelCatalog,
@@ -33,7 +33,12 @@ export function useModelGroups() {
       window.removeEventListener("focus", refresh);
     };
   }, [service.available, service.native]);
-  return availableModelGroups().filter(group =>
+
+  if (mode === "image") {
+    return availableModelGroups(undefined, "image");
+  }
+
+  return availableModelGroups(undefined, "design").filter(group =>
     !["claude", "codex", "antigravity"].includes(group.cliId) || service.native ||
       (service.available && service.statuses?.[group.cliId]?.installed === true),
   );

@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop, IconChevronLeft, IconChevronRight } from "../icons.jsx";
+import { IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconHd, IconEye, IconEyeOff, IconArrowUp, IconCrop, IconChevronLeft, IconChevronRight } from "../icons.jsx";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
 import { AlignIcon, DistributeIcon, TidyIcon } from "./alignment_icon.jsx";
 import { alignNodes, distributeNodes, tidyNodes } from "../editor/align_ops.js";
@@ -15,6 +15,7 @@ import { useI18n } from "../use_i18n.js";
 import { TOOL } from "../editor/editor_constants.js";
 import { EDITOR_PAGE_TOOLBAR_GAP } from "./editor_panel_layout.js";
 import { useMobileQuickbarPortal } from "./editor_hooks/use_mobile_quickbar_portal.js";
+import { useDesignStore } from "../../store/design_store.js";
 export { extractNodeContext, dispatchToAgent };
 const BUTTON = "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-neutral-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4] disabled:opacity-40";
 function Divider() {
@@ -241,6 +242,45 @@ function EditorContextualTaskBar({
     {transforming ? <>{action("applyTransform", <IconCheck size={14} strokeWidth={1.5} />, () => engine?.applySelectionTransform?.())}{action("cancelTransform", <IconClose size={14} strokeWidth={1.5} />, () => engine?.cancelSelectionTransform?.())}</> : pen ? <>{action("finishPath", <IconCheck size={14} strokeWidth={1.5} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}</> : hasSelection ? <>{action("transform", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.beginSelectionTransform?.())}{action("invert", <IconSwap size={14} strokeWidth={1.5} />, () => engine?.invertPixelSelection?.())}{action("deselect", <IconClose size={14} strokeWidth={1.5} />, () => clearActivePixelSelection(engine))}<Divider />{ai}</> : <>
       {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>
       {type === "image" && <>
+        {action("regenerate", <IconSparkles size={14} strokeWidth={1.5} className="text-[#E5B2FF]" />, () => {
+              const refImage = {
+                layerId: node?.id,
+                imageId: node?.imageId ?? null,
+                src: node?.src ?? node?.fill ?? null,
+                width: node?.width ?? 0,
+                height: node?.height ?? 0,
+                name: node?.name || "Image",
+              };
+              useDesignStore.getState()?.setAgentPanelOpen?.(true);
+              window.dispatchEvent(
+                new CustomEvent("voo:open-agent-panel", {
+                  detail: {
+                    mode: "image",
+                    referenceImage: refImage,
+                    context: {
+                      type: "layer",
+                      layerId: node?.id,
+                      name: node?.name || "Image",
+                      referenceImage: refImage,
+                    },
+                  },
+                }),
+              );
+            }, {
+              label: label("regenerate"),
+            })}
+        {action("upscale", <IconHd size={14} strokeWidth={1.5} />, () => {
+              onUpscale?.();
+            }, {
+              label: label("upscale"),
+              disabled: upscaleBusy || !onUpscale,
+            })}
+        {action("ai-remove-bg", <IconMask size={14} strokeWidth={1.5} />, () => {
+              void removeBackground?.();
+            }, {
+              label: label("matting"),
+              disabled: maskBusy || !removeBackground
+            })}
         {action("crop", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.CROP))}
         {action("replace", <IconSwap size={14} strokeWidth={1.5} />, () => fileRef.current?.click())}
         <input ref={fileRef} hidden type="file" accept="image/*" aria-label={label("replace")} onChange={event => {
@@ -257,12 +297,6 @@ function EditorContextualTaskBar({
               }
               event.target.value = "";
             }} />
-        {action("ai-remove-bg", <IconMask size={14} strokeWidth={1.5} />, () => {
-              void removeBackground?.();
-            }, {
-              label: label("matting"),
-              disabled: maskBusy || !removeBackground
-            })}
         {action("adjust", <IconAdjust size={14} strokeWidth={1.5} />, () => {
               setAdjustOpen(!adjustOpen);
               setMoreOpen(false);

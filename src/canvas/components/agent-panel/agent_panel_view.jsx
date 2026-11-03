@@ -10,6 +10,7 @@ import PromptImageAttachments from "../prompt_image_attachments.jsx";
 import AgentSelectionSuggestions, { appendSuggestion } from "./agent_selection_suggestions.jsx";
 import ReasoningEffortControl from "./reasoning_effort_control.jsx";
 import AssistantMessageCopy from "./assistant_message_copy.jsx";
+import AgentExtensionDialog from "./agent_extension_dialog.jsx";
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -57,10 +58,14 @@ export default function AgentPanelView({
   isEmpty, setInput, transcript, directions, directionChoice, busy,
   pipelineProgress, streamingText, candidates, keepCandidate,
   activeContext, setActiveContext, cancelled, lastRequest, send,
-  error, configError, onSubmit, input, onKeyDown, turnRef, references
+  error, configError, onSubmit, input, onKeyDown, turnRef, references,
+  mode = "design", onModeChange,
+  extensionDialogOpen = false, extensionStatus, extensionRoute,
+  onCloseExtensionDialog, onRetryExtension,
 }) {
   const composerRef = useRef(null);
   const modelTriggerRef = useRef(null);
+  const attachmentInputRef = useRef(null);
   const closeModelMenu = useCallback(() => setModelMenuOpen(false), [setModelMenuOpen]);
   return (
     <section
@@ -308,6 +313,82 @@ export default function AgentPanelView({
           className="w-full resize-none bg-transparent text-xs max-sm:text-[15px] leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
         <div className="flex items-center gap-2 pt-2">
+          {/* Hidden file input for attachment plus button */}
+          <input
+            ref={attachmentInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            data-testid="agent-composer-file-input"
+            onChange={(event) => {
+              if (event.target.files) references?.addFiles?.(event.target.files);
+              event.target.value = "";
+            }}
+          />
+
+          {/* Plus button for attachments */}
+          <button
+            type="button"
+            onClick={() => attachmentInputRef.current?.click()}
+            title={t("welcome.prompt.addAttachment") || "添加附件"}
+            aria-label={t("welcome.prompt.addAttachment") || "添加附件"}
+            data-testid="agent-composer-add-attachment"
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-white transition-colors"
+          >
+            <Plus size={14} />
+          </button>
+
+          {/* Design / Image Mode Toggle Tabs (positioned on the bottom-left beside the plus button) */}
+          <div
+            role="tablist"
+            aria-label={t("agent.panel.modeTabs") || "Agent 模式"}
+            data-testid="agent-mode-tabs"
+            className="flex shrink-0 items-center rounded-lg bg-white/[0.06] p-0.5 text-[11px] font-medium"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "design"}
+              data-testid="agent-mode-design"
+              onMouseDown={(e) => {
+                // Prevent blurring textarea so user can continue typing / keeping IME
+                e.preventDefault();
+              }}
+              onClick={() => {
+                onModeChange?.("design");
+                composerRef.current?.querySelector("textarea")?.focus();
+              }}
+              className={`rounded-md px-2 py-0.5 transition-colors ${
+                mode === "design"
+                  ? "bg-white/15 text-white shadow-pop font-semibold"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              {t("agent.mode.design") || "设计"}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "image"}
+              data-testid="agent-mode-image"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                onModeChange?.("image");
+                composerRef.current?.querySelector("textarea")?.focus();
+              }}
+              className={`rounded-md px-2 py-0.5 transition-colors ${
+                mode === "image"
+                  ? "bg-[#E5B2FF]/20 text-[#E5B2FF] shadow-pop font-semibold"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              {t("agent.mode.image") || "图片"}
+            </button>
+          </div>
+
           <span className="min-w-0 flex-1" aria-hidden="true" />
           {currentModel && (
             <button
@@ -355,6 +436,14 @@ export default function AgentPanelView({
           </button>
         </div>
       </form>
+      <AgentExtensionDialog
+        isOpen={extensionDialogOpen}
+        status={extensionStatus}
+        route={extensionRoute}
+        onClose={onCloseExtensionDialog || (() => {})}
+        onRetry={onRetryExtension || (() => {})}
+        t={t}
+      />
     </section>
   );
 }

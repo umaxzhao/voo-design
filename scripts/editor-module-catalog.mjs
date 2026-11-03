@@ -268,6 +268,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/agent-panel/*", "src/canvas/components/canvas_agent_panel.jsx", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
       "tests/unit/agent_selection_context.test.js",
+      "tests/unit/agent_design_image_modes.test.jsx",
       "tests/e2e/agent-suggestions.e2e.mjs", "tests/e2e/agent-suggestions-harness.jsx",
       "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
       "tests/unit/agent_tool_order_and_lucide_paths.test.js",
@@ -275,7 +276,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
-      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
+      "platform.agent-contracts", "platform.agent-dual-modes", "platform.async-lifecycle", "platform.loading",
       "platform.native-collaboration", "platform.collaboration-resource-scope", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
       "platform.harness-editor-panel", "platform.desktop-update-install",

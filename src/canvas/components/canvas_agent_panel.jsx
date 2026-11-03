@@ -18,7 +18,20 @@ import { CHAT_ERROR, streamChatTurn } from "../agent/chat_stream.js";
 import { isCliAgentModel, streamCliStep } from "../agent/cli_agent_step.js";
 import { createEmptySession, createSessionId, deleteSessionFromList, loadStoredSessions, renameSessionInList, saveStoredSessions, upsertSession } from "../agent/session_history.js";
 import { createUnmountGuard } from "./agent-panel/unmount_guard.js";
-import { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts } from "./agent-panel/model_catalog.js";
+import {
+  CLI_MODEL_GROUPS,
+  IMAGE_MODEL_GROUPS,
+  DEFAULT_DESIGN_MODEL,
+  DEFAULT_IMAGE_MODEL,
+  isWebImageModel,
+  getModelDisplayLabel,
+  getModelDisplayParts,
+} from "./agent-panel/model_catalog.js";
+import {
+  probeExtensionStatus,
+  EXTENSION_STATUS,
+} from "../agent/extension_detection.js";
+import { applySafeImageResult } from "../agent/image_replacement_guard.js";
 import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import { getDiscoveredModels } from "./agent-panel/model_discovery.js";
 import { useSelectionContext } from "./agent-panel/use_selection_context.js";
@@ -67,7 +80,8 @@ export default function CanvasAgentPanel({ onClose }) {
   const { t } = useI18n();
   const references = usePromptAttachments(t);
   const { attachments, clearAttachments } = references;
-  const modelGroups = useModelGroups();
+  const [mode, setMode] = useState(() => getSetting(AGENT_SETTING.MODE) || AGENT_DEFAULTS.mode || "design");
+  const modelGroups = useModelGroups(mode);
   const [, refreshReasoningPreference] = useState(0);
   const [sessions, setSessions] = useState(() => loadStoredSessions());
   // Bootstrap once without an effect that calls changing session handlers.
@@ -81,7 +95,13 @@ export default function CanvasAgentPanel({ onClose }) {
   const [error, setError] = useState(null), [configError, setConfigError] = useState(false), [cancelled, setCancelled] = useState(false);
   const [lastRequest, setLastRequest] = useState(null), [historyOpen, setHistoryOpen] = useState(false);
   const [renamingSessionId, setRenamingSessionId] = useState(null), [renameDraft, setRenameDraft] = useState("");
-  const [selectedModel, setSelectedModel] = useState(() => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL);
+  const [selectedModel, setSelectedModel] = useState(() => {
+    const currentMode = getSetting(AGENT_SETTING.MODE) || AGENT_DEFAULTS.mode || "design";
+    if (currentMode === "image") {
+      return getSetting(AGENT_SETTING.IMAGE_MODE_MODEL_ID) || DEFAULT_IMAGE_MODEL;
+    }
+    return getSetting(AGENT_SETTING.DESIGN_MODEL_ID) || getSetting(AGENT_SETTING.MODEL) || DEFAULT_DESIGN_MODEL;
+  });
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [activeContext, setActiveContext] = useSelectionContext();
   const turnRef = useRef(null);
@@ -110,6 +130,77 @@ export default function CanvasAgentPanel({ onClose }) {
     setSessions(next);
     saveStoredSessions(next);
   };
+  const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
+  const [extensionStatus, setExtensionStatus] = useState(EXTENSION_STATUS.UNKNOWN);
+  const [extensionRoute, setExtensionRoute] = useState("chatgpt");
+
+  const checkExtension = useCallback(async () => {
+    setExtensionStatus(EXTENSION_STATUS.CHECKING);
+    try {
+      const status = await probeExtensionStatus();
+      setExtensionStatus(status);
+      return status;
+    } catch {
+      setExtensionStatus(EXTENSION_STATUS.UNKNOWN);
+      return EXTENSION_STATUS.UNKNOWN;
+    }
+  }, []);
+
+  const handleRetryExtension = useCallback(async () => {
+    const status = await checkExtension();
+    if (status === EXTENSION_STATUS.READY) {
+      setExtensionDialogOpen(false);
+    }
+  }, [checkExtension]);
+
+  const handleCloseExtensionDialog = useCallback(() => {
+    setExtensionDialogOpen(false);
+  }, []);
+
+  const handleModeChange = useCallback(async (newMode) => {
+    if (!newMode || newMode === mode) return;
+    setMode(newMode);
+    setSetting(AGENT_SETTING.MODE, newMode);
+    if (newMode === "image") {
+      const imgModel = getSetting(AGENT_SETTING.IMAGE_MODE_MODEL_ID) || DEFAULT_IMAGE_MODEL;
+      setSelectedModel(imgModel);
+      setSetting(AGENT_SETTING.MODEL, imgModel);
+      if (isWebImageModel(imgModel)) {
+        const route = imgModel.includes("gemini") ? "gemini" : "chatgpt";
+        setExtensionRoute(route);
+        const status = await probeExtensionStatus();
+        setExtensionStatus(status);
+        if (status !== EXTENSION_STATUS.READY) {
+          setExtensionDialogOpen(true);
+        }
+      }
+    } else {
+      const designModel = getSetting(AGENT_SETTING.DESIGN_MODEL_ID) || getSetting(AGENT_SETTING.MODEL) || DEFAULT_DESIGN_MODEL;
+      setSelectedModel(designModel);
+      setSetting(AGENT_SETTING.MODEL, designModel);
+    }
+  }, [mode]);
+
+  const handleSelectModel = useCallback(async (modelId) => {
+    setSelectedModel(modelId);
+    setModelMenuOpen(false);
+    if (mode === "image") {
+      setSetting(AGENT_SETTING.IMAGE_MODE_MODEL_ID, modelId);
+      setSetting(AGENT_SETTING.MODEL, modelId);
+      if (isWebImageModel(modelId)) {
+        const route = modelId.includes("gemini") ? "gemini" : "chatgpt";
+        setExtensionRoute(route);
+        const status = await probeExtensionStatus();
+        setExtensionStatus(status);
+        if (status !== EXTENSION_STATUS.READY) {
+          setExtensionDialogOpen(true);
+        }
+      }
+    } else {
+      setSetting(AGENT_SETTING.DESIGN_MODEL_ID, modelId);
+      setSetting(AGENT_SETTING.MODEL, modelId);
+    }
+  }, [mode]);
   const openSession = (session) => {
     if (turnRef.current) return;
     clearAttachments();
@@ -133,11 +224,6 @@ export default function CanvasAgentPanel({ onClose }) {
     historyRef.current = [];
     setError(null);
     setHistoryOpen(false);
-    setModelMenuOpen(false);
-  };
-  const handleSelectModel = (modelId) => {
-    setSetting(AGENT_SETTING.MODEL, modelId);
-    setSelectedModel(modelId);
     setModelMenuOpen(false);
   };
   const removeSession = (sessionId) => {
@@ -226,45 +312,70 @@ export default function CanvasAgentPanel({ onClose }) {
         let promptWithContext = generationIntent ? `${generationContextText(generationIntent)}\n${text}` : promptWithSelection(text, targetContext);
         if (referenceNote) promptWithContext += `\n${referenceNote}`;
         controller.signal.throwIfAborted();
-        const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
-        if (model?.startsWith("codex:")) {
-          const codexModels = getDiscoveredModels("codex") ?? [];
-          const { reasoningEffort } = getCodexReasoningSettings(model, codexModels);
-          if (reasoningEffort) provider.config = { ...provider.config, reasoningEffort };
+
+        let reply = "";
+        if (mode === "image") {
+          // Image Mode: produces generative image assets registered in the document/IndexedDB
+          if (isWebImageModel(model)) {
+            const providerName = model.includes("gemini") ? "gemini" : "chatgpt";
+            const res = await executeCanvasTool("generate_image_web", {
+              provider: providerName,
+              prompt: text,
+              count: 1,
+            }, { signal: controller.signal });
+            reply = res?.ok === false
+              ? `生图未完成: ${res.error || res.code}`
+              : t("agent.image.webSuccess") || "已通过浏览器扩展生成图片并置入画布。";
+          } else {
+            const res = await executeCanvasTool("generate_image", {
+              prompt: text,
+            }, { signal: controller.signal });
+            reply = res?.placed
+              ? t("agent.image.generateSuccess") || "图片已生成并置入画布。"
+              : `图片生成未完成: ${res?.error || "未知原因"}`;
+          }
+        } else {
+          // Design Mode: produces structured editable canvas layers
+          const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
+          if (model?.startsWith("codex:")) {
+            const codexModels = getDiscoveredModels("codex") ?? [];
+            const { reasoningEffort } = getCodexReasoningSettings(model, codexModels);
+            if (reasoningEffort) provider.config = { ...provider.config, reasoningEffort };
+          }
+          const external = await abortable(() => externalMcpTools(), controller.signal);
+          controller.signal.throwIfAborted();
+          reply = await runAgentTurn({
+            signal: controller.signal, ...provider,
+            maxSteps: Number(getSetting(AGENT_SETTING.MAX_STEPS)) || AGENT_DEFAULTS.maxSteps,
+            styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
+            styleId: generationIntent?.styleId ?? null,
+            sceneKind: generationIntent?.kind ?? null,
+            designSystem: generationIntent?.designSystemContract ?? null,
+            frame: generationIntent?.frame ?? null,
+            visualReferences: images?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
+              .map((attachment) => ({ name: attachment.name, dataUrl: attachment.dataUrl })) ?? [],
+            variantCount,
+            onVariant: (variant) => setCandidates((current) => [...current, variant]),
+            history: historyRef.current,
+            userText: promptWithContext,
+            tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
+            executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args, context) : executeCanvasTool(name, args, context),
+            onText: (text) => { if (!controller.signal.aborted) setStreamingText(text); },
+            onProgress: setPipelineProgress,
+            chooseDirection: variantCount > 1
+              ? (choices, { variantIndex = 0 } = {}) => Promise.resolve(choices[variantIndex % choices.length]?.id ?? "auto")
+              : (choices, { signal } = {}) => new Promise((resolve, reject) => {
+                  setDirections(choices);
+                  const finish = choice => { clearTimeout(timer); signal?.removeEventListener('abort', abort); directionChoice.current = null; setDirections([]); resolve(choice); };
+                  const abort = () => { clearTimeout(timer); directionChoice.current = null; setDirections([]); reject(new DOMException('Aborted', 'AbortError')); };
+                  const timer = setTimeout(() => finish('auto'), 15000);
+                  directionChoice.current = finish;
+                  signal?.addEventListener('abort', abort, { once: true });
+                  if (signal?.aborted) abort();
+                }),
+            onToolEvent: updateToolItem,
+          });
         }
-        const external = await abortable(() => externalMcpTools(), controller.signal);
-        controller.signal.throwIfAborted();
-        const reply = await runAgentTurn({
-          signal: controller.signal, ...provider,
-          maxSteps: Number(getSetting(AGENT_SETTING.MAX_STEPS)) || AGENT_DEFAULTS.maxSteps,
-          styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
-          styleId: generationIntent?.styleId ?? null,
-          sceneKind: generationIntent?.kind ?? null,
-          designSystem: generationIntent?.designSystemContract ?? null,
-          frame: generationIntent?.frame ?? null,
-          visualReferences: images?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
-            .map((attachment) => ({ name: attachment.name, dataUrl: attachment.dataUrl })) ?? [],
-          variantCount,
-          onVariant: (variant) => setCandidates((current) => [...current, variant]),
-          history: historyRef.current,
-          userText: promptWithContext,
-          tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
-          executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args, context) : executeCanvasTool(name, args, context),
-          onText: (text) => { if (!controller.signal.aborted) setStreamingText(text); },
-          onProgress: setPipelineProgress,
-          chooseDirection: variantCount > 1
-            ? (choices, { variantIndex = 0 } = {}) => Promise.resolve(choices[variantIndex % choices.length]?.id ?? "auto")
-            : (choices, { signal } = {}) => new Promise((resolve, reject) => {
-                setDirections(choices);
-                const finish = choice => { clearTimeout(timer); signal?.removeEventListener('abort', abort); directionChoice.current = null; setDirections([]); resolve(choice); };
-                const abort = () => { clearTimeout(timer); directionChoice.current = null; setDirections([]); reject(new DOMException('Aborted', 'AbortError')); };
-                const timer = setTimeout(() => finish('auto'), 15000);
-                directionChoice.current = finish;
-                signal?.addEventListener('abort', abort, { once: true });
-                if (signal?.aborted) abort();
-              }),
-          onToolEvent: updateToolItem,
-        });
         controller.signal.throwIfAborted();
         if (generationIntent) await persistGenerationIfHasLayers(generationIntent);
         const replyItem = { kind: "text", role: "assistant", content: reply };
@@ -313,7 +424,7 @@ export default function CanvasAgentPanel({ onClose }) {
         setDirections([]);
       }
     },
-    [busy, input, activeId, activeContext, selectedModel, t, attachments, clearAttachments, references.isReading],
+    [busy, input, activeId, activeContext, selectedModel, mode, t, attachments, clearAttachments, references.isReading],
   );
   const keepCandidate = useCallback(async (candidate) => {
     const others = candidates
@@ -355,8 +466,20 @@ export default function CanvasAgentPanel({ onClose }) {
       if (prompt && prompt.trim()) send(prompt, context);
     };
     const handleOpenPanel = (event) => {
-      const { context } = event.detail || {};
-      if (context) setActiveContext(context);
+      const { mode: requestedMode, referenceImage, context } = event.detail || {};
+      if (requestedMode) {
+        handleModeChange(requestedMode);
+      }
+      if (context) {
+        setActiveContext(context);
+      } else if (referenceImage) {
+        setActiveContext({
+          type: "layer",
+          layerId: referenceImage.layerId,
+          name: referenceImage.name || "Image",
+          referenceImage,
+        });
+      }
     };
     window.addEventListener("voo:agent-prompt", handleAgentPrompt);
     window.addEventListener("voo:open-agent-panel", handleOpenPanel);
@@ -364,7 +487,7 @@ export default function CanvasAgentPanel({ onClose }) {
       window.removeEventListener("voo:agent-prompt", handleAgentPrompt);
       window.removeEventListener("voo:open-agent-panel", handleOpenPanel);
     };
-  }, [send]);
+  }, [send, handleModeChange]);
   const onSubmit = (event) => { event.preventDefault(); send(); };
   const onKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing) {
@@ -394,6 +517,10 @@ export default function CanvasAgentPanel({ onClose }) {
     reasoningEfforts: reasoningSettings.reasoningEfforts,
     reasoningEffort: reasoningSettings.reasoningEffort,
     onSelectReasoningEffort: handleSelectReasoningEffort,
+    mode, onModeChange: handleModeChange,
+    extensionDialogOpen, extensionStatus, extensionRoute,
+    onCloseExtensionDialog: handleCloseExtensionDialog,
+    onRetryExtension: handleRetryExtension,
   }} />;
 }
 CanvasAgentPanel.propTypes = { onClose: PropTypes.func };
