@@ -1,5 +1,20 @@
 # 项目检查总进度
 
+## 面板恢复完整品牌外壳（harness 模式）+ 绿色左右对称：2026-11-04
+
+- **基线版本**：`63451570`（上一轮把面板改成嵌入最小外壳，导致标题栏与绿色品牌外观消失）。
+- **问题**：`?embed` 在面板里被用作“嵌入”语义后，标题栏、绿色边框、品牌渐变都被移除（`data-embed` 隐藏 chrome、去掉 4px padding），用户看到的是纯黑最小界面。用户要的是完整产品外观（顶栏 + 绿色边框），只修“左宽右窄”。
+- **修复**：
+  1. 新增 **harness 模式**：`?harness` / `?panel` 表示“保留完整 chrome、只取嵌入副作用（自动新建项目 + 连 bridge）”。`src/shared/embed_mode.js` 增加 `isHarnessQuery/isHarnessPage`；`App.jsx` 在 harness 下保留标题栏与绿框、自动打开项目；`mcp_link_boot.js` 同样把 harness 视为需要连 bridge。
+  2. 面板侧：`plugins/voo` 的编辑器服务把旧的 `?embed` 文档导航 **302 升级为 `?harness=1`**（只对 `Accept: text/html` 的 `/`、`/index.html`），所以现有客户端无需重启即可恢复完整界面；客户端 iframe 后续直接使用 `?harness=1`。
+  3. 绿色恢复且左右对称：根背景改为左右各 4px 薄荷绿（`linear-gradient(90deg, #b2ffd6 0 4px, #000 4px calc(100% - 4px), #b2ffd6 calc(100% - 4px) 100%)`），配合 4px padding + 2px 绿框 → **左右各 6px 绿边**，与原先左侧一致；标题栏保留品牌渐变；嵌入最小模式仍为纯黑满幅。
+- **验收证据（Playwright 1210×955，干净构建 4174）**：
+  - 网页版 `/`：标题栏存在、左右绿边各 6px（对称）。
+  - `/?harness=1`：标题栏存在、左右绿边各 6px、窗口 padding 4px。
+  - `/?embed`、`/?embed=1`：无标题栏、无绿边、满幅 1210×955（最小 webview 语义不变）。
+  - 单测：`embed_mode` + `voo_editor_panel` 共 44/44 通过（含 harness 查询矩阵、`wantsHarnessPanel` 矩阵、302 重定向实测）。
+- **保留项**：面板内已开标签需刷新一次（服务端会 302 到 harness）；在线部署与面板实测见下一条记录。
+
 ## 面板嵌入模式修复 + 网页版绿色边框对称：2026-11-04
 
 - **基线版本**：`4094ed39`（在线部署 `4094ed39`）；用户反馈“网页版加载在面板里仍是完整窗口、左侧绿边比右侧宽”。

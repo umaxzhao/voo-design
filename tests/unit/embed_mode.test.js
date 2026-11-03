@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isEmbedPage, isEmbedQuery } from "../../src/shared/embed_mode.js";
+import { isEmbedPage, isEmbedQuery, isHarnessPage, isHarnessQuery } from "../../src/shared/embed_mode.js";
 
 describe("embed mode query", () => {
   it.each([
@@ -24,5 +24,22 @@ describe("embed mode query", () => {
 
   it("is safe outside a browser", () => {
     expect(isEmbedPage()).toBe(false);
+  });
+});
+
+describe("harness panel query", () => {
+  it.each([
+    ["?harness", true],
+    ["?harness=1", true],
+    ["?panel=1", true],
+    ["?embed=1", false],
+    ["?minimal", false],
+    ["", false],
+  ])("%s -> %s", (search, expected) => {
+    expect(isHarnessQuery(search)).toBe(expected);
+  });
+
+  it("is safe outside a browser", () => {
+    expect(isHarnessPage()).toBe(false);
   });
 });

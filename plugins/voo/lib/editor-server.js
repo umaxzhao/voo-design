@@ -98,6 +98,18 @@ export function resolveEditorFile(editorDir, urlPath) {
 }
 
 /**
+ * Whether a navigation request should be upgraded to the harness panel mode:
+ * an embed/minimal spelling over an HTML document, without an explicit
+ * harness/panel flag.
+ */
+export function wantsHarnessPanel(search, accept = "") {
+  const params = new URLSearchParams(typeof search === "string" ? search : "");
+  if (!(params.has("embed") || params.has("minimal"))) return false;
+  if (params.has("harness") || params.has("panel")) return false;
+  return String(accept).includes("text/html");
+}
+
+/**
  * Start the loopback static server for the built VOO editor.
  *
  * The server answers `GET`/`HEAD` only, binds to `host`, and serves
@@ -199,6 +211,20 @@ export async function startEditorServer(options) {
     } catch {
       response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
       response.end("Bad Request");
+      return;
+    }
+
+    // The side panel wants the full product chrome but the embed side effects
+    // (auto-open project + canvas link). Old clients still send `?embed`; send
+    // those navigations to the harness spelling instead of the minimal webview.
+    const search = new URL(request.url ?? "/", "http://127.0.0.1").search;
+    if ((pathname === "/" || pathname === "/index.html") && wantsHarnessPanel(search, request.headers.accept)) {
+      const params = new URLSearchParams(search);
+      params.delete("embed");
+      params.delete("minimal");
+      params.set("harness", "1");
+      response.writeHead(302, { Location: `/?${params.toString()}`, "Cache-Control": "no-store" });
+      response.end(method === "HEAD" ? undefined : undefined);
       return;
     }
 

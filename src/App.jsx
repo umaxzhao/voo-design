@@ -12,7 +12,7 @@ const BrowserDrawer = lazy(() => import("./canvas/components/browser_drawer/brow
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
 import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
-import { isEmbedPage } from "./shared/embed_mode.js";
+import { isEmbedPage, isHarnessPage } from "./shared/embed_mode.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
 import {
@@ -21,6 +21,9 @@ import {
 } from "../electron/voo_format.js";
 
 const isEmbed = isEmbedPage();
+// The harness panel keeps the product chrome (title bar + mint frame) and only
+// wants the side effects of an embedded session.
+const isHarnessPanel = isHarnessPage();
 
 export default function App() {
   const activeDocumentId = useDesignStore(s => s.activeDocumentId);
@@ -44,9 +47,10 @@ export default function App() {
     if (needsEditor) setEditorActivated(true);
   }, [needsEditor]);
 
-  // When embedded in an IDE webview or iframe, auto-open an untitled project if none exists
+  // When embedded in an IDE webview/iframe or the harness side panel, auto-open
+  // an untitled project if none exists.
   useEffect(() => {
-    if (isEmbed) {
+    if (isEmbed || isHarnessPanel) {
       const store = useDesignStore.getState();
       if (store.welcomeOpen && !store.activeDocumentId) {
         store.newVooProject({ label: "Untitled" });
@@ -145,10 +149,14 @@ export default function App() {
     <main
       data-embed={isEmbed ? "true" : undefined}
       className="app-root-frame relative flex h-full w-full select-none flex-col"
-      // The window behind the workspace frame stays black so the mint frame
-      // border reads the same width on every side; the title bar keeps its own
-      // brand gradient (that is the only place the mint band belongs).
-      style={{ background: "#000" }}
+      // The window behind the workspace frame repeats the mint edge on BOTH
+      // sides (4px page padding + the 2px frame border), so the frame reads the
+      // same width left and right. The title bar keeps its own brand gradient.
+      style={{
+        background: isEmbed
+          ? "#000"
+          : "linear-gradient(90deg, #b2ffd6 0 4px, #000 4px calc(100% - 4px), #b2ffd6 calc(100% - 4px) 100%)",
+      }}
     >
       {!isEmbed && <CrashRecoveryPrompt />}
       {!isEmbed && <ImageSizeNotice />}

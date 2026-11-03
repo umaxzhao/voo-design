@@ -15,7 +15,7 @@ import {
   DEFAULT_EDITOR_URL,
   resolveEditorPanelOptions,
 } from "../../plugins/voo/lib/options.js";
-import { resolveEditorFile, startEditorServer } from "../../plugins/voo/lib/editor-server.js";
+import { resolveEditorFile, startEditorServer, wantsHarnessPanel } from "../../plugins/voo/lib/editor-server.js";
 import { load as loadYaml } from "js-yaml";
 
 /** `tests/unit/` -> plugin package directory -> the repo root two levels above it. */
@@ -324,7 +324,7 @@ describe("integrated VOO bundle", () => {
     // iframe asks for the embedded editor explicitly.
     const client = fs.readFileSync(path.join(packageDir, "client.js"), "utf8");
     expect(client).toContain("id: 'voo'");
-    expect(client).toContain("?embed=1");
+    expect(client).toContain("?harness=1");
   });
 
   it("keeps exactly one insert with the panel, canvas MCP and model bridge rows", () => {
@@ -504,6 +504,44 @@ describe("standalone (app-less) editor source", () => {
       expect(page.response.status).toBe(502);
       expect(page.body).toContain("无法加载 VOO 编辑器");
       expect(page.body).toContain("Could not reach the hosted VOO editor");
+    } finally {
+      await closeServer(server);
+    }
+  });
+});
+
+describe("harness panel navigation", () => {
+  it("upgrades embed navigations to the full-chrome panel mode", () => {
+    expect(wantsHarnessPanel("?embed", "text/html,application/xhtml+xml")).toBe(true);
+    expect(wantsHarnessPanel("?embed=1", "text/html")).toBe(true);
+    expect(wantsHarnessPanel("?minimal", "text/html")).toBe(true);
+    expect(wantsHarnessPanel("?embed=1&harness=1", "text/html")).toBe(false);
+    expect(wantsHarnessPanel("?harness=1", "text/html")).toBe(false);
+    expect(wantsHarnessPanel("?embed", "*/*")).toBe(false);
+    expect(wantsHarnessPanel("", "text/html")).toBe(false);
+  });
+
+  it("redirects an embed document request and keeps harness pages untouched", async () => {
+    const server = await startServer(makeEditorBuild());
+    try {
+      const redirected = await fetch(`${server.url}/?embed=1`, {
+        headers: { accept: "text/html" },
+        redirect: "manual",
+      });
+      expect(redirected.status).toBe(302);
+      expect(redirected.headers.get("location")).toBe("/?harness=1");
+
+      const harness = await fetch(`${server.url}/?harness=1`, {
+        headers: { accept: "text/html" },
+      });
+      expect(harness.status).toBe(200);
+      expect(await harness.text()).toContain(INDEX_MARKER);
+
+      const asset = await fetch(`${server.url}/assets/app-abc123.js`, {
+        headers: { accept: "*/*" },
+        redirect: "manual",
+      });
+      expect(asset.status).toBe(200);
     } finally {
       await closeServer(server);
     }

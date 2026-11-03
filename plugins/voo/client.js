@@ -20,7 +20,7 @@ window.__ModuleLoader__.load({
     /** Locale namespace owning every visible string here. */
     const NS = 'vooEditorPanel';
     /** The Host half serves the built editor on this loopback origin. */
-    const EDITOR_URL = 'http://127.0.0.1:4173/?embed=1';
+    const EDITOR_URL = 'http://127.0.0.1:4173/?harness=1';
 
     /** VOO mark, copied from the repository artwork (dist/voo-mark.svg). */
     const MARK_PATH = 'M21 6.25V16.75L11.5 22L2 16.75V6.25L11.5 1L21 6.25ZM11.5 22L21 6.25H2L11.5 22ZM11.5 6.66016C14.2777 6.66016 16.5294 8.82703 16.5294 11.5C16.5294 14.173 14.2777 16.3398 11.5 16.3398C8.72233 16.3398 6.47059 14.173 6.47059 11.5C6.47059 8.82703 8.72233 6.66016 11.5 6.66016Z';

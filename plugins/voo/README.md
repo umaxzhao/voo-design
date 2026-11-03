@@ -21,7 +21,7 @@ session: the right sidebar's guide page offers **VOO 设计编辑器**, and the
 uses `editorDir` from the row config. Keep `port: 4173`: the VOO CLI bridge
 only accepts a fixed origin allowlist that includes it.
 
-The panel's iframe URL is `http://127.0.0.1:4173/?embed=1`; the embed flag hides the
+The panel's iframe URL is `http://127.0.0.1:4173/?harness=1`; the harness flag keeps the full product chrome (title bar + mint frame) while auto-opening a project and linking the canvas. The minimal webview mode remains `?embed` / `?embed=1` / `?minimal`, and the panel Host upgrades an old `?embed` navigation to `?harness=1`. The embed flag hides the
 title bar and onboarding, opens an untitled project and opts the page into the
 canvas MCP link, so the conversation agent and the visible editor share one
 canvas.
