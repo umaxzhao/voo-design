@@ -48,7 +48,7 @@ await withEditorBrowser(async ({
       await page.clock.pauseAt(now + 100);
       try {
         for (const [name, value] of [["W", 140], ["H", 120], ["X", 210], ["Y", 130]]) {
-          const field = panel.getByRole("spinbutton", {
+          const field = panel.getByRole("textbox", {
             name,
             exact: true
           });
@@ -84,7 +84,7 @@ await withEditorBrowser(async ({
     await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100);
     try {
       for (const [name, value] of [["W", 800], ["H", 500]]) {
-        const field = panel.getByRole("spinbutton", {
+        const field = panel.getByRole("textbox", {
           name,
           exact: true
         });
@@ -142,6 +142,7 @@ await withEditorBrowser(async ({
     });
     await settle();
     const original = await page.evaluate(() => window.__vooEditor.serialise());
+    // MixedField remains a native number input, unlike single-selection scrub fields.
     const field = panel.getByRole("spinbutton", {
       name: "W",
       exact: true
@@ -173,7 +174,7 @@ await withEditorBrowser(async ({
     await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100);
     try {
       for (const [name, value] of [["W", 240], ["H", 180], ["X", 200], ["Y", 160]]) {
-        const field = panel.getByRole("spinbutton", {
+        const field = panel.getByRole("textbox", {
           name,
           exact: true
         });
@@ -218,7 +219,7 @@ await withEditorBrowser(async ({
     });
     await settle();
     const original = await page.evaluate(() => window.__vooEditor.serialise());
-    const field = panel.getByRole("spinbutton", {
+    const field = panel.getByRole("textbox", {
       name: "X",
       exact: true
     });
