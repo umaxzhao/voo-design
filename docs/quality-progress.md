@@ -978,3 +978,10 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
 
 
+
+
+## Inspector 面板节奏专项 QA 收口 — 2026-11-04
+
+- 基线产品提交 `a6591d860afa0c0599ebf29b2916203147ca9f73` 直接基于 `0f7498a9037ab5c0d1263325ef076db356aa474b`；其后 QA locator 提交为 `0d07b419`，最终语义 locator 提交为 `08bb2f9ff67b3c26bd7de4ede953d10fe1b473de`。
+- `t02-functional-controls.e2e.mjs` 使用 Color variables section 内唯一标题 `Save fill as variable` 定位。创建绑定、改值、像素、解绑及 Undo/Redo 断言均保留；语义定位重跑 exit 0。首次旧入口 exit 1 证据保存在 `closure-acceptance-evidence/ui-panel-a659-b-20261103T1800Z/`。
+- 该专项只覆盖记录的定向检查；未重跑 134 步完整门禁。视觉验收为**待用户视觉反馈**，未触发 macOS 原生 GUI。
