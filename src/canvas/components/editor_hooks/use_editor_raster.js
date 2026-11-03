@@ -73,12 +73,16 @@ export function useEditorRaster({ engine, selected, lasso, pendingObjectStroke, 
 
   const downloadMattingModel = async () => {
     const pending = mattingDownload;
-    if (!pending || !["required", "failed"].includes(pending.phase)) return false;
+    if (!pending || !["required", "failed", "runFailed"].includes(pending.phase)) return false;
     const downloadEpoch = ++downloadEpochRef.current;
     const current = () => mountedRef.current && downloadEpoch === downloadEpochRef.current;
     setMattingDownload({ ...pending, phase: "downloading", progress: 0 });
     try {
-      const { downloadModel } = await import("../../editor/local_matting.js");
+      const mattingModule = await import("../../editor/local_matting.js");
+      if (pending.phase === "runFailed" && typeof mattingModule.deleteModel === "function") {
+        await mattingModule.deleteModel().catch(() => {});
+      }
+      const downloadModel = mattingModule.downloadModel;
       if (!current()) return false;
       await downloadModel(null, { onProgress: ({ phase, loaded, total }) => {
         if (!current() || phase !== "downloading") return;
@@ -89,7 +93,7 @@ export function useEditorRaster({ engine, selected, lasso, pendingObjectStroke, 
       setMattingDownload({ ...pending, phase: "running", progress: 100 });
       const completed = await pending.resume();
       if (!current()) return false;
-      setMattingDownload(completed === false ? { ...pending, phase: "failed", progress: 0 } : null);
+      setMattingDownload(completed === false ? { ...pending, phase: "runFailed", progress: 0 } : null);
       return completed !== false;
     } catch (error) {
       if (!current()) return false;
