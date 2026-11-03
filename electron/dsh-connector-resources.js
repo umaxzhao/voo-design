@@ -75,24 +75,29 @@ export function connectorPatchDirs(patch) {
     const dir = typeof value === "string" ? value.trim() : "";
     if (dir && !dirs.includes(dir)) dirs.push(dir);
   };
-  for (const line of String(patch ?? "").split(/\r?\n/)) {
-    const scalar = /^\s*cwd:\s*("(?:[^"\\]|\\.)*"|[^#]+?)\s*$/.exec(line);
-    if (scalar) {
-      const raw = scalar[1].trim();
+  const unwrapScalar = (raw) => {
+    if (typeof raw !== "string") return "";
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('"')) {
       try {
-        add(raw.startsWith('"') ? JSON.parse(raw) : raw);
+        return JSON.parse(trimmed);
       } catch {
-        add(raw);
+        return trimmed.slice(1, -1);
       }
     }
-    const entry = /^\s*-\s*("(?:[^"\\]|\\.)*")\s*$/.exec(line);
+    if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
+      return trimmed.slice(1, -1).replace(/''/g, "'");
+    }
+    return trimmed;
+  };
+  for (const line of String(patch ?? "").split(/\r?\n/)) {
+    const scalar = /^\s*cwd:\s*("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^#]+?)\s*$/.exec(line);
+    if (scalar) {
+      add(unwrapScalar(scalar[1]));
+    }
+    const entry = /^\s*-\s*("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^#]+?)\s*$/.exec(line);
     if (entry) {
-      let parsed = null;
-      try {
-        parsed = JSON.parse(entry[1]);
-      } catch {
-        parsed = null;
-      }
+      const parsed = unwrapScalar(entry[1]);
       if (typeof parsed === "string" && /scripts[\\/]mcp-server\.mjs$/.test(parsed)) {
         // `<dir>/scripts/mcp-server.mjs` — the connector root is two levels up.
         add(parsed.replace(/[\\/]scripts[\\/]mcp-server\.mjs$/, ""));
@@ -134,29 +139,64 @@ export function rewriteConnectorPatch({ connectorPath, bakedDirs, fs: fsImpl = f
   if (dirs.length === 0) {
     throw new Error(`cannot find the baked install path in ${patchPath}`);
   }
-  let next = patch;
-  for (const dir of dirs) {
-    if (dir === connectorPath) continue;
-    // In YAML double-quoted scalars, backslashes are escaped as "\\".
-    // When rewriting on Windows, replace both escaped backslash forms and raw forms.
-    if (dir.includes("\\")) {
-      const escapedDir = dir.split("\\").join("\\\\");
-      const escapedTarget = connectorPath.split("\\").join("\\\\");
-      if (escapedDir !== escapedTarget) {
-        next = next.split(escapedDir).join(escapedTarget);
+
+  const eol = patch.includes("\r\n") ? "\r\n" : "\n";
+  const lines = patch.split(/\r?\n/);
+  const nextLines = lines.map((line) => {
+    let nextLine = line;
+    for (const dir of dirs) {
+      if (!dir || dir === connectorPath) continue;
+
+      // In single-quoted scalars, single quotes are escaped as ''
+      if (/'(?:[^']|'')*'/.test(nextLine)) {
+        const sqDir = dir.replace(/'/g, "''");
+        const sqTarget = connectorPath.replace(/'/g, "''");
+        if (sqDir !== sqTarget && nextLine.includes(sqDir)) {
+          nextLine = nextLine.split(sqDir).join(sqTarget);
+        }
+        const sqSlashDir = dir.split("\\").join("/").replace(/'/g, "''");
+        const sqSlashTarget = connectorPath.split("\\").join("/").replace(/'/g, "''");
+        if (sqSlashDir !== sqSlashTarget && nextLine.includes(sqSlashDir)) {
+          nextLine = nextLine.split(sqSlashDir).join(sqSlashTarget);
+        }
+      }
+
+      // In YAML double-quoted scalars, backslashes are escaped as "\\"
+      if (/"(?:[^"\\]|\\.)*"/.test(nextLine)) {
+        if (dir.includes("\\")) {
+          const escDir = dir.split("\\").join("\\\\");
+          const escTarget = connectorPath.split("\\").join("\\\\");
+          if (escDir !== escTarget && nextLine.includes(escDir)) {
+            nextLine = nextLine.split(escDir).join(escTarget);
+          }
+        }
+        const slashDir = dir.split("\\").join("/");
+        const slashTarget = connectorPath.split("\\").join("/");
+        if (slashDir !== slashTarget && nextLine.includes(slashDir)) {
+          nextLine = nextLine.split(slashDir).join(slashTarget);
+        }
+      }
+
+      // Unquoted / general replacement fallback
+      if (nextLine.includes(dir)) {
+        nextLine = nextLine.split(dir).join(connectorPath);
+      }
+      const slashDir = dir.split("\\").join("/");
+      const slashTarget = connectorPath.split("\\").join("/");
+      if (slashDir !== slashTarget && nextLine.includes(slashDir)) {
+        nextLine = nextLine.split(slashDir).join(slashTarget);
       }
     }
-    const slashDir = dir.split("\\").join("/");
-    const slashTarget = connectorPath.split("\\").join("/");
-    if (slashDir !== slashTarget) {
-      next = next.split(slashDir).join(slashTarget);
-    }
-    next = next.split(dir).join(connectorPath);
-  }
+    return nextLine;
+  });
+
+  const next = nextLines.join(eol);
   const isPresent =
     next.includes(connectorPath) ||
     (connectorPath.includes("\\") &&
       next.includes(connectorPath.split("\\").join("\\\\"))) ||
+    (connectorPath.includes("'") &&
+      next.includes(connectorPath.replace(/'/g, "''"))) ||
     next.includes(connectorPath.split("\\").join("/"));
   if (!isPresent) {
     throw new Error(`connector patch could not be rewritten: ${patchPath}`);

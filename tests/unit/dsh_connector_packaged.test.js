@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { load as loadYaml } from "js-yaml";
 
 import {
   connectorPatchDirs,
@@ -262,7 +263,7 @@ describe("connectorPatchDirs / rewriteConnectorPatch", () => {
       expect(parseYamlScalar(cwdLine)).toBe(installSlash);
     });
 
-    it("rewrites Windows paths using single-quoted formatting", () => {
+    it("rewrites Windows paths using single-quoted formatting with full args and cwd fidelity", () => {
       const bakedWin = "C:\\Program Files\\Build Machine\\VOO Design\\connector";
       const installWin = "C:\\Users\\Jane Doe\\AppData\\Roaming\\VOO Design\\connectors\\voo";
       const patchSingle = [
@@ -285,8 +286,62 @@ describe("connectorPatchDirs / rewriteConnectorPatch", () => {
       expect(result.rewritten).toBe(true);
 
       const written = vfs.files[patchFile];
-      const cwdLine = written.split("\n").find((l) => l.includes("cwd:"));
-      expect(parseYamlScalar(cwdLine)).toBe(installWin);
+      expect(written).not.toContain(bakedWin);
+
+      // Verify complete semantic parsing with real js-yaml
+      const parsed = loadYaml(written)[0].insert[0].config;
+      expect(parsed.cwd).toBe(installWin);
+      expect(parsed.args[0]).toBe(installWin + "\\scripts\\mcp-server.mjs");
+
+      // Idempotency: second pass does not modify file
+      const secondRun = rewriteConnectorPatch({
+        connectorPath: installWin,
+        fs: vfs,
+      });
+      expect(secondRun.rewritten).toBe(false);
+      expect(vfs.files[patchFile]).toBe(written);
+    });
+
+    it("rewrites Windows paths with quotes in user name (e.g. O'Brien) in single-quoted YAML", () => {
+      const bakedWin = "C:\\Build\\VOO Design\\connector";
+      const installWin = "C:\\Users\\O'Brien\\AppData\\Roaming\\VOO Design\\connectors\\voo";
+      const patchSingle = [
+        "- insert:",
+        "    - id: mcp-voo",
+        "      config:",
+        "        args:",
+        `          - '${bakedWin}\\scripts\\mcp-server.mjs'`,
+        `        cwd: '${bakedWin}'`,
+        "",
+      ].join("\n");
+
+      const patchFile = installWin + "\\cordis.patch.yml";
+      const vfs = createVirtualFs(patchFile, patchSingle);
+
+      const result = rewriteConnectorPatch({
+        connectorPath: installWin,
+        fs: vfs,
+      });
+      expect(result.rewritten).toBe(true);
+
+      const written = vfs.files[patchFile];
+      expect(written).not.toContain(bakedWin);
+
+      // Verify YAML single-quote escaping: O'Brien becomes O''Brien
+      expect(written).toContain("C:\\Users\\O''Brien\\AppData\\Roaming\\VOO Design\\connectors\\voo");
+
+      // Verify complete semantic parsing with real js-yaml
+      const parsed = loadYaml(written)[0].insert[0].config;
+      expect(parsed.cwd).toBe(installWin);
+      expect(parsed.args[0]).toBe(installWin + "\\scripts\\mcp-server.mjs");
+
+      // Idempotency: second pass does not modify file
+      const secondRun = rewriteConnectorPatch({
+        connectorPath: installWin,
+        fs: vfs,
+      });
+      expect(secondRun.rewritten).toBe(false);
+      expect(vfs.files[patchFile]).toBe(written);
     });
 
     it("handles non-Windows POSIX paths as a baseline control case", () => {
