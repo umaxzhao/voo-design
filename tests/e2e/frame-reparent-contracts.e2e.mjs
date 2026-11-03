@@ -34,6 +34,26 @@ await withEditorBrowser(async ({ page }) => {
     await page.mouse.move(points[1].x, points[1].y, { steps: 8 }); await page.mouse.up();
     await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
   };
+  const dragFrameLabel = async (frameId, delta) => {
+    const label = page.locator(`[data-testid="editor-canvas-frame-label"][data-frame-id="${frameId}"]`);
+    await label.waitFor();
+    const box = await label.boundingBox();
+    assert.ok(box, `Frame label for ${frameId} must be visible`);
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)
+      ?.closest('[data-testid="editor-canvas-frame-label"]')?.getAttribute("data-frame-id"), start);
+    assert.equal(hit, frameId, "The drag must hit the intended Frame label");
+    const deltaClient = await page.evaluate(d => {
+      const e = window.__vooEditor;
+      const artboard = document.querySelector("[data-editor-artboard]").getBoundingClientRect();
+      const scale = artboard.width / e.getDocument().width;
+      return { x: d.x * scale, y: d.y * scale };
+    }, delta);
+    await page.mouse.move(start.x, start.y); await page.mouse.down();
+    await page.mouse.move(start.x + deltaClient.x, start.y + deltaClient.y, { steps: 8 });
+    await page.mouse.up();
+    await settled(); await page.evaluate(() => window.__vooEditor.flushTransforms());
+  };
   const parent = id => page.evaluate(id => window.__vooEditor.getNode(id).parentId ?? null, id);
   const pixel = point => page.evaluate(point => window.__vooEditor.sampleColorAt(point), point);
   const historyRoundTrip = async before => {
@@ -139,7 +159,7 @@ await withEditorBrowser(async ({ page }) => {
 
   await seed([frame("moving", 40, 40), frame("other-root", 300, 20)]);
   before = await snapshot();
-  await drag({ x: 150, y: 140 }, { x: 410, y: 120 });
+  await dragFrameLabel("moving", { x: 260, y: -20 });
   assert.equal(await parent("moving"), null);
   assert.equal(await parent("other-root"), null);
   await historyRoundTrip(before);
