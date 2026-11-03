@@ -423,6 +423,15 @@ export function createPointerMoveDispatcher({
         gesture.moved = true;
         break;
       }
+      case "frameMarqueePending": {
+        if (Math.hypot(event.clientX - gesture.startScreen.x, event.clientY - gesture.startScreen.y) < DRAG_SLOP_PX) break;
+        if (!gesture.additive) { api.select(null); api.clearPixelSelection?.(); }
+        gesture.kind = "marquee";
+        gesture.moved = false;
+        gesture.rect = null;
+        dispatchMove(event, gesture);
+        break;
+      }
       case "marquee": {
         const point = api.toDocPoint(event.clientX, event.clientY);
         gesture.rect = normaliseRect({

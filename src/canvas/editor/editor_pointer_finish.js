@@ -5,6 +5,7 @@
 import { commitEditorAction } from "../undo-action-contracts.js";
 import { absolutePathEndpoints } from "./shape_geometry.js";
 import { TOOL } from "./editor_constants.js";
+import { startNodeMoveGesture } from "./move-gesture-start.js";
 import { reparentMovedRoots } from "./reparent-moved-roots.js";
 import { rollbackMoveGesture } from "./move-gesture-transaction.js";
 import { isPointerHandoff } from "./pointer-gesture-handoff.js";
@@ -63,6 +64,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       ) {
         return;
       }
+      if (finished.kind === "frameMarqueePending") return;
       if (finished.kind === "marquee") {
         api.setMarquee(null);
         return;
@@ -269,6 +271,10 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       return;
     }
 
+    if (finished.kind === "frameMarqueePending") {
+      startNodeMoveGesture({ api, event: finished.clickEvent, point: finished.start, setGesture: () => {} });
+      return;
+    }
     if (finished.kind === "marquee") {
       api.setMarquee(null);
       if (!finished.moved || !finished.rect) {

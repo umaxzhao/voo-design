@@ -369,7 +369,7 @@ export function useEditorCanvasGestures({
         return;
       if (tool !== TOOL.SELECT) return;
       const targetEngine = enginesRef.current.get(nodeId)?.engine;
-      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY)) return;
+      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY, tool)) return;
       const board = event.currentTarget;
       onTitlePointerDown(nodeId, event);
       if (!artboardDragRef.current) return;
