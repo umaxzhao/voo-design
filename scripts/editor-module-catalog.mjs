@@ -263,6 +263,7 @@ export const EDITOR_MODULES = [
       "scripts/editor-module-catalog.mjs", "scripts/editor-checks.mjs", "scripts/editor-check-plans.mjs",
       "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js",
+      "tests/unit/collab_resource_security.test.js",
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/canvas_agent_panel.jsx", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
@@ -275,7 +276,7 @@ export const EDITOR_MODULES = [
     related: ["workspace","documents","inspector","images","text"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
+      "platform.native-collaboration", "platform.collaboration-resource-scope", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
       "platform.harness-editor-panel", "platform.desktop-update-install",
     ],
