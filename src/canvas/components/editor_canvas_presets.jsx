@@ -123,7 +123,7 @@ export default function EditorCanvasPresets({
         isMobile
           ? "fixed z-[9999] max-h-[calc(100dvh-24px)] max-w-[calc(100vw-24px)] overflow-y-auto"
           : `absolute z-50 ${placeBelow ? "top-full mt-2" : "bottom-full mb-2"} -translate-x-1/2 overflow-hidden`
-      } left-1/2 w-64 rounded-2xl border border-white/[0.08] bg-[#111111]/95 shadow-menu backdrop-blur-xl text-neutral-200`}
+      } left-1/2 w-64 rounded-2xl bg-[#111111]/95 shadow-menu backdrop-blur-xl text-neutral-200`}
       style={
         isMobile
           ? {
@@ -136,7 +136,7 @@ export default function EditorCanvasPresets({
       }
       onClick={(event) => event.stopPropagation()}
     >
-      <div className="border-b border-white/[0.06] px-3 py-2">
+      <div className="px-3 py-2">
         <input
           type="text"
           value={query}
@@ -144,11 +144,11 @@ export default function EditorCanvasPresets({
           placeholder={t("editor.canvas.search")}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => event.stopPropagation()}
-          className="nodrag w-full rounded-lg bg-white/[0.07] px-2 py-1 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-white/20"
+          className="nodrag w-full rounded-lg bg-white/[0.07] px-2 py-1 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none"
         />
       </div>
 
-      <div className="border-b border-white/[0.06] px-3 py-1.5">
+      <div className="px-3 py-1.5">
         <p className="pb-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 select-none">
           {t("editor.canvas.scaleContent")}
         </p>
@@ -216,7 +216,7 @@ export default function EditorCanvasPresets({
         ) : null}
       </div>
 
-      <div className="border-t border-white/[0.06]">
+      <div className="">
         <p className="px-3 pt-2 pb-0.5 text-[9px] font-mono uppercase tracking-widest text-neutral-500 select-none">
           {t("editor.canvas.custom")}
         </p>
@@ -233,7 +233,7 @@ export default function EditorCanvasPresets({
               event.stopPropagation();
               if (event.key === "Enter") applyCustom();
             }}
-            className="nodrag w-0 flex-1 rounded-lg bg-white/[0.07] px-2 py-1 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-white/20"
+            className="nodrag w-0 flex-1 rounded-lg bg-white/[0.07] px-2 py-1 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none"
           />
           <span className="text-[10px] text-neutral-500">×</span>
           <input
@@ -248,7 +248,7 @@ export default function EditorCanvasPresets({
               event.stopPropagation();
               if (event.key === "Enter") applyCustom();
             }}
-            className="nodrag w-0 flex-1 rounded-lg bg-white/[0.07] px-2 py-1 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-white/20"
+            className="nodrag w-0 flex-1 rounded-lg bg-white/[0.07] px-2 py-1 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none"
           />
           <button
             type="button"

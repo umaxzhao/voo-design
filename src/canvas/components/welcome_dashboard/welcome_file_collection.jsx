@@ -306,7 +306,7 @@ export function WelcomeFileCollection({
         </div>
 
         {/* Table Rows */}
-        <div className="divide-y divide-white/5">
+        <div>
           {items.map((item) => {
             const isMenuOpen = activeMenuId === item.id;
             const isTrash = activeTab === "trash";

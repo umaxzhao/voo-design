@@ -45,7 +45,7 @@ contextBridge.exposeInMainWorld("vooDesktop", {
   },
   platform: process.platform,
   windowControls: {
-    supported: process.platform === "linux",
+    supported: process.platform === "linux" || process.platform === "win32",
     minimize: () => ipcRenderer.invoke("window:minimize"),
     toggleMaximize: () => ipcRenderer.invoke("window:toggleMaximize"),
     isMaximized: () => ipcRenderer.invoke("window:isMaximized"),

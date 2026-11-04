@@ -73,7 +73,7 @@ export function WelcomeMoveToPanel({
       // menu before the click on an option lands (the panel is outside menuRef).
       onMouseDown={(e) => e.stopPropagation()}
       style={{ top: anchor.top, left: anchor.left, maxHeight: `calc(100dvh - ${anchor.top + 8}px)` }}
-      className="ui-scroll fixed z-[60] w-36 overflow-y-auto rounded-2xl bg-neutral-900 border border-white/10 shadow-menu py-1"
+      className="ui-scroll fixed z-[60] w-36 overflow-y-auto rounded-2xl bg-neutral-900 shadow-menu py-1"
     >
       {folderTargets.map((folder) => (
         <button

@@ -127,7 +127,7 @@ export default function EditorLayersHeader({
     }}
     placeholder={t(panelTab === "assets" ? "editor.assets.search" : "editor.layers.search")}
     aria-label={t(panelTab === "assets" ? "editor.assets.search" : "editor.layers.search")}
-    className="mb-2 w-full rounded-xl border border-transparent bg-neutral-900 px-2.5 py-1.5 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800 focus:border-[#a7ffd4]/40"
+    className="mb-2 w-full rounded-xl bg-neutral-900 px-2.5 py-1.5 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800"
   /> : null;
   return <>{panelHeader}{searchField}</>;
 }

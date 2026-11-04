@@ -18,6 +18,8 @@ const EXPANDED_SESSION_ID = 0x7fffffff;
 const MAX_INSTANCE_DEPTH = 16;
 /** Override fields that describe the file, not the layer, so they are not applied. */
 const NON_VISUAL_FIELDS = new Set(["guidPath", "exportSettings", "pluginData", "pluginRelaunchData"]);
+const TEXT_LAYOUT_FIELDS = new Set(["fontName", "fontSize", "textData", "lineHeight", "letterSpacing",
+  "textAutoResize", "textAlignHorizontal", "textAlignVertical", "textCase", "fontVariations"]);
 
 const keyOf = (guid) => (guid ? `${guid.sessionID}:${guid.localID}` : null);
 
@@ -40,14 +42,19 @@ function targetKeyOf(entry) {
 }
 
 function applyOverride(copy, override) {
+  let textChanged = false;
   for (const [field, value] of Object.entries(override)) {
     if (NON_VISUAL_FIELDS.has(field)) continue;
+    if (TEXT_LAYOUT_FIELDS.has(field) && JSON.stringify(copy[field]) !== JSON.stringify(value)) textChanged = true;
     if (field === "textData" && copy.textData) {
       copy.textData = { ...copy.textData, ...value };
     } else {
       copy[field] = value;
     }
   }
+  // Master glyphs describe the master's text. Never display them for an
+  // instance's changed content/style without replacement native glyph data.
+  if (textChanged && !override.derivedTextData) delete copy.derivedTextData;
 }
 
 /** Returns a new change list with every instance's content copied under it. */
@@ -76,6 +83,10 @@ export function expandInstances(changes) {
     const derived = derivedFor.get(sourceKey)?.[0];
     if (derived?.fillGeometry) copy.fillGeometry = derived.fillGeometry;
     if (derived?.strokeGeometry) copy.strokeGeometry = derived.strokeGeometry;
+    if (copy.type === "TEXT" && derived?.derivedTextData) {
+      copy.derivedTextData = derived.derivedTextData;
+      if (derived.size) copy.size = derived.size;
+    }
     const copyIndex = out.length;
     out.push(copy);
     const copyKey = keyOf(copy.guid);

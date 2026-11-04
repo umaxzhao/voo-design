@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { serializeFigArchive } from "../../src/canvas/figma/fig-file.js";
 import { loadFigmaSchema } from "../../src/canvas/figma/figma-schema.js";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { verifyNativeTextFidelity } from "./native-text-fidelity-checks.mjs";
 
 const guid = localID => ({ sessionID: 0, localID });
 const color = (r, g, b) => [{ type: "SOLID", color: { r, g, b, a: 1 }, visible: true, opacity: 1 }];
@@ -188,3 +189,8 @@ await withEditorBrowser(async ({ page, errors }) => {
     };
   });
 } });
+
+await withEditorBrowser(async ({ page, errors }) => {
+  console.log(await verifyNativeTextFidelity(page));
+  assert.deepEqual(errors, []);
+}, { openDocument: false, mcpLink: false });

@@ -20,7 +20,7 @@ export default function BrushRetouchControls({
 
   const toggleClass = (active) =>
     `${sectionRowClass} justify-center px-1 text-[10px] ${
-      active ? "text-white ring-1 ring-white/25" : "text-neutral-400"
+      active ? "text-white bg-white/[0.08]" : "text-neutral-400"
     }`;
 
   return (
@@ -58,7 +58,7 @@ export default function BrushRetouchControls({
               }
               className={`${sectionRowClass} justify-between text-[10px] ${
                 brushProtectLuminosity
-                  ? "text-white ring-1 ring-[#a7ffd4]/40"
+                  ? "text-white bg-white/[0.08]"
                   : "text-neutral-400"
               }`}
             >

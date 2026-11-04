@@ -30,6 +30,7 @@ const isHarnessPanel = isHarnessPage();
 export default function App() {
   const activeDocumentId = useDesignStore(s => s.activeDocumentId);
   const welcomeOpen = useDesignStore((s) => s.welcomeOpen);
+  const canvasBackgroundColor = useDesignStore((s) => s.canvasBackgroundColor) ?? WORKSPACE_BACKGROUND;
   const documentLoading = useDesignStore((s) => s.documentLoading);
   // The AI panel state is managed in design_store for hybrid agent coordination
   const agentOpen = useDesignStore((s) => s.agentPanelOpen);
@@ -178,7 +179,7 @@ export default function App() {
         data-agent-open={agentOpen && !welcomeOpen && !browserDrawerOpen ? "true" : "false"}
         data-browser-open={browserDrawerOpen ? "true" : "false"}
       >
-        {/* The rounded green frame wraps the workspace below the title bar. */}
+        {/* The borderless rounded shell wraps the workspace below the title bar. */}
         <div className="editor-shell relative min-h-0 min-w-0 flex-1" data-testid="editor-shell">
           <div className="editor-shell-inner flex flex-col">
             <div className="relative min-h-0 flex-1 overflow-hidden">

@@ -22,10 +22,10 @@ function createDefaultPage(id = DEFAULT_PAGE_ID, label = "Design 1", canvasType 
     data: {
       label,
       canvasType,
-      editorDoc: createDocument(DEFAULT_WIDTH, DEFAULT_HEIGHT, "#171717", {
+      editorDoc: promoteFixedPageToFrame(createDocument(DEFAULT_WIDTH, DEFAULT_HEIGHT, "#171717", {
         canvasType,
         canvasId: id,
-      }),
+      })),
     },
   };
 }

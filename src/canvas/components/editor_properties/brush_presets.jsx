@@ -126,7 +126,7 @@ export default function BrushPresets({
                 }}
                 className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left transition-colors ${
                   isActive
-                    ? "bg-white/[0.12] ring-1 ring-[#a7ffd4]/40"
+                    ? "bg-white/[0.12]"
                     : "bg-neutral-800 hover:bg-neutral-700"
                 }`}
               >
@@ -148,7 +148,7 @@ export default function BrushPresets({
               }}
               className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left transition-colors ${
                 effectiveActive === `custom_${idx}`
-                  ? "bg-white/[0.12] ring-1 ring-[#a7ffd4]/40"
+                  ? "bg-white/[0.12]"
                   : "bg-neutral-800 hover:bg-neutral-700"
               }`}
             >
@@ -183,8 +183,8 @@ export default function BrushPresets({
                 }}
                 className={`flex flex-col items-center justify-center gap-1 rounded-xl p-1.5 transition-all ${
                   isActive
-                    ? "bg-[#a7ffd4]/15 border border-[#a7ffd4]/50 text-white font-medium ring-1 ring-[#a7ffd4]/30"
-                    : "bg-[#222222] border border-white/5 text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
+                    ? "bg-[#a7ffd4]/15 text-white font-medium"
+                    : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
                 }`}
               >
                 <div
@@ -217,7 +217,7 @@ export default function BrushPresets({
               }}
               className={`flex flex-col items-center justify-center gap-1 rounded-xl p-1.5 transition-all ${
                 effectiveActive === `custom_${idx}`
-                  ? "bg-[#333333] text-white ring-1 ring-white/20 font-medium"
+                  ? "bg-[#333333] text-white font-medium"
                   : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
               }`}
             >

@@ -1,3 +1,4 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -13,6 +14,7 @@ async function prepare(page, { reload = false, harness = false, crop = false } =
   if (reload) await page.reload({ waitUntil: "networkidle" });
   await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
   await page.waitForFunction(() => window.__vooEditor?.getDocument()?.isCanvasRoot);
+  if (!crop) await createAuthoredFrame(page);
   assert.deepEqual(await page.evaluate(pattern => performance.getEntriesByType("resource")
     .map(entry => entry.name).filter(name => new RegExp(pattern).test(name)), implementations.source), []);
   await page.evaluate(async crop => {

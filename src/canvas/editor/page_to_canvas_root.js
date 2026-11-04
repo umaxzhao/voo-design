@@ -3,10 +3,26 @@ import { frameEditorFills } from "./frame-fills.js";
 
 /**
  * Converts a legacy bounded project page into an unbounded page root with its
- * former page surface represented by a normal, movable Frame layer.
+ * former page surface represented by a normal, movable Frame layer only when
+ * it contains layers. Empty pages start as empty, unbounded canvases.
  */
 export function promoteFixedPageToFrame(doc, frameName = "Frame") {
   if (!doc || doc.isCanvasRoot) return doc;
+
+  const root = {
+    ...doc,
+    isCanvasRoot: true,
+    backgroundColor: "transparent",
+    // Page paint belongs to the migrated Frame, never the unbounded workspace.
+    stroke: null,
+    strokeWidth: 0,
+    strokeHidden: true,
+    strokes: [],
+    nodes: [],
+  };
+  // New projects and empty imports share this migration. Do not materialize
+  // their legacy page bounds as a user-visible, selectable default Frame.
+  if (!doc.nodes?.length) return root;
 
   const frame = {
     ...createGroupNode({
@@ -45,16 +61,7 @@ export function promoteFixedPageToFrame(doc, frameName = "Frame") {
   );
 
   return {
-    ...doc,
-    isCanvasRoot: true,
-    backgroundColor: "transparent",
-    // The former page surface now belongs to the Frame layer. Keeping its
-    // stroke on the unbounded root creates a second outline that expands with
-    // the canvas and no longer matches the Frame.
-    stroke: null,
-    strokeWidth: 0,
-    strokeHidden: true,
-    strokes: [],
+    ...root,
     nodes: [frame, ...nodes],
   };
 }

@@ -109,7 +109,7 @@ export default function TopBarMenuPopover({
       role="menu"
       aria-label={label}
       data-testid="topbar-workflow-menu"
-      className="ui-scroll fixed z-[100] overflow-y-auto overflow-x-hidden rounded-xl border border-white/10 bg-surface-raised p-1 shadow-menu"
+      className="ui-scroll fixed z-[100] overflow-y-auto overflow-x-hidden rounded-xl bg-surface-raised p-1 shadow-menu"
       style={position ?? { visibility: "hidden" }}
       onPointerDown={(event) => event.stopPropagation()}
       onDoubleClick={(event) => event.stopPropagation()}

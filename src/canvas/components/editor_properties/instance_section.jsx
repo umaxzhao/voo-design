@@ -92,7 +92,7 @@ export default function InstanceSection({ object, engine }) {
 
         {/* Typed Component Properties (Boolean, Text, InstanceSwap) */}
         {hasTypedProps ? (
-          <div className="flex flex-col gap-1.5 py-1 border-t border-b border-white/5 my-1">
+          <div className="flex flex-col gap-1.5 py-1 my-1">
             <span className="px-1 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
               {t("editor.props.componentProperties")}
             </span>
@@ -105,7 +105,7 @@ export default function InstanceSection({ object, engine }) {
                       type="checkbox"
                       checked={Boolean(prop.value)}
                       onChange={(e) => handleSetProp(key, e.target.checked)}
-                      className="size-3.5 rounded-md border border-white/20 bg-neutral-800 accent-[#a7ffd4] cursor-pointer"
+                      className="size-3.5 rounded-md bg-neutral-800 accent-[#a7ffd4] cursor-pointer"
                     />
                   </div>
                 );
@@ -132,7 +132,7 @@ export default function InstanceSection({ object, engine }) {
                     type="text"
                     value={String(prop.value ?? "")}
                     onChange={(e) => handleSetProp(key, e.target.value)}
-                    className="h-6 min-w-0 flex-1 rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none focus:ring-1 focus:ring-[#a7ffd4]/40"
+                    className="h-6 min-w-0 flex-1 rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none"
                   />
                 </div>
               );

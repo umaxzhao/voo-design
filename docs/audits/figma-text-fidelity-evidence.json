@@ -1,0 +1,161 @@
+{
+  "revision": "3d71b6d2dda95278810c575cceae390252538e1a",
+  "fixture": {
+    "name": "NBA Business 101.fig",
+    "bytes": 260094840,
+    "sha256": "ef02395035d7d3e8dfd6aca8323e3c32c290c87d8d46927452056f0aa3faa806",
+    "access": "read-only; not included in repository or evidence archive"
+  },
+  "capabilities": [
+    "text.imported-appearance",
+    "compositing.custom-blend-viewport"
+  ],
+  "functionalCoverage": "partial",
+  "release": {
+    "complete": true,
+    "steps": 121,
+    "coreBrowserSuites": 117,
+    "capabilityGroups": 120,
+    "unitPassed": 4953,
+    "unitSkipped": 4,
+    "unitFilesPassed": 606,
+    "unitFilesSkipped": 3,
+    "designFiles": 1481,
+    "additionalLocalChecksNotRun": 10,
+    "report": "/tmp/voo-nba-font-release-3d71b6d2.json"
+  },
+  "format": {
+    "files": 24,
+    "errors": 0,
+    "scope": "ESLint semicolons, double quotes and final newline; project design lint also passed"
+  },
+  "ci": "https://github.com/umaxzhao/voo-design/actions/runs/41341540741",
+  "actualFile": {
+    "pages": [
+      {
+        "name": "\u5c01\u9762",
+        "nodes": 12,
+        "texts": 2,
+        "cached": 2,
+        "valid": 2
+      },
+      {
+        "name": "Page 1",
+        "nodes": 3897,
+        "texts": 468,
+        "cached": 467,
+        "valid": 467
+      },
+      {
+        "name": "Internal Only Canvas",
+        "nodes": 70,
+        "texts": 6,
+        "cached": 6,
+        "valid": 6
+      },
+      {
+        "name": "\u9cb8\u63a2PPT",
+        "nodes": 886,
+        "texts": 281,
+        "cached": 281,
+        "valid": 281
+      }
+    ],
+    "texts": 757,
+    "cachedAndValid": 756,
+    "rescaledBoxes": 0,
+    "mixedSizeCases": 20,
+    "independentGlyphSamples": 29,
+    "glyphPixelDifferences": 0,
+    "assets": 350,
+    "assetBytes": 258136898
+  },
+  "performance": {
+    "baseline": "196b69601181a407135f2073888c5adcb8b4b61e",
+    "rows": [
+      {
+        "direction": "forward",
+        "interactiveMs": {
+          "before": 1996.7000000178814,
+          "after": 2018.4000000059605
+        },
+        "editMedianMs": {
+          "before": 717,
+          "after": 509.5
+        },
+        "zoomMedianMs": {
+          "before": 150,
+          "after": 196.5
+        },
+        "canvasMeasures": {
+          "before": 2436,
+          "after": 10
+        },
+        "layoutBaselineMeasures": {
+          "before": 729,
+          "after": 2
+        },
+        "historyPreparationMs": {
+          "before": 220.80000001192093,
+          "after": 222
+        }
+      },
+      {
+        "direction": "reverse",
+        "interactiveMs": {
+          "before": 1951.9000000059605,
+          "after": 2011.7999999821186
+        },
+        "editMedianMs": {
+          "before": 720,
+          "after": 463.5
+        },
+        "zoomMedianMs": {
+          "before": 150.5,
+          "after": 151.5
+        },
+        "canvasMeasures": {
+          "before": 2432,
+          "after": 10
+        },
+        "layoutBaselineMeasures": {
+          "before": 727,
+          "after": 2
+        },
+        "historyPreparationMs": {
+          "before": 208.30000001192093,
+          "after": 230.5
+        }
+      }
+    ],
+    "conclusion": "Measured edit medians improve 29%-36%; import is not faster; zoom is not certified improved and one order is 31% slower.",
+    "limitations": [
+      "Fresh production Chromium with Metal on a shared host; not hardware input latency, FPS or a Figma ranking.",
+      "Each keyboard/wheel sample includes driver round trips and two animation frames.",
+      "Store API chooses the large page and matching readable Frame/camera; engine APIs prepare selection and 50 history entries; measured input is actual keyboard/wheel.",
+      "External network blocked; original source is read-only. Corrected glyph geometry intentionally differs from fallback-font baseline pixels.",
+      "Only this task gate/build processes were stopped before timing; other host activity cannot be excluded."
+    ],
+    "report": "/tmp/voo-nba-font-evidence/performance-merged-pairs.json"
+  },
+  "publication": {
+    "url": "https://voo.run/editor/",
+    "complete": true,
+    "loadedDistinctAssets": 76,
+    "canonicalCriticalAssets": 7,
+    "htmlSha256": "a3d939363924744c96c289fdabfbfafa25c24c065ef59956133a1b9eec435e99",
+    "pageErrors": [],
+    "nativeText": "native mixed sizes, missing-font pixels, zero replacement measurements, editable recolor/content, keyboard history (cold portable reopen is local-core-only)",
+    "blend": "Export edge pixels and actual ArrowRight, undo and redo on a negative-bound additive blend",
+    "productionReceiptSha256": "d56434dfb38b898d5a5114b67f58aec49fb35b2ac63209310289994076d276ce"
+  },
+  "remainingContexts": [
+    "One 9:41 source text has no native glyph data.",
+    "Two source text records have different inline paints; independent range paint is not repaired.",
+    "Missing-font content edits cannot reconstruct unseen characters.",
+    "Zoom regression/variance remains open; no Figma FPS or input-latency parity claim.",
+    "Arbitrary rich-text reflow, all effect/affine combinations, other drivers and signed Electron remain unverified.",
+    "Original FIG must be reimported; older saved imports discarded glyphs.",
+    "No desktop tag, installer or Release is published."
+  ]
+}

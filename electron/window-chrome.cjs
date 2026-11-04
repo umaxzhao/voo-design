@@ -1,16 +1,14 @@
-const LINUX = "linux";
+const CUSTOM_PLATFORMS = new Set(["linux", "win32"]);
 
-/** Keep macOS/Windows on their native chrome; Linux owns the whole frame. */
+/** Keep macOS on native chrome; Linux & Windows own the whole frame. */
 exports.windowChromeOptions = function windowChromeOptions(platform) {
-  if (platform === LINUX) return { frame: false, autoHideMenuBar: false };
-  return {
-    titleBarStyle: platform === "darwin" ? "hiddenInset" : "default",
-    trafficLightPosition: { x: 14, y: 14 },
-  };
+  return CUSTOM_PLATFORMS.has(platform)
+    ? { frame: false, autoHideMenuBar: false }
+    : { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 14, y: 14 } };
 };
 
 exports.attachWindowChrome = function attachWindowChrome(win, platform) {
-  if (platform !== LINUX) return;
+  if (!CUSTOM_PLATFORMS.has(platform)) return;
   // The application menu stays installed so its accelerators keep working, but
   // it never paints a second bar above the editor (Alt must not reveal it).
   win.setAutoHideMenuBar(false);

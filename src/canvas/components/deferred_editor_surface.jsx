@@ -51,7 +51,7 @@ function PendingSurface({ onClose, position }) {
       aria-label={t("common.loading")}
       tabIndex={-1}
       data-testid="editor-surface-loading"
-      className="flex items-center justify-center rounded-xl border border-white/10 bg-neutral-950 p-3 text-neutral-300 shadow-pop outline-none"
+      className="flex items-center justify-center rounded-xl bg-neutral-950 p-3 text-neutral-300 shadow-pop outline-none"
       style={menu ? {
         position: "fixed", zIndex: 100,
         left: `clamp(8px, ${position.x}px, calc(100vw - 48px))`,

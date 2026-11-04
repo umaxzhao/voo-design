@@ -1,7 +1,9 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 await withEditorBrowser(async ({ page, reloadModule }) => {
+  await createAuthoredFrame(page);
   const keys = ["editor.props.transform", "editor.constraints.title", "editor.props.appearance",
     "editor.props.fillLabel", "editor.props.strokeLabel", "editor.props.effects", "editor.props.exportTitle"];
   const checks = [];

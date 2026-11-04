@@ -62,7 +62,7 @@ export default function SelectionWandControls({
           aria-pressed={wandContiguous}
           className={`${sectionRowClass} justify-center px-1 text-[10px] leading-tight ${
             wandContiguous
-              ? "text-white ring-1 ring-white/25"
+              ? "text-white bg-white/[0.08]"
               : "text-neutral-400"
           }`}
         >
@@ -74,7 +74,7 @@ export default function SelectionWandControls({
           aria-pressed={wandAntiAlias}
           className={`${sectionRowClass} justify-center px-1 text-[10px] leading-tight ${
             wandAntiAlias
-              ? "text-white ring-1 ring-white/25"
+              ? "text-white bg-white/[0.08]"
               : "text-neutral-400"
           }`}
         >
@@ -86,7 +86,7 @@ export default function SelectionWandControls({
           aria-pressed={wandSampleAll}
           className={`${sectionRowClass} justify-center px-1 text-[10px] leading-tight ${
             wandSampleAll
-              ? "text-white ring-1 ring-white/25"
+              ? "text-white bg-white/[0.08]"
               : "text-neutral-400"
           }`}
         >

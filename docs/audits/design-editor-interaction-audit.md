@@ -1,5 +1,31 @@
 # Design editor interaction audit
 
+## Borderless application chrome · 2026-11-02
+
+- Capability: `inspector.borderless-chrome`; latest explicit design decision supersedes the previous permission for panel/menu hairlines. Keep the existing large radii, neutral surfaces and editing behavior.
+- Source review covers application title/shell, all inspector/property/tool sections, layer/resource lists, toolbar/quickbar, menus, pickers, workbench, settings, onboarding, Browser/Agent/support UI and light/mobile CSS. Remove decorative borders/dividers, default/hover rings, inset selection outlines and prompt/window gradient perimeters at their declarations rather than hiding everything behind a global reset.
+- Functional boundaries are separate: real artwork and Frame strokes, canvas selection/crop/outpaint handles, gradient/SV handles, paint previews, hierarchy guides and progress shapes remain explicit local geometry. JSX `data-ui-guide` markers document these cases; an entire dialog/menu/panel cannot opt out. Codegen/imported artwork is excluded from application-style enforcement.
+- Invariants: selection still has a distinct filled state; numeric focus changes its fill; black thumbnail fills remain black on a contrasting well. Blend and gradient changes reach the real engine and undo once; a 6px blue object stroke retains actual `#0000ff` sampled pixels. No document-format or persistence change.
+- Browser matrix: `borderless-ui.e2e.mjs` scans visible HTML borders and perimeter shadows, including decorative `aria-hidden` elements. It covers 128 states: six selection types × four widths × two themes × two locales; 15 tool modes; numeric keyboard focus; blend/fill/mesh/effect/font/Auto Layout menus; four welcome states and all five settings categories. Source lint complements these states; it does not prove every reachable parameter combination.
+- Failure chain preserved: `/private/tmp/voo-borderless-before/` records 25 visible chrome findings. `/private/tmp/voo-borderless-matrix.log` is a test-fixture font-button-name error. `/private/tmp/voo-borderless-matrix-fixed/` captures actual inherited `divide` borders in Settings; both Settings and workbench list declarations were repaired. `/private/tmp/voo-borderless-units.log` includes restricted-sandbox port/watch failures and obsolete outline assertions; `/private/tmp/voo-borderless-units-unrestricted.log` passes after environment/expectation correction.
+- Target evidence: `/private/tmp/voo-borderless-final-target/` plus `.log`, `/private/tmp/voo-borderless-static-diff.json` (163 changed JS files, no introduced unused-variable/unreachable errors), new-file/changed shared-style formatting and design lint. Impeccable's 160-target scan reports one existing Inter `@font-face` warning, intentionally retained because it is a bundled document font, not a UI font change. Do not label that generic scan zero-findings.
+- Clean execution: source `34892c37a3aa823bd3f8b53cbd3c79b363294735` passed **122/122** complete steps, including all 118 core browser suites and the 128-state borderless matrix, 4980 units passed / 4 historical skips, 609 test files passed / 3 skipped, 1481-file design lint and build. Evidence: `/private/tmp/voo-borderless-release-final.{json,log}`. CI `41390603361` separately passed actual Linux native-window checks. Ten standalone checks do not inherit the local complete gate. Subsequent receipt edits change documentation only.
+- Hosted execution: deploy the same build to `la2` with rollback `/srv/voo-run/editor-backups/34892c37-20261102T050159Z`. Canonical HTML and 75 actually loaded JS/CSS assets match the verified build byte-for-byte. A real pointer-created rectangle retains blue stroke pixels; menu navigation does not move/delete it, changing blend undoes once, and actual editor/Settings/workbench scans find no decorative borders or rings. Root/prompt gradient perimeters are absent, keyboard feedback remains and page errors are zero. Receipt/screenshot: `/private/tmp/voo-borderless-production.{json,png,log}`.
+- Limits: actual desktop installers, physical touch/IME, other browser engines, authenticated collaboration/provider states and every advanced option combination are not certified by this matrix. No paid image generation or desktop Release is performed.
+- The first clean candidate `046d13084493cb233160d5f673ca4bb54ab6a71a` stopped at 87/122 steps: `inspector-controls` searched for a section by its removed `.border-t` style. Replace only that selector with a shared semantic section marker; retain the original spacing assertion and actual operations. The full inspector suite then passed (`/private/tmp/voo-borderless-inspector-semantic.log`). Foreground/background slots also use a check badge and scale instead of a selection ring, with actual pressed-state switching covered by the borderless matrix. Preserve `/private/tmp/voo-borderless-release.{json,log}` as incomplete, not a release pass; rerun the complete clean gate into `voo-borderless-release-final`.
+- Follow-up real clicks caught a slot hit-test defect: the selected foreground badge/expanded pseudo-hit area intercepted the background button. Remove that overlapping pseudo-area, make the badge pointer-transparent and space the overlapping color circles so both centers work; retain exact colors and add pressed-state feedback. Failure screenshot: `/private/tmp/voo-borderless-semantic-stable/failure.png`. Two matrix reads also raced React's switch from object to background headers; screenshots show the normal background panel with zero page errors. Wait two actual animation frames after selection publication before querying its controls. `/private/tmp/voo-borderless-final-rerender/result.json` records all 128 checks passing after these corrections; original failed runs remain preserved.
+
+## Inspector dropdown surfaces · 2026-11-02
+
+- Capability: `inspector.control-hierarchy`, `inspector.menu-focus`, `selection.shortcuts`.
+- Reproduction: the common inspector skin forced a 1px border on every select and font-family trigger. The browser failed its zero-border assertion, and opening a blend menu with ArrowDown also nudged the selected rectangle from Y=100 to Y=101. Two keyboard-target unit cases failed before the common ownership fix.
+- Repair: remove only the inspector trigger border, retain the existing 12px corners and filled surfaces, and classify custom listboxes/triggers as non-text controls before global capture shortcuts run. Ctrl/Meta history remains available; the Layers navigation listbox stays outside this custom-choice rule.
+- Actual browser checks: four selected types (shape, Frame, text, image), English/Chinese, light/dark and 1440/390px; inspect all rendered dropdown/font triggers, hover and pointer-open, keyboard open/Escape/focus, selected-node equality and Delete/Backspace isolation. Floating menu borders remain 1px; keyboard focus remains visible. Existing inspector suite separately covers 320/390/768/1440px, field commit/cancel/history, typography and unified fills.
+- Evidence: `/private/tmp/voo-inspector-borders-reproduction/` plus `.log`, `/private/tmp/voo-dropdown-shortcuts-before.log`, `/private/tmp/voo-inspector-borders-fixed/` plus `.log`. An earlier baseline numeric Escape read failed before the new reproduction reached its target; retain `/private/tmp/voo-inspector-borders-before.log` without claiming it proved a border defect.
+- Execution: clean source `e863e7f7969d09f7938e84b8028081b30be56141` passed all 121 release steps: 117 core browser suites, 4967 units passed / 4 historical skips, 608 test files passed / 3 skipped, 1481 design-checked files and build. Final Delete/Backspace assertions passed in that clean run. Raw receipt: `/private/tmp/voo-inspector-borders-release.{json,log}`. The four changed formatted source/test files passed Prettier; changed JS also passed unused-variable/unreachable checks. Impeccable's changed-CSS detector reported no findings.
+- Production: deployed the same build to `la2`, preserving `/srv/voo-run/editor-backups/e863e7f7-20261102T033917Z`. Canonical HTML and 75 actually loaded JS/CSS assets were byte-identical to the verified build. The real hosted editor passed pointer drawing, borderless triggers, retained menu edge and keyboard focus, no artwork movement/deletion from menu keys, blend-mode mutation and one-step undo, with zero page errors. Receipt and screenshot: `/private/tmp/voo-inspector-borders-production.{json,png,log}`. CI run `41382933157` separately passed native Linux window checks. Follow-up receipt edits change documentation only.
+- Limits: these representative states do not certify every dropdown option, native screen reader, physical touch/IME, other browser engines or signed desktop builds. No desktop publication in this task.
+
 审查日期：2026-10-26。审查对象：当前本地设计编辑器，不是静态截图。
 
 ## 方法与边界
@@ -242,3 +268,83 @@ keyboard events to verify Ctrl-drag changes the curve handles, preserves anchor
 count, and undoes/redoes as one document operation. The same suite retains
 midpoint insertion checks. This does not certify OS-level Cmd interception,
 physical stylus/touch input or pixel/export parity.
+
+## Error recovery visual integration — 2026-11-02
+
+- Capability: `platform.error-recovery`; application-level React boundary only.
+- Preserve existing localized recovery wording and error capture. Use the canonical VOO mark and shared buttons, neutral page surface, and one details entry. Copy diagnostics lives inside the collapsed details area. Explicit copy-button naming keeps its live feedback accessible.
+- Entry/state assertions: a real child render exception reaches the actual boundary; two default actions; details toggle and sanitized clipboard report; actual reload navigation resets disclosure. Chinese and English are exercised.
+- Visible/context assertions: 1440px, 768px and 390px layouts; long diagnostics do not cause horizontal page overflow; mobile actions are at least 48px high; keyboard focus is visible; light surface follows the theme. No document edits or history operations occur.
+- Evidence: `tests/e2e/app-error-recovery.e2e.mjs`, mounted through `app-error-recovery-harness.jsx`. Targeted execution passed; screenshots `/private/tmp/voo-error-recovery-{desktop,390-details,light}.png`, log `/private/tmp/voo-error-recovery-browser-settled.log`. Clean revision `a7abc5b60cbd82e848d08aece1fc4b85af9aec62` passed all 106 release steps, including 4851 unit assertions (4 skipped) and 102 registered browser suites; `/private/tmp/voo-error-recovery-release-verified.json`. Eleven additional checks remain not-run. The subsequent receipt changes documentation only.
+- Baseline reproduction: `/private/tmp/voo-error-recovery-baseline.log` fails the default-action assertion (3 versus 2). Earlier sandbox-limited and incomplete attempts remain recorded separately; `/private/tmp/voo-error-recovery-release-final.json` retains the unsettled theme-color failure and cancelled in-flight image suite. Waiting for the shared button color transition preserves the exact color assertion.
+- Coverage remains partial: browser Chromium only; native crash/restart, actual draft recovery, clipboard denial, screen-reader hardware and other browsers are not certified. This change does not diagnose or fix the exception that originally triggered the user's screenshot.
+
+- Current-main integration evidence: clean source `c1a30ae771527efc12765f75d01f3e32f2f4a4db` independently passed 119/119 steps, 4902 unit assertions (4 skipped) and 115 core browser suites with browser concurrency 1; nine standalone checks remain not-run. `/private/tmp/voo-error-recovery-integration-serial.json` and its `.log` retain the complete execution. The earlier parallel integration failure in `canvas-zoom-preview` is preserved in `/private/tmp/voo-error-recovery-integration-release.json`; its unchanged standalone assertions passed in `/private/tmp/voo-error-recovery-zoom-retry.log`. No zoom implementation or assertion was changed. Post-gate receipts change documentation only.
+
+## Empty canvas initialization — 2026-11-02
+
+Capability: `documents.empty-canvas`; shared store initialization, native page
+promotion and workspace chrome. Baseline `f8f5b14b` automatically promoted empty
+bounded pages into a Frame. The pre-open default page was also bounded, and the
+workspace chrome drew an unrelated page-edge outline on unbounded roots.
+
+- Empty legacy pages now become transparent unbounded roots with zero layers;
+  New, initial standby state and native file loading share that operation.
+- Nonempty legacy pages still promote their surface and retain ownership/paints.
+  Explicit Frames, including empty ones saved by the user, remain unchanged.
+  Previously saved default Frames cannot be distinguished from user Frames and
+  are not heuristically deleted.
+- Root chrome forwards real selection overlays but does not draw page bounds;
+  bounded documents retain their page border. No UI controls or dependencies added.
+- Original failures are retained: two empty-migration unit assertions, initial
+  standby-state assertion, and root-outline assertion; actual browser cold New
+  showed one layer, and the subsequent outline test found 3684 painted pixels.
+- Targeted native picker checks cover cold New, empty single-page import,
+  empty paged import, missing-scene fallback, existing empty root, ZIP export/
+  reopen, later New, explicit existing Frame, and nonempty legacy ownership.
+  Empty cases assert zero real layers/selection/Frame labels and zero overlay
+  alpha pixels. Pixel assertions wait two animation frames, not a mocked renderer.
+- An initial chained-import fixture hit the browser-native file-system picker
+  unsupported by Playwright's filechooser event; use the actual Home import
+  route. Versionless scene fixtures were rejected by native deserialization;
+  valid v2 fixtures now include scene version/type/ID and await the target engine.
+  These harness failures are kept separately from the original product failures.
+- Exact clean source `308b2ab2e985b062f98a6ad28add91848e0f3e4e` passed **121/121** release steps, 117 core browser suites, 4962 units / 4 historical skips, 607 unit files / 3 skipped, build and 1481-file design lint. Twenty-nine task JS/JSX files passed semicolon/final-newline formatting checks. No functional assertions were skipped for this change. Ten standalone checks remain not-run locally; functional coverage remains partial.
+- The same verified production artifact was deployed with the project script and a server rollback backup. Canonical HTML plus 7 entry/critical resources match local SHA-256. Real online New and native import checks passed with zero layers/selection/Frame labels/overlay pixels; explicit Frame and legacy content remain. 77 actually loaded distinct JS/CSS assets match the verified build, with zero page errors.
+- [PR #93](https://github.com/umaxzhao/voo-design/pull/93), [source CI](https://github.com/umaxzhao/voo-design/actions/runs/41348044318). Raw gate, original failures, scripts and production byte receipts: `/tmp/voo-empty-canvas-*` and local artifact directory `/Users/tt/.codex/visualizations/2026/10/26/01a175a0-cb5b-7133-9850-c4a861a4b01d/empty-canvas/`. Later documentation receipts do not change this application/test source.
+  The first full gate on `f9bf3204` retained four stale default-Frame assertions:
+  empty-page cases now require zero nodes; workspace-paint persistence uses an
+  explicit authored Frame and retains paint, reopen and nonmutation assertions.
+  The next gate on `3dafd02f` passed units but retained an actual drawing failure:
+  artwork-only hit regions left empty-space drags routed to background panning.
+  Creation tools now receive the full pointer plane; Select/Hand retain their
+  existing artwork/background routing. Unmodified `qa_flows` pointer assertions
+  pass after repair. Frame-dependent browser cases author a Frame explicitly,
+  rather than requiring New to supply one; no selection/paint assertions are removed.
+  Actual OS dialogs, installed Electron, external services and other browser
+  engines remain unverified. No desktop tag, installer or Release is issued.
+
+Cold-reopen selection in the continuous-creation fixture now clicks the actual
+layer-name button: a row-center click fell into the thumbnail/name gap after
+removing one hierarchy level. The original failure is retained; target-engine
+readiness and exact selected image ID are asserted before real arrow/undo input.
+The full continuous-create/save/cold-reopen scenario then passed unchanged pixel,
+geometry and history checks.
+
+The `0a945ed6` full gate retained a cold-New drawing timeout. A diagnostic showed
+engine tool `rect` while the hit plane still cached `select`: tool notifications
+do not repaint the detached page engine. Refreshing through React alone still
+raced immediate input in the `3300b000` gate. Final routing subscribes to tool
+transitions synchronously, before deferred UI notification; subscribers are
+removed by both artwork teardown and engine disposal. Ordinary selection and
+Hand keep their previous artwork/background routing and picture caching.
+
+A second pointer diagnostic found an unbounded root still admitted the old
+artboard-body drag handler. Roots can no longer start that gesture; explicit
+bounded artboards retain it. The unchanged QA pointer scenario, cold-New native
+file scenario, and complete creation/save/cold-reopen flow all passed together
+at three-browser concurrency after these repairs. Units assert synchronous
+notification, unchanged-mode deduplication, unsubscribe/disposal, invalid
+subscriptions, and both empty/populated root gesture ownership. The final gate above
+certifies only its recorded source; preceding failed reports remain retained
+rather than rewritten as passes.

@@ -44,7 +44,7 @@ export default function EditorLayerName({
       onMouseDown={event => event.stopPropagation()}
       onKeyDown={event => handleLayerRenameKeyDown(event, cancelRenameRef)}
       onBlur={event => commitRename(index, event.target.value)}
-      className="min-w-0 flex-1 h-5 rounded-lg bg-neutral-800 px-1.5 py-0 text-left text-[11px] font-mono leading-5 text-neutral-100 outline-none ring-1 ring-inset ring-white/10"
+      className="min-w-0 flex-1 h-5 rounded-lg bg-neutral-800 px-1.5 py-0 text-left text-[11px] font-mono leading-5 text-neutral-100 outline-none"
     /> : <button
       type="button"
       onClick={event => pickRow(object, index, event)}

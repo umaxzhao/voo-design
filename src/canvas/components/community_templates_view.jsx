@@ -42,13 +42,13 @@ function TemplateDialog({ template, title, locale, t, onClose, onUse }) {
   return (
     <dialog ref={dialogRef} onClose={onClose} aria-labelledby="template-dialog-title"
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
-      className="m-auto w-[calc(100%-2rem)] max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-0 text-white backdrop:bg-black/70">
+      className="m-auto w-[calc(100%-2rem)] max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-neutral-900 p-0 text-white backdrop:bg-black/70">
       <div className="flex items-center justify-between px-5 py-4">
         <h2 id="template-dialog-title" className="text-xs font-medium">{title}</h2>
         <button type="button" autoFocus onClick={onClose} aria-label={t("welcome.community.close")}
           className="rounded-md p-1 text-neutral-400 hover:bg-white/10 hover:text-white"><X size={16} /></button>
       </div>
-      <div aria-hidden="true" className="mx-5 aspect-[16/10] overflow-hidden rounded-lg border border-white/10 bg-neutral-950">
+      <div aria-hidden="true" className="mx-5 aspect-[16/10] overflow-hidden rounded-lg bg-neutral-950">
         <TemplatePreview template={template} locale={locale} />
       </div>
       <div className="flex items-center justify-between p-5">
@@ -148,7 +148,7 @@ export default function CommunityTemplatesView({ onUseTemplate }) {
           <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
           <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)}
             aria-label={t("welcome.community.searchPlaceholder")} placeholder={t("welcome.community.searchPlaceholder")}
-            className="w-full rounded-lg border border-white/10 bg-neutral-900 py-2 pl-9 pr-3 text-xs text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/30" />
+            className="w-full rounded-lg bg-neutral-900 py-2 pl-9 pr-3 text-xs text-white placeholder:text-neutral-400 focus:outline-none" />
         </div>
       </div>
       <div className="flex flex-wrap gap-1" role="group" aria-label={t("welcome.community.categories")}>
@@ -170,7 +170,7 @@ export default function CommunityTemplatesView({ onUseTemplate }) {
             <article key={template.id} data-testid="template-card" className="min-w-0">
               <button type="button" onClick={() => setActiveModalTemplate(template)}
                 aria-label={`${t("welcome.community.preview")}: ${title(template)}`}
-                className="block aspect-[16/10] w-full overflow-hidden rounded-lg border border-white/10 bg-neutral-900 transition-colors hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50">
+                className="block aspect-[16/10] w-full overflow-hidden rounded-lg bg-neutral-900 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50">
                 <div aria-hidden="true" className="h-full w-full"><TemplatePreview template={template} locale={locale} /></div>
               </button>
               <div className="flex items-center justify-between gap-3 pt-3">

@@ -54,7 +54,12 @@ export async function creationSession(page, name = "creation") {
     await page.keyboard.up(key); await settle();
     assert.equal(await page.evaluate(() => window.__vooEditor.getTool()), expected, `Key ${key} must arm ${expected}`);
   };
-  const layer = async id => { await page.locator(`[data-layer-row-id="${id}"]`).click(); await settle(); };
+  const layer = async id => {
+    // Row whitespace can sit between the thumbnail and name at shallow depth.
+    // Use the actual name button so the fixture always exercises row selection.
+    await page.locator(`[data-layer-row-id="${id}"]`).locator("button.flex-1").first().click();
+    await settle();
+  };
   const pick = async (file, point) => {
     const before = await snapshot(); await click(point, { button: "right" });
     const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.getByTestId("editor-menu-import-media").click()]);

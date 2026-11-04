@@ -1,15 +1,17 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 await withEditorBrowser(async ({ page }) => {
   const checks = [];
+  await createAuthoredFrame(page);
   const seed = await page.evaluate(async () => {
     const { useDesignStore } = await import("/src/store/design_store.js");
     const editor = window.__vooEditor, initial = editor.getDocument();
     const frame = initial.nodes.find(node => node.isFrame);
     assertFrame(initial, frame);
     function assertFrame(doc, node) {
-      if (!doc.isCanvasRoot || !node) throw new Error("Default New must contain a real root Frame");
+      if (!doc.isCanvasRoot || !node) throw new Error("The authored fixture must contain a real root Frame");
     }
     editor.setDoc({ ...initial, stroke: "#00ff00", strokeWidth: 8, nodes: [{ ...frame, x: 0, y: 0, width: 400, height: 300,
       fill: "#ffffff", fills: [{ fill: "#ffffff", opacity: 1, visible: true }], clipContent: true }] });
@@ -54,7 +56,7 @@ await withEditorBrowser(async ({ page }) => {
   console.log(JSON.stringify({ before, after, expectedFirst: seed.first, frame: seed.frame }));
   assert.deepEqual(before, []);
   assert.deepEqual(after, [seed.first], "A normal click must select only the image inside its Frame");
-  checks.push("clicking an unselected image in the default root Frame selects only that child");
+  checks.push("clicking an unselected image in the authored root Frame selects only that child");
 
   await drag({ x: 116, y: 116 }, { x: 40, y: 20 });
   const moved = await page.evaluate(seed => ({ first: window.__vooEditor.getNode(seed.first),

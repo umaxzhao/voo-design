@@ -129,7 +129,7 @@ export default function CanvasTabBar() {
             id="mobile-project-switcher-options"
             aria-label={t("canvasTabs.label")}
             className={
-              "absolute top-full z-[90] mt-1.5 max-h-[min(74dvh,34rem)] min-w-48 max-w-[min(22rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border border-white/10 bg-neutral-950 p-1.5 text-[11px] shadow-menu left-1/2 w-[min(22rem,calc(100vw-1rem))] -translate-x-1/2" +
+              "absolute top-full z-[90] mt-1.5 max-h-[min(74dvh,34rem)] min-w-48 max-w-[min(22rem,calc(100vw-1rem))] overflow-y-auto rounded-xl bg-neutral-950 p-1.5 text-[11px] shadow-menu left-1/2 w-[min(22rem,calc(100vw-1rem))] -translate-x-1/2" +
               (welcomeOpen ? " welcome-mobile-project-menu" : "")
             }
           >
@@ -219,7 +219,7 @@ export default function CanvasTabBar() {
                   </div>
                   </div>
                 </details>
-                <div className="my-1.5 border-t border-white/10" role="separator" />
+                <div className="my-1.5" role="separator" />
                 <details className="welcome-mobile-menu-disclosure">
                   <summary>{t("welcome.menu.import")}</summary>
                   <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
@@ -295,7 +295,7 @@ export default function CanvasTabBar() {
                 </div>
               );
             })}
-            <div className="my-1 border-t border-white/10" role="separator" />
+            <div className="my-1" role="separator" />
             <button
               type="button"
               onClick={() => {

@@ -9,6 +9,7 @@
  */
 import { findNode, NODE_KIND } from "./scene_model.js";
 import { clipMaskToSelection } from "./pixel_selection.js";
+import { createAiRepairTool } from "./ai-repair-tool.js";
 import { createRepairHealingTools } from "./repair_tools_healing.js";
 import { toNodeLocal } from "./scene_geometry.js";
 
@@ -131,164 +132,6 @@ export function createRepairTools({
     return await replaceNodeBitmap(nodeId, healedDataUrl);
   }
 
-  /**
-   * Local semantic inpainting for AI Repair. Unlike Spot's fast diffusion,
-   * LaMa receives a bounded crop plus the painted mask and can reconstruct
-   * texture and larger structures from surrounding context. It never sends
-   * the artwork over the network after the optional one-time model download.
-   */
-  async function inpaintAiRepairStroke(nodeId, docPoints, diameter = 24) {
-    const doc = getDoc();
-    const node = findNode(doc, nodeId);
-    if (!node || node.kind !== NODE_KIND.IMAGE) return false;
-    const bitmap = cache.get(node);
-    if (!bitmap) return false;
-
-    const width = bitmap.naturalWidth ?? bitmap.width;
-    const height = bitmap.naturalHeight ?? bitmap.height;
-    if (!width || !height) return false;
-    const scaleX = width / (node.width || width);
-    const scaleY = height / (node.height || height);
-    const sourceCanvas = document.createElement("canvas");
-    sourceCanvas.width = width;
-    sourceCanvas.height = height;
-    const sourceContext = sourceCanvas.getContext("2d");
-    const maskCanvas = document.createElement("canvas");
-    maskCanvas.width = width;
-    maskCanvas.height = height;
-    const maskContext = maskCanvas.getContext("2d");
-    if (!sourceContext || !maskContext) return false;
-    sourceContext.drawImage(bitmap, 0, 0);
-    maskContext.lineWidth = Math.max(2, diameter * Math.max(scaleX, scaleY));
-    maskContext.lineCap = "round";
-    maskContext.lineJoin = "round";
-    maskContext.strokeStyle = "#ffffff";
-    maskContext.fillStyle = "#ffffff";
-    const points = docPoints.map((point) => {
-      const local = toNodeLocal(node, point);
-      return {
-        x: (local.x / (node.width || width)) * width,
-        y: (local.y / (node.height || height)) * height,
-      };
-    });
-    maskContext.beginPath();
-    if (points.length === 1) {
-      maskContext.arc(
-        points[0].x,
-        points[0].y,
-        maskContext.lineWidth / 2,
-        0,
-        Math.PI * 2,
-      );
-      maskContext.fill();
-    } else {
-      points.forEach((point, index) => {
-        if (index === 0) maskContext.moveTo(point.x, point.y);
-        else maskContext.lineTo(point.x, point.y);
-      });
-      maskContext.stroke();
-    }
-
-    const localAiRepair = await import("./local_ai_repair.js");
-    // Same boundary as the other repair tools.
-    if (
-      clipMaskToSelection(
-        getPixelSelection(),
-        maskContext,
-        node,
-        scaleX,
-        scaleY,
-      )
-    ) {
-      const { anyMaskedPixel } = await import("./local_inpaint.js");
-      const marked = maskContext.getImageData?.(0, 0, width, height)?.data;
-      if (marked && !anyMaskedPixel(marked)) return false;
-    }
-    if (!(await localAiRepair.isAiRepairModelCached())) {
-      setAiRepairDownload({
-        phase: "required",
-        nodeId,
-        points: docPoints,
-        diameter,
-        progress: 0,
-      });
-      notify();
-      return false;
-    }
-
-    let repairedDataUrl = null;
-    try {
-      repairedDataUrl = await localAiRepair.inpaintWithLocalAi(
-        sourceCanvas,
-        maskCanvas,
-      );
-    } catch (error) {
-      // Do not silently turn an AI Repair stroke into Spot. The two tools have
-      // different promises, and a cached-but-unrunnable model needs a visible
-      // recovery path rather than an invisible behavioural downgrade.
-      console.warn("AI Repair inference failed", error);
-      setAiRepairDownload({
-        phase: "runFailed",
-        nodeId,
-        points: docPoints,
-        diameter,
-        progress: 0,
-      });
-      notify();
-      return false;
-    }
-    if (!repairedDataUrl) return false;
-
-    // Write back in place, like Spot. The generated-output sink is a no-op in the
-    // design store, so routing the result there silently discarded the repair.
-    return await replaceNodeBitmap(nodeId, repairedDataUrl);
-  }
-
-  /** Downloads AI Repair on explicit user confirmation, then resumes its stroke. */
-  async function downloadAiRepairModel() {
-    const pending = getAiRepairDownload();
-    if (
-      !pending ||
-      !["required", "failed", "runFailed"].includes(pending.phase)
-    )
-      return false;
-    setAiRepairDownload({ ...pending, phase: "downloading", progress: 0 });
-    notify();
-    try {
-      const localAiRepair = await import("./local_ai_repair.js");
-      if (pending.phase === "runFailed")
-        await localAiRepair.deleteAiRepairModel();
-      await localAiRepair.downloadAiRepairModel({
-        onProgress: (progress) => {
-          if (progress.phase !== "downloading" || !progress.total) return;
-          setAiRepairDownload({
-            ...pending,
-            phase: "downloading",
-            progress: Math.round((progress.loaded / progress.total) * 100),
-          });
-          notify();
-        },
-      });
-      setAiRepairDownload({ ...pending, phase: "running", progress: 100 });
-      notify();
-      const completed = await inpaintAiRepairStroke(
-        pending.nodeId,
-        pending.points,
-        pending.diameter,
-      );
-      if (completed) {
-        setAiRepairDownload(null);
-        notify();
-      }
-      return completed;
-    } catch (error) {
-      console.warn("AI Repair model download failed", error);
-      setAiRepairDownload({ ...pending, phase: "failed", progress: 0 });
-      notify();
-      return false;
-    }
-  }
-
   const healing = createRepairHealingTools({
     getDoc,
     cache,
@@ -302,8 +145,8 @@ export function createRepairTools({
 
   return {
     inpaintLocalStroke,
-    inpaintAiRepairStroke,
-    downloadAiRepairModel,
+    ...createAiRepairTool({ getDoc, cache, getPixelSelection, getAiRepairDownload,
+      setAiRepairDownload, replaceNodeBitmap, isDisposed, notify }),
     patchBlendStroke: healing.patchBlendStroke,
     cloneStampStroke: healing.cloneStampStroke,
   };

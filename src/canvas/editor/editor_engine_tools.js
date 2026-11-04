@@ -25,6 +25,7 @@ export function createEngineToolsController({
   notify,
 }) {
   let tool = TOOL.SELECT;
+  const toolListeners = new Set();
   let toolBeforeDropper = TOOL.SELECT;
   let regionMode = "object";
   let regionTarget = "all";
@@ -148,11 +149,20 @@ export function createEngineToolsController({
     if (targetTool === TOOL.CROP && previousTool !== TOOL.CROP) {
       crop.beginCrop();
     }
+    // Input routing must change before the next pointer event, independently
+    // of the deferred React notification or artwork repaint.
+    if (tool !== previousTool) for (const listener of toolListeners) listener(tool);
     notify();
   }
 
   return {
     getTool: () => tool,
+    subscribeTool(listener) {
+      if (typeof listener !== "function") throw new TypeError("Tool subscriber must be a function");
+      toolListeners.add(listener);
+      return () => toolListeners.delete(listener);
+    },
+    clearToolSubscriptions: () => toolListeners.clear(),
     setTool,
     getToolBeforeDropper: () => toolBeforeDropper,
     getRegionMode: () => regionMode,

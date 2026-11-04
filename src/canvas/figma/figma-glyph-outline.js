@@ -38,19 +38,26 @@ export function exactGlyphPath(blob, map) {
   const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
   const parts = [];
   let offset = 0;
+  let hasSubpath = false;
   while (offset < blob.length) {
     const command = COMMANDS[blob[offset]];
     offset += 1;
-    if (!command) break;
+    if (!command) return null;
     if (command.count === 0) {
-      parts.push("Z");
+      // Native glyph streams can start with a redundant close. Canvas ignores
+      // it, but SVG/Path2D rejects a path that does not begin with a move.
+      if (hasSubpath) parts.push("Z");
       continue;
     }
+    if (command.letter === "M") hasSubpath = true;
+    if (!hasSubpath) return null;
     const byteLength = command.count * 4;
-    if (offset + byteLength > blob.length) break;
+    if (offset + byteLength > blob.length) return null;
     const numbers = [];
     for (let index = 0; index < command.count; index += 2) {
-      const [x, y] = map(view.getFloat32(offset, true), view.getFloat32(offset + 4, true));
+      const rawX = view.getFloat32(offset, true), rawY = view.getFloat32(offset + 4, true);
+      if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) return null;
+      const [x, y] = map(rawX, rawY);
       numbers.push(x, y);
       offset += 8;
     }
@@ -69,11 +76,14 @@ export function textOutlinePath(raw, blobs) {
   for (const glyph of glyphs) {
     const blob = blobBytes(blobs, glyph.commandsBlob);
     const origin = figmaObject(glyph.position);
-    if (!blob || !origin || !(glyph.fontSize > 0)) continue;
+    if (!blob || !origin || !(glyph.fontSize > 0) || !Number.isFinite(glyph.fontSize) || glyph.rotation) return "";
     const size = glyph.fontSize;
     const originX = Number(origin.x);
     const originY = Number(origin.y);
-    parts.push(exactGlyphPath(blob, (x, y) => [originX + x * size, originY - y * size]));
+    if (!Number.isFinite(originX) || !Number.isFinite(originY)) return "";
+    const path = exactGlyphPath(blob, (x, y) => [originX + x * size, originY - y * size]);
+    if (path === null) return "";
+    parts.push(path);
   }
   return parts.filter(Boolean).join(" ");
 }

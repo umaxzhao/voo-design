@@ -16,7 +16,22 @@ import {
  * the next render then rebuilds the exact tile.
  */
 const lastExactTiles = new Map();
+const MAX_LAST_EXACT_TILES = 24;
 let viewInteracting = false;
+
+/** Replace already-composited device pixels, retaining the caller's clip. */
+function blitComposite(ctx, canvas, x, y, width = canvas.width, height = canvas.height) {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // Copy otherwise clears outside the image. Restrict it to this integer tile.
+  ctx.beginPath(); ctx.rect(x, y, width, height); ctx.clip();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "copy";
+  ctx.filter = "none";
+  ctx.shadowColor = "transparent";
+  ctx.drawImage(canvas, x, y, width, height);
+  ctx.restore();
+}
 
 /** Marks the start of a viewport gesture; exact blend tiles wait for settle. */
 export function beginCustomBlendInteraction() {
@@ -69,7 +84,7 @@ export function applyNodeTransform(ctx, node) {
  * @param {string} mode a CUSTOM_BLEND_MODES key
  * @param {number} w backdrop width in px (used only by dissolve's coordinate dither)
  */
-export function compositeCustomBlend(backdrop, source, mode, w) {
+export function compositeCustomBlend(backdrop, source, mode, w, offsetX = 0, offsetY = 0) {
   const data = backdrop.data;
   const sdata = source.data;
   const modeFn = CUSTOM_BLEND_MODES[mode];
@@ -77,8 +92,14 @@ export function compositeCustomBlend(backdrop, source, mode, w) {
   const src = { r: 0, g: 0, b: 0, a: 0 };
   const dissolveMode = mode === "dissolve";
   for (let i = 0; i < data.length; i += 4) {
-    const px = dissolveMode ? (i / 4) % w : 0;
-    const py = dissolveMode ? Math.floor(i / 4 / w) : 0;
+    // Native glyphs and glows have large transparent regions. Preserve the
+    // exact zero-alpha result without invoking blend math for those pixels.
+    if (sdata[i + 3] === 0) {
+      if (!dissolveMode && data[i + 3] === 0) data[i] = data[i + 1] = data[i + 2] = 0;
+      continue;
+    }
+    const px = dissolveMode ? (i / 4) % w + offsetX : 0;
+    const py = dissolveMode ? Math.floor(i / 4 / w) + offsetY : 0;
     dst.r = data[i] / 255;
     dst.g = data[i + 1] / 255;
     dst.b = data[i + 2] / 255;
@@ -143,27 +164,30 @@ export function drawCustomBlendNode(ctx, node, paintBody, renderState) {
   const top = Math.min(...corners.map((p) => p.y));
   const right = Math.max(...corners.map((p) => p.x));
   const bottom = Math.max(...corners.map((p) => p.y));
-  const x = Math.floor(left);
-  const y = Math.floor(top);
-  const w = Math.max(1, Math.ceil(right) - x);
-  const h = Math.max(1, Math.ceil(bottom) - y);
+  const originX = Math.floor(left), originY = Math.floor(top);
+  // A partial large layer must not allocate/read/blend its invisible pixels.
+  const x = Math.max(0, originX), y = Math.max(0, originY);
+  const w = Math.min(ctx.canvas.width, Math.ceil(right)) - x;
+  const h = Math.min(ctx.canvas.height, Math.ceil(bottom)) - y;
+  if (w <= 0 || h <= 0) return;
+  const offsetX = x - originX, offsetY = y - originY;
 
   // `e/f` only contribute their fractional part: integer panning can move the
   // completed pixel tile, while sub-pixel translation changes antialiasing.
   const fractionalOffset = `${left - Math.floor(left)},${top - Math.floor(top)}`;
   const cacheKey = renderState
-    ? `${renderState.docVersion}|${renderState.backdropGeneration}|${renderSignature(node)}|${w}x${h}|${transform.a},${transform.b},${transform.c},${transform.d}|${fractionalOffset}|${renderState.outputKey}`
+    ? `${renderState.docVersion}|${renderState.backdropGeneration}|${renderSignature(node)}|${w}x${h}|${transform.a},${transform.b},${transform.c},${transform.d}|${fractionalOffset}|${offsetX},${offsetY}|${ctx.globalAlpha}|${renderState.outputKey}`
     : null;
   const cached = cacheKey ? getRenderCache("customBlend", cacheKey) : null;
   if (cached) {
-    ctx.drawImage(cached, x, y);
+    blitComposite(ctx, cached, x, y);
     return;
   }
   if (viewInteracting) {
     // No exact tile yet: paint with source-over for now; the exact pass runs after settle.
     const lastTile = lastExactTiles.get(node.id);
     if (lastTile) {
-      ctx.drawImage(lastTile, x, y, w, h);
+      blitComposite(ctx, lastTile, x, y, w, h);
     } else {
       applyNodeTransform(ctx, node);
       paintBody(ctx);
@@ -175,26 +199,22 @@ export function drawCustomBlendNode(ctx, node, paintBody, renderState) {
   off.width = w;
   off.height = h;
   const octx = off.getContext("2d");
-  octx.setTransform(transform);
-  octx.translate(-x, -y);
+  if (!octx) throw new Error("CUSTOM_BLEND_CONTEXT_UNAVAILABLE");
+  // Tile origins are device pixels, not additional world-space translations.
+  octx.setTransform(transform.a, transform.b, transform.c, transform.d, transform.e - x, transform.f - y);
+  octx.globalAlpha = ctx.globalAlpha;
   applyNodeTransform(octx, node);
   paintBody(octx);
 
   const backdrop = ctx.getImageData(x, y, w, h);
   const source = octx.getImageData(0, 0, w, h);
-  compositeCustomBlend(backdrop, source, node.blendMode, w);
+  compositeCustomBlend(backdrop, source, node.blendMode, w, offsetX, offsetY);
+  octx.putImageData(backdrop, 0, 0);
   if (cacheKey) {
-    const result = document.createElement("canvas");
-    result.width = w;
-    result.height = h;
-    const resultCtx = result.getContext("2d");
-    if (resultCtx) {
-      resultCtx.putImageData(backdrop, 0, 0);
-      setRenderCache("customBlend", cacheKey, result);
-      lastExactTiles.set(node.id, result);
-      ctx.drawImage(result, x, y);
-      return;
-    }
+    setRenderCache("customBlend", cacheKey, off);
+    lastExactTiles.delete(node.id);
+    lastExactTiles.set(node.id, off);
+    while (lastExactTiles.size > MAX_LAST_EXACT_TILES) lastExactTiles.delete(lastExactTiles.keys().next().value);
   }
-  ctx.putImageData(backdrop, x, y);
+  blitComposite(ctx, off, x, y);
 }

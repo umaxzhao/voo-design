@@ -34,7 +34,7 @@ export function InlineToggle({ label, checked, onChange, title = undefined }) {
       />
       <span
         aria-hidden="true"
-        className="relative h-3.5 w-6 shrink-0 rounded-full bg-white/15 transition-colors peer-checked:bg-white/80 peer-focus-visible:ring-1 peer-focus-visible:ring-[#a7ffd4]/40 after:absolute after:left-0.5 after:top-0.5 after:h-2.5 after:w-2.5 after:rounded-full after:bg-neutral-900 after:transition-transform peer-checked:after:translate-x-2.5"
+        className="relative h-3.5 w-6 shrink-0 rounded-full bg-white/15 transition-colors peer-checked:bg-white/80 after:absolute after:left-0.5 after:top-0.5 after:h-2.5 after:w-2.5 after:rounded-full after:bg-neutral-900 after:transition-transform peer-checked:after:translate-x-2.5"
       />
       <span className="whitespace-nowrap text-[10px] text-neutral-500 peer-checked:text-neutral-300">
         {label}

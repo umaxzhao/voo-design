@@ -31,7 +31,7 @@ export function TextInput({
       placeholder={placeholder}
       aria-label={ariaLabel}
       disabled={disabled}
-      className={`h-7 w-full min-w-0 rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono text-neutral-100 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800/80 focus:ring-1 focus:ring-[#a7ffd4]/40 disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed ${className}`}
+      className={`h-7 w-full min-w-0 rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono text-neutral-100 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800/80 disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed ${className}`}
       {...rest}
     />
   );
@@ -80,7 +80,7 @@ export function SearchInput({
         placeholder={placeholder}
         aria-label={ariaLabel}
         disabled={disabled}
-        className="h-7 w-full min-w-0 rounded-xl bg-neutral-800 pl-7 pr-2.5 text-[11px] font-mono text-neutral-100 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800/80 focus:ring-1 focus:ring-[#a7ffd4]/40 disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed"
+        className="h-7 w-full min-w-0 rounded-xl bg-neutral-800 pl-7 pr-2.5 text-[11px] font-mono text-neutral-100 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800/80 disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed"
         {...rest}
       />
     </div>

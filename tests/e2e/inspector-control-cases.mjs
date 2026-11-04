@@ -72,7 +72,8 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal(dropdownStyle.height, 32);
   assert.equal(dropdownStyle.radius, 12);
   assert.notEqual(dropdownStyle.background, (await styles(field)).background, "A dropdown has a distinct surface");
-  assert.equal(dropdownStyle.borderWidth, "1px");
+  await panel.screenshot({ path: `${evidence}/dropdown-surface.png` });
+  assert.equal(dropdownStyle.borderWidth, "0px", "Dropdown triggers must not acquire a persistent outline");
   await dropdown.focus(); await dropdown.press("ArrowDown");
   await page.getByRole("listbox", { name: "Blend mode", exact: true }).waitFor();
   await dropdown.press("Escape");
@@ -95,7 +96,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.notEqual((await styles(horizontal)).background, (await styles(inactive)).background);
   await tool("undo"); await settle();
   assert.equal(await horizontal.getAttribute("aria-pressed"), "false");
-  mark("inspector fields, outlined dropdowns, grouped toggles and quiet commands are visually distinct; typed commit/cancel, keyboard dropdown focus, layout and one-step undo remain real");
+  mark("inspector fields, borderless dropdowns, grouped toggles and quiet commands are visually distinct; typed commit/cancel, keyboard dropdown focus, layout and one-step undo remain real");
 
   for (const width of [1440, 768, 390, 320]) {
     await page.setViewportSize({ width, height: width >= 768 ? 1000 : 844 });

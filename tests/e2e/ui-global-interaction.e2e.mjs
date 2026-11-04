@@ -1,3 +1,4 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -20,6 +21,7 @@ async function assertUncovered(surface, label) {
 
 // Fresh documents exercise the shipped UI without changing the user's open file.
 await withEditorBrowser(async ({ page }) => {
+  await createAuthoredFrame(page);
   await page.evaluate(async () => {
     const { createTextNode } = await import("/src/canvas/editor/scene_model.js");
     const engine = window.__vooEditor;

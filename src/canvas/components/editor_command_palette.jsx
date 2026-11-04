@@ -225,10 +225,10 @@ export default function EditorCommandPalette({
           event.stopPropagation();
           onClose?.();
         }}
-        className="w-[min(600px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-white/10 bg-black/95 font-mono shadow-panel backdrop-blur"
+        className="w-[min(600px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-black/95 font-mono shadow-panel backdrop-blur"
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2.5">
+        <div className="flex items-center gap-2 px-3 py-2.5">
           <Search
             size={12}
             strokeWidth={1.5}
@@ -329,7 +329,7 @@ export default function EditorCommandPalette({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2 text-[9px] text-neutral-500">
+        <div className="flex items-center justify-between gap-2 px-3 py-2 text-[9px] text-neutral-500">
           <span>
             {labelOr(t, "commandPalette.hint.navigate", "↑↓ navigate")}
             {"   "}

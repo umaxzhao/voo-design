@@ -100,7 +100,7 @@ export default function StepLocalDetect({ selectedAgent }) {
   return (
     <div className="flex flex-col gap-3">
       {/* Detection status card */}
-      <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.04] p-4 border border-white/5">
+      <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.04] p-4">
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-neutral-100">{AGENT_NAME_KEYS[selectedAgent] ? t(AGENT_NAME_KEYS[selectedAgent]) : selectedAgent}</span>
@@ -114,7 +114,7 @@ export default function StepLocalDetect({ selectedAgent }) {
             ) : status === "ready" ? (
               <span
                 data-testid="onboarding-detect-status"
-                className="rounded-full bg-[#a7ffd4]/10 border border-[#a7ffd4]/20 px-2 py-0.5 text-[10px] font-medium text-[#a7ffd4]"
+                className="rounded-full bg-[#a7ffd4]/10 px-2 py-0.5 text-[10px] font-medium text-[#a7ffd4]"
               >
                 {t("onboardingGuide.detect.ready")}
               </span>
@@ -135,7 +135,7 @@ export default function StepLocalDetect({ selectedAgent }) {
             ) : status === "not_installed" ? (
               <span
                 data-testid="onboarding-detect-status"
-                className="rounded-full bg-white/[0.08] border border-white/10 px-2 py-0.5 text-[10px] font-medium text-neutral-400"
+                className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium text-neutral-400"
               >
                 {t("onboardingGuide.detect.notInstalled")}
               </span>
@@ -190,7 +190,7 @@ export default function StepLocalDetect({ selectedAgent }) {
           <span className="text-[11px] font-medium text-amber-300">
             {t("onboardingGuide.detect.loginGuide")}
           </span>
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2 border border-white/5">
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2">
             <code className="overflow-x-auto font-mono text-[11px] text-amber-300">
               {loginCmd}
             </code>
@@ -210,12 +210,12 @@ export default function StepLocalDetect({ selectedAgent }) {
       {status === "web_bridge_missing" && (
         <div
           data-testid="onboarding-bridge-guidance"
-          className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] border border-white/5 p-4"
+          className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] p-4"
         >
           <span className="text-[11px] text-neutral-400">
             {t("onboardingGuide.detect.bridgeGuide")}
           </span>
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2 border border-white/5">
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2">
             <code className="overflow-x-auto font-mono text-[11px] text-[#a7ffd4]">
               {bridgeCmd}
             </code>
@@ -235,10 +235,10 @@ export default function StepLocalDetect({ selectedAgent }) {
       {(status === "not_installed" || status === null || (!status && !testing)) && (
         <div
           data-testid="onboarding-install-guidance"
-          className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] border border-white/5 p-4"
+          className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] p-4"
         >
           <span className="text-[11px] text-neutral-400">{t("onboardingGuide.detect.installGuide")}</span>
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2 border border-white/5">
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-black/40 px-3 py-2">
             <code className="overflow-x-auto font-mono text-[11px] text-[#a7ffd4]">
               {installCmd}
             </code>

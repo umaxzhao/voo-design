@@ -95,10 +95,6 @@ export function ColorRow({
       <span className="shrink-0 text-[10px] text-neutral-400">{label}</span>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
         <label className="relative h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-full">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/15"
-          />
           {unset ? (
             // Transparent: an empty swatch struck through, not a fake colour.
             <svg

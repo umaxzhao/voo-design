@@ -964,6 +964,7 @@ export function createEditor({
     viewportTools.dispose();
     releaseStagePictureCache(ctx);
     renderListeners.clear();
+    ctrl.toolsController.clearToolSubscriptions();
 
     if (frame) cancelAnimationFrame(frame);
     if (notifyFrame) cancelAnimationFrame(notifyFrame);

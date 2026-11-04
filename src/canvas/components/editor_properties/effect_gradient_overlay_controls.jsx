@@ -14,7 +14,7 @@ export default function EffectGradientOverlayControls({
   return (
     <div className="flex flex-col gap-2">
       <div
-        className="h-4 rounded-xl border border-white/10 overflow-hidden"
+        className="h-4 rounded-xl overflow-hidden"
         style={{
           background: `linear-gradient(90deg, ${stops
             .map((s) => `${s.color} ${Math.round(s.location * 100)}%`)

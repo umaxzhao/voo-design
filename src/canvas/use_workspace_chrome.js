@@ -17,7 +17,8 @@ export function attachWorkspaceChrome({ canvas, stage, engine, getLayout, store 
     // The focused artboard outline belongs to the same camera frame as the
     // artwork. Draw it on the chrome canvas instead of a DOM ring so zooming
     // can never leave the border one layout ahead of the canvas.
-    if (layout?.width > 0 && layout?.height > 0) {
+    // Unbounded roots have no page edge; only explicit Frame layers own bounds.
+    if (!engine.getDocument?.()?.isCanvasRoot && layout?.width > 0 && layout?.height > 0) {
       const ctx = canvas.getContext("2d");
       if (ctx) {
         const dpr = stage.clientWidth ? canvas.width / stage.clientWidth : 1;

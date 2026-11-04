@@ -99,7 +99,7 @@ await withEditorBrowser(async ({ page }) => {
   }
   // Continue opening the same document created through the real title-bar action.
   await page.waitForFunction(() => window.__vooEditor?.getDocument()?.isCanvasRoot &&
-    window.__vooEditor.getDocument().nodes.some(node => node.isFrame));
+    window.__vooEditor.getDocument().nodes.length === 0);
   await page.evaluate(async () => {
     window.__loadingAuditEngine = window.__vooEditor;
     const { useDesignStore } = await import("/src/store/design_store.js");

@@ -25,6 +25,15 @@ Rsync replaces files atomically; it must not use `--inplace` with these backups.
 Verify the public index and its referenced assets after deployment. Rollback can
 restore the backup entry point while its old assets remain available.
 
+Deployment also installs `scripts/nginx-editor-runtime.conf` through
+`scripts/deploy-editor-runtime.sh`, with configuration backup, `nginx -t` and
+rollback on failure. The scoped `/editor/ort/` location serves `.mjs` as
+JavaScript and `.wasm` as `application/wasm`, revalidates unversioned assets and
+returns 404 for absent modules. After uploading assets and before publishing
+HTML, `scripts/verify-editor-runtime.mjs` checks all six runtime responses and
+a missing-module 404. The actual hosted AI inference path still needs a real
+browser check; a successful build alone cannot validate server MIME handling.
+
 Web builds omit `public/models` but still copy fonts, ONNX/CanvasKit runtimes,
 brand assets and license notices. Model weights have an independent lifecycle:
 
@@ -42,8 +51,9 @@ The server includes `scripts/nginx-editor-models.conf` as
 separate location returns a genuine 404 for absent weights and permits
 credential-free cross-origin GET/HEAD for desktop on-demand downloads. Back up
 the site configuration, run `nginx -t`, then reload after changing the snippet.
-The three upscale model files are not supplied by this installation; do not
-claim that upscaling or an offline desktop package is complete without them.
+The three upscale choices share two independently hosted weights. Deployment
+checks their availability; actual inference and offline desktop behavior need
+their separate acceptance evidence.
 
 GitHub Actions builds on main pushes. Its optional deployment requires both
 `LA2_SSH_KEY` and `LA2_SSH_HOST`; `LA2_SSH_USER` defaults to root. Without those

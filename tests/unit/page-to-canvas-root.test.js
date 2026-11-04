@@ -4,6 +4,17 @@ import { promoteFixedPageToFrame } from "../../src/canvas/editor/page_to_canvas_
 import { documentToScene, requiresCanvas2dMediaFallback } from "../../src/canvas/editor/skia_scene_adapter.js";
 
 describe("fixed page migration", () => {
+  it.each([[], undefined])("keeps an empty legacy page free of synthetic Frames (%j)", (nodes) => {
+    const doc = { width: 640, height: 480, backgroundColor: "#171717", stroke: "#ffffff", strokeWidth: 4,
+      ...(nodes ? { nodes } : {}) };
+    const before = structuredClone(doc);
+    const migrated = promoteFixedPageToFrame(doc);
+    expect(migrated).toMatchObject({ isCanvasRoot: true, nodes: [], backgroundColor: "transparent",
+      stroke: null, strokeWidth: 0, strokeHidden: true, strokes: [] });
+    expect(doc).toEqual(before);
+    expect(promoteFixedPageToFrame(migrated)).toBe(migrated);
+  });
+
   it("preserves painted page properties and nested relationships without mutating input", () => {
     const doc = {
       width: 640, height: 480, backgroundColor: "#123456", fillOpacity: 0.75,

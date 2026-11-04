@@ -150,7 +150,7 @@ function WarningRail({ warnings, t }) {
   return (
     <aside
       aria-label={tOr(t, "editor.codegen.warnings", "Warnings")}
-      className="ui-scroll flex min-h-0 flex-col gap-1.5 overflow-y-auto rounded-xl border border-white/10 bg-white/[0.02] p-2.5"
+      className="ui-scroll flex min-h-0 flex-col gap-1.5 overflow-y-auto rounded-xl bg-white/[0.02] p-2.5"
     >
       <span className="text-[10px] text-neutral-400">
         {tOr(t, "editor.codegen.warnings", "Warnings")}
@@ -329,7 +329,7 @@ export default function EditorCodeExportDialog({
         aria-modal="true"
         aria-labelledby="code-export-title"
         data-testid="code-export-dialog"
-        className="flex max-h-[calc(100dvh-48px)] w-[min(960px,calc(100vw-32px))] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/95 font-mono shadow-panel backdrop-blur"
+        className="flex max-h-[calc(100dvh-48px)] w-[min(960px,calc(100vw-32px))] flex-col overflow-hidden rounded-3xl bg-black/95 font-mono shadow-panel backdrop-blur"
       >
         <header className="flex items-start justify-between gap-4 px-4 pt-4">
           <div className="min-w-0">
@@ -386,8 +386,8 @@ export default function EditorCodeExportDialog({
         </div>
 
         <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 pb-4 lg:grid-cols-[minmax(0,1fr)_232px]">
-          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl bg-neutral-900">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
               <div className="min-w-0">
                 <p
                   className="truncate text-[10px] text-neutral-300"

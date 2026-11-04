@@ -7,7 +7,7 @@ import SettingsSection from "./settings_section.jsx";
 
 function Kbd({ children }) {
   return (
-    <kbd className="min-w-5 rounded-md border border-white/10 bg-white/[0.08] px-1.5 py-0.5 text-center font-mono text-[10px] font-medium text-neutral-200">
+    <kbd className="min-w-5 rounded-md bg-white/[0.08] px-1.5 py-0.5 text-center font-mono text-[10px] font-medium text-neutral-200">
       {children}
     </kbd>
   );
@@ -102,7 +102,7 @@ export default function SettingsShortcuts({ asSection = true }) {
                 <h4 className="text-[11px] font-medium tracking-wider text-neutral-400 uppercase">
                   {groupTitle}
                 </h4>
-                <div className="divide-y divide-white/[0.06]">
+                <div>
                   {group.shortcuts.map((item) => {
                     const label = t(item.labelKey);
 

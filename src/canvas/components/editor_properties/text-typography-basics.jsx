@@ -48,7 +48,7 @@ export default function TypographyBasics({
               title={t("editor.props.fontWeight")}
               value={weightOptionValue(fontWeight)}
               onChange={(event) => editAndCommit({ fontWeight: event.target.value })}
-              className="h-8 w-full min-w-0 rounded-xl bg-neutral-800 px-2 text-[11px] text-neutral-200 outline-none transition-colors max-md:h-12 hover:bg-neutral-800/80 focus:ring-1 focus:ring-[#a7ffd4]/40"
+              className="h-8 w-full min-w-0 rounded-xl bg-neutral-800 px-2 text-[11px] text-neutral-200 outline-none transition-colors max-md:h-12 hover:bg-neutral-800/80"
               onClick={(event) => event.stopPropagation()}
             >
               {WEIGHT_OPTIONS.map((value) => <option key={value} value={value}>{t(`editor.props.weight.${value}`)}</option>)}
@@ -73,7 +73,7 @@ export default function TypographyBasics({
             label={t("editor.props.lineHeight")}
             icon={MoveVertical}
             unit="%"
-            step={5}
+            step={1}
             min={Math.round(TEXT_LINE_HEIGHT_BOUNDS.min * 100)}
             max={Math.round(TEXT_LINE_HEIGHT_BOUNDS.max * 100)}
             mixed={mixed("lineHeight")}

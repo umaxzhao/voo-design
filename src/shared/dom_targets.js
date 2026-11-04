@@ -59,9 +59,17 @@ export function isTextEditingTarget(target) {
   return false;
 }
 
-/** True for form controls that never accept text (range, number, checkbox…). */
+/** Native fields and custom choices own their unmodified navigation keys. */
 export function isNonTextControlTarget(target) {
   if (!(target instanceof HTMLElement)) return false;
+  // Global capture handlers run before React: stopping propagation in the
+  // dropdown itself is too late to prevent a canvas nudge or layer deletion.
+  if (
+    target.closest?.(
+      '[aria-haspopup="listbox"], [role="listbox"]:not([data-layers-list])',
+    )
+  )
+    return true;
   if (target.tagName !== "INPUT" && target.tagName !== "SELECT") return false;
   return !isTextEditingTarget(target);
 }

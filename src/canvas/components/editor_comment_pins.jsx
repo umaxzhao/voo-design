@@ -31,7 +31,7 @@ export default function EditorCommentPins({ model, t }) {
               comment.resolved
                 ? "bg-neutral-700 text-neutral-300"
                 : "bg-[#a7ffd4] text-black"
-            } ${active ? "ring-2 ring-white/70" : ""}`}
+            } `}
             style={{ left: x, top: y }}
           >
             {comment.resolved ? (
@@ -43,7 +43,7 @@ export default function EditorCommentPins({ model, t }) {
               <span
                 aria-hidden="true"
                 data-testid="editor-comment-pin-new"
-                className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[#E5B2FF] ring-1 ring-black/40"
+                className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[#E5B2FF]"
               />
             ) : null}
           </button>

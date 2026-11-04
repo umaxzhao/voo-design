@@ -1,7 +1,9 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 
 /** Exercise actual right-click, pointer traversal, keyboard navigation and menu actions. */
 export async function checkContextSubmenus(page) {
+  await createAuthoredFrame(page);
   await page.setViewportSize({ width: 800, height: 900 });
   const open = async () => {
     await page.keyboard.press("Escape");

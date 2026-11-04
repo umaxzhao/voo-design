@@ -63,7 +63,6 @@ export default function EditorHealingMenu({
         <button
           type="button"
           onClick={() => {
-            onHealingMode?.("aiRepair");
             onTool(TOOL.HEALING);
           }}
           aria-label={currentLabel}

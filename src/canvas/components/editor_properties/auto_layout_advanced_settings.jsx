@@ -79,7 +79,7 @@ export default function AutoLayoutAdvancedSettings({ children }) {
         tabIndex={-1}
         aria-label={label}
         data-testid="editor-auto-layout-advanced"
-        className="fixed z-[140] max-h-[calc(100dvh-16px)] w-56 max-w-[calc(100vw-16px)] space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-3 shadow-panel"
+        className="fixed z-[140] max-h-[calc(100dvh-16px)] w-56 max-w-[calc(100vw-16px)] space-y-2 overflow-y-auto rounded-xl bg-neutral-900 p-3 shadow-panel"
         style={{ left: position?.left ?? 8, top: position?.top ?? 8, visibility: position ? "visible" : "hidden" }}
       >
         {children}

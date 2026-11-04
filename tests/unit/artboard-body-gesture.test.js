@@ -13,6 +13,13 @@ function makeEngine({ zoom = 1, left = 0, top = 0, selectedIds = [], locked = fa
 }
 
 describe("artboard body gesture routing", () => {
+  it.each([[], [{ id: "frame", isFrame: true }]])("never drags an unbounded workspace as an artboard (%j)", nodes => {
+    const engine = makeEngine();
+    engine.getDocument = () => ({ isCanvasRoot: true, nodes });
+    expect(shouldDragArtboardBody(engine, 500, 400)).toBe(false);
+    expect(engine.nodeAtPoint).not.toHaveBeenCalled();
+  });
+
   it.each([0.25, 0.5, 1, 2])("leaves unselected artwork to its engine at zoom %s", (zoom) => {
     const engine = makeEngine({ zoom, left: 334, top: 213 });
     expect(shouldDragArtboardBody(engine, 334 + 150 * zoom, 213 + 100 * zoom)).toBe(false);

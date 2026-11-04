@@ -14,6 +14,7 @@ import CanvasTabBar from "../../src/canvas/components/canvas_tab_bar.jsx";
 describe("title bar tabs at startup", () => {
   it("renders no project tab and no + on the workspace home", () => {
     useDesignStore.setState(useDesignStore.getInitialState(), true);
+    expect(useDesignStore.getState().nodes[0].data.editorDoc).toMatchObject({ isCanvasRoot: true, nodes: [] });
     const html = renderToStaticMarkup(<CanvasTabBar />);
     expect(html).not.toContain('role="tab"');
     expect(html).not.toContain("Untitled");

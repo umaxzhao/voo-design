@@ -79,8 +79,8 @@ export const TEXT_FONT_WEIGHTS = [
 /** The `letterSpacing` bounds normalizeTextStyle and the panel share. */
 export const TEXT_LETTER_SPACING_BOUNDS = { min: -10, max: 40 };
 
-/** The `lineHeight` bounds normalizeTextStyle and the panel share. */
-export const TEXT_LINE_HEIGHT_BOUNDS = { min: 0.8, max: 3 };
+/** Positive percentage leading, shared by text, named styles and the panel. */
+export const TEXT_LINE_HEIGHT_BOUNDS = { min: 0.01, max: 3 };
 
 /** The values a text node's align field may take. */
 export const TEXT_ALIGNS = ["left", "center", "right"];

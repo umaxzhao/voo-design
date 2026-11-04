@@ -8,6 +8,8 @@ import { NODE_KIND } from "../editor/scene_model_core.js";
 import { createTextNode } from "../editor/scene_model_text_effects.js";
 import { vectorToPenNode } from "./figma-path-nodes.js";
 import { isFigmaFontAvailable, textStyleOf } from "./figma-text.js";
+import { textOutlinePath } from "./figma-glyph-outline.js";
+import { importedTextSignature } from "../editor/imported-text-cache.js";
 import { blendModeOf, effectsOf } from "./figma-effects.js";
 import { imageBytesToDataUrl } from "./fig-file.js";
 import { CONTAINER_TYPES, VECTOR_TYPES, RECT_TYPES, ELLIPSE_TYPES } from "./figma-node-types.js";
@@ -65,10 +67,13 @@ function buildLeaf(node, box, ctx) {
     const fontSize = asNumber(node.raw.fontSize, 0) > 0 ? asNumber(node.raw.fontSize) : undefined;
     const style = textStyleOf(node.raw, fontSize);
     noteFont(ctx, style.figmaFont);
-    // Preserve editable text and its original face; unavailable fonts render
-    // with the stack fallback rather than becoming irreversible glyph paths.
+    // Keep text editable while preserving its original glyph appearance.
+    // Decorations require separate native geometry and use editable layout.
     const { figmaFont, ...fields } = style;
-    return applyCommon(node, ctx, {
+    const decorated = node.raw.textDecoration === "UNDERLINE" ||
+      asArray(node.raw.derivedTextData?.decorations).length > 0;
+    const path = decorated ? "" : textOutlinePath(node.raw, ctx.blobs);
+    const layer = applyCommon(node, ctx, {
       ...createTextNode({
         x: box.x,
         y: box.y,
@@ -77,10 +82,16 @@ function buildLeaf(node, box, ctx) {
         fontSize,
       }),
       ...fields,
+      ...(path ? { width: box.width, height: box.height } : {}),
       figmaFont,
       fontMissing: !isFigmaFontAvailable(figmaFont.family),
       name: node.name,
     });
+    if (path) {
+      layer.figmaText = { path, width: box.width, height: box.height,
+        signature: importedTextSignature(layer), textData: structuredClone(node.raw.textData) };
+    }
+    return layer;
   }
 
   const image = imagePaint(fills);

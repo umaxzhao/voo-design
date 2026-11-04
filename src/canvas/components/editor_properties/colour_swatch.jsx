@@ -124,7 +124,7 @@ export function Swatch({
         event.preventDefault();
         setOpen(true);
       }
-    }} className="relative flex h-5 w-5 [@media(pointer:coarse)]:h-8 [@media(pointer:coarse)]:w-8 shrink-0 cursor-pointer overflow-hidden rounded-full border border-white/10 outline-none transition-colors hover:border-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40" style={{
+    }} className="relative flex h-5 w-5 [@media(pointer:coarse)]:h-8 [@media(pointer:coarse)]:w-8 shrink-0 cursor-pointer overflow-hidden rounded-full outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40" style={{
       background: isImage && previewImage ? `url(${previewImage}) center / cover no-repeat` : valid ? value : NONE_PATTERN
     }} />
 

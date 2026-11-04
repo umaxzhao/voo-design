@@ -35,6 +35,17 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+it.each([true, false])("paints page bounds only for bounded documents (canvas root: %s)", isCanvasRoot => {
+  Object.assign(context, { save: vi.fn(), restore: vi.fn(), beginPath: vi.fn(), rect: vi.fn(), stroke: vi.fn() });
+  const engine = { getDocument: () => ({ isCanvasRoot, nodes: [] }), renderChrome: vi.fn(), subscribeRender: () => () => {} };
+  const store = { getState: () => ({ editorCamera: { zoom: 1, panX: 0, panY: 0 } }), subscribe: () => () => {} };
+  const connection = attachWorkspaceChrome({ canvas, stage: { clientWidth: 800, clientHeight: 600 },
+    engine, store, getLayout: () => ({ x: 0, y: 0, width: 640, height: 480 }) });
+  expect(context.stroke).toHaveBeenCalledTimes(isCanvasRoot ? 0 : 1);
+  expect(engine.renderChrome).toHaveBeenCalledOnce();
+  connection.dispose();
+});
+
 it("preserves frame fill and artwork while excluding interaction chrome on fallback", () => {
   const options = {
     doc: { backgroundColor: "#171717", nodes: [{ id: "rect", kind: "rect" }] },

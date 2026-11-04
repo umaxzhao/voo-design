@@ -32,7 +32,7 @@ export default function Toggle({
       />
       <span
         aria-hidden="true"
-        className="relative h-4 w-7 shrink-0 rounded-full bg-white/15 transition-colors peer-checked:bg-white/80 peer-focus-visible:ring-1 peer-focus-visible:ring-[#a7ffd4]/40 after:absolute after:left-0.5 after:top-0.5 after:h-3 after:w-3 after:rounded-full after:bg-neutral-900 after:transition-transform peer-checked:after:translate-x-3"
+        className="relative h-4 w-7 shrink-0 rounded-full bg-white/15 transition-colors peer-checked:bg-white/80 after:absolute after:left-0.5 after:top-0.5 after:h-3 after:w-3 after:rounded-full after:bg-neutral-900 after:transition-transform peer-checked:after:translate-x-3"
       />
       <span className="text-neutral-300">{label}</span>
     </label>

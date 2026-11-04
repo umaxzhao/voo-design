@@ -186,7 +186,7 @@ export function EditorZoom({
             role="menu"
             style={moreMaxHeight ? { maxHeight: moreMaxHeight } : undefined}
             aria-label={t("editor.taskbar.more")}
-            className="absolute bottom-full right-0 mb-2 max-h-[60vh] min-w-44 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-[11px] text-white shadow-pop"
+            className="absolute bottom-full right-0 mb-2 max-h-[60vh] min-w-44 overflow-y-auto rounded-xl bg-neutral-900 p-1.5 text-[11px] text-white shadow-pop"
           >
             <button
               type="button"
@@ -243,7 +243,7 @@ export function EditorZoom({
                 {t("editor.addCanvas")}
               </button>
             ) : null}
-            <div className="mobile-more-command hidden my-1 border-t border-white/10" role="separator" />
+            <div className="mobile-more-command hidden my-1" role="separator" />
             {rulersAvailable ? (
               <button
                 type="button"
@@ -315,7 +315,7 @@ export function EditorZoom({
               </button>
             ) : null}
 
-            <div className="mt-1 border-t border-white/10 px-2 pb-1 pt-2 text-neutral-400">{t("editor.menu.groupGrid")}</div>
+            <div className="mt-1 px-2 pb-1 pt-2 text-neutral-400">{t("editor.menu.groupGrid")}</div>
             <button
               type="button"
               role="menuitemcheckbox"

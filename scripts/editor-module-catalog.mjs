@@ -17,6 +17,7 @@ export const EDITOR_MODULES = [
       "tests/unit/welcome_prompt_types.test.jsx", "tests/e2e/qa_flows.e2e.mjs",
       "tests/unit/open-project.test.js", "src/canvas/store/pick-project-source.js", "src/canvas/store/open-project.js",
       "src/canvas/components/welcome_dashboard/open_bitmap.js", "tests/unit/open_bitmap_project.test.js",
+      "tests/e2e/empty-canvas-checks.mjs", "tests/e2e/authored-frame-fixture.mjs", "tests/unit/workspace-background.test.js",
     ],
     related: [
       "documents", "inspector", "platform",
@@ -47,7 +48,7 @@ export const EDITOR_MODULES = [
       "tests/e2e/external-image-history-checks.mjs", "tests/unit/scene-model-lint.test.js", "src/canvas/editor/editor_engine.js",
       "src/canvas/editor/editor_engine_assembly.js", "src/canvas/store/project_io.js",
       "src/canvas/components/editor_import_files.js", "src/canvas/media_export.js", "src/shared/media-export.js",
-      "tests/unit/media_export.test.js",
+      "tests/unit/media_export.test.js", "src/canvas/editor/page_to_canvas_root.js", "tests/unit/page-to-canvas-root.test.js", "tests/unit/startup_tab_bar.test.jsx", "tests/unit/pages_polish.test.js",
     ],
     related: [
       "workspace", "layers", "images", "platform", "compositing", "layout",
@@ -55,6 +56,7 @@ export const EDITOR_MODULES = [
     features: [
       "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins",
       "documents.serialization-purity", "documents.dirty-checkpoints", "documents.external-image-history", "documents.export-filename",
+      "documents.empty-canvas",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow", "nested-project-roundtrip", "pages_dnd",
@@ -78,7 +80,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_hooks/editor_camera_restore.js",
       "tests/unit/document_tab_camera_restore.test.js",
       "tests/unit/free-artwork-hit-regions.test.js", "src/canvas/editor/frame-canvas-labels.js", "tests/unit/frame-canvas-labels.test.js",
-      "tests/unit/viewport_notifications.test.js", "tests/e2e/canvas_fps.e2e.mjs",
+      "src/canvas/use_workspace_chrome.js", "tests/unit/workspace_selection_chrome.test.js", "src/canvas/components/artboard-body-gesture.js", "tests/unit/artboard-body-gesture.test.js", "tests/unit/viewport_notifications.test.js", "tests/e2e/canvas_fps.e2e.mjs",
     ],
     related: [
       "selection", "layers", "compositing", "platform",
@@ -98,12 +100,12 @@ export const EDITOR_MODULES = [
     id: "selection",
     title: "Selection and transforms",
     paths: [
-      "tests/unit/legacy-tool-shortcuts.test.js",
+      "tests/unit/legacy-tool-shortcuts.test.js", "tests/e2e/creation-session-fixture.mjs", "tests/unit/tool-mode-subscriptions.test.js",
       "src/canvas/components/editor_page_frame_labels.jsx", "src/canvas/components/editor_hooks/use_editor_canvas_gestures.js", "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*",
       "src/canvas/editor/selection*", "src/canvas/editor/transform*", "src/canvas/*shortcut*", "src/canvas/editor/drawing-gesture-*",
       "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*", "src/canvas/editor/editor_engine_tools.js",
       "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js",
-      "tests/unit/editor-module-audit-regressions.test.js", "src/canvas/components/editor_family_menu.jsx",
+      "tests/unit/editor-module-audit-regressions.test.js", "src/canvas/components/editor_family_menu.jsx", "src/shared/dom_targets.js", "tests/unit/dropdown-shortcut-ownership.test.js",
       "src/canvas/components/editor_select_menu.jsx", "src/canvas/components/editor_eraser_menu.jsx", "src/canvas/components/use_hover_menu.js",
       "tests/unit/toolbar_hover_menu.test.js", "tests/unit/move-gesture-start.test.js", "src/canvas/editor/chrome_design_issues.js",
       "tests/unit/node_at_point_spatial.test.js", "scripts/editor-module-catalog.mjs", "tests/unit/editor-check-plans.test.js",
@@ -159,6 +161,8 @@ export const EDITOR_MODULES = [
     id: "compositing",
     title: "Masks, clipping and rendering",
     paths: [
+      "tests/e2e/custom-blend-viewport-checks.mjs", "tests/unit/custom-blend-viewport.test.js",
+      "src/canvas/editor/blend_math.js", "tests/unit/blend_math.test.js",
       "src/canvas/editor/clipping-chain-cache.js", "src/canvas/editor/layer-pass-document.js", "tests/e2e/selection-size-label-checks.mjs",
       "tests/unit/container_selection_chrome.test.js", "tests/unit/clipping-chain-cache.test.js", "tests/unit/layer-pass-document.test.js",
       "src/canvas/editor/chrome*", "src/canvas/editor/render*", "src/canvas/editor/skia*", "src/canvas/editor/*mask*", "src/canvas/editor/*opacity*",
@@ -171,6 +175,7 @@ export const EDITOR_MODULES = [
       "layers", "images", "vectors", "documents",
     ],
     features: [
+      "compositing.custom-blend-viewport",
       "compositing.selection-size-label", "compositing.mask-cache", "compositing.masks", "compositing.frame-clips", "compositing.alpha",
       "compositing.artwork-parity", "compositing.clip-run-culling", "compositing.effect-resources",
     ],
@@ -210,15 +215,18 @@ export const EDITOR_MODULES = [
     id: "text",
     title: "Text editing and typography",
     paths: [
+      "src/canvas/editor/scene_model_core.js", "src/canvas/editor/scene_styles.js",
+      "tests/e2e/native-text-fidelity-checks.mjs", "tests/unit/figma/figma-text-fidelity.test.js", "tests/unit/figma/testing/native-text.js",
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js",
       "src/canvas/components/editor_text*", "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx",
       "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
       "tests/unit/text-spacing-probe.test.js",
     ],
     related: [
-      "selection", "layout", "compositing", "documents", "platform",
+      "selection", "layout", "compositing", "documents", "platform", "vectors",
     ],
     features: [
+      "text.imported-appearance",
       "text.edit", "text.box-sizing", "text.typography", "text.font-loading", "text.placement-transactions", "text.spacing-probe",
     ],
     suites: [
@@ -235,15 +243,20 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/*paint*", "src/canvas/editor/*raster*", "src/canvas/editor/*adjust*", "src/canvas/editor/*filter*",
       "src/canvas/editor/*crop*", "src/canvas/editor/*bitmap*", "src/canvas/editor/*matting*", "src/canvas/editor/*upscal*",
       "src/canvas/editor/*repair*", "src/canvas/raster/*",
+      "src/canvas/editor/model_asset_loader.js", "tests/unit/model_asset_loader.test.js",
+      "tests/unit/ai-repair-worker-client.test.js", "tests/unit/ai-repair-tool.test.js", "tests/unit/ai-repair-backend.test.js", "tests/unit/healing-tool-menu.test.jsx",
+      "scripts/deploy-editor.sh", "scripts/deploy-editor-runtime.sh", "scripts/nginx-editor-runtime.conf",
+      "scripts/verify-editor-runtime.mjs", "tests/unit/editor-runtime.test.js",
+      "src/canvas/components/ai_repair_download_dialog.jsx", "tests/unit/ai_repair_download_dialog.test.jsx",
     ],
     related: [
       "selection", "compositing", "documents", "inspector",
     ],
     features: [
-      "images.retouch", "images.pixel-selections", "images.adjustments", "images.local-models",
+      "images.retouch", "images.pixel-selections", "images.adjustments", "images.local-models", "images.ai-repair-responsiveness",
     ],
     suites: [
-      "drawing-retouch", "raster-loading", "image-action-loading", "image-interaction-boundaries", "image-adjustments-complete",
+      "healing-responsiveness", "drawing-retouch", "raster-loading", "image-action-loading", "image-interaction-boundaries", "image-adjustments-complete",
       "image-selections-warp", "image-toolbar-complete", "image-agent-complete", "image-inspector-core", "gl-spatial-parity", "generated-output",
       "image-export-formats",
     ],
@@ -280,7 +293,7 @@ export const EDITOR_MODULES = [
     title: "Inspector, menus and shared UI",
     paths: [
       "tests/unit/legacy-panel-effects.test.js",
-      "src/canvas/components/scrub_field.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs",
+      "src/canvas/components/scrub_field.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/inspector-dropdown-surfaces.mjs",
       "tests/e2e/context-submenu-checks.mjs", "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx",
       "tests/unit/properties_panel_restructure.test.jsx", "src/canvas/color_picker/*", "src/canvas/components/popover_scope.js",
       "tests/e2e/unified-fill-*.mjs", "tests/unit/unified-fill-picker.test.jsx", "tests/unit/fill-paint-values.test.js",
@@ -303,6 +316,7 @@ export const EDITOR_MODULES = [
       "src/shared/i18n/extended-zh.js", "src/canvas/icons.jsx",
       "src/canvas/components/editor_pen_subbar.jsx", "src/canvas/components/editor_properties/stroke_style_icons.jsx",
       "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",
+      "src/index.css", "src/theme-light.css", "src/canvas/components/ui/*", "design/*", "eslint-rules/design-system.cjs", "scripts/check-design.mjs", "tests/unit/borderless-ui-policy.test.js", "tests/e2e/ui-border-scanner.mjs",
     ],
     related: [
       "selection", "layers", "text", "images", "layout",
@@ -311,12 +325,12 @@ export const EDITOR_MODULES = [
       "inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill",
       "inspector.impeccable-polish", "inspector.context-submenus", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive",
       "inspector.locale-lifecycle", "inspector.mobile-targets", "inspector.comments-panel-slot", "inspector.global-overlay-stacking",
-      "inspector.design-issue-review", "inspector.export-dialog-overlay",
+      "inspector.design-issue-review", "inspector.export-dialog-overlay", "inspector.borderless-chrome",
     ],
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "settings-i18n", "locale-lifecycle",
       "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu", "impeccable-polish", "mobile-control-targets", "command_palette",
-      "design_tokens",
+      "design_tokens", "borderless-ui",
     ],
     remaining: [
       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",
@@ -326,6 +340,12 @@ export const EDITOR_MODULES = [
     id: "platform",
     title: "Agent, runtime and platform integration",
     paths: [
+      "src/shared/app_error_boundary.jsx", "src/shared/app-error-boundary.module.css",
+      "src/canvas/use_window_controls.js", "src/canvas/components/desktop_window_controls.jsx",
+      "src/canvas/components/desktop-window-controls.module.css", "tests/unit/window-chrome.test.js",
+      "tests/e2e/desktop-window-native.e2e.mjs",
+      ".github/workflows/deploy-editor.yml",
+      "tests/e2e/app-error-recovery-harness.jsx",
       "tests/unit/integration-conflict-regressions.test.jsx",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs", "scripts/license-texts/*", "scripts/verify-package.mjs",
@@ -368,6 +388,8 @@ export const EDITOR_MODULES = [
       "workspace", "documents", "inspector", "images", "text",
     ],
     features: [
+      "platform.error-recovery",
+      "platform.desktop-window-chrome",
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.native-collaboration", "platform.browser-drawer",
       "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview", "platform.streaming-authoring",
       "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle", "platform.desktop-release",
@@ -379,6 +401,8 @@ export const EDITOR_MODULES = [
       "platform.linux-window-chrome", "platform.mint-frame-parity",
     ],
     suites: [
+      "app-error-recovery",
+      "desktop-window-controls",
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions",
       "pending-integration", "agent-model-catalog", "editor-loading", "editor-optional-loading", "comments-loading", "comments-lifecycle",
       "editor-refactor", "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
@@ -394,6 +418,7 @@ export const ACCEPTANCE_AXES = ["entry-points","document-state","visible-result"
 export const RELEASE_BROWSER_SUITES = ["editor-fixture-startup", ...EDITOR_MODULES.flatMap(module => module.suites).filter(suite => suite !== "editor-fixture-startup")];
 // Independent checks remain classified debt, never implicit passes.
 export const ADDITIONAL_BROWSER_CHECKS = [
+  {"suite":"desktop-window-native","owner":"platform","kind":"native","reason":"Actual Linux Electron under X11/openbox: frameless geometry, hidden native menu, window buttons, trusted OS drag and dirty-close confirmation."},
   {"suite":"claude_agent","owner":"platform","kind":"external","reason":"Live integration requires an authenticated Claude Code CLI and a real model request; no paid preflight is run in offline audits."},
   {"suite":"codex_agent","owner":"platform","kind":"external","reason":"Live integration requires an authenticated Codex CLI and a real streamed model/tool request."},
   {"suite":"mcp_cli","owner":"platform","kind":"external","reason":"Live integration launches authenticated Claude/Codex to call MCP tools and create canvas content."},

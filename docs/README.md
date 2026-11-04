@@ -33,6 +33,7 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 | Document | Topic | Status |
 | :--- | :--- | :--- |
 | [audits/figma-import-audit.md](audits/figma-import-audit.md) | Native `.fig` real-file import, property losses and separated software/Metal performance | Failed/partial for the recorded large fixture; private source retained locally |
+| [audits/figma-text-fidelity.md](audits/figma-text-fidelity.md) | NBA native mixed sizes, missing-font glyph appearance, editing/history and performance | Fixed-source verification and independent publication receipts; remaining contexts explicit |
 | [audits/continuous-creation-audit.md](audits/continuous-creation-audit.md) | One real UI creation session, shortcut/group/cancel/ink defects and cold ZIP reopening | Registered core check; desktop Chromium scope and remaining cases explicit |
 | [audits/nested-objects-audit.md](audits/nested-objects-audit.md) | Nested Frame placement, masks, hit testing, deletion, clipboard and cold project reopening | Real-pointer, pixel and hierarchy coverage; use the exact release report for results |
 | [audits/image-editor-complete-audit.md](audits/image-editor-complete-audit.md) | Image tool, pixel, inspector, MCP, native storage and real-model acceptance matrix | Maintained coverage and explicit external/platform requirements; execution results belong to the exact revision report |

@@ -54,7 +54,7 @@ export default function EditorFreePage({ page }) {
           height: rect.height,
         }}
       >
-        <div
+        <div data-ui-guide="artwork"
           ref={stageRef}
           onPointerDownCapture={releaseNestedPointerFocus}
           onClickCapture={finishAdjustmentOutside}

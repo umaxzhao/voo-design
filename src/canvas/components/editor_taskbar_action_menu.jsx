@@ -80,7 +80,7 @@ export default function EditorTaskbarActionMenu({ id, label, icon, children }) {
         role="menu"
         aria-label={label}
         data-testid={`editor-taskbar-${id}-options`}
-        className="fixed z-[100] grid w-44 max-w-[calc(100vw-16px)] grid-cols-4 justify-items-center gap-1 overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900 p-2 shadow-pop"
+        className="fixed z-[100] grid w-44 max-w-[calc(100vw-16px)] grid-cols-4 justify-items-center gap-1 overflow-y-auto rounded-2xl bg-neutral-900 p-2 shadow-pop"
         style={position}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {

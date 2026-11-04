@@ -14,6 +14,9 @@ const ORT_FILES = [
   "ort-wasm-simd-threaded.mjs",
   "ort-wasm-simd-threaded.jsep.wasm",
   "ort-wasm-simd-threaded.jsep.mjs",
+  // The WebGPU entry in ORT 1.27 uses the Asyncify runtime.
+  "ort-wasm-simd-threaded.asyncify.wasm",
+  "ort-wasm-simd-threaded.asyncify.mjs",
 ];
 
 mkdirSync(targetDir, { recursive: true });
