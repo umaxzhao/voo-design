@@ -1377,10 +1377,11 @@ select {
 
 
 /*
- * The mint frame is a 2px rounded stroke; the corner between the stroke and the
- * window edge used to show the black window colour ("chipped" top-left corner).
- * Paint a small mint quarter-disc behind each frame corner and keep the frame
- * flush with the window edges so only the corners grow, not the sides.
+ * The mint frame is a 2px rounded stroke. Only its top-left corner sits right
+ * below the mint title bar, where the stroke leaves a visible black notch, so
+ * only that corner gets a small mint quarter-disc behind it. Every other
+ * corner keeps just the stroke: the window behind it is black already, so the
+ * notch is invisible and must not turn into a filled green corner.
  */
 .app-root-frame:not([data-embed="true"]) {
   padding: 0;
@@ -1389,9 +1390,6 @@ select {
 .app-root-frame:not([data-embed="true"]) > .relative.flex.min-h-0.flex-1 {
   background:
     radial-gradient(circle at 0 0, #b2ffd6 0 20px, transparent 20.5px) top left / 21px 21px no-repeat,
-    radial-gradient(circle at 100% 0, #b2ffd6 0 20px, transparent 20.5px) top right / 21px 21px no-repeat,
-    radial-gradient(circle at 0 100%, #b2ffd6 0 20px, transparent 20.5px) bottom left / 21px 21px no-repeat,
-    radial-gradient(circle at 100% 100%, #b2ffd6 0 20px, transparent 20.5px) bottom right / 21px 21px no-repeat,
     #000;
 }
 
