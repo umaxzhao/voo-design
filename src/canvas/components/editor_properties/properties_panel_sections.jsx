@@ -191,6 +191,8 @@ export default function PropertiesPanelSections({
           selectedNodes={selectedNodes}
           transformActions={transformActions}
           parentLayout={parentLayout}
+          parentNode={parentNode}
+          parentIsFrame={parentIsFrame}
           positionAction={!hasLayoutGroup ? positionAction : null}
           onRotate90={onRotate90}
         />
