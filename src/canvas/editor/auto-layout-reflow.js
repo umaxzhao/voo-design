@@ -1,6 +1,7 @@
 import { reconcileBooleanDocument } from "./boolean-node-reconcile.js";
 import { normalizeAutoLayout, nonNegative, clampDimension, distributionOffsets } from "./auto-layout-values.js";
 import { shareAutoLayoutNodes } from "./auto-layout-sharing.js";
+import { nodeAABB } from "./scene_geometry_bounds.js";
 
 // Wrap comparisons tolerate floating point accumulation without wrapping early.
 const EPSILON = 1e-6;
@@ -31,10 +32,37 @@ export function reflowAutoLayout(doc) {
       (child) =>
         child.layoutPosition !== "absolute" && child.visible !== false,
     );
-  const extent = (child, horizontal) =>
-    nonNegative(horizontal ? child.width : child.height);
-  const crossExtent = (child, horizontal) =>
-    nonNegative(horizontal ? child.height : child.width);
+  /**
+   * The box auto layout reserves for a child. A rotated (or sheared) child
+   * occupies its axis-aligned visual bounds, not its unrotated stored box, so
+   * the footprint must come from the same AABB the canvas draws. Untransformed
+   * children keep their stored box exactly (no effective crop/alpha bounds),
+   * which preserves the historical geometry for every existing document.
+   */
+  const layoutBox = (child) => {
+    const transformed =
+      (child.rotation ?? 0) !== 0 ||
+      (child.shear ?? 0) !== 0 ||
+      Boolean(child.flipH) ||
+      Boolean(child.flipV);
+    if (!transformed) {
+      return {
+        x: child.x,
+        y: child.y,
+        width: nonNegative(child.width),
+        height: nonNegative(child.height),
+      };
+    }
+    return nodeAABB(child);
+  };
+  const extent = (child, horizontal) => {
+    const box = layoutBox(child);
+    return nonNegative(horizontal ? box.width : box.height);
+  };
+  const crossExtent = (child, horizontal) => {
+    const box = layoutBox(child);
+    return nonNegative(horizontal ? box.height : box.width);
+  };
 
   /** Whether `node` sits anywhere below a group folder. */
   function hasGroupAncestor(node) {
@@ -368,7 +396,10 @@ export function reflowAutoLayout(doc) {
           }
           const x = group.x + (horizontal ? cursor : cross);
           const y = group.y + (horizontal ? cross : cursor);
-          moveSubtree(child, x - child.x, y - child.y);
+          // Place the child's *visual* top-left: a rotated child's stored x/y
+          // is still its unrotated box origin, so cancel the AABB overhang.
+          const box = layoutBox(child);
+          moveSubtree(child, x - box.x, y - box.y);
           cursor +=
             extent(child, horizontal) + layout.gap + mainDistribution.extra;
         }

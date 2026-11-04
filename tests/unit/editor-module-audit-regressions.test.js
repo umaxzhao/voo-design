@@ -174,6 +174,51 @@ describe("transform handle gesture rollback and zero-drag guards", () => {
   });
 });
 
+describe("auto layout settles after a preview transform", () => {
+  it("re-applies the previewed document before committing a rotate", () => {
+    const doc = {
+      width: 600,
+      height: 400,
+      nodes: [{
+        id: "frame",
+        kind: "group",
+        isFrame: true,
+        autoLayout: { direction: "horizontal", gap: 8 },
+      }],
+    };
+    const api = {
+      getDocument: () => doc,
+      setDoc: vi.fn(),
+      commit: vi.fn(),
+    };
+    const finish = createPointerFinishDispatcher({ api });
+    finish.finishGesture(
+      { type: "pointerup" },
+      { kind: "rotate", id: "child", moved: true },
+    );
+    expect(api.setDoc).toHaveBeenCalledWith(doc, { commit: false });
+    expect(api.commit).toHaveBeenCalledTimes(1);
+    expect(api.setDoc.mock.invocationCallOrder[0])
+      .toBeLessThan(api.commit.mock.invocationCallOrder[0]);
+  });
+
+  it("does not re-apply a document without auto layout", () => {
+    const doc = { width: 600, height: 400, nodes: [] };
+    const api = {
+      getDocument: () => doc,
+      setDoc: vi.fn(),
+      commit: vi.fn(),
+    };
+    const finish = createPointerFinishDispatcher({ api });
+    finish.finishGesture(
+      { type: "pointerup" },
+      { kind: "rotate", id: "child", moved: true },
+    );
+    expect(api.setDoc).not.toHaveBeenCalled();
+    expect(api.commit).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("keyboard arrow nudging for groups and pen anchors", () => {
   it("moves a selected Auto Layout group container together with its children", () => {
     const group = {
