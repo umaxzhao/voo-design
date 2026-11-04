@@ -193,10 +193,13 @@ await withEditorBrowser(async ({
   });
   await audit.record("portable-snapshot-download", async () => {
     assert.ok(expected, "Edited pixels must have passed");
-    const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", {
-      name: "Export project as a portable .zip snapshot",
-      exact: true
-    }).click()]);
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
+    await palette.getByRole("combobox").fill("portable .zip snapshot");
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      palette.getByRole("option").filter({ hasText: /portable \.zip snapshot/i }).click(),
+    ]);
     snapshot = await readFile(await download.path());
     assert.equal(snapshot.subarray(0, 2).toString(), "PK");
     assert.ok(snapshot.length > 100000);
