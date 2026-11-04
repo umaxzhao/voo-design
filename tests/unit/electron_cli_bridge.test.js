@@ -34,6 +34,9 @@ function boot(startCliBridgeServer, env = {}, dirty = false) {
       if (id === "node:path") return path;
       if (id === "node:fs") return fs;
       if (id === "./packaged_smoke.cjs") return () => {};
+      if (id === "./window-chrome.cjs") return {
+        windowChromeOptions: () => ({}), attachWindowChrome() {}, registerWindowControls() {},
+      };
       if (id === "./native-menu.cjs" || id === "./close-guard.cjs") return nativeRequire(`../../electron/${id.slice(2)}`);
       if (id === "./client-models.cjs") return nativeRequire("../../electron/client-models.cjs");
       return { registerWorkspaceIpc() {}, setupUpdater() {} };
