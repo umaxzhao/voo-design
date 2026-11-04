@@ -227,12 +227,26 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     snapshotsRef,
   });
   const focusEditorPage = useCallback(
-    (targetId) => {
+    (targetId, options) => {
       if (focusedId && targetId !== focusedId) {
         const prevEngine = enginesRef.current.get(focusedId)?.engine;
+        // The toolbar is one global tool, like Figma's: a page focused by a
+        // canvas press must answer the next pointer with that same tool, not
+        // its own stale Select mode.
+        const activeTool = prevEngine?.getTool?.();
+        const nextEngine = targetId
+          ? enginesRef.current.get(targetId)?.engine
+          : null;
         prevEngine?.pause?.();
+        if (
+          nextEngine &&
+          activeTool &&
+          nextEngine.getTool?.() !== activeTool
+        ) {
+          nextEngine.setTool(activeTool);
+        }
       }
-      rawFocusEditorPage?.(targetId);
+      rawFocusEditorPage?.(targetId, options);
     },
     [focusedId, rawFocusEditorPage, enginesRef],
   );
@@ -1417,6 +1431,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                     mode="free"
                     rect={rect}
                     sharedZoom={cameraZoom}
+                    sharedTool={tool}
                     workspaceRendererReady={workspaceRendererStatus === "ready"}
                     snapshot={snapshotsRef.current.get(nodeId) ?? null}
                     onFocus={focusEditorPage}
@@ -1602,6 +1617,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 active={activeIds.has(nodeId)}
                 mode="full"
                 getFitInsets={getFitInsets}
+                sharedTool={tool}
                 snapshot={snapshotsRef.current.get(nodeId) ?? null}
                 onFocus={focusEditorPage}
                 resolveCanvas={resolveCanvas}
