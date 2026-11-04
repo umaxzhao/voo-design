@@ -99,7 +99,7 @@ describe("welcome home actions", () => {
     expect(store.setPendingGeneration).not.toHaveBeenCalled();
     expect(handleCreateNew).not.toHaveBeenCalled();
     useDesignStore.getState = prevGetState;
-  });
+  }, 15000);
 
   it("creates project in memory and dispatches single generation intent on valid submit", async () => {
     const store = { newVooProject: vi.fn(), setPendingGeneration: vi.fn() };

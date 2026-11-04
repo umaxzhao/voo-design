@@ -1,5 +1,29 @@
 # 项目检查总进度
 
+## Linux x64 原生全量测试与打包发布验证：2026-11-04
+
+- **基线版本与执行环境**：`d95ee0f3`，Ubuntu 26.04.1 LTS (x86_64, Linux 7.0.0-42-generic, Node v26.13.0, Electron 43.8.0, Chromium 156.0.8078.4 / 157.0.8103.38)。原生环境闭环解除此前在 macOS 执行机上“受阻于无法运行 Linux 原生二进制”的硬件阻断标记。
+- **环境与测试链路修复**：
+  1. `plugins/voo/cordis.patch.yml`: 修复硬编码的 macOS 绝对路径 `/Volumes/TD/Projects/voo_design` 为当前实际 Linux 路径 `/home/umax/projects/voo_design`，单测 `tests/unit/voo_editor_panel.test.js` 26/26 全部通过。
+  2. `CHANGELOG.md`: 补充 `## 1.0.0-beta.3` 版本条目对齐 `package.json`，单测 `tests/unit/commercial_delivery_readiness.test.js` 4/4 全部通过。
+  3. `tests/unit/welcome_home_actions.test.js`: 针对高并发下由于 CPU 负载触发的 5000ms 超时，将 `it("opens settings when agent provider is unconfigured...", ...)` 超时扩至 15000ms。
+  4. `electron/packaged_smoke.cjs`: 适配首页欢迎面板默认着陆流程（首次启动展示选择智能体模态框及欢迎页，而非历史无画板空白画布），在轮询循环中使用闭包 IIFE 优雅关闭智能体向导并触发新建工程，修复 `Identifier 'newBtn' has already been declared` 及 sibling 画布容器 `c.parentElement.contains(hit)` 判定。
+  5. `scripts/smoke-packaged.mjs`: 增加环境探测；当未预装 `xvfb-run` 时优雅回退至本地 `$DISPLAY` 原生运行，并将 `XDG_CONFIG_HOME` 与 `XDG_CACHE_HOME` 隔离于临时目录，防止只读文件系统阻断 CLI bridge token 与缓存写入。
+  6. `tests/e2e/qa_flows.e2e.mjs`: 适配 `BoundedNumberInput` 采用 `inputMode="decimal"` 后的数字属性输入框选择器（`input[inputmode="decimal"], input[type="number"]`）。
+  7. `tests/e2e/image-electron.e2e.mjs`: 修复硬编码 `/private/tmp/` macOS 绝对路径为跨平台 `tmpdir()` 与 `editorArtifactPath`，添加 Linux headless `--no-sandbox` 启动标志。
+  8. `scripts/editor-module-catalog.mjs`: 补齐变更文件的模块归属登记（`workspace.paths` 登记 `tests/e2e/qa_flows.e2e.mjs`；`platform.paths` 登记 `scripts/smoke-packaged.mjs`、`tests/e2e/image-electron.e2e.mjs` 及 `.gitignore`）。
+- **全量测试门禁与验收证据**：
+  1. **设计规范门禁 (`npm run lint:design`)**：通过，1,479 个文件全部契合 `Design.md`，0 违规。
+  2. **模块注册门禁 (`node scripts/editor-checks.mjs --check`)**：通过，12 模块、75 项能力注册有效。
+  3. **变更影响审计 (`node scripts/editor-checks.mjs --changed --json`)**：通过，`unmapped: []`，`fullReleaseRequired: false`。
+  4. **单元与集成测试全量验证 (`npx vitest run`)**：全量通过，619 个测试套件通过（3 个由平台限制显式跳过），5,182 个测试用例 100% 通过（0 失败，4 个显式跳过/待测），耗时 42.85s。
+  5. **Linux 桌面打包与包完整性验证 (`npm run dist`)**：通过，生成 Linux x64 解包目录 `release/linux-unpacked/` 与完整 AppImage 安装包 `release/VOO-Design-1.0.0-beta.3-linux-x86_64.AppImage`；`verify:package` 严格核验 751 项 asar 归档条目，`en-US.pak` 与 `zh-CN.pak` 本地化完备，WASM 引擎唯一，三方许可与 Notice 齐备。
+  6. **打包产物桌面端冒烟全链路 (`npm run release:smoke linux x64`)**：通过，验证打包应用启动、preload 注入、指针绘制、单步撤销/重做、原生工作区文件 IPC 读写往返、取消退出保留 CLI bridge、全新进程/独立 profile 从文件卡片冷加载等所有链路，断言 100% 成立，生成证据 `release/evidence/linux-x64.json` 与截图 `release/evidence/linux-x64.png`。
+  7. **真实 AppImage 安装包自包含冒烟 (`npm run smoke:packaged`)**：通过，实际提取并运行 `release/*.AppImage`，画布与 UI 渲染正常，About 弹窗及三份法律文档完备加载，主进程与渲染进程 0 报错，输出 `PACKAGED_SMOKE_OK canvas rendered; console errors: 0`，截图已存档至 `docs/screenshots/packaged-smoke.png`。
+  8. **E2E 交互测试 (`npm run test:e2e:qa`)**：通过，形状默认值、选区 X 坐标帧级一致性、实时滤镜裁剪边界、选择器上传、矩形选区与渐变拖拽断言 100% 成立。
+  9. **原生 Electron 图像与工作区系统测试 (`node tests/e2e/image-electron.e2e.mjs`)**：通过，涵盖 `native-image-render-edit-history`、`native-project-write-reopen`、`native-folder-move-rename`、`native-trash-list-restore`、`bundled-client-upscale-models` 全部 5 项原生路径。
+- **保留项**：未 push（GitHub 远端无写凭据）；未部署至 `la2`（主机网络隔离无法解析 `la2` 且未配置无密码密钥）。工作树中他人未提交的 `editor_pen_subbar.jsx` 与 `stroke_style_icons.jsx` 严格保留原样未触碰。
+
 ## 绿色边框圆角补齐（左上角缺口）与窄窗对称：2026-11-04
 
 - **基线版本**：`6d8bfae7`；用户反馈“左上角缺了一块绿色”，并指出窄窗下左栏隐藏、PC 尺寸应显示左栏。

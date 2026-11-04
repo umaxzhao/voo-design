@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron as electron } from "playwright";
 import { startEditorBrowserServer } from "./editor-browser-server.mjs";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const profile = await mkdtemp("/private/tmp/voo-image-electron-");
+const profile = await mkdtemp(path.join(tmpdir(), "voo-image-electron-"));
 await mkdir(`${profile}/documents`);
 const entry = `${profile}/entry.cjs`;
 await writeFile(entry, `const {app}=require('electron');app.setPath('userData',${JSON.stringify(`${profile}/profile`)});app.setPath('documents',${JSON.stringify(`${profile}/documents`)});app.setAppLogsPath(${JSON.stringify(`${profile}/logs`)});require(${JSON.stringify(`${root}electron/main.cjs`)});`);
@@ -13,7 +16,7 @@ const server = await startEditorBrowserServer();
 let app;
 try {
   app = await electron.launch({
-    args: [entry],
+    args: ["--no-sandbox", entry],
     env: {
       ...process.env,
       XDG_CONFIG_HOME: `${profile}/config`,
@@ -171,7 +174,7 @@ try {
     };
   });
   await page.screenshot({
-    path: `${process.env.VOO_IMAGE_AUDIT_DIR ?? "/private/tmp/voo-image-complete"}/electron-final.png`
+    path: `${process.env.VOO_IMAGE_AUDIT_DIR ?? editorArtifactPath("voo-image-complete")}/electron-final.png`
   });
   audit.finish();
   assert.deepEqual(errors, []);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.3
+
+- Embedded panel and web editor framing enhancements, harness mode support, and Linux desktop release verification.
+
 ## 1.0.0-beta.2
 
 - Preserve Apple trust-command diagnostics and bound transient ticket-delivery retries; invalid tickets, rejected submissions and failed Gatekeeper assessments still block release.

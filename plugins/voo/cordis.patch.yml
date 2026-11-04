@@ -38,8 +38,8 @@
         transport: stdio
         command: node
         args:
-          - /Volumes/TD/Projects/voo_design/scripts/mcp-server.mjs
-        cwd: /Volumes/TD/Projects/voo_design
+          - /home/umax/projects/voo_design/scripts/mcp-server.mjs
+        cwd: /home/umax/projects/voo_design
         toolCallTimeoutMs: 65000
         failOnStartupError: false
     - id: voo-model-bridge
