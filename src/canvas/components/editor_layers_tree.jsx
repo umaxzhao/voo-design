@@ -39,7 +39,23 @@ export default function EditorLayersTree({
     aria-multiselectable="true"
     aria-activedescendant={listActiveDescendantDomId}
     onKeyDown={handleListKeyDown}
-    onMouseDown={() => listRef.current?.focus?.()}
+    onMouseDown={(event) => {
+      // Focusing the list on mousedown enables keyboard navigation after a
+      // click on a row. Guard: if the click landed inside a rename input or
+      // any other focusable control, do not pull focus away from it.
+      if (
+        event.target instanceof HTMLElement &&
+        (event.target.tagName === "INPUT" ||
+          event.target.tagName === "TEXTAREA" ||
+          event.target.isContentEditable ||
+          event.target.tagName === "BUTTON" ||
+          event.target.tagName === "SELECT" ||
+          event.target.closest("input, textarea, [contenteditable]"))
+      ) {
+        return;
+      }
+      listRef.current?.focus?.();
+    }}
     className="ui-scroll min-h-0 flex-1 overflow-x-auto overflow-y-auto space-y-1 outline-none"
   >
     {listEmpty ? <div
