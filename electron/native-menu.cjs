@@ -59,7 +59,14 @@ module.exports = function setupMenu({ app, Menu, dispatchMenuAction, platform })
           click: () => dispatchMenuAction("export:psd"),
         },
         { type: "separator" },
-        isMac ? { role: "close" } : { role: "quit" },
+        // Figma behavior: Ctrl/Cmd+W closes the current project tab, not the
+        // window. The renderer owns the dirty-document confirmation.
+        {
+          label: "Close Tab",
+          accelerator: "CmdOrCtrl+W",
+          click: () => dispatchMenuAction("file:closeTab"),
+        },
+        ...(isMac ? [] : [{ role: "quit" }]),
       ],
     },
     {
@@ -143,7 +150,7 @@ module.exports = function setupMenu({ app, Menu, dispatchMenuAction, platform })
               { type: "separator" },
               { role: "window" },
             ]
-          : [{ role: "close" }]),
+          : []),
       ],
     },
   ];

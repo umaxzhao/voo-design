@@ -12,7 +12,7 @@ export const EDITOR_MODULES = [
       "tests/unit/webrtc_transport_coverage.test.js", "tests/unit/collab_session.test.js", "tests/unit/collab_share_secret.test.js", "src/App.jsx",
       "src/canvas/components/page_switcher.jsx", "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "tests/e2e/critical_flows.e2e.mjs", "src/canvas/use_window_controls.js", "tests/unit/workspace_platform_badge.test.js",
-      "tests/unit/settings_workspace.test.js", "tests/unit/close_project_tab.test.jsx", "tests/unit/welcome_home_actions.test.js",
+      "tests/unit/settings_workspace.test.js", "tests/unit/close_project_tab.test.jsx", "tests/unit/close_active_tab_action.test.js", "tests/unit/welcome_home_actions.test.js",
       "tests/unit/community_templates_and_new_project.test.jsx", "tests/unit/welcome_prompt_composer.test.jsx",
       "tests/unit/welcome_prompt_types.test.jsx", "tests/e2e/qa_flows.e2e.mjs",
     ],
@@ -25,7 +25,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash", "ui-home-settings", "welcome-covers",
-      "editor-resources", "editor-resources-built", "top-tabs-overflow", "welcome-sidebar-toggle", "welcome-import-references", "qa_flows",
+      "editor-resources", "editor-resources-built", "top-tabs-overflow", "welcome-sidebar-toggle", "welcome-import-references", "tab-close-shortcut", "qa_flows",
     ],
     remaining: [
       "Native OS picker behavior and physical touch devices require separate evidence.",
@@ -336,7 +336,7 @@ export const EDITOR_MODULES = [
       "scripts/desktop-release-plan.mjs", "scripts/build-desktop-release.mjs", "scripts/assemble-desktop-release.mjs",
       "scripts/smoke-desktop-release.mjs", "scripts/build-signed-mac.mjs", "scripts/mac-signing.cjs", "scripts/mac-release-environment.mjs",
       "scripts/notarize.cjs", "scripts/signing-env.mjs", "tests/unit/mac-signing.test.js", "tests/unit/desktop-release.test.js",
-      "tests/unit/code_signing_stubs.test.js", "tests/unit/native-close-guard.test.js", "tests/unit/electron_cli_bridge.test.js",
+      "tests/unit/code_signing_stubs.test.js", "tests/unit/native-close-guard.test.js", "tests/unit/native_menu_close_tab.test.js", "tests/unit/electron_cli_bridge.test.js",
       "tests/e2e/editor-test-artifacts.mjs", "tests/unit/editor-test-artifacts.test.js", "src/canvas/components/collab_avatars.jsx",
       "tests/unit/design_quality_lint.test.js", "tests/e2e/agent-selection-context.e2e.mjs", "scripts/editor-check-plans.mjs",
       "tests/e2e/qa3_electron.e2e.mjs", "tests/e2e/image-electron.e2e.mjs", "src/canvas/components/canvas_agent_panel.jsx",

@@ -15,6 +15,7 @@ import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
 import { isEmbedPage, isHarnessPage } from "./shared/embed_mode.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
+import { closeActiveDocumentTab } from "./canvas/store/document_tab_close.js";
 import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
@@ -115,6 +116,12 @@ export default function App() {
             break;
           case "file:saveAs":
             window.dispatchEvent(new CustomEvent("voo:file-save-as"));
+            break;
+          case "file:closeTab":
+            closeActiveDocumentTab(
+              useDesignStore,
+              () => window.confirm(t("editor.exit.confirmBody")),
+            );
             break;
           case "edit:undo":
             window.__vooEditor?.undo?.();
