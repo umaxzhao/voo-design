@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 
 await withEditorBrowser(async ({ page, origin }) => {
   await page.evaluate(async () => { const { setLocale } = await import("/src/shared/i18n.js"); await setLocale("en"); });
@@ -42,7 +43,7 @@ await withEditorBrowser(async ({ page, origin }) => {
   await attachments.getByRole("button", { name: "Remove attachment" }).first().click();
   assert.equal(await attachments.locator("li").count(), 1);
   assert.equal(await page.getByTestId("design-editor").count(), 0);
-  await page.screenshot({ path: "/private/tmp/voo-welcome-reference-paste.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-welcome-reference-paste.png") });
   // The editor's Agent composer shares the attachment boundary and sends real pixels.
   await page.evaluate(async origin => {
     const { setSetting } = await import("/src/shared/settings.js");
@@ -77,6 +78,6 @@ await withEditorBrowser(async ({ page, origin }) => {
   const request = await Promise.race([requestSeen, new Promise((_, reject) => setTimeout(() => reject(new Error("Reference request was not sent")), 15000))]);
   assert.match(JSON.stringify(request), /data:image\/png;base64,/);
   assert.equal(await agent.locator("li img").count(), 0);
-  await page.screenshot({ path: "/private/tmp/voo-agent-reference-paste.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-agent-reference-paste.png") });
   console.log("Welcome browser entry, screenshot reference, real clipboard image/text paste, focus, removal and deferred generation passed.");
 }, { openDocument: false, mcpLink: false });
