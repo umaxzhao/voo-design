@@ -22,14 +22,8 @@
     border-radius: 24px;
     --mobile-frame-inset-radius: calc(24px - 4px);
     --mobile-content-radius: calc(24px - 4px - 2px);
-    /* Both edges mint (the desktop rule): the old asymmetric gradient left the
-       right side black and made the frame look lopsided. */
-    background: linear-gradient(
-      90deg,
-      #b2ffd6 0 6px,
-      #000 6px calc(100% - 6px),
-      #b2ffd6 calc(100% - 6px) 100%
-    ) !important;
+    /* No band along the sides: only the frame stroke plus the corner fills. */
+    background: #000 !important;
   }
 
   .app-root-frame > .app-title-bar {
