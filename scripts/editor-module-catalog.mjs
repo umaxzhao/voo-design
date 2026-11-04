@@ -295,6 +295,7 @@ export const EDITOR_MODULES = [
       "tests/unit/global-overlay-portals.test.jsx", "src/canvas/components/editor_design_issues.jsx", "src/shared/i18n/extended-en.js",
       "src/shared/i18n/extended-zh.js", "src/canvas/icons.jsx",
       "src/canvas/components/editor_pen_subbar.jsx", "src/canvas/components/editor_properties/stroke_style_icons.jsx",
+      "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",
     ],
     related: [
       "selection", "layers", "text", "images", "layout",
@@ -303,7 +304,7 @@ export const EDITOR_MODULES = [
       "inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill",
       "inspector.impeccable-polish", "inspector.context-submenus", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive",
       "inspector.locale-lifecycle", "inspector.mobile-targets", "inspector.comments-panel-slot", "inspector.global-overlay-stacking",
-      "inspector.design-issue-review",
+      "inspector.design-issue-review", "inspector.export-dialog-overlay",
     ],
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "settings-i18n", "locale-lifecycle",
