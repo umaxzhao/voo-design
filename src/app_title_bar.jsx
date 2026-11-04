@@ -49,7 +49,7 @@ export default function AppTitleBar() {
 
   const handleNewOrExport = () => {
     if (welcomeOpen) requestWelcomeNew();
-    else window.dispatchEvent(new CustomEvent("voo:file-export-snapshot"));
+    else window.dispatchEvent(new CustomEvent("voo:editor-export"));
   };
 
   useEffect(() => {
@@ -167,7 +167,6 @@ export default function AppTitleBar() {
             className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
             data-testid="titlebar-export"
-            disabled={welcomeActionsPending}
             onClick={handleNewOrExport}
             title={
               welcomeOpen
@@ -242,7 +241,6 @@ export default function AppTitleBar() {
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
                     handleNewOrExport();
