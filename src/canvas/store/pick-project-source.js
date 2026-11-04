@@ -1,9 +1,21 @@
+/** Raster formats the editor can place as an image layer. */
+export const BITMAP_SOURCE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "avif", "ico"];
+
+/** Whether a picked file is a bitmap to place on the canvas rather than a document to open. */
+export function isBitmapSourceName(name) {
+  return BITMAP_SOURCE_EXTENSIONS.some((extension) =>
+    String(name ?? "").toLowerCase().endsWith(`.${extension}`),
+  );
+}
+
+const BITMAP_ACCEPT = BITMAP_SOURCE_EXTENSIONS.map((extension) => `.${extension}`);
+
 /** Lets the user pick one file through a hidden input when no native picker is available. */
 function pickFileFromInput() {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".voo,.zip,.json,.psd,.fig,.svg,.pen";
+    input.accept = [".voo", ".zip", ".json", ".psd", ".fig", ".svg", ".pen", ...BITMAP_ACCEPT].join(",");
     input.onchange = (e) => resolve(e.target.files?.[0] ?? null);
     input.oncancel = () => resolve(null);
     input.click();
@@ -42,8 +54,8 @@ export async function pickProjectSource({ fileOrPath = null } = {}) {
     const result = await window.electronAPI.openFileDialog({
       filters: [
         {
-          name: "VOO Design Document / PSD / Figma / SVG / Pen",
-          extensions: ["voo", "zip", "json", "psd", "fig", "svg", "pen"],
+          name: "VOO Design Document / PSD / Figma / SVG / Pen / Images",
+          extensions: ["voo", "zip", "json", "psd", "fig", "svg", "pen", ...BITMAP_SOURCE_EXTENSIONS],
         },
       ],
     });
@@ -63,12 +75,19 @@ export async function pickProjectSource({ fileOrPath = null } = {}) {
         types: [
           {
             description:
-              "VOO Design Document / PSD / Figma / SVG / Pen (*.voo, *.json, *.psd, *.fig, *.svg, *.pen)",
+              "VOO Design Document / PSD / Figma / SVG / Pen / Images (*.voo, *.json, *.psd, *.fig, *.svg, *.pen, *.png, *.jpg, *.jpeg, *.webp, *.gif, *.bmp, *.avif, *.ico)",
             accept: {
               "application/json": [".voo", ".json", ".pen"],
               "image/vnd.adobe.photoshop": [".psd"],
               "application/octet-stream": [".fig"],
               "image/svg+xml": [".svg"],
+              "image/png": [".png"],
+              "image/jpeg": [".jpg", ".jpeg"],
+              "image/webp": [".webp"],
+              "image/gif": [".gif"],
+              "image/bmp": [".bmp"],
+              "image/avif": [".avif"],
+              "image/x-icon": [".ico"],
             },
           },
         ],

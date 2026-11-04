@@ -15,6 +15,7 @@ export const EDITOR_MODULES = [
       "tests/unit/settings_workspace.test.js", "tests/unit/close_project_tab.test.jsx", "tests/unit/welcome_home_actions.test.js",
       "tests/unit/community_templates_and_new_project.test.jsx", "tests/unit/welcome_prompt_composer.test.jsx",
       "tests/unit/welcome_prompt_types.test.jsx", "tests/e2e/qa_flows.e2e.mjs",
+      "tests/unit/open-project.test.js", "src/canvas/store/pick-project-source.js", "src/canvas/store/open-project.js",
     ],
     related: [
       "documents", "inspector", "platform",
@@ -22,6 +23,7 @@ export const EDITOR_MODULES = [
     features: [
       "workspace.projects", "workspace.covers", "workspace.assets", "workspace.templates", "workspace.settings-entry", "workspace.project-tabs",
       "workspace.touch-file-open", "workspace.file-actions-ready", "workspace.cold-start-new", "workspace.import-references",
+      "workspace.bitmap-import",
     ],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash", "ui-home-settings", "welcome-covers",

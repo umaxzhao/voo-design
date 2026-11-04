@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { pickProjectSource } from "../../src/canvas/store/pick-project-source.js";
+import { pickProjectSource, isBitmapSourceName } from "../../src/canvas/store/pick-project-source.js";
 
 function fileSource(name = "Document.voo", bytes = [1, 2, 3]) {
   return { name, arrayBuffer: vi.fn(async () => new Uint8Array(bytes).buffer) };
@@ -74,7 +74,32 @@ describe("project source selection", () => {
     const input = installInput((element) => element.oncancel());
     const selection = pickProjectSource();
     expect(input.click).toHaveBeenCalledOnce();
+    expect(input.accept.split(",")).toEqual(expect.arrayContaining([".png", ".jpg", ".jpeg", ".webp"]));
     expect(await selection).toBeNull();
+  });
+
+  it("offers bitmap files in the native picker filters", async () => {
+    const openFileDialog = vi.fn().mockResolvedValueOnce({
+      bytes: [1, 2], filePath: "/Designs/photo.png",
+    });
+    vi.stubGlobal("window", { electronAPI: { openFileDialog } });
+    expect(await pickProjectSource()).toEqual({
+      bytes: new Uint8Array([1, 2]), name: "photo.png", path: "/Designs/photo.png", handle: null,
+    });
+    const extensions = openFileDialog.mock.calls[0][0].filters[0].extensions;
+    expect(extensions).toEqual(expect.arrayContaining(["png", "jpg", "jpeg", "webp"]));
+  });
+
+  it("accepts bitmap files from the native browser picker", async () => {
+    const file = fileSource("Photo.PNG", [7, 8]);
+    const handle = { kind: "file", getFile: vi.fn(async () => file) };
+    const picker = vi.fn(async () => [handle]);
+    vi.stubGlobal("window", { showOpenFilePicker: picker });
+    expect(await pickProjectSource()).toEqual({
+      bytes: new Uint8Array([7, 8]), name: "Photo.PNG", path: null, handle,
+    });
+    const accept = picker.mock.calls[0][0].types[0].accept;
+    expect(accept).toMatchObject({ "image/png": [".png"], "image/jpeg": [".jpg", ".jpeg"] });
   });
 
   it("uses the fallback after a native picker failure and propagates read errors", async () => {
@@ -125,6 +150,40 @@ describe("lazy project entry", () => {
     expect(await openVooProject({ store })).toEqual({ canceled: true });
     expect(importParser).not.toHaveBeenCalled();
     expect(store.setDocumentLoading).not.toHaveBeenCalled();
+    expect(store.loadVooProject).not.toHaveBeenCalled();
+  });
+});
+
+describe("bitmap import routing", () => {
+  it("recognizes bitmap sources without treating SVG as a canvas bitmap", () => {
+    expect(isBitmapSourceName("Photo.PNG")).toBe(true);
+    expect(isBitmapSourceName("photo.jpeg")).toBe(true);
+    expect(isBitmapSourceName("photo.svg")).toBe(false);
+    expect(isBitmapSourceName("Document.voo")).toBe(false);
+  });
+
+  it("hands a picked bitmap to the editor instead of parsing it as a document", async () => {
+    const { openVooProject } = await vi.importActual("../../src/canvas/store/project_io.js");
+    const store = { setDocumentLoading: vi.fn(), loadVooProject: vi.fn() };
+    const onImageSource = vi.fn(async () => {});
+    const result = await openVooProject({
+      store,
+      onImageSource,
+      pickedSource: { bytes: new Uint8Array([1, 2, 3]), name: "photo.png", path: null, handle: null },
+    });
+    expect(result).toMatchObject({ success: true, kind: "image", fileName: "photo.png" });
+    expect(onImageSource).toHaveBeenCalledOnce();
+    expect(store.loadVooProject).not.toHaveBeenCalled();
+    expect(store.setDocumentLoading.mock.calls.at(-1)).toEqual([null]);
+  });
+
+  it("requires the editor handler instead of silently dropping the bitmap", async () => {
+    const { openVooProject } = await vi.importActual("../../src/canvas/store/project_io.js");
+    const store = { setDocumentLoading: vi.fn(), loadVooProject: vi.fn() };
+    await expect(openVooProject({
+      store,
+      pickedSource: { bytes: new Uint8Array([1]), name: "photo.jpg", path: null, handle: null },
+    })).rejects.toThrow("bitmap-import-needs-editor");
     expect(store.loadVooProject).not.toHaveBeenCalled();
   });
 });

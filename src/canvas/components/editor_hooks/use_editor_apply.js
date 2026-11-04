@@ -322,6 +322,13 @@ export function useEditorApply({
         const res = await openVooProject({
           store: useDesignStore.getState(),
           fileOrPath,
+          // Import is also the bitmap entry point: a picked PNG/JPG lands on
+          // the active page as a normal image layer instead of being parsed as
+          // a project document.
+          onImageSource: async ({ bytes, name }) => {
+            if (!engine?.insertImage) throw new Error("editor-not-ready");
+            await engine.insertImage(new File([bytes], name));
+          },
         });
         if (res?.success) {
           setSavedNotice(`✓ ${res.fileName}`);
@@ -336,7 +343,7 @@ export function useEditorApply({
         setBusy(false);
       }
     },
-    [setBusy, setApplyError, setSavedNotice],
+    [engine, setBusy, setApplyError, setSavedNotice],
   );
 
   const newVooDocument = useCallback(() => {
