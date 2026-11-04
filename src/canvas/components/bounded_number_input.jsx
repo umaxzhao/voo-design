@@ -38,6 +38,8 @@ export default function BoundedNumberInput({
   precision = 0,
 }) {
   const [draft, setDraft] = useState(String(value));
+  const localInputRef = useRef(null);
+  const resolvedInputRef = inputRef && typeof inputRef === "object" ? inputRef : localInputRef;
   const draftRef = useRef(String(value));
   const focusedRef = useRef(false);
   const committedValueRef = useRef(value);
@@ -109,7 +111,7 @@ export default function BoundedNumberInput({
       role="spinbutton"
       inputMode="decimal"
       value={draft}
-      ref={inputRef}
+      ref={resolvedInputRef}
       aria-label={ariaLabel}
       title={ariaLabel}
       disabled={disabled}
@@ -151,7 +153,7 @@ export default function BoundedNumberInput({
           const previousDraft = String(previousValue);
           draftRef.current = previousDraft;
           setDraft(previousDraft);
-          if (inputRef.current) inputRef.current.value = previousDraft;
+          if (resolvedInputRef.current) resolvedInputRef.current.value = previousDraft;
           event.currentTarget.value = previousDraft;
           emitValue(previousValue);
           transactionRef.current.cancel(NUMBER_INPUT_GESTURE_KEY);
