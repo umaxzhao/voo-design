@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.5
+
+- Frame tool drag creates a new Frame, cross-Frame selection focuses target without unexpected camera movement, and pen tool first press on Frame chrome drops an anchor node.
+- Gradient preset stop colours remain exact without hue drift, document tab switching restores camera viewport per tab, and first-run guide respects dismissed state.
+- Linux desktop window matches dark theme mint green gradient frame, hiding native system title bar and menu bar.
+
 ## 1.0.0-beta.4
 
 - Keep inline layer-rename focus on the field the user clicks next, and make `Ctrl+W` close the active document tab instead of quitting the app.
