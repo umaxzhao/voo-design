@@ -13,7 +13,8 @@
     - 面板 `?harness=1` 首次：dialog `data-step="workspace"`、无 "Choose your Agent"、无 CLI 名称，`agent.model` 自动为 `api:custom%3Aonboarding-deepseek-harness:deepseek-flash`（真实调用 4399 模型桥）；
     - 点“完成”后 `voo.firstRun.status="completed"`，重开 `?harness=1` 引导不再出现；
     - 网页版（非 harness）仍按原行为每次启动显示（provider 步骤保留）。
-- **保留项**：已产生过完成记录的 origin 不会再弹（符合“仅首次”）；未 push（GitHub 无写凭据）；部署见下条记录。
+- **部署与线上验证**：`d165cd9c` 已部署到 `https://voo.run/editor/`（备份 `la2:/srv/voo-run/editor-backups/d165cd9c-20261104T060411Z`），线上入口脚本与干净构建一致（`index-C4XftB9J.js`），面板代理同一构建。线上 Playwright（webdriver=false）复测：面板 `?embed`→`?harness=1` 首次弹引导且 `data-step="workspace"`、无 provider/CLI 内容、`agent.model` 自动为 `api:custom%3Aonboarding-deepseek-harness:deepseek-flash`；完成后重开不再弹；线上网页版仍每次弹 provider 步骤（原行为）。
+- **保留项**：已产生过完成记录的 origin 不会再弹（符合“仅首次”）；未 push（GitHub 无写凭据）。
 
 ## 只填需要遮住的角：右上角恢复为纯圆角绿边：2026-11-04
 
