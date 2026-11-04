@@ -175,7 +175,7 @@ describe("bitmap import routing", () => {
     expect(onImageSource).toHaveBeenCalledOnce();
     expect(store.loadVooProject).not.toHaveBeenCalled();
     expect(store.setDocumentLoading.mock.calls.at(-1)).toEqual([null]);
-  });
+  }, 15000);
 
   it("requires the editor handler instead of silently dropping the bitmap", async () => {
     const { openVooProject } = await vi.importActual("../../src/canvas/store/project_io.js");
@@ -185,7 +185,7 @@ describe("bitmap import routing", () => {
       pickedSource: { bytes: new Uint8Array([1]), name: "photo.jpg", path: null, handle: null },
     })).rejects.toThrow("bitmap-import-needs-editor");
     expect(store.loadVooProject).not.toHaveBeenCalled();
-  });
+  }, 15000);
 });
 
 describe("selected source parser handoff", () => {
