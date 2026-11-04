@@ -1,5 +1,18 @@
 # 项目检查总进度
 
+## 1.0.0-beta.5 桌面发布：四平台产物就绪，Web 门禁受阻（未发布）：2026-11-05
+
+- **结论**：**未发布任何 Release，也未保留版本标签**（`v1.0.0-beta.5` 曾指向失败提交，已删除）。四平台原生构建全部成功，但 Web 发布门禁失败，按规则不得发布。
+- **已验证的产物证据**（提交 `96224b70` / `5da52c04`）：Linux x64、Windows x64、macOS x64、macOS arm64 四个 runner 的打包、原生冒烟与收据 revision 一致；收据仅覆盖其列出的断言（启动、指针绘制与撤销、原生 IPC 读写、取消脏退出、冷启动重开）。
+- **阻断点**：`verify-editor-release.mjs` 在两组浏览器用例上失败，均为安全区（safe-area）内边距被移除：
+  1. `tests/e2e/pages_dnd.e2e.mjs:86,174`：期望 `.app-root-frame` 计算内边距为 `4px + 物理 inset`（竖屏 `[24,16,20,16]`、横屏 `[4,40,16,40]`），实测全为 `0`。
+  2. `tests/e2e/ui-responsive-editor.e2e.mjs:229`：期望 `[16,14,12,14]`，实测 `[0,0,0,0]`。
+- **根因**：`d953c7f0`（match hosted mint frame and hide Linux native chrome）新增 `.app-root-frame:not([data-embed="true"]) { padding: 0 }`，覆盖了 `src/canvas/components/editor_touch_targets.css` 的 4px + inset 内边距。上述断言自 2026-10-31（`f363fbd9`、`f56863b7`）即存在，早于该样式，故属回归而非断言过期。
+- **修复受阻原因**：恢复全断点内边距后，`ui-responsive-editor` 在 390px 阶段点击 X/W 字段会命中相邻的 `editor-menu-import-media`（4px 位移让面板开关的点击落到“添加”菜单），弹出菜单覆盖数值字段；还原 `padding: 0` 则两组安全区断言失败。二者需要明确取舍：要么恢复安全区内边距并修正 390px 面板开关/菜单的可达性，要么明确取消内边距并同步改写两组断言与设计说明。
+- **已回滚**：`5da52c04`、`11da09dc` 与其 revert（`5bbd6adc`、`a7ed5154`）均已推送，样式回到 `d953c7f0` 现状，避免与其他工作树的边框改动冲突。
+- **同批已修复合入的门禁问题**：数字输入 Escape 恢复与 ref 合并、便携快照导出改走命令面板、`/private/tmp` 硬编码、浏览器抽屉双层 Escape、发布资产剔除 CI 收据、Apple Silicon 改指 `macos-14`。
+- **恢复发布所需**：safe-area 取舍确定后重新打 `v1.0.0-beta.5` 标签即可，CI 会自动完成四平台构建、门禁与草稿组装。
+
 ## beta.3 Linux QA：Frame 工具拖动、钢笔首击与跨 Frame 首击：2026-11-05
 
 - **范围**：只处理 `ISSUES-beta3.zh-CN.md` 第 2、8、9 项；未改其他问题、未加新功能、未改标题栏。
