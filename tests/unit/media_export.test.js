@@ -85,4 +85,29 @@ describe("media export save dialog", () => {
     });
     expect(writeImageFile).toHaveBeenCalledWith("/exports/export.png", "data:image/png;base64,AAAA");
   });
+
+  it("falls back to electronAPI bridge when vooElectron is absent", async () => {
+    stubSaveDocument();
+    const chooseExportPath = vi.fn(async () => "/tmp/fallback.png");
+    const writeImageFile = vi.fn(async () => {});
+    vi.stubGlobal("window", {
+      electronAPI: { chooseExportPath, writeImageFile },
+      dispatchEvent: vi.fn(),
+    });
+
+    const receipt = await saveMediaExport({
+      dataUrl: "data:image/png;base64,AAAA",
+      name: "Design 1",
+      format: "png",
+      title: "Export",
+    });
+
+    expect(chooseExportPath).toHaveBeenCalledWith({
+      name: "Design 1.png",
+      format: "png",
+      title: "Export",
+    });
+    expect(writeImageFile).toHaveBeenCalledWith("/tmp/fallback.png", "data:image/png;base64,AAAA");
+    expect(receipt).toEqual({ path: "/tmp/fallback.png", name: "fallback.png" });
+  });
 });
