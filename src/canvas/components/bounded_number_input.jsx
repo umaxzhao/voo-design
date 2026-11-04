@@ -39,7 +39,14 @@ export default function BoundedNumberInput({
 }) {
   const [draft, setDraft] = useState(String(value));
   const localInputRef = useRef(null);
-  const resolvedInputRef = inputRef && typeof inputRef === "object" ? inputRef : localInputRef;
+  const setInputRef = (node) => {
+    localInputRef.current = node;
+    if (typeof inputRef === "function") {
+      inputRef(node);
+    } else if (inputRef && typeof inputRef === "object") {
+      inputRef.current = node;
+    }
+  };
   const draftRef = useRef(String(value));
   const focusedRef = useRef(false);
   const committedValueRef = useRef(value);
@@ -111,7 +118,7 @@ export default function BoundedNumberInput({
       role="spinbutton"
       inputMode="decimal"
       value={draft}
-      ref={resolvedInputRef}
+      ref={setInputRef}
       aria-label={ariaLabel}
       title={ariaLabel}
       disabled={disabled}
@@ -142,6 +149,7 @@ export default function BoundedNumberInput({
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") {
+          commit();
           event.currentTarget.blur();
           return;
         }
@@ -153,7 +161,7 @@ export default function BoundedNumberInput({
           const previousDraft = String(previousValue);
           draftRef.current = previousDraft;
           setDraft(previousDraft);
-          if (resolvedInputRef.current) resolvedInputRef.current.value = previousDraft;
+          if (localInputRef.current) localInputRef.current.value = previousDraft;
           event.currentTarget.value = previousDraft;
           emitValue(previousValue);
           transactionRef.current.cancel(NUMBER_INPUT_GESTURE_KEY);
