@@ -161,7 +161,7 @@ export const useDesignStore = create((set, get) => {
   editorPageSession: 0,
 
   // Page / Artboard actions
-  focusEditorPage: (id, { rememberCamera = true, exclusive = false } = {}) => {
+  focusEditorPage: (id, { rememberCamera = true, exclusive = false, preserveCamera = false } = {}) => {
     const current = get();
     if (!id || !current.nodes.some((node) => node.id === id)) return;
     if (id === current.editingNodeId) {
@@ -172,9 +172,14 @@ export const useDesignStore = create((set, get) => {
     }
     cameraBatcher.flush();
     set((state) => ({
-      editorPageCameras: { ...state.editorPageCameras, ...(rememberCamera && state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
-      editorCamera: state.editorPageCameras[id] || state.editorCamera,
-      pendingArtboardFitId: state.editorPageCameras[id] ? null : id,
+      // A canvas click focuses what is already on screen. Restoring a page
+      // camera or fitting an unseen page there would move the artboard out
+      // from under the pointer between the press and the engine hit test.
+      editorPageCameras: preserveCamera
+        ? state.editorPageCameras
+        : { ...state.editorPageCameras, ...(rememberCamera && state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
+      editorCamera: preserveCamera ? state.editorCamera : (state.editorPageCameras[id] || state.editorCamera),
+      pendingArtboardFitId: preserveCamera ? null : (state.editorPageCameras[id] ? null : id),
       editingNodeId: id,
       // A page the canvas does not show yet replaces what is on it, so the switcher brings it in.
       editingNodeIds: exclusive ? [id] : state.editingNodeIds.includes(id) ? state.editingNodeIds : [id],
