@@ -56,6 +56,12 @@ export default function ScrubField({
     <div
       data-inspector-control={bare ? "bare-field" : "field"}
       className={`${containerClass} ${showRange ? "relative overflow-hidden" : ""}`}
+      onPointerDown={() => {
+        // Focus the input immediately on pointer-down so that subsequent
+        // Tab / Enter sequences see the correct focused field without waiting
+        // for the pointer-up / onTap round-trip (fixes P2 / P3 input races).
+        if (!disabled) inputRef.current?.focus();
+      }}
     >
       {prefix ? (
         <EditorTooltip title={ariaLabel || scrubHint} side="left" delay={250}>

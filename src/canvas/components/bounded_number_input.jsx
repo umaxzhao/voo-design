@@ -123,9 +123,13 @@ export default function BoundedNumberInput({
       title={ariaLabel}
       disabled={disabled}
       className={className}
-      onFocus={() => {
+      onFocus={(event) => {
         focusedRef.current = true;
         transactionRef.current.begin(NUMBER_INPUT_GESTURE_KEY);
+        // Select all text on focus so that typing replaces the existing value
+        // rather than appending to it (e.g. clicking a field showing "0" then
+        // typing "12" must produce "12", not "012" or "120").
+        event.currentTarget.select();
       }}
       onChange={(event) => {
         transactionRef.current.begin(NUMBER_INPUT_GESTURE_KEY);
@@ -149,6 +153,10 @@ export default function BoundedNumberInput({
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") {
+          // Commit the value then blur. Set focusedRef first so the subsequent
+          // onBlur does not commit a second time (commit is idempotent but
+          // setting the flag here keeps the logic explicit and cheaper).
+          focusedRef.current = false;
           commit();
           event.currentTarget.blur();
           return;
@@ -165,6 +173,7 @@ export default function BoundedNumberInput({
           event.currentTarget.value = previousDraft;
           emitValue(previousValue);
           transactionRef.current.cancel(NUMBER_INPUT_GESTURE_KEY);
+          focusedRef.current = false;
           event.currentTarget.blur();
           return;
         }
