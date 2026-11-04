@@ -1376,19 +1376,14 @@ select {
 }
 
 /*
- * The desktop window keeps the hosted editor's frame: the shell's 2px mint
- * border is the visible edge. Above the narrow breakpoint the frame keeps its
- * 4px + physical-inset padding (`editor_touch_targets.css`), because a notched
- * display or a fine pointer still needs the content clear of the hardware and
- * dropping it there removed that protection. Only the narrow layout runs
- * full-bleed, where its own mint frame is the edge and the extra band would
- * again read as a second rail. Only the top-left corner continues the title
- * bar's mint gradient, so the rounded shell does not chip to black there.
+ * The desktop window keeps the hosted editor's frame exactly: the shell's 2px
+ * mint border is the only edge, at the window boundary rather than inset by the
+ * old 4px safe-area padding (that padding drew a second green rail beside the
+ * border). Only the top-left corner continues the title bar's mint gradient, so
+ * the rounded shell does not chip to black there.
  */
-@media (max-width: 768px) {
-  .app-root-frame:not([data-embed="true"]) {
-    padding: 0;
-  }
+.app-root-frame:not([data-embed="true"]) {
+  padding: 0;
 }
 
 .app-root-frame:not([data-embed="true"]) > .relative.flex.min-h-0.flex-1 {
