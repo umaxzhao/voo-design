@@ -71,6 +71,13 @@ function clampSizePercent(value) {
   return Math.round(Math.max(0, Math.min(400, value)) * 100) / 100;
 }
 
+/** A numeric geometry field, or its default when the caller passed nothing. */
+function finiteOr(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 function splitGradientParts(value) {
   const parts = [];
   let depth = 0;
@@ -298,6 +305,7 @@ export function formatGradient(
   stops,
   geometry = DEFAULT_GRADIENT_GEOMETRY,
 ) {
+  geometry = geometry && typeof geometry === "object" ? geometry : DEFAULT_GRADIENT_GEOMETRY;
   if (type === "diamond") {
     return formatDiamondGradient(angle, stops, geometry);
   }
@@ -318,21 +326,22 @@ export function formatGradient(
 
   if (type === "linear") {
     const gradient = `linear-gradient(${angle}, ${stopStrings.join(", ")})`;
-    if (
-      geometry.startX !== undefined &&
-      geometry.startY !== undefined &&
-      geometry.endX !== undefined &&
-      geometry.endY !== undefined
-    ) {
-      return `${gradient} /* voo-gradient-line: ${clampCenterPercent(geometry.startX)}% ${clampCenterPercent(geometry.startY)}% ${clampCenterPercent(geometry.endX)}% ${clampCenterPercent(geometry.endY)}% */`;
+    const startX = finiteOr(geometry.startX, null);
+    const startY = finiteOr(geometry.startY, null);
+    const endX = finiteOr(geometry.endX, null);
+    const endY = finiteOr(geometry.endY, null);
+    if (startX !== null && startY !== null && endX !== null && endY !== null) {
+      return `${gradient} /* voo-gradient-line: ${clampCenterPercent(startX)}% ${clampCenterPercent(startY)}% ${clampCenterPercent(endX)}% ${clampCenterPercent(endY)}% */`;
     }
-    if (geometry.centerX === 50 && geometry.centerY === 50) return gradient;
-    return `${gradient} /* voo-gradient-center: ${clampCenterPercent(geometry.centerX)}% ${clampCenterPercent(geometry.centerY)}% */`;
+    const centerX = clampCenterPercent(finiteOr(geometry.centerX, 50));
+    const centerY = clampCenterPercent(finiteOr(geometry.centerY, 50));
+    if (centerX === 50 && centerY === 50) return gradient;
+    return `${gradient} /* voo-gradient-center: ${centerX}% ${centerY}% */`;
   }
   if (type === "angular") {
-    return `conic-gradient(from ${angle} at ${clampCenterPercent(geometry.centerX)}% ${clampCenterPercent(geometry.centerY)}%, ${stopStrings.join(", ")})`;
+    return `conic-gradient(from ${angle} at ${clampCenterPercent(finiteOr(geometry.centerX, 50))}% ${clampCenterPercent(finiteOr(geometry.centerY, 50))}%, ${stopStrings.join(", ")})`;
   }
-  return `radial-gradient(ellipse ${clampSizePercent(geometry.width) / 2}% ${clampSizePercent(geometry.height) / 2}% at ${clampCenterPercent(geometry.centerX)}% ${clampCenterPercent(geometry.centerY)}%, ${stopStrings.join(", ")})`;
+  return `radial-gradient(ellipse ${clampSizePercent(finiteOr(geometry.width, 100)) / 2}% ${clampSizePercent(finiteOr(geometry.height, 100)) / 2}% at ${clampCenterPercent(finiteOr(geometry.centerX, 50))}% ${clampCenterPercent(finiteOr(geometry.centerY, 50))}%, ${stopStrings.join(", ")})`;
 }
 
 function interpolateChannel(left, right, ratio) {
