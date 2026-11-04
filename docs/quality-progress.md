@@ -9,7 +9,8 @@
   2. `tests/e2e/ui-responsive-editor.e2e.mjs:229`：期望 `[16,14,12,14]`，实测 `[0,0,0,0]`。
 - **根因**：`d953c7f0`（match hosted mint frame and hide Linux native chrome）新增 `.app-root-frame:not([data-embed="true"]) { padding: 0 }`，覆盖了 `src/canvas/components/editor_touch_targets.css` 的 4px + inset 内边距。上述断言自 2026-10-31（`f363fbd9`、`f56863b7`）即存在，早于该样式，故属回归而非断言过期。
 - **修复受阻原因**：恢复全断点内边距后，`ui-responsive-editor` 在 390px 阶段点击 X/W 字段会命中相邻的 `editor-menu-import-media`（4px 位移让面板开关的点击落到“添加”菜单），弹出菜单覆盖数值字段；还原 `padding: 0` 则两组安全区断言失败。二者需要明确取舍：要么恢复安全区内边距并修正 390px 面板开关/菜单的可达性，要么明确取消内边距并同步改写两组断言与设计说明。
-- **已回滚**：`5da52c04`、`11da09dc` 与其 revert（`5bbd6adc`、`a7ed5154`）均已推送，样式回到 `d953c7f0` 现状，避免与其他工作树的边框改动冲突。
+- **第二轮复现（确定性，非偶发）**：同机连跑 3 次 `ui-responsive-editor`（恢复内边距后）均在同一处失败；CI 对 `5da52c04` 的同一条 `checks` 日志给出同一坐标与同一拦截元素 `editor-menu-import-media`。即该冲突在本地与 CI 一致复现。
+- **已回滚**：`5da52c04`、`11da09dc`、其 revert（`5bbd6adc`、`a7ed5154`）以及为复现而重放的 `b8882c2e`、`199d0152` 与最终回滚（`9ab1ce28`）均已推送；工作树样式回到 `d953c7f0` 的 `padding: 0` 现状，未在其他工作树的边框改动上留下半成品。
 - **同批已修复合入的门禁问题**：数字输入 Escape 恢复与 ref 合并、便携快照导出改走命令面板、`/private/tmp` 硬编码、浏览器抽屉双层 Escape、发布资产剔除 CI 收据、Apple Silicon 改指 `macos-14`。
 - **恢复发布所需**：safe-area 取舍确定后重新打 `v1.0.0-beta.5` 标签即可，CI 会自动完成四平台构建、门禁与草稿组装。
 
