@@ -124,7 +124,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/editor_engine_groups.js", "src/canvas/editor/doc_ops_groups_helpers.js", "src/canvas/editor/reorder-layer-batch.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js", "tests/unit/batch-layer-reorder.test.js",
       "tests/unit/layer-hierarchy-stack.test.js", "tests/unit/container-command-boundaries.test.js",
-      "src/canvas/components/editor_canvas_tree_model.js", "tests/unit/editor_layer_tree_cache.test.js", "src/shared/settings.js",
+      "src/canvas/components/editor_canvas_tree_model.js", "tests/unit/editor_layer_tree_cache.test.js", "tests/unit/editor_layer_focus.test.js", "src/shared/settings.js",
       "tests/unit/editor_layers_width.test.js", "tests/unit/layer-order-contracts.test.js", "tests/e2e/layer-order-contract-checks.mjs",
       "tests/e2e/duplicate-frame-drag-checks.mjs", "tests/e2e/multiframe-drag-checks.mjs", "tests/unit/frame_fit_to_content.test.js",
       "tests/unit/reparent-moved-roots.test.js", "src/canvas/editor/chrome_sections.js", "tests/unit/nested-group-commands.test.js",
@@ -139,7 +139,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts", "nested-placement",
-      "nested-object-lifecycle", "container-command-boundaries", "layers-panel-width",
+      "nested-object-lifecycle", "container-command-boundaries", "layers-panel-width", "input-focus-competition",
     ],
     remaining: [
       "Browser File drops are injected DataTransfer events, not Finder/Explorer drag certification.",

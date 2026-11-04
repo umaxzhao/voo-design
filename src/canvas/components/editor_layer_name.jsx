@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { describeNode } from "../editor/scene_model.js";
 import { handleLayerRenameKeyDown } from "./editor_layer_rename.js";
 import { layerPanelModelType } from "./editor_layers_contract.js";
@@ -20,11 +21,16 @@ export default function EditorLayerName({
     node: object,
     index
   } = row;
+  // A stable callback ref focuses once when the input mounts. An inline ref
+  // ran focus/select on every row render, which could pull focus back (or
+  // reselect typed text) while the user was already typing elsewhere.
+  const focusRenameInput = useCallback((node) => {
+    if (!node) return;
+    node.focus();
+    node.select();
+  }, []);
   return <>                                      {renamingId === object.id ? <input
-      ref={el => {
-        el?.focus();
-        el?.select();
-      }}
+      ref={focusRenameInput}
       defaultValue={typeof object.name === "string" ? object.name : ""}
       aria-label={t("editor.layer.rename")}
       placeholder={describeNode({
@@ -33,6 +39,9 @@ export default function EditorLayerName({
       }, index, labels)}
       data-no-drag
       onPointerDown={event => event.stopPropagation()}
+      // The list focuses itself on mousedown. Clicking inside the rename
+      // field must not blur it on the first click.
+      onMouseDown={event => event.stopPropagation()}
       onKeyDown={event => handleLayerRenameKeyDown(event, cancelRenameRef)}
       onBlur={event => commitRename(index, event.target.value)}
       className="min-w-0 flex-1 h-5 rounded-lg bg-neutral-800 px-1.5 py-0 text-left text-[11px] font-mono leading-5 text-neutral-100 outline-none ring-1 ring-inset ring-white/10"
