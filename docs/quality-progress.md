@@ -7,6 +7,14 @@
 - CI 已复现并修复：数字表达式输入框缺 spinbutton 语义；面板测试绑定开发机绝对路径；新增浏览器用例写入 macOS `/private/tmp`；图像生成/连续创作回归仍查找已迁移至命令面板的 ZIP 快照按钮。各失败与后续提交保留在 Actions/提交历史，未跳过门禁。
 - GitHub 写入凭据实际可用，相关修复已推送。此前“无写凭据”和“Linux 全量已完成”的表述不准确：当时仅全量单测、部分 E2E 和原生冒烟通过，未执行完整 114 组浏览器门禁；跳过项也未查明为平台限制。下方为当时工作树执行记录，不能继承至当前候选。
 
+## Linux 桌面窗口外框 beta.3-f：2026-11-05
+
+- **工作树/基线**：`/home/umax/projects/voo-wt/f`，分支 `fix/beta3-f`，基线 `b56a4e7a`；代码与测试提交 `d953c7f0`。范围只含 Linux 桌面窗口外框、系统顶栏/菜单栏隐藏；未 push、未部署、未合并。
+- **根因**：桌面 `.app-root-frame` 的 4px 内边距 + 旧的非对称窗口绿渐变，使 2px 边框离开窗口边缘；`.editor-shell` 只有边框没有薄荷绿底，圆角缝隙露出黑底；标题栏渐变与根背景在左上角拼不齐，形成顶部断开、底部黑条和圆角黑三角。
+- **修复**：按线上 `https://voo.run/editor/` 已部署实现回填——根节点 `background:#000`、标题栏品牌渐变内联、`.editor-shell` 2px 边框 + 薄荷绿底、非嵌入 `padding:0`、工作区左上角 20px 径向薄荷绿。Linux 改用 `frame:false` 并隐藏菜单栏，应用菜单仍安装以保留 accelerator；标题栏右侧新增应用内最小化/最大化/还原/关闭，关闭复用 close guard，标题栏保留 drag 区域。浅色 `theme-light.css` 与窄窗移动 CSS 已回退，不做浅色适配。
+- **验证**：`mint-frame.e2e.mjs` 在 1440×900 / 1024×700 通过（四边贴边、单条 2px、无内层绿线、四角描边连续）；`linux-window-chrome.e2e.mjs` 通过（无原生 chrome、菜单隐藏且 Alt 不唤出、`CmdOrCtrl+N` 仍注册、最大化/还原/最小化/关闭可用）；Xvfb+fluxbox+xdotool 原生拖动实测窗口从 `(240,79)` 移至 `(420,159)`。全量单测 626 个文件通过 / 3 跳过，5227 个用例通过 / 4 跳过；`lint:design` 1481 文件 clean；`check:modules` 12 模块 / 117 能力 / 115 浏览器套件 / 10 独立检查；`--changed` 的 `unmapped: []`、`fullReleaseRequired: false`。证据与报告见工作树 `.local-drafts/evidence/` 和 `FIX-REPORT-beta3-f.md`。
+- **保留项**：未运行完整 115 组浏览器门禁；Electron e2e 使用 Vite 开发服务器与未打包 Electron，未重新打包 AppImage；其他平台/完整发布门禁不能继承本轮结果。`/home/umax/Desktop/voo-qa` 不可写，报告暂存在工作树根目录。
+
 ## Linux x64 本地单测与原生冒烟记录：2026-11-04
 
 - **基线版本与执行环境**：`d95ee0f3`，Ubuntu 26.04.1 LTS (x86_64, Linux 7.0.0-42-generic, Node v26.13.0, Electron 43.8.0, Chromium 156.0.8078.4 / 157.0.8103.38)。原生环境闭环解除此前在 macOS 执行机上“受阻于无法运行 Linux 原生二进制”的硬件阻断标记。
