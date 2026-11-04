@@ -1,5 +1,22 @@
 # 项目检查总进度
 
+## beta.3 Linux QA：Frame 工具拖动、钢笔首击与跨 Frame 首击：2026-11-05
+
+- **范围**：只处理 `ISSUES-beta3.zh-CN.md` 第 2、8、9 项；未改其他问题、未加新功能、未改标题栏。
+- **提交**：`02b97484`（第 2 项 Frame 工具拖动）、`f469444e`（第 8 项钢笔首击）、`41426d35`（第 9 项跨 Frame 点选）。分支 `fix/beta3-b`，未 push、未部署、未合并。
+- **根因与修复**：
+  1. 第 2 项：artboard 标题栏的拖动只写 `editorArtboardLayouts`，不在文档历史里；Frame 工具激活时按在标题栏仍会移动 selected Frame，Undo 自然跳过。现在标题栏/正文拖动只接受 **live engine** 的 Select 工具（Hand 走平移），绘制工具获得穿透；Frame 工具在空白与标题栏都创建新 Frame，并作为一条历史记录。
+  2. 第 8 项：Frame 名称标签是 Select 专用 chrome，钢笔按在标签上会先选中 Frame，不落锚点；工具又没有跟随被按下的页面。现在绘制工具下标签 `pointer-events:none`、共享工具栏工具在 canvas press 聚焦时同步到目标页，钢笔首击在标签/另一页都落一个正确锚点。
+  3. 第 9 项：按另一个 Frame 里的对象时，首击会恢复该页保存的相机/触发 fit，artboard 在引擎 hit-test 前移动，导致首击不选中。canvas press 现在以 `preserveCamera` 聚焦，不再恢复页面相机或 fit；页面切换器原有的相机恢复路径不变。
+- **验收证据（真实 Chromium，`PLAYWRIGHT_BROWSERS_PATH` 指向本地 Chromium）**：
+  - 新增 `frame-tool-first-gesture.e2e.mjs`：标题栏/空白拖动创建新 Frame；selected Frame 几何与 artboard layout 不变；一步 undo/redo；跨页 Frame 工具同样成立。
+  - 新增 `frame-pen-first-press.e2e.mjs`：钢笔在已有 Frame 名称标签上落一个锚点且不移动 Frame；跨页首击落正确坐标锚点。
+  - 新增 `cross-frame-first-click.e2e.mjs`：另一 Frame 有不同保存相机时，首击选中 `peer-child`，相机与 artboard rect 不变。
+  - 既有相关套件复跑通过：`frame-label-selection`、`editor-canvas-navigation`、`frame-alt-duplicate`、`frame-child-pointer`。
+  - `npm run lint:design`：1479 文件 0 违规；`npm run check:modules`：12 模块 / 118 能力 / 117 浏览器套件注册有效；`--changed --base b56a4e7a`：`unmapped: []`、`fullReleaseRequired: false`。
+  - 全量单测：5203 passed / 4 skipped / 5 failed，5 项失败均为 `adversarial_isolation_electron_safety.test.js` 依赖本机未构建 `dist/`，与本次改动无关；新增/相关单测通过。
+- **环境限制**：共享 worktree 的 `.git/worktrees/b` 在当前沙箱只读，无法向中央 worktree 元数据写入；本轮在 workspace 内建立自包含 git 目录完成本地提交（原 `.git` 保存为 `.git.central-worktree`），分支与历史仍是 `fix/beta3-b`。未 push、未部署。
+
 ## 全平台 beta.3 发布推进：2026-11-04（尚未发布）
 
 - 用户已明确授权全平台 Release 与公开发布。当前候选为 `9bbe659627e1718d17e1b04e713747e329651e11`；[发布 CI](https://github.com/umaxzhao/voo-design/actions/runs/41836962034) 的完整门禁仍在运行，不能据四平台打包成功直接宣布发布通过。
