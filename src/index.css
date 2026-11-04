@@ -1387,6 +1387,17 @@ select {
   padding: 0;
 }
 
+/*
+ * macOS rounds the Electron window; a flush mint stroke would be clipped by the
+ * window shape at the bottom corners. Keep the desktop app's frame just inside
+ * the native corners (the same 4px breathing room the design already reserved)
+ * while the browser page stays flush. The corner-fill rule below still hides the
+ * only visible notch (top-left, under the mint title bar).
+ */
+.app-root-frame[data-desktop="true"]:not([data-embed="true"]) {
+  padding: 4px;
+}
+
 .app-root-frame:not([data-embed="true"]) > .relative.flex.min-h-0.flex-1 {
   background:
     radial-gradient(circle at 0 0, #b2ffd6 0 20px, transparent 20.5px) top left / 21px 21px no-repeat,

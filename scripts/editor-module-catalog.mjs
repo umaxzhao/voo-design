@@ -251,6 +251,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/agent-panel/*", "src/canvas/components/canvas_agent_panel.jsx", "src/canvas/components/onboarding/*",
       "src/canvas/components/first_run_state.js", "src/canvas/components/first_run_onboarding.jsx",
       "tests/unit/first_run_onboarding.test.jsx", "tests/unit/harness_agent_default.test.js",
+      "src/index.css", "tests/unit/editor_frame_chrome.test.js",
       "electron/*", "plugins/*",
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
       "tests/unit/agent_selection_context.test.js",

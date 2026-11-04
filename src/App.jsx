@@ -22,6 +22,9 @@ import {
 } from "../electron/voo_format.js";
 
 const isEmbed = isEmbedPage();
+// The Electron window is rounded by macOS; the web page has square viewport
+// corners, so only the desktop app needs the frame kept off the window edge.
+const isDesktopApp = typeof window !== "undefined" && Boolean(window.electronAPI);
 // The harness panel keeps the product chrome (title bar + mint frame) and only
 // wants the side effects of an embedded session.
 const isHarnessPanel = isHarnessPage();
@@ -157,6 +160,7 @@ export default function App() {
   return (
     <main
       data-embed={isEmbed ? "true" : undefined}
+      data-desktop={isDesktopApp ? "true" : undefined}
       className="app-root-frame relative flex h-full w-full select-none flex-col"
       // Black window behind the frame: the mint corner fills live behind the
       // frame corner itself, so there is no extra band along the sides.

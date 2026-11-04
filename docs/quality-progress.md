@@ -1,5 +1,13 @@
 # 项目检查总进度
 
+## 编辑器主窗口外框：App 与网页版统一到同一边框标准：2026-11-04
+
+- **需求**：编辑器主窗口外框（标题栏下整块画布区的绿框）在 App 与网页版都按面板刚定的标准：2px 圆角绿边、只填必要的左上角缺口、其余角只留圆角边。
+- **现状确认**：App、网页版、面板共用同一份 `src`（`.app-root-frame` / `.editor-shell`，无平台分支），因此该标准已经在代码里对三者生效；在线网页版 `d165cd9c` 已是该构建（`index-C4XftB9J.js`）。
+- **补充修改（仅桌面 App 需要）**：macOS 会给 Electron 窗口加原生圆角，边框贴窗口边缘时底部圆角会被窗口形状裁掉。新增 `data-desktop`（`window.electronAPI` 存在时）并在 `index.css` 给桌面窗口保留 4px 内衬：`app-root-frame[data-desktop="true"]:not([data-embed]) { padding: 4px }`；浏览器页面保持贴边。角部规则不变（只左上角填充、其余纯 2px 圆角边）。
+- **验收**：`tests/unit/editor_frame_chrome.test.js`（3/3，校验贴边/桌面内衬/边框底色/仅左上角填充）；`editor-checks --changed` → `unmapped: []`。Playwright（干净构建 4182，1210×955）实测：网页版 `padding:0`、shell 位于 `[0,40]` 贴边；模拟桌面（`data-desktop=true`）后 `padding:4px`、shell 位于 `[4,44]`，边框标准不变。
+- **未执行**：按用户要求没有打包/发布 App；这次改动在浏览器中不改变任何渲染（data-desktop 不会出现），网页版线上无需重新部署。桌面 App 需要重新构建后生效（`npm run electron:dev` 可直接预览）。
+
 ## 面板引导仅首次 + 插件内默认 Harness 模型（无需配置 CLI）：2026-11-04
 
 - **需求**：① 面板（插件）只在第一次打开时弹出引导，之后不再弹；② 在插件里不需要配置 CLI，Agent 默认用 DeepSeek Harness 的模型。
