@@ -25,6 +25,26 @@ This is a coverage contract, not an assertion that every possible interaction ha
 
 Every new browser suite also checks parent existence, unique IDs and absence of hierarchy cycles where structural edits occur. Existing release suites continue to cover Frame edge resizing/constraints, negative world coordinates, Alt duplication, reparenting, Auto Layout, Boolean geometry, image exports, layer ordering/windowing and camera interaction.
 
+## First-press ownership across Frames
+
+Capabilities: `layers.frame-tool-first-gesture`,
+`selection.frame-chrome-first-press`, `selection.cross-frame-first-click`.
+The maintained execution record is `docs/quality-progress.md`; the rows below
+declare scope, not a historical pass inherited by newer source.
+
+| Operation | Confirmed previous failure | Regression |
+| --- | --- | --- |
+| Frame tool press on a selected Frame's title/blank surface | The artboard title drag wrote layout-store position, so the selected Frame moved without a document history entry and one Undo stepped past it | `frame-tool-first-gesture.e2e.mjs`: actual title/blank press creates a new Frame, leaves the selected Frame geometry and artboard layout unchanged, and one undo/redo adds/removes only the new Frame |
+| Frame tool press on another page while the toolbar shows Frame | That page still held a stale Select engine, so its press could move/select its artboard instead of drawing | Same suite: the pressed page receives the shared tool, creates the Frame there, preserves its selected Frame and layout, and undoes once |
+| Pen first press over an existing Frame's name label | The label button selected the Frame and placed no anchor | `frame-pen-first-press.e2e.mjs`: the press lands one anchor under the pointer without moving the Frame |
+| Pen first press on another Frame's blank surface | The pressed page's stale Select mode owned the gesture | Same suite: the pressed page receives Pen, places one anchor in its own document coordinates, and keeps its selection |
+| Select first press on artwork in another Frame | Canvas focus restored the page's saved camera/fit before the engine hit test, so the artboard jumped and nothing was selected | `cross-frame-first-click.e2e.mjs`: with a distinct saved camera on the guest page, the first press selects the artwork, preserves the shared camera and leaves the artboard rect unchanged |
+
+These fixtures use a seeded document and real mouse events. They do not
+certify physical multi-touch, stylus input or every custom camera state; the
+page-switcher camera-restore path is deliberately outside this canvas-press
+scope and retains its own review.
+
 ## Confirmed defects addressed
 
 - Drawing/placement used a different Frame-target policy from dragging: smallest area, omitted default visibility and missing ancestor clips could assign an invisible owner.

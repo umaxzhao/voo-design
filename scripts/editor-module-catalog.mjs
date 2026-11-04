@@ -73,6 +73,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/workspace-free-artwork.js", "src/canvas/editor/workspace-artwork-picture.js",
       "src/canvas/editor/workspace-artwork-stamp.js", "tests/unit/workspace-artwork-picture.test.js", "tests/unit/workspace-artwork-stamp.test.js",
       "src/canvas/components/editor_hooks/use_editor_page_engine.js", "src/canvas/editor/free-artwork-hit-regions.js",
+      "src/canvas/components/editor_hooks/use_editor_canvas_navigation.js",
       "tests/unit/free-artwork-hit-regions.test.js", "src/canvas/editor/frame-canvas-labels.js", "tests/unit/frame-canvas-labels.test.js",
       "tests/unit/viewport_notifications.test.js", "tests/e2e/canvas_fps.e2e.mjs",
     ],
@@ -95,7 +96,7 @@ export const EDITOR_MODULES = [
     title: "Selection and transforms",
     paths: [
       "tests/unit/legacy-tool-shortcuts.test.js",
-      "src/canvas/components/editor_page_frame_labels.jsx", "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*",
+      "src/canvas/components/editor_page_frame_labels.jsx", "src/canvas/components/editor_hooks/use_editor_canvas_gestures.js", "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*",
       "src/canvas/editor/selection*", "src/canvas/editor/transform*", "src/canvas/*shortcut*", "src/canvas/editor/drawing-gesture-*",
       "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*", "src/canvas/editor/editor_engine_tools.js",
       "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js",
@@ -110,9 +111,10 @@ export const EDITOR_MODULES = [
     features: [
       "selection.hit-testing", "selection.transforms", "selection.cancel", "selection.shortcuts", "selection.continuous-creation",
       "selection.frame-title-selection", "selection.toolbar-hover-menu", "selection.overlap-cycling", "selection.hover-outline",
+      "selection.frame-chrome-first-press", "selection.cross-frame-first-click",
     ],
     suites: [
-      "frame-child-pointer", "frame-label-selection", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle", "hook-lifecycle",
+      "frame-child-pointer", "frame-label-selection", "frame-pen-first-press", "cross-frame-first-click", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle", "hook-lifecycle",
       "continuous-creation",
     ],
     remaining: [
@@ -140,11 +142,11 @@ export const EDITOR_MODULES = [
     ],
     features: [
       "layers.nesting", "layers.placement", "layers.reparent", "layers.duplicate-delete-lock", "layers.container-boundaries", "layers.model-cache",
-      "layers.panel-width", "layers.section-container",
+      "layers.panel-width", "layers.section-container", "layers.frame-tool-first-gesture",
     ],
     suites: [
       "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts", "nested-placement",
-      "nested-object-lifecycle", "container-command-boundaries", "layers-panel-width", "input-focus-competition",
+      "nested-object-lifecycle", "container-command-boundaries", "layers-panel-width", "input-focus-competition", "frame-tool-first-gesture",
     ],
     remaining: [
       "Browser File drops are injected DataTransfer events, not Finder/Explorer drag certification.",

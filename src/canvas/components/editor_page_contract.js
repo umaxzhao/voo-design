@@ -19,6 +19,8 @@ export const editorPagePropTypes = {
     height: PropTypes.number,
   }),
   sharedZoom: PropTypes.number,
+  /** The one toolbar tool shared by every page, so chrome follows it. */
+  sharedTool: PropTypes.string,
   workspaceRendererReady: PropTypes.bool,
   snapshot: PropTypes.object,
   onFocus: PropTypes.func.isRequired,
