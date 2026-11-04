@@ -38,4 +38,51 @@ describe("effective transform values for sparse documents", () => {
       expect(html).toMatch(new RegExp(`aria-label="${label}"[^>]*value="0"`));
     }
   });
+
+  it("shows a frame child's X/Y relative to that frame", () => {
+    const frame = {
+      id: "frame", kind: "group", isFrame: true,
+      x: 800, y: 600, width: 400, height: 300,
+    };
+    const child = rect("child", { parentId: "frame", x: 900, y: 700 });
+    const html = renderToStaticMarkup(
+      <TransformSection
+        object={child}
+        selectedNodes={[child]}
+        parentNode={frame}
+        parentIsFrame
+        edit={vi.fn()}
+        editAndCommit={vi.fn()}
+        commitNow={vi.fn()}
+      />,
+    );
+    expect(html).toMatch(/aria-label="X"[^>]*value="100"/);
+    expect(html).toMatch(/aria-label="Y"[^>]*value="100"/);
+    expect(html).not.toMatch(/aria-label="X"[^>]*value="900"/);
+    expect(html).not.toMatch(/aria-label="Y"[^>]*value="700"/);
+  });
+
+  it("does not borrow one frame's origin for a mixed-parent selection", () => {
+    const frame = {
+      id: "frame", kind: "group", isFrame: true,
+      x: 800, y: 600, width: 400, height: 300,
+    };
+    const child = rect("child", { parentId: "frame", x: 900, y: 700 });
+    const loose = rect("loose", { x: 1200, y: 900 });
+    const html = renderToStaticMarkup(
+      <TransformSection
+        object={child}
+        selectedNodes={[child, loose]}
+        parentNode={frame}
+        parentIsFrame
+        edit={vi.fn()}
+        editAndCommit={vi.fn()}
+        commitNow={vi.fn()}
+      />,
+    );
+    // Different parents make a common X/Y meaningless; show the mixed dash
+    // rather than presenting the frame child's local value as everyone's.
+    expect(html).toMatch(/aria-label="X"[^>]*value=""/);
+    expect(html).toMatch(/aria-label="Y"[^>]*value=""/);
+  });
 });

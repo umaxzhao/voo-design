@@ -146,4 +146,37 @@ describe("SVG import with defs, gradients, clipPath, mask and text", () => {
     expect(nodes[1].x).toBe(10);
     expect(nodes[1].y).toBe(40); // 60 - 20
   });
+
+  it("imports a rotated rect as a rotated rect, keeping its corner radius", () => {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+        <rect x="40" y="40" width="20" height="10" rx="2"
+          transform="rotate(90 50 50)" fill="#ff0000"/>
+      </svg>
+    `;
+    const { nodes } = parseSvgStringToNodes(svg);
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0].kind).toBe("rect");
+    expect(nodes[0].x).toBeCloseTo(45, 5);
+    expect(nodes[0].y).toBeCloseTo(45, 5);
+    expect(nodes[0].width).toBeCloseTo(20, 5);
+    expect(nodes[0].height).toBeCloseTo(10, 5);
+    expect(nodes[0].rotation).toBeCloseTo(90, 5);
+    expect(nodes[0].cornerRadius).toBeCloseTo(2, 5);
+  });
+
+  it("imports a skewed rect as a sheared rect", () => {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+        <rect x="10" y="10" width="20" height="10" transform="matrix(1 0 0.5 1 0 0)"/>
+      </svg>
+    `;
+    const { nodes } = parseSvgStringToNodes(svg);
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0].kind).toBe("rect");
+    expect(nodes[0].rotation).toBeCloseTo(0, 5);
+    expect(nodes[0].shear).toBeCloseTo(26.565, 3);
+    expect(nodes[0].x).toBeCloseTo(17.5, 5);
+    expect(nodes[0].y).toBeCloseTo(10, 5);
+  });
 });

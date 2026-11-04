@@ -14,7 +14,6 @@ import { StaticSection } from "./property_section.jsx";
 import {
   MAX_SHEAR_DEG,
 } from "../../editor/scene_model_core.js";
-import { anchorDocPoint } from "../../editor/scene_geometry.js";
 import {
   IconFlipH,
   IconFlipV,
@@ -25,7 +24,7 @@ import EditorTooltip from "../editor_tooltip.jsx";
 import AnchorPointGrid from "./transform_anchor_grid.jsx";
 import TransformDimensionBar from "./transform_dimension_bar.jsx";
 import TransformRadiusControls from "./transform_radius_controls.jsx";
-import { dimensionFieldPatch, positionFieldPatch } from "./transform-field-patches.js";
+import { dimensionFieldPatch, positionFieldPatchInFrame, positionPointInFrame } from "./transform-field-patches.js";
 export { AnchorPointGrid, TransformDimensionBar, TransformRadiusControls };
 /** Largest value the position/size fields accept — comfortably past any doc. */
 const COORD_LIMIT = 99999;
@@ -49,6 +48,8 @@ export default function TransformSection({
   selectedNodes = [],
   transformActions = null,
   parentLayout = null,
+  parentNode = null,
+  parentIsFrame = false,
   onRotate90 = null,
   positionAction = null,
 }) {
@@ -84,23 +85,46 @@ export default function TransformSection({
       ? { value: null, mixed: true }
       : { value, mixed: false };
   };
-  // Declared before use: X/Y report the anchor's document position, and
-  // commonX/commonY read it on first render (TDZ otherwise).
-  const anchorPoint = anchorDocPoint(object, anchor);
-  const commonX = common("x", Math.round(anchorPoint.x));
-  const commonY = common("y", Math.round(anchorPoint.y));
+  // A direct child of a Frame reports X/Y relative to that Frame, matching
+  // Figma. Mixed selections from other parents keep document coordinates so
+  // one field never silently describes different origins.
+  const coordinateNodes = selectedNodes.length > 0 ? selectedNodes : [object];
+  const coordinateFrame =
+    parentIsFrame &&
+    parentNode &&
+    coordinateNodes.every((node) => node?.parentId === parentNode.id)
+      ? parentNode
+      : null;
+  const positionOf = (node, axis) =>
+    Math.round(positionPointInFrame(node, coordinateFrame, anchor)[axis]);
+  const commonPosition = (axis) => {
+    if (!multi) {
+      return { value: positionOf(object, axis), mixed: false };
+    }
+    const values = selectedNodes.map((node) => positionOf(node, axis));
+    return values.every((value) => value === values[0])
+      ? { value: values[0], mixed: false }
+      : { value: null, mixed: true };
+  };
+  const commonX = commonPosition("x");
+  const commonY = commonPosition("y");
   const commonW = common("width", Math.round(object.width ?? 0));
   const commonH = common("height", Math.round(object.height ?? 0));
   const commonR = common("rotation", Math.round(object.rotation ?? 0));
   const commonOpacity = common("opacity", object.opacity ?? 1);
   const commonS = common("shear", Math.round(object.shear ?? 0));
   const commonCornerRadius = common("cornerRadius", object.cornerRadius);
-  // X/Y report and edit the anchor's document position, not always the
-  // top-left corner — with the default "nw" anchor they are exactly x and y.
+  // X/Y report and edit the anchor's position, not always the top-left corner
+  // — with the default "nw" anchor they are exactly the local x and y.
   // Input events can arrive before the inspector's next paint snapshot.
   const currentObject = () => engine?.getNode?.(object.id) ?? object;
   const editPosition = (axis, value) => {
-    edit(positionFieldPatch(currentObject(), axis, value, anchor));
+    const current = currentObject();
+    const frame =
+      coordinateFrame && current?.parentId === coordinateFrame.id
+        ? coordinateFrame
+        : null;
+    edit(positionFieldPatchInFrame(current, axis, value, anchor, frame));
   };
   const resizeTo = (axis, value) => {
     const patch = dimensionFieldPatch(currentObject(), axis, value, { anchor, lockRatio });
@@ -338,6 +362,8 @@ TransformSection.propTypes = {
   editAndCommit: PropTypes.func.isRequired,
   commitNow: PropTypes.func,
   selectedNodes: PropTypes.array,
+  parentNode: PropTypes.object,
+  parentIsFrame: PropTypes.bool,
   transformActions: PropTypes.shape({ pending: PropTypes.bool, onTransform: PropTypes.func }),
   onMode: PropTypes.func,
   maskActions: PropTypes.shape({

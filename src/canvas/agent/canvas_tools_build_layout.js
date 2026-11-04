@@ -8,6 +8,7 @@ import { parseSvgPath } from "../editor/editor_svg_parse.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 import { ICONS } from "./html_pipeline/lucide.js";
 import { parseSvgToNodes } from "./svg_to_nodes.js";
+import { fromNodeLocal } from "../editor/scene_geometry.js";
 
 const strings = ["name", "fill", "stroke", "text", "fontFamily", "color", "d", "id", "backgroundColor"];
 const numbers = ["x", "y", "width", "height", "strokeWidth", "cornerRadius", "opacity", "fontSize", "lineHeight", "letterSpacing"];
@@ -171,6 +172,17 @@ function iconToPathD(iconData, width, height, stroke, strokeWidth, fill) {
     if (n.kind === "path") return n.d;
     if (n.kind === "rect") {
       const { x = 0, y = 0, width: w = 0, height: h = 0, rx = 0 } = n;
+      if ((n.rotation ?? 0) || (n.shear ?? 0) || n.flipV || n.flipH) {
+        // A turned icon rect is still a rect in the importer; flatten it along
+        // the same box transform so the icon outline does not snap upright.
+        const corners = [
+          { x, y },
+          { x: x + w, y },
+          { x: x + w, y: y + h },
+          { x, y: y + h },
+        ].map((point) => fromNodeLocal(n, point));
+        return `M ${corners.map((point) => `${point.x} ${point.y}`).join(" L ")} Z`;
+      }
       const r = Math.min(rx, w / 2, h / 2);
       return r <= 0 ? `M ${x} ${y} H ${x + w} V ${y + h} H ${x} Z` : `M ${x + r} ${y} H ${x + w - r} A ${r} ${r} 0 0 1 ${x + w} ${y + r} V ${y + h - r} A ${r} ${r} 0 0 1 ${x + w - r} ${y + h} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + h - r} V ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
     }

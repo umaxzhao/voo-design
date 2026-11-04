@@ -125,6 +125,45 @@ function applyTransformToPoint(x, y, matrix) {
   };
 }
 
+/** A matrix with a turned or slanted axis is not the axis-aligned fast path. */
+function hasRotationOrSkew(matrix) {
+  return Boolean(
+    matrix &&
+      (Math.abs(matrix[1]) > 1e-9 || Math.abs(matrix[2]) > 1e-9),
+  );
+}
+
+/**
+ * Decomposes an affine matrix into the box transform the scene model stores:
+ * rotation · shear · scale, with a vertical flip for a mirrored determinant.
+ * Returns null when the box would be degenerate. Keeping a transformed `<rect>`
+ * as a rect (instead of baking its corners into a path) preserves its kind,
+ * corner radius and editable rectangle properties.
+ */
+function decomposeRectTransform(matrix, x, y, width, height) {
+  const [a, b, c, d] = matrix;
+  const scaleX = Math.hypot(a, b);
+  const det = a * d - b * c;
+  const scaleY = scaleX > 1e-9 ? det / scaleX : 0;
+  if (!(scaleX > 1e-9) || !(Math.abs(scaleY) > 1e-9)) return null;
+  const cos = a / scaleX;
+  const sin = b / scaleX;
+  const upperRight = cos * c + sin * d;
+  const center = applyTransformToPoint(x + width / 2, y + height / 2, matrix);
+  const nodeWidth = width * scaleX;
+  const nodeHeight = height * Math.abs(scaleY);
+  return {
+    x: center.x - nodeWidth / 2,
+    y: center.y - nodeHeight / 2,
+    width: nodeWidth,
+    height: nodeHeight,
+    rotation: (Math.atan2(b, a) * 180) / Math.PI,
+    shear: (Math.atan2(upperRight, scaleY) * 180) / Math.PI,
+    flipV: scaleY < 0,
+    radiusScale: Math.min(scaleX, Math.abs(scaleY)),
+  };
+}
+
 /** Converts transform list into a single affine matrix [a, b, c, d, tx, ty]. */
 function resolveTransformMatrix(transforms) {
   if (!transforms || transforms.length === 0) return null;
@@ -544,17 +583,37 @@ export function parseSvgStringToNodes(svgString) {
 
       const p1 = applyTransformToPoint(x, y, matrix);
       const p2 = applyTransformToPoint(x + w, y + h, matrix);
+      const turned = hasRotationOrSkew(matrix)
+        ? decomposeRectTransform(matrix, x, y, w, h)
+        : null;
 
-      const rectNode = createRectNode({
-        x: Math.min(p1.x, p2.x),
-        y: Math.min(p1.y, p2.y),
-        width: Math.abs(p2.x - p1.x),
-        height: Math.abs(p2.y - p1.y),
-        fill: currentPaint.fill,
-        stroke: currentPaint.stroke,
-        strokeWidth: currentPaint.strokeWidth,
-      });
-      rectNode.cornerRadius = rx;
+      const rectNode = createRectNode(
+        turned
+          ? {
+              x: turned.x,
+              y: turned.y,
+              width: turned.width,
+              height: turned.height,
+              fill: currentPaint.fill,
+              stroke: currentPaint.stroke,
+              strokeWidth: currentPaint.strokeWidth,
+            }
+          : {
+              x: Math.min(p1.x, p2.x),
+              y: Math.min(p1.y, p2.y),
+              width: Math.abs(p2.x - p1.x),
+              height: Math.abs(p2.y - p1.y),
+              fill: currentPaint.fill,
+              stroke: currentPaint.stroke,
+              strokeWidth: currentPaint.strokeWidth,
+            },
+      );
+      if (turned) {
+        rectNode.rotation = turned.rotation;
+        rectNode.shear = turned.shear;
+        if (turned.flipV) rectNode.flipV = true;
+      }
+      rectNode.cornerRadius = turned ? rx * turned.radiusScale : rx;
       rectNode.opacity = currentPaint.opacity;
       if (groupId) rectNode.parentId = groupId;
       if (clipId) rectNode.clipTo = clipId;
