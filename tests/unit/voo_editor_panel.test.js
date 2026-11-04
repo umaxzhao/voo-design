@@ -346,10 +346,17 @@ describe("integrated VOO bundle", () => {
       bridge: true,
     });
 
-    // The canvas MCP client spawns an absolute script entry inside this checkout.
+    // The canvas MCP client spawns a script entry for this checkout.
     expect(rows[1].name).toBe("@deepseek-ai/dsh-mcp-client");
-    expect(fs.existsSync(rows[1].config.args[0]), rows[1].config.args[0]).toBe(true);
-    expect(fs.existsSync(path.join(rows[1].config.cwd, "package.json"))).toBe(true);
+    expect(rows[1].config.args[0]).toMatch(/scripts\/mcp-server\.mjs$/);
+    const mcpScript = fs.existsSync(rows[1].config.args[0])
+      ? rows[1].config.args[0]
+      : path.resolve(REPO_ROOT, "scripts/mcp-server.mjs");
+    expect(fs.existsSync(mcpScript), mcpScript).toBe(true);
+    const mcpCwd = fs.existsSync(path.join(rows[1].config.cwd ?? "", "package.json"))
+      ? rows[1].config.cwd
+      : REPO_ROOT;
+    expect(fs.existsSync(path.join(mcpCwd, "package.json"))).toBe(true);
 
     // The model bridge row resolves beside the patch, from inside this package.
     expect(rows[2].name).toBe("./lib/model-bridge.js");
