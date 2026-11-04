@@ -70,6 +70,13 @@ contextBridge.exposeInMainWorld("vooDesktop", {
   workspace: workspaceApi,
 });
 
+contextBridge.exposeInMainWorld("vooElectron", {
+  chooseExportPath: ({ name, format, title }) =>
+    ipcRenderer.invoke("dialog:chooseExportPath", { name, format, title }),
+  writeImageFile: (filePath, dataUrl) =>
+    ipcRenderer.invoke("fs:writeImageFile", filePath, dataUrl),
+});
+
 contextBridge.exposeInMainWorld("electronAPI", {
   isElectron: true,
   platform: process.platform,

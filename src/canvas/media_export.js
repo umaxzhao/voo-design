@@ -14,7 +14,9 @@ export async function saveMediaExport({
     throw new Error("EXPORT_DATA_INVALID");
   }
   const filename = mediaExportFilename(name, format);
-  const bridge = globalThis.window?.vooElectron;
+  const bridge = globalThis.window?.vooElectron
+    ?? globalThis.window?.electronAPI
+    ?? globalThis.window?.bridge?.media;
   let path = null;
   if (bridge?.chooseExportPath && bridge.writeImageFile) {
     path = await bridge.chooseExportPath({ name: filename, format, title });
