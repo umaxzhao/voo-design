@@ -15,6 +15,8 @@ export const EDITOR_MODULES = [
       "tests/unit/settings_workspace.test.js", "tests/unit/close_project_tab.test.jsx", "tests/unit/close_active_tab_action.test.js", "tests/unit/welcome_home_actions.test.js",
       "tests/unit/community_templates_and_new_project.test.jsx", "tests/unit/welcome_prompt_composer.test.jsx",
       "tests/unit/welcome_prompt_types.test.jsx", "tests/e2e/qa_flows.e2e.mjs",
+      "tests/unit/open-project.test.js", "src/canvas/store/pick-project-source.js", "src/canvas/store/open-project.js",
+      "src/canvas/components/welcome_dashboard/open_bitmap.js", "tests/unit/open_bitmap_project.test.js",
     ],
     related: [
       "documents", "inspector", "platform",
@@ -22,6 +24,7 @@ export const EDITOR_MODULES = [
     features: [
       "workspace.projects", "workspace.covers", "workspace.assets", "workspace.templates", "workspace.settings-entry", "workspace.project-tabs",
       "workspace.touch-file-open", "workspace.file-actions-ready", "workspace.cold-start-new", "workspace.import-references",
+      "workspace.bitmap-import",
     ],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash", "ui-home-settings", "welcome-covers",
@@ -42,14 +45,16 @@ export const EDITOR_MODULES = [
       "tests/unit/default-value-matcher.test.js", "src/canvas/editor/document-snapshot-state.js", "tests/unit/document-snapshot-state.test.js",
       "tests/e2e/document-dirty-state-checks.mjs", "src/canvas/editor/external-image-ingestion.js", "tests/unit/external-image-ingestion.test.js",
       "tests/e2e/external-image-history-checks.mjs", "tests/unit/scene-model-lint.test.js", "src/canvas/editor/editor_engine.js",
-      "src/canvas/editor/editor_engine_assembly.js",
+      "src/canvas/editor/editor_engine_assembly.js", "src/canvas/store/project_io.js",
+      "src/canvas/components/editor_import_files.js", "src/canvas/media_export.js", "src/shared/media-export.js",
+      "tests/unit/media_export.test.js",
     ],
     related: [
       "workspace", "layers", "images", "platform", "compositing", "layout",
     ],
     features: [
       "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins",
-      "documents.serialization-purity", "documents.dirty-checkpoints", "documents.external-image-history",
+      "documents.serialization-purity", "documents.dirty-checkpoints", "documents.external-image-history", "documents.export-filename",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow", "nested-project-roundtrip", "pages_dnd",
@@ -291,6 +296,7 @@ export const EDITOR_MODULES = [
       "tests/unit/global-overlay-portals.test.jsx", "src/canvas/components/editor_design_issues.jsx", "src/shared/i18n/extended-en.js",
       "src/shared/i18n/extended-zh.js", "src/canvas/icons.jsx",
       "src/canvas/components/editor_pen_subbar.jsx", "src/canvas/components/editor_properties/stroke_style_icons.jsx",
+      "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",
     ],
     related: [
       "selection", "layers", "text", "images", "layout",
@@ -299,7 +305,7 @@ export const EDITOR_MODULES = [
       "inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill",
       "inspector.impeccable-polish", "inspector.context-submenus", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive",
       "inspector.locale-lifecycle", "inspector.mobile-targets", "inspector.comments-panel-slot", "inspector.global-overlay-stacking",
-      "inspector.design-issue-review",
+      "inspector.design-issue-review", "inspector.export-dialog-overlay",
     ],
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "settings-i18n", "locale-lifecycle",
@@ -344,6 +350,7 @@ export const EDITOR_MODULES = [
       "native_studio/INTERACTION_PARITY.md", "src/shared/embed_mode.js", "tests/unit/embed_mode.test.js",
       "tests/unit/voo_editor_panel.test.js", "tests/unit/voo_bridge_lite.test.js", "tests/unit/portable-agent-plugin.test.js",
       "tests/unit/dsh_connector_plugin.test.js", "scripts/smoke-packaged.mjs", ".gitignore", "package.json",
+      "src/shared/editor_menu_actions.js", "tests/unit/editor_menu_actions.test.js",
     ],
     related: [
       "workspace", "documents", "inspector", "images", "text",
@@ -356,6 +363,7 @@ export const EDITOR_MODULES = [
       "platform.native-responsive-toolbar", "platform.native-workspace-watch", "platform.native-titlebar", "platform.native-chrome",
       "platform.native-paints", "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering",
       "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor", "platform.agent-section",
+      "platform.native-export-menu",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions",

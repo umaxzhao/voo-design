@@ -13,7 +13,7 @@
 
 import { getImageDataUrl, putImage } from "./db.js";
 import { mergeBlobsAsUrls } from "./image_cache.js";
-import { pickProjectSource } from "./pick-project-source.js";
+import { isBitmapSourceName, pickProjectSource } from "./pick-project-source.js";
 import { dataUrlToBlob } from "../../shared/db_wire.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { addRecentFile } from "./recent_files.js";
@@ -701,11 +701,23 @@ async function openVooProjectUnlocked({
   store = useDesignStore.getState(),
   fileOrPath = null,
   pickedSource,
+  onImageSource = null,
 } = {}) {
   const source = pickedSource === undefined
     ? await pickProjectSource({ fileOrPath })
     : pickedSource;
   if (!source) return { canceled: true };
+
+  // Bitmaps are placed on the current page instead of being parsed as a
+  // document. The editor owns the live engine, so opening the picker without
+  // that handler would silently lose the selected pixels.
+  if (isBitmapSourceName(source.name)) {
+    if (typeof onImageSource !== "function") {
+      throw new Error("bitmap-import-needs-editor");
+    }
+    await onImageSource(source);
+    return { success: true, kind: "image", fileName: source.name, filePath: source.path ?? null };
+  }
 
   return openVooSource({ store, ...source });
 }
