@@ -12,6 +12,7 @@ const BrowserDrawer = lazy(() => import("./canvas/components/browser_drawer/brow
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
 import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
+import { ensureHarnessAgentModel } from "./canvas/components/onboarding/harness_agent_default.js";
 import { isEmbedPage, isHarnessPage } from "./shared/embed_mode.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
@@ -37,7 +38,8 @@ export default function App() {
   // Workspace/agent configuration remains available through voo:open-onboarding.
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [firstRunReopened, setFirstRunReopened] = useState(false);
-  const [firstRunOpen, setFirstRunOpen] = useState(() => !isEmbed && shouldShowFirstRun());
+  // The harness panel is a plugin: its guide appears on the first open only.
+  const [firstRunOpen, setFirstRunOpen] = useState(() => !isEmbed && shouldShowFirstRun({ once: isHarnessPanel }));
   const { t } = useI18n();
   // Defer the heavy editor on the first welcome screen. Once opened, keep it
   // mounted behind the welcome overlay so history and pending edits survive.
@@ -46,6 +48,13 @@ export default function App() {
   useEffect(() => {
     if (needsEditor) setEditorActivated(true);
   }, [needsEditor]);
+
+  // Inside the harness panel the Agent is the Harness profile's model: configure
+  // the loopback model bridge once instead of asking for any CLI setup.
+  useEffect(() => {
+    if (!isHarnessPanel) return;
+    void ensureHarnessAgentModel();
+  }, []);
 
   // When embedded in an IDE webview/iframe or the harness side panel, auto-open
   // an untitled project if none exists.
@@ -230,6 +239,7 @@ export default function App() {
       <FirstRunOnboarding
         open={firstRunOpen}
         reopened={firstRunReopened}
+        harnessPanel={isHarnessPanel}
         onClose={() => setFirstRunOpen(false)}
         onStart={(template) => {
           const store = useDesignStore.getState();

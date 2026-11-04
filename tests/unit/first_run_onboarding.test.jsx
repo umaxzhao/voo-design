@@ -47,7 +47,7 @@ describe("commercial first run", () => {
     setSetting("voo.onboarding.completedVersion", null);
   });
   afterEach(() => vi.unstubAllGlobals());
-  it("shows on every launch, including after completion or dismissal", () => {
+  it("shows on every launch by default, including after completion or dismissal", () => {
     expect(shouldShowFirstRun()).toBe(true);
     finishFirstRun("completed");
     expect(getSetting(FIRST_RUN_KEY)).toBe("completed");
@@ -55,7 +55,17 @@ describe("commercial first run", () => {
     finishFirstRun("dismissed");
     expect(shouldShowFirstRun()).toBe(true);
   });
-  it("still shows for existing workspace-guide users", () => {
+  it("shows only once inside the harness panel, then stays quiet after completion or dismissal", () => {
+    expect(shouldShowFirstRun({ once: true })).toBe(true);
+    finishFirstRun("completed");
+    expect(shouldShowFirstRun({ once: true })).toBe(false);
+    finishFirstRun("dismissed");
+    expect(shouldShowFirstRun({ once: true })).toBe(false);
+    // A forced open (`?firstRun=1`) is the only way to see it again.
+    vi.stubGlobal("location", { search: "?firstRun=1" });
+    expect(shouldShowFirstRun({ once: true })).toBe(true);
+  });
+  it("still shows once for existing workspace-guide users", () => {
     setSetting("voo.onboarding.completedVersion", "2.2.0");
     expect(shouldShowFirstRun()).toBe(true);
   });
@@ -78,6 +88,14 @@ describe("commercial first run", () => {
     vi.stubGlobal("navigator", { webdriver: true });
     expect(shouldShowFirstRun()).toBe(false);
   });
+  it("goes straight to the workspace step in the harness panel", async () => {
+    await loadLocale("en");
+    const html = renderToStaticMarkup(<FirstRunOnboarding open harnessPanel onClose={() => {}} onStart={() => {}} />);
+    expect(html).toContain('data-step="workspace"');
+    expect(html).not.toContain('data-step="provider"');
+    expect(html).not.toContain("Choose your Agent (optional)");
+  });
+
   it.each(["en", "zh"])("renders translated dialog and actions in %s", async (locale) => {
     await loadLocale(locale);
     const html = renderToStaticMarkup(<FirstRunOnboarding open onClose={() => {}} onStart={() => {}} />);

@@ -20,7 +20,10 @@ import VooCloudLoginInline from "./onboarding/voo_cloud_login_inline.jsx";
 import { useUserStore } from "../store/user_store.js";
 import useIsNarrow from "../use_is_narrow.js";
 
-const steps = ["provider", "workspace"];
+const DEFAULT_STEPS = ["provider", "workspace"];
+// In the harness side panel the Agent is already the Harness profile's model:
+// there is no CLI to configure, so the guide goes straight to the workspace step.
+const HARNESS_STEPS = ["workspace"];
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
 
 export function syncFirstRunDialog(dialog, open) {
@@ -30,7 +33,8 @@ export function syncFirstRunDialog(dialog, open) {
   } else if (dialog.open) dialog.close();
 }
 
-export default function FirstRunOnboarding({ open, reopened = false, onClose, onStart: _onStart }) {
+export default function FirstRunOnboarding({ open, reopened = false, harnessPanel = false, onClose, onStart: _onStart }) {
+  const steps = harnessPanel ? HARNESS_STEPS : DEFAULT_STEPS;
   const dialog = useRef(null);
   const title = useRef(null);
   const contentRef = useRef(null);
@@ -117,7 +121,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             {name === "provider" ? (
               <div className="flex flex-col gap-3">
                 <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
-                  showCliAgents={!isNarrow && detection.showLocal}
+                  showCliAgents={!isNarrow && detection.showLocal && !harnessPanel}
                   cloudProviders={cloudCards}
                   customConfigured={customGroups.some(group => group.models.length > 0)}
                   onSelect={(id) => {
@@ -183,7 +187,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                     groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}
                     onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
                 )}
-                {!isNarrow && detection.showLocal && provider !== "" && !isApiProvider && !isDeepSeekHarness && (
+                {!harnessPanel && !isNarrow && detection.showLocal && provider !== "" && !isApiProvider && !isDeepSeekHarness && (
                   <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
                     className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
                 )}
@@ -215,4 +219,5 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
     </dialog>
   );
 }
-FirstRunOnboarding.propTypes = { open: PropTypes.bool.isRequired, reopened: PropTypes.bool, onClose: PropTypes.func.isRequired, onStart: PropTypes.func };
+FirstRunOnboarding.propTypes = { open: PropTypes.bool.isRequired, reopened: PropTypes.bool,
+  harnessPanel: PropTypes.bool, onClose: PropTypes.func.isRequired, onStart: PropTypes.func };

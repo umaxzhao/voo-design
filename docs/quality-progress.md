@@ -1,5 +1,20 @@
 # 项目检查总进度
 
+## 面板引导仅首次 + 插件内默认 Harness 模型（无需配置 CLI）：2026-11-04
+
+- **需求**：① 面板（插件）只在第一次打开时弹出引导，之后不再弹；② 在插件里不需要配置 CLI，Agent 默认用 DeepSeek Harness 的模型。
+- **修复**：
+  1. `first_run_state.shouldShowFirstRun({ once })`：默认仍是“每次启动显示”（桌面/网页版行为不变）；harness 面板传 `once: true`，读取已保存的 `voo.firstRun.status`，完成/跳过一次后不再显示（`?firstRun=1` 仍可强制）。
+  2. 新增 `onboarding/harness_agent_default.js`：在 harness 面板挂载时调用 `ensureHarnessAgentModel()`，复用既有 `fetchCustomProviderModels` 把本地模型桥（`http://127.0.0.1:4399/v1`，`voo-local`）配置成 provider 并选中其第一个模型（`agent.model = api:custom%3Aonboarding-deepseek-harness:<model>`）；已有用户模型时不覆盖；模型桥不可用时静默降级，不影响打开。
+  3. harness 面板的引导只显示 `workspace` 步骤（跳过 provider/CLI 选择），并隐藏 CLI 卡片与 DeepSeek 连接卡片。
+- **验收证据**：
+  - 单测：`first_run_onboarding` + `harness_agent_default` 共 **43/43**；`editor-checks --changed` → `unmapped: []`。
+  - Playwright（干净构建 4181，`navigator.webdriver=false`）：
+    - 面板 `?harness=1` 首次：dialog `data-step="workspace"`、无 "Choose your Agent"、无 CLI 名称，`agent.model` 自动为 `api:custom%3Aonboarding-deepseek-harness:deepseek-flash`（真实调用 4399 模型桥）；
+    - 点“完成”后 `voo.firstRun.status="completed"`，重开 `?harness=1` 引导不再出现；
+    - 网页版（非 harness）仍按原行为每次启动显示（provider 步骤保留）。
+- **保留项**：已产生过完成记录的 origin 不会再弹（符合“仅首次”）；未 push（GitHub 无写凭据）；部署见下条记录。
+
 ## 只填需要遮住的角：右上角恢复为纯圆角绿边：2026-11-04
 
 - **基线版本**：`6d2cd8e5`（上一轮四个角都垫了薄荷绿 1/4 圆，右上角因此出现一块绿色填充，用户要求“右上角不填充，只保留圆角绿边”）。
