@@ -106,6 +106,7 @@ export default function BoundedNumberInput({
   return (
     <input
       type="text"
+      role="spinbutton"
       inputMode="decimal"
       value={draft}
       ref={inputRef}
