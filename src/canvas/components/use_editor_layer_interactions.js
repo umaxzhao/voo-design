@@ -8,6 +8,7 @@ import {
   isRowSelected,
 } from "../editor/layer_selection.js";
 import useLayerDrag from "./use_layer_drag.js";
+import { restoreLayerListFocus } from "./editor_layer_focus.js";
 import { isContainerNode, isGroupNode, isBooleanNode } from "../editor/scene_model.js";
 export default function useEditorLayerInteractions(model) {
   const {
@@ -162,7 +163,9 @@ export default function useEditorLayerInteractions(model) {
     const trimmed = raw.trim().slice(0, 128);
     onRename?.(index, trimmed || null);
     requestAnimationFrame(() => {
-      listRef.current?.focus?.();
+      // The user may have clicked another field while the rename committed.
+      // Do not pull focus back from it.
+      restoreLayerListFocus(listRef);
     });
   };
   const toggleCollapsed = (id, canvasId = effectiveActiveCanvasId) => {
