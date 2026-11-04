@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.6
+
+- Export save dialog uses native system file picker with "Export" title, format filters, and clean default filename, eliminating blob: URL titles in Linux GTK (#13).
+- Suppress single-character canvas tool shortcuts and number opacity keys during sidebar panel, inspector, and layer rename interactions, preventing key stealing and race conditions (#1).
+- Automatically select number input text on focus and transfer focus to ScrubField on pointer down, resolving corner radius and rotation value corruption and improving input responsiveness (#3, #4).
+
 ## 1.0.0-beta.5
 
 - Frame tool drag creates a new Frame, cross-Frame selection focuses target without unexpected camera movement, and pen tool first press on Frame chrome drops an anchor node.
