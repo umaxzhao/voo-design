@@ -189,6 +189,36 @@ function hasRotationOrSkew(matrix) {
 }
 
 /**
+ * Expresses a turned `<rect>` with the scene model's rotation/shear box
+ * transform instead of flattening it to four corners. Preserving the rect kind
+ * keeps the layer a Rectangle with its corner radius, matching the editor's
+ * own rectangle rotation. Null means the matrix is degenerate (fall back).
+ */
+function decomposeRotatedRect(matrix, x, y, width, height) {
+  const [a, b, c, d] = matrix;
+  const scaleX = Math.hypot(a, b);
+  const det = a * d - b * c;
+  const scaleY = scaleX > EPSILON ? det / scaleX : 0;
+  if (!(scaleX > EPSILON) || Math.abs(scaleY) <= EPSILON) return null;
+  const cos = a / scaleX;
+  const sin = b / scaleX;
+  const upperRight = cos * c + sin * d;
+  const center = applyMatrix(matrix, x + width / 2, y + height / 2);
+  const nodeWidth = width * scaleX;
+  const nodeHeight = height * Math.abs(scaleY);
+  return {
+    x: round(center.x - nodeWidth / 2),
+    y: round(center.y - nodeHeight / 2),
+    width: round(nodeWidth),
+    height: round(nodeHeight),
+    rotation: round((Math.atan2(b, a) * 180) / Math.PI),
+    shear: round((Math.atan2(upperRight, scaleY) * 180) / Math.PI),
+    flipV: scaleY < 0,
+    radiusScale: Math.min(scaleX, Math.abs(scaleY)),
+  };
+}
+
+/**
  * Scale factor applied to stroke widths so they stay proportional to the
  * geometry after the viewBox/transform mapping. sqrt(|det|) is exact for
  * similarity transforms and the geometric mean for non-uniform ones.
@@ -995,6 +1025,27 @@ function buildRectElement(attrs, paint, matrix, ctx) {
   }
   const rawRadius = parseNumber(attrs.rx) ?? parseNumber(attrs.ry) ?? 0;
   const radius = Math.max(0, Math.min(rawRadius, width / 2, height / 2));
+  if (hasRotationOrSkew(matrix)) {
+    const turned = decomposeRotatedRect(matrix, x, y, width, height);
+    if (turned) {
+      return {
+        kind: "rect",
+        x: turned.x,
+        y: turned.y,
+        width: turned.width,
+        height: turned.height,
+        rx: round(radius * turned.radiusScale),
+        rotation: turned.rotation,
+        shear: turned.shear,
+        ...(turned.flipV ? { flipV: true } : {}),
+        fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+        stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+        strokeWidth:
+          paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+        opacity: round(paint.opacity),
+      };
+    }
+  }
   if (!hasRotationOrSkew(matrix)) {
     const [a, b, c, d, e, f] = matrix;
     const cornerOneX = a * x + c * y + e;
@@ -1017,7 +1068,7 @@ function buildRectElement(attrs, paint, matrix, ctx) {
   }
   ctx.warnOnce(
     "rect:rotated",
-    "rotated/skewed <rect> emitted as a 4-corner path (corner radius ignored)",
+    "rotated/skewed <rect> with a degenerate transform emitted as a 4-corner path",
   );
   const corners = pointsToPathData(
     [

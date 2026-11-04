@@ -613,4 +613,31 @@ describe("Frame fit-to-content on handle double-click", () => {
     expect(api.beginEdit).toHaveBeenCalledWith("r1");
     expect(updateNode).not.toHaveBeenCalled();
   });
+
+  it("does not turn a rotated rect into a path from a transform handle double-click", () => {
+    const rectShape = {
+      id: "r1",
+      kind: "rect",
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      rotation: 45,
+      cornerRadius: 12,
+    };
+
+    const { api } = createEditorMock({
+      nodes: [rectShape],
+      selected: rectShape,
+      hit: rectShape,
+      point: { x: 50, y: 50 },
+    });
+    api.hasHandleUnder = vi.fn(() => true);
+
+    handleEditorDoubleClick({ clientX: 50, clientY: 50 }, { api });
+
+    expect(api.convertSelectedToPath).not.toHaveBeenCalled();
+    expect(api.beginEdit).not.toHaveBeenCalled();
+    expect(api.selectExactly).not.toHaveBeenCalled();
+  });
 });

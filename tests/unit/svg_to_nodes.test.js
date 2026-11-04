@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { parseSvgToNodes } from "../../src/canvas/agent/svg_to_nodes.js";
+import { createVectorNodes } from "../../src/canvas/agent/canvas-asset-shared.js";
 
 const SVG_OPEN = '<svg xmlns="http://www.w3.org/2000/svg"';
 
@@ -264,16 +265,50 @@ describe("parseSvgToNodes: transforms", () => {
     expect(numbers[3]).toBeCloseTo(10, 5);
   });
 
-  it("degrades a rotated rect to a path with a warning", () => {
+  it("keeps a rotated rect as a rect with its rotation and radius", () => {
     const result = parseSvgToNodes(
       `${SVG_OPEN} width="100" height="100">` +
-        '<rect x="0" y="0" width="10" height="10" transform="rotate(45)"/>' +
+        '<rect x="40" y="40" width="20" height="10" rx="2" transform="rotate(90 50 50)"/>' +
         "</svg>",
     );
     const node = firstNode(result);
-    expect(node.kind).toBe("path");
-    expect(node.d.endsWith("Z")).toBe(true);
-    expect(result.warnings.some((warning) => warning.includes("rotated/skewed <rect>"))).toBe(true);
+    expect(node.kind).toBe("rect");
+    expect(node.x).toBeCloseTo(45, 5);
+    expect(node.y).toBeCloseTo(45, 5);
+    expect(node.width).toBeCloseTo(20, 5);
+    expect(node.height).toBeCloseTo(10, 5);
+    expect(node.rotation).toBeCloseTo(90, 5);
+    expect(node.rx).toBeCloseTo(2, 5);
+    expect(result.warnings.some((warning) => warning.includes("rotated/skewed <rect>"))).toBe(false);
+  });
+
+  it("keeps a skewed rect as a sheared rect instead of a vector path", () => {
+    const result = parseSvgToNodes(
+      `${SVG_OPEN} width="100" height="100">` +
+        '<rect x="10" y="10" width="20" height="10" transform="matrix(1 0 0.5 1 0 0)"/>' +
+        "</svg>",
+    );
+    const node = firstNode(result);
+    expect(node.kind).toBe("rect");
+    expect(node.rotation).toBeCloseTo(0, 5);
+    expect(node.shear).toBeCloseTo(26.565, 3);
+    expect(node.x).toBeCloseTo(17.5, 5);
+    expect(node.y).toBeCloseTo(10, 5);
+    expect(node.width).toBeCloseTo(20, 5);
+    expect(node.height).toBeCloseTo(10, 5);
+  });
+
+  it("scales a rotated rect's radius and keeps the rect kind", () => {
+    const result = parseSvgToNodes(
+      `${SVG_OPEN} width="100" height="100">` +
+        '<rect x="0" y="0" width="10" height="10" rx="2" transform="rotate(45) scale(2)"/>' +
+        "</svg>",
+    );
+    const node = firstNode(result);
+    expect(node.kind).toBe("rect");
+    expect(node.width).toBeCloseTo(20, 5);
+    expect(node.height).toBeCloseTo(20, 5);
+    expect(node.rx).toBeCloseTo(4, 5);
   });
 
   it("scales and rotates arc commands through the viewBox matrix", () => {
@@ -484,5 +519,46 @@ describe("parseSvgToNodes: dirty / unsupported input", () => {
     );
     expect(result.nodes).toHaveLength(3);
     expect(result.warnings.some((warning) => warning.includes("maxNodes=3"))).toBe(true);
+  });
+});
+
+describe("vector asset placement", () => {
+  it("applies a parsed rect's rotation, shear, flip and radius", () => {
+    const placements = [];
+    const patches = [];
+    const editor = {
+      addRectAt: (point) => {
+        placements.push(point);
+        return { id: "rect-1" };
+      },
+      updateNode: (id, patch) => patches.push({ id, patch }),
+    };
+    createVectorNodes(
+      editor,
+      [{
+        kind: "rect",
+        x: 10,
+        y: 20,
+        width: 20,
+        height: 10,
+        rx: 2,
+        rotation: 90,
+        shear: 5,
+        flipV: true,
+      }],
+      { x: 100, y: 200 },
+    );
+    expect(placements).toEqual([{ x: 110, y: 220 }]);
+    expect(patches).toEqual([{
+      id: "rect-1",
+      patch: expect.objectContaining({
+        width: 20,
+        height: 10,
+        cornerRadius: 2,
+        rotation: 90,
+        shear: 5,
+        flipV: true,
+      }),
+    }]);
   });
 });

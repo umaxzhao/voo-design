@@ -208,6 +208,11 @@ export function handleEditorDoubleClick(event, { api, nodeHandleUnder } = {}) {
       return;
     }
     if (currentTool === TOOL.SELECT && canConvertToPath(hit)) {
+      // A double-click on a resize/rotate handle is a transform affordance,
+      // not a request to rewrite the shape as a path. Without this, adjusting
+      // a rotated rectangle and then double-clicking near its handle silently
+      // turned it into a Vector and dropped its rectangle properties.
+      if (api.hasHandleUnder?.(event)) return;
       // Basic vector shapes become editable anchors through the same undoable
       // conversion as the inspector. Target the leaf, not its selected group.
       if (api.convertSelectedToPath(hit.id)) {
