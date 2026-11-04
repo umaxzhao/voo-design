@@ -24,9 +24,14 @@ export function mediaExportFormat(format) {
 
 export function mediaExportFilename(name, format) {
   const { extension } = mediaExportFormat(format);
-  const basename = String(name || "export")
-    .split(/[\\/]/)
-    .pop();
+  const rawName = String(name || "export").trim();
+  // A data URL is not a filename. It used to reach the native save dialog as
+  // a thousands-of-characters title when an image layer had no display name.
+  // Check the prefix before splitting on "/", otherwise the MIME subtype is
+  // mistaken for a path segment.
+  const basename = /^data:/i.test(rawName)
+    ? "export"
+    : rawName.split(/[\\/]/).pop().trim();
   return `${basename.replace(/\.(?:voo|png|jpe?g|webp|svg|fig|psd|pdf|html|glb|pptx)$/i, "")}.${extension}`;
 }
 

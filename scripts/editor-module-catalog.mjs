@@ -44,14 +44,16 @@ export const EDITOR_MODULES = [
       "tests/unit/default-value-matcher.test.js", "src/canvas/editor/document-snapshot-state.js", "tests/unit/document-snapshot-state.test.js",
       "tests/e2e/document-dirty-state-checks.mjs", "src/canvas/editor/external-image-ingestion.js", "tests/unit/external-image-ingestion.test.js",
       "tests/e2e/external-image-history-checks.mjs", "tests/unit/scene-model-lint.test.js", "src/canvas/editor/editor_engine.js",
-      "src/canvas/editor/editor_engine_assembly.js",
+      "src/canvas/editor/editor_engine_assembly.js", "src/canvas/store/project_io.js",
+      "src/canvas/components/editor_import_files.js", "src/canvas/media_export.js", "src/shared/media-export.js",
+      "tests/unit/media_export.test.js",
     ],
     related: [
       "workspace", "layers", "images", "platform", "compositing", "layout",
     ],
     features: [
       "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins",
-      "documents.serialization-purity", "documents.dirty-checkpoints", "documents.external-image-history",
+      "documents.serialization-purity", "documents.dirty-checkpoints", "documents.external-image-history", "documents.export-filename",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow", "nested-project-roundtrip", "pages_dnd",
