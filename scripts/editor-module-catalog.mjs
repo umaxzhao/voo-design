@@ -292,7 +292,7 @@ export const EDITOR_MODULES = [
       "tests/e2e/comment-panel-slot-checks.mjs", "src/canvas/components/editor_comments_layout.css", "tests/unit/comments_panel_slot.test.jsx",
       "src/canvas/components/editor_mobile_navigation.css", "src/canvas/components/comment_view_types.js",
       "src/canvas/components/comment_launcher_host.jsx", "src/canvas/components/editor_comment*", "tests/e2e/number-input-checkpoint-checks.mjs",
-      "src/canvas/components/bounded_number_input.jsx", "src/canvas/components/ui/color_field.jsx", "src/canvas/components/inspector_primitives.jsx",
+      "src/canvas/components/bounded_number_input.jsx", "tests/unit/bounded_number_input_focus.test.jsx", "src/canvas/components/ui/color_field.jsx", "src/canvas/components/inspector_primitives.jsx",
       "src/canvas/components/design_system_cards.jsx", "tests/unit/opacity_icon_blend_bg.test.jsx",
       "src/canvas/components/anchored_global_popover.jsx", "src/canvas/components/global_overlay_portal.jsx",
       "src/canvas/components/deferred_editor_surface.jsx", "src/canvas/components/editor_mobile_control_targets.css",

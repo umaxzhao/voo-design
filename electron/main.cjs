@@ -282,10 +282,10 @@ app.whenReady().then(() => {
   // Fallback: if a Blob-URL download still reaches Chromium's built-in save
   // dialog (e.g. from an older renderer codepath), override the dialog title
   // so it never shows the raw blob:file:/// URL.
-  session.defaultSession.on("will-download", (_event, item) => {
-    item.setSaveDialogOptions({
+  session?.defaultSession?.on?.("will-download", (_event, item) => {
+    item.setSaveDialogOptions?.({
       title: "Export",
-      defaultPath: item.getFilename(),
+      defaultPath: item.getFilename?.(),
     });
   });
 
