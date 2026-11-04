@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.4
+
+- Keep inline layer-rename focus on the field the user clicks next, and make `Ctrl+W` close the active document tab instead of quitting the app.
+- Open PNG/JPG bitmaps as editable image layers from the editor and welcome screen, route File menu Export PNG/SVG/PSD to the existing export dialog, keep base64 data URLs out of save-dialog titles, and remove the full-window export overlay tint.
+- Reserve rotated child bounds during Auto Layout reflow, show Frame-relative X/Y in the inspector, and keep rotated or skewed rectangles as rounded rectangles instead of converting them to vectors.
+
 ## 1.0.0-beta.3
 
 - Embedded panel and web editor framing enhancements, harness mode support, and Linux desktop release verification.
