@@ -261,6 +261,16 @@ export function useEditorCanvasGestures({
         )
       )
         return;
+      // The title is Select/Hand chrome. A drawing tool must never turn its
+      // press into an artboard move: that move lives in the layout store, not
+      // document history, so Undo would skip the Frame the user dragged.
+      const liveTool =
+        enginesRef.current.get(nodeId)?.engine?.getTool?.() ?? tool;
+      if (liveTool === TOOL.HAND) {
+        onTitlePanDown(event);
+        return;
+      }
+      if (liveTool !== TOOL.SELECT) return;
       const layout = layoutById.get(nodeId);
       if (!layout) return;
       event.preventDefault();
@@ -280,7 +290,7 @@ export function useEditorCanvasGestures({
         moved: false,
       };
     },
-    [layoutById, onTitlePanDown, spaceRef],
+    [enginesRef, layoutById, onTitlePanDown, spaceRef, tool],
   );
 
   const onTitlePointerMove = useCallback(
@@ -367,8 +377,10 @@ export function useEditorCanvasGestures({
         )
       )
         return;
-      if (tool !== TOOL.SELECT) return;
       const targetEngine = enginesRef.current.get(nodeId)?.engine;
+      // Read the live engine tool, not only the render-time prop: a page
+      // focused by this same press may still show Select until React commits.
+      if ((targetEngine?.getTool?.() ?? tool) !== TOOL.SELECT) return;
       if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY)) return;
       const board = event.currentTarget;
       onTitlePointerDown(nodeId, event);
