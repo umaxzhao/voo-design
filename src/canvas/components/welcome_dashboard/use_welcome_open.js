@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
 import { openVooProject } from "../../store/open-project.js";
+import { isBitmapSourceName } from "../../store/pick-project-source.js";
+import { openBitmapAsProject } from "./open_bitmap.js";
 import { openRecentItem, OPEN_FAILED_KEY } from "./open_recent.js";
 
 /** Handlers that open an existing project: file picker, recent item, or dropped file. */
 export function useWelcomeOpen({ setWelcomeOpen, setIsDragOver }) {
   // { key, reason } of the last failed open from Recents, or null.
   const [openNotice, setOpenNotice] = useState(null);
+
+  const openBitmap = (source) => openBitmapAsProject({
+    store: useDesignStore.getState(),
+    bytes: source.bytes,
+    name: source.name,
+    setWelcomeOpen,
+  });
 
   const handleOpenLocal = async (source = null) => {
     // Existing button callbacks pass a click event; only file-like inputs are sources.
@@ -17,6 +26,7 @@ export function useWelcomeOpen({ setWelcomeOpen, setIsDragOver }) {
       const res = await openVooProject({
         store: useDesignStore.getState(),
         fileOrPath,
+        onImageSource: openBitmap,
       });
       if (res?.success) {
         setWelcomeOpen(false);
@@ -41,19 +51,21 @@ export function useWelcomeOpen({ setWelcomeOpen, setIsDragOver }) {
     }
   };
 
-  // Drag & drop .voo project file onto dashboard
+  // Drag & drop a project or bitmap onto the dashboard.
   const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
     const files = Array.from(e.dataTransfer.files || []);
-    const vooFile = files.find((f) =>
+    const sourceFile = files.find((f) =>
+      isBitmapSourceName(f.name) ||
       /\.(voo|zip|json|psd|fig|pen|svg)$/i.test(f.name ?? ""),
     );
-    if (vooFile) {
+    if (sourceFile) {
       const res = await openVooProject({
         store: useDesignStore.getState(),
-        fileOrPath: vooFile,
+        fileOrPath: sourceFile,
+        onImageSource: openBitmap,
       });
       if (res?.success) {
         setWelcomeOpen(false);

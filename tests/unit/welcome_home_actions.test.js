@@ -46,7 +46,7 @@ describe("welcome home actions", () => {
     expect(source).toContain("onClick={openWelcomeBrowser}");
     expect(source).toContain("await handleAttachmentsSelected(files)");
     expect(source).not.toContain("recreateWelcomeScreenshot");
-    expect(source).toContain('accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"');
+    expect(source).toContain('accept=".voo,.zip,.psd,.fig,.pen,.svg,.png,.jpg,.jpeg,.webp,.gif,.bmp,.avif,.ico,application/json"');
   });
   it("validates the provider, creates the design, then hands one generation intent to the panel", () => {
     const source = readWelcomeDashboard();

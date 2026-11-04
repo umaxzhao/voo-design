@@ -16,6 +16,7 @@ export const EDITOR_MODULES = [
       "tests/unit/community_templates_and_new_project.test.jsx", "tests/unit/welcome_prompt_composer.test.jsx",
       "tests/unit/welcome_prompt_types.test.jsx", "tests/e2e/qa_flows.e2e.mjs",
       "tests/unit/open-project.test.js", "src/canvas/store/pick-project-source.js", "src/canvas/store/open-project.js",
+      "src/canvas/components/welcome_dashboard/open_bitmap.js", "tests/unit/open_bitmap_project.test.js",
     ],
     related: [
       "documents", "inspector", "platform",
