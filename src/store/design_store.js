@@ -74,6 +74,7 @@ export const useDesignStore = create((set, get) => {
     const id = `document-${++documentCounter}`;
     set(state => ({ activeDocumentId: id, openDocuments: [...state.openDocuments, { id }],
       edges: [], images: {}, figSource: null, canvasBackgroundColor: WORKSPACE_BACKGROUND,
+      pendingEditorCameraRestore: false,
       streamingPreview: null, streamingPreviewNodeId: null, undoStack: [], redoStack: [] }));
   },
   switchDocument: (id) => {
@@ -82,6 +83,10 @@ export const useDesignStore = create((set, get) => {
     get().suspendDocument();
     const doc = get().openDocuments.find(doc => doc.id === id);
     set({ ...Object.fromEntries(DOCUMENT_FIELDS.map(key => [key, doc[key]])), activeDocumentId: id, welcomeOpen: false,
+      // The camera below belongs to the tab being opened. The canvas must
+      // apply it instead of running its first-open "fit all" pass, which used
+      // to overwrite every restored pan/zoom on the next tab switch.
+      pendingEditorCameraRestore: true,
       streamingPreview: null, streamingPreviewNodeId: null });
   },
   closeDocument: (id, confirmClose = () => true) => {
@@ -108,6 +113,7 @@ export const useDesignStore = create((set, get) => {
         filePath: null,
         fileHandle: null,
         isDirty: false,
+        pendingEditorCameraRestore: false,
         undoStack: [],
         redoStack: [],
       });
@@ -129,6 +135,10 @@ export const useDesignStore = create((set, get) => {
   undoStack: [],
   redoStack: [],
   editorCamera: { panX: 0, panY: 0, zoom: 1 },
+  // Set by a tab switch after the destination camera has been restored. The
+  // canvas consumes it before its first-open fit pass; never part of a tab
+  // snapshot.
+  pendingEditorCameraRestore: false,
   editorArtboardLayouts: {
     [DEFAULT_PAGE_ID]: { x: 0, y: 0, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
   },

@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef } from "react";
 import { hexToHsv, hsvToHex } from "./color_math.js";
-import { parseGradient, formatGradient, normalizeGradientAngle, MESH_GRADIENT_PRESETS } from "./gradient_fill.js";
+import { parseGradient, formatGradient, normalizeGradientAngle, DEFAULT_GRADIENT_GEOMETRY, MESH_GRADIENT_PRESETS } from "./gradient_fill.js";
 import { fillTypeOf, formatTextureFill } from "./texture-fill.js";
 const HEX = /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i;
 const pointStops = points => points.map((point, index) => ({
@@ -8,6 +8,24 @@ const pointStops = points => points.map((point, index) => ({
   opacity: point.opacity ?? 100,
   position: index * 100 / Math.max(1, points.length - 1)
 }));
+
+/**
+ * Writes a preset colour into exactly one gradient stop.
+ *
+ * The stop is addressed by the same clamped index the picker highlights, so a
+ * stale index can never leave the click without an effect (or mutate a stop
+ * other than the one the user sees selected). The HEX string is stored as-is:
+ * preset colours must not be routed through a rounded HSV round trip.
+ */
+export function applyGradientStopColor(stops, activeIndex, color) {
+  if (!Array.isArray(stops) || stops.length === 0 || typeof color !== "string") return stops;
+  const index = Math.max(0, Math.min(stops.length - 1, Math.trunc(Number(activeIndex)) || 0));
+  return stops.map((stop, at) => at === index ? {
+    ...stop,
+    color
+  } : stop);
+}
+
 function gradientState(color) {
   const parsed = fillTypeOf(color) === "gradient" ? parseGradient(color) : null;
   return {
@@ -16,7 +34,7 @@ function gradientState(color) {
     geometry: parsed?.type === "mesh" ? {
       points: parsed.points,
       blur: parsed.blur
-    } : parsed?.geometry ?? {},
+    } : { ...DEFAULT_GRADIENT_GEOMETRY, ...(parsed?.geometry ?? {}) },
     stops: parsed?.type === "mesh" ? pointStops(parsed.points) : parsed?.stops ?? [{
       color: HEX.test(color) ? color.slice(0, 7) : "#D9D9D9",
       opacity: 100,
@@ -73,8 +91,11 @@ export function useFillPicker({
     fill: imageUrl,
     imageScaleMode
   } : null));
-  const currentSolidHex = primaryType === "gradient" ? gradientStops[activeStopIndex]?.color ?? "#FFFFFF" : HEX.test(color) ? color.slice(0, 7) : drafts.current.solid;
-  const currentSolidOpacity = gradientStops[activeStopIndex]?.opacity ?? 100;
+  // A paint edited outside the picker can replace the stop list. Clamp the
+  // highlighted stop to that list so the next preset lands where it is shown.
+  const activeStop = Math.max(0, Math.min(gradientStops.length - 1, activeStopIndex));
+  const currentSolidHex = primaryType === "gradient" ? gradientStops[activeStop]?.color ?? "#FFFFFF" : HEX.test(color) ? color.slice(0, 7) : drafts.current.solid;
+  const currentSolidOpacity = gradientStops[activeStop]?.opacity ?? 100;
   useEffect(() => {
     dispatch({
       hsv: hexToHsv(currentSolidHex)
@@ -130,16 +151,23 @@ export function useFillPicker({
     if (primaryType === "solid") {
       drafts.current.solid = hex;
       emit(hex);
-    } else if (primaryType === "gradient") applyStops(gradientStops.map((stop, index) => index === activeStopIndex ? {
-      ...stop,
-      color: hex
-    } : stop));
+    } else if (primaryType === "gradient") {
+      dispatch({
+        activeStopIndex: activeStop
+      });
+      applyStops(applyGradientStopColor(gradientStops, activeStop, hex));
+    }
   };
   const handleApplyOpacity = opacity => {
-    if (primaryType !== "gradient") onOpacityChange?.(opacity);else applyStops(gradientStops.map((stop, index) => index === activeStopIndex ? {
-      ...stop,
-      opacity
-    } : stop));
+    if (primaryType !== "gradient") onOpacityChange?.(opacity);else {
+      dispatch({
+        activeStopIndex: activeStop
+      });
+      applyStops(gradientStops.map((stop, index) => index === activeStop ? {
+        ...stop,
+        opacity
+      } : stop));
+    }
   };
   const handleSelectPrimaryType = nextType => {
     if (nextType === primaryType) return;
@@ -233,9 +261,9 @@ export function useFillPicker({
     setGradientStops: gradientStops => dispatch({
       gradientStops
     }),
-    activeStopIndex,
-    setActiveStopIndex: activeStopIndex => dispatch({
-      activeStopIndex
+    activeStopIndex: activeStop,
+    setActiveStopIndex: index => dispatch({
+      activeStopIndex: Math.max(0, Math.min(gradientStops.length - 1, Math.trunc(Number(index)) || 0))
     }),
     angle,
     geometry,

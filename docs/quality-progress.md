@@ -17,6 +17,15 @@
   - 全量单测：5203 passed / 4 skipped / 5 failed，5 项失败均为 `adversarial_isolation_electron_safety.test.js` 依赖本机未构建 `dist/`，与本次改动无关；新增/相关单测通过。
 - **环境限制**：共享 worktree 的 `.git/worktrees/b` 在当前沙箱只读，无法向中央 worktree 元数据写入；本轮在 workspace 内建立自包含 git 目录完成本地提交（原 `.git` 保存为 `.git.central-worktree`），分支与历史仍是 `fix/beta3-b`。未 push、未部署。
 
+## beta.3 Linux 冒烟修复（fix/beta3-e）：2026-11-04
+
+- **范围与基线**：`b56a4e7a`，分支 `fix/beta3-e`；只处理问题清单第 11、12、15 项，其他并行问题未触碰。按用户要求仅本地提交，未 push、未部署、未合并。
+- **第 11 项 渐变预设偏红**：`ef1f35b1`。根因是 `hexToHsv` 把 H/S/V 四舍五入成整数，预设色在后续 HSV→HEX 转换时漂移（`#EF4444`→`#F04343`、`#10B981`→`#11BA82`）；同时色相 360° 会落入红色分支，渐变几何为空时还会写出 `NaN%`。现保留精确 HSV、归一化整圈色相、把预设 HEX 直接写入被夹紧的活动色标，并为所有几何字段提供有限默认值。18 个色板预设的精确色值、径向/角度/线性渐变 format/parse 回归在 `tests/unit/color_presets_gradient.test.js`。
+- **第 12 项 切标签视口不恢复**：`0c15cfd1`。`switchDocument` 已把该标签相机写入 store，但画布首次就绪的 `fitAll` 立即覆盖它。新增 `pendingEditorCameraRestore` 标记，由 `cameraFitDecision` 在 fit 前消费；新文档会清除标记。`tests/unit/document_tab_camera_restore.test.js` 覆盖 store 相机独立、标记消费与新文档不泄漏。真实 Electron 复测：A 视口 `translate3d(332px, -125.167px, 0)`、B 视口 `(332px, 624.833px, 0)`，两次切换均逐像素恢复。
+- **第 15 项 引导弹窗重复弹出**：`ed92b66f`。`shouldShowFirstRun` 原先无条件返回 true，Skip 写入的 `voo.firstRun.status=dismissed` 从未被读取。现完成/跳过后不再显示，保留 `?firstRun=1` 强制打开与自动化静默。`tests/unit/first_run_onboarding.test.jsx` 覆盖完成、跳过、强行打开和 webdriver 旁路。真实 Electron 复测：Skip 后状态为 `dismissed`，reload 后引导弹窗数量为 0。
+- **执行证据**：`node_modules/.bin/vitest run --config <临时配置>` 全量 625 个文件通过、3 个跳过；5,216 用例通过、4 个跳过（0 失败）。`node scripts/check-design.mjs` 1,480 文件通过。`editor-checks --check` 12 模块/115 能力注册有效；`editor-checks --changed --json` 为 `unmapped: []`、`fullReleaseRequired: false`。全量测试首次在缺少 `dist/` 与坏 `GIT_CONFIG_KEY_0` 环境变量下各有环境性失败，补齐构建并用干净 git 环境重跑后通过，未跳过断言。
+- **保留项**：未在真实 Linux 打包 AppImage 中复跑整轮浏览器套件；第 11 项的真实 UI 验证覆盖了 18 个预设色与渐变 stop 的精确 HEX，未做显示器级色彩管理/宽色域比对。未 push、未部署。
+
 ## 全平台 beta.3 发布推进：2026-11-04（尚未发布）
 
 - 用户已明确授权全平台 Release 与公开发布。当前候选为 `9bbe659627e1718d17e1b04e713747e329651e11`；[发布 CI](https://github.com/umaxzhao/voo-design/actions/runs/41836962034) 的完整门禁仍在运行，不能据四平台打包成功直接宣布发布通过。
