@@ -1,8 +1,10 @@
 import fs from "node:fs";
-import { describe, expect, it } from "vitest";
+import { createRequire } from "node:module";
+import { describe, expect, it, vi } from "vitest";
 import { exportFormatForMenuAction } from "../../src/shared/editor_menu_actions.js";
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
+const buildMenu = createRequire(import.meta.url)("../../electron/native-menu.cjs");
 
 describe("native File > Export menu actions", () => {
   it("maps each menu entry to the existing export dialog format", () => {
@@ -11,6 +13,22 @@ describe("native File > Export menu actions", () => {
     expect(exportFormatForMenuAction("export:psd")).toBe("psd");
     expect(exportFormatForMenuAction("file:save")).toBeNull();
     expect(exportFormatForMenuAction("export:unknown")).toBeNull();
+  });
+
+  it("keeps the native File > Export entries on the mapped actions", () => {
+    const dispatchMenuAction = vi.fn();
+    let template;
+    buildMenu({
+      app: { name: "VOO Design", getLocale: () => "en" },
+      platform: "linux",
+      dispatchMenuAction,
+      Menu: { buildFromTemplate: (value) => { template = value; return value; }, setApplicationMenu() {} },
+    });
+    const file = template.find((item) => item.label === "File").submenu;
+    const exports = file.filter((item) => item.label?.startsWith("Export"));
+    expect(exports.map((item) => item.label)).toEqual(["Export PNG...", "Export SVG...", "Export PSD..."]);
+    for (const item of exports) item.click();
+    expect(dispatchMenuAction.mock.calls).toEqual([["export:png"], ["export:svg"], ["export:psd"]]);
   });
 
   it("routes the action into the editor export event instead of the empty default branch", () => {
