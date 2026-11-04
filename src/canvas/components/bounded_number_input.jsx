@@ -151,6 +151,8 @@ export default function BoundedNumberInput({
           const previousDraft = String(previousValue);
           draftRef.current = previousDraft;
           setDraft(previousDraft);
+          if (inputRef.current) inputRef.current.value = previousDraft;
+          event.currentTarget.value = previousDraft;
           emitValue(previousValue);
           transactionRef.current.cancel(NUMBER_INPUT_GESTURE_KEY);
           event.currentTarget.blur();
