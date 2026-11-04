@@ -48,7 +48,12 @@ export default function EditorLayerName({
     /> : <button
       type="button"
       onClick={event => pickRow(object, index, event)}
-      onDoubleClick={() => {
+      onDoubleClick={(event) => {
+        // Prevent the double-click from producing a text selection on the
+        // button label and from bubbling up to list-level handlers that
+        // could steal focus before the rename input mounts.
+        event.preventDefault();
+        event.stopPropagation();
         if (object.kind === "canvasInstance") {
           onOpenCanvasInstance?.(object.sourceCanvasId);
           return;
