@@ -316,7 +316,7 @@ export const EDITOR_MODULES = [
       "src/shared/i18n/extended-zh.js", "src/canvas/icons.jsx",
       "src/canvas/components/editor_pen_subbar.jsx", "src/canvas/components/editor_properties/stroke_style_icons.jsx",
       "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",
-      "src/index.css", "src/theme-light.css", "src/canvas/components/ui/*", "design/*", "eslint-rules/design-system.cjs", "scripts/check-design.mjs", "tests/unit/borderless-ui-policy.test.js", "tests/e2e/ui-border-scanner.mjs",
+      "src/index.css", "src/theme-light.css", "src/canvas/components/ui/*", "design/*", "eslint-rules/design-system.cjs", "scripts/check-design.mjs",
     ],
     related: [
       "selection", "layers", "text", "images", "layout",
@@ -325,12 +325,12 @@ export const EDITOR_MODULES = [
       "inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill",
       "inspector.impeccable-polish", "inspector.context-submenus", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive",
       "inspector.locale-lifecycle", "inspector.mobile-targets", "inspector.comments-panel-slot", "inspector.global-overlay-stacking",
-      "inspector.design-issue-review", "inspector.export-dialog-overlay", "inspector.borderless-chrome",
+      "inspector.design-issue-review", "inspector.export-dialog-overlay",
     ],
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "settings-i18n", "locale-lifecycle",
       "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu", "impeccable-polish", "mobile-control-targets", "command_palette",
-      "design_tokens", "borderless-ui",
+      "design_tokens",
     ],
     remaining: [
       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",
