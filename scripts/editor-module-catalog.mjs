@@ -346,6 +346,7 @@ export const EDITOR_MODULES = [
       "native_studio/INTERACTION_PARITY.md", "src/shared/embed_mode.js", "tests/unit/embed_mode.test.js",
       "tests/unit/voo_editor_panel.test.js", "tests/unit/voo_bridge_lite.test.js", "tests/unit/portable-agent-plugin.test.js",
       "tests/unit/dsh_connector_plugin.test.js", "scripts/smoke-packaged.mjs", ".gitignore", "package.json",
+      "src/shared/editor_menu_actions.js", "tests/unit/editor_menu_actions.test.js",
     ],
     related: [
       "workspace", "documents", "inspector", "images", "text",
@@ -358,6 +359,7 @@ export const EDITOR_MODULES = [
       "platform.native-responsive-toolbar", "platform.native-workspace-watch", "platform.native-titlebar", "platform.native-chrome",
       "platform.native-paints", "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering",
       "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor", "platform.agent-section",
+      "platform.native-export-menu",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions",

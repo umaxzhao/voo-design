@@ -67,6 +67,7 @@ export function useEditorApply({
   setSavedNotice,
   setExitPrompt,
   setExportOpen,
+  setExportFormat,
   setHistoryOpen,
   resolveCanvas,
   onExportWarnings,
@@ -395,7 +396,11 @@ export function useEditorApply({
     const onTriggerOpen = (e) => void openVooDocument(e?.detail?.file);
     const onTriggerNew = () => newVooDocument();
     const onTriggerHistory = () => setHistoryOpen((open) => !open);
-    const onTriggerExport = () => setExportOpen(true);
+    const onTriggerExport = (event) => {
+      const format = event?.detail?.format;
+      if (typeof format === "string" && format) setExportFormat?.(format);
+      setExportOpen(true);
+    };
     const onTriggerSnapshot = () => {
       void exportSnapshotPackage({
         store: useDesignStore.getState(),
@@ -452,6 +457,7 @@ export function useEditorApply({
     openVooDocument,
     newVooDocument,
     setExportOpen,
+    setExportFormat,
     setHistoryOpen,
     dirtyIds,
     autosave,

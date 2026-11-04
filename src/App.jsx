@@ -19,6 +19,7 @@ import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
 } from "../electron/voo_format.js";
+import { exportFormatForMenuAction } from "./shared/editor_menu_actions.js";
 
 const isEmbed = isEmbedPage();
 // The harness panel keeps the product chrome (title bar + mint frame) and only
@@ -128,8 +129,17 @@ export default function App() {
           case "view:actualSize":
             window.__vooEditor?.getViewport?.()?.zoomToHundred?.();
             break;
-          default:
+          default: {
+            // File > Export PNG/SVG/PSD opens the same export dialog as the
+            // title-bar action, preselecting the requested format.
+            const format = exportFormatForMenuAction(action);
+            if (format) {
+              window.dispatchEvent(
+                new CustomEvent("voo:editor-export", { detail: { format } }),
+              );
+            }
             break;
+          }
         }
       });
     }

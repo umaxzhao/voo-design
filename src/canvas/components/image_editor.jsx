@@ -873,6 +873,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       setSavedNotice,
       setExitPrompt,
       setExportOpen,
+      setExportFormat,
       setHistoryOpen: switchHistory,
       resolveCanvas,
       onExportWarnings: (warnings) => setExportNotice(warnings || true),
