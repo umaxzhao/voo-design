@@ -18,12 +18,12 @@ const constrainedDoc = () => ({
 });
 
 describe("constraint resize effects through document resize operations", () => {
-  it.fails("pins a right/bottom child when the exact-size engine operation grows the page", () => {
+  it("pins a right/bottom child when the exact-size engine operation grows the page", () => {
     const next = setDocumentSize(constrainedDoc(), 300, 150);
     expect(next.nodes[0]).toMatchObject({ x: 240, y: 110, width: 40, height: 30 });
   });
 
-  it.fails("pins a right/bottom child when the canvas edge drag grows the page", () => {
+  it("pins a right/bottom child when the canvas edge drag grows the page", () => {
     const next = resizeDocumentEdges(constrainedDoc(), { right: true, bottom: true }, 100, 50);
     expect(next.nodes[0]).toMatchObject({ x: 240, y: 110, width: 40, height: 30 });
   });

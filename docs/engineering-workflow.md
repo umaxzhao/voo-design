@@ -25,19 +25,18 @@ The release verifier imports this catalog; do not create another suite list.
 | `inspector` | Fields, menus, toolbar, responsive UI and i18n | Commit/cancel, selection changes, focus and async locale |
 | `platform` | Agent, runtime, loading, native integration and collaboration | Auth, process ownership, reconnect and unmount |
 
-The current inventory contains 93 capability groups, not a census of every
+The current inventory contains 115 capability groups, not a census of every
 button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.
 
-The existing core release contains 104 browser suites. Another 8 standalone
-suites are explicitly listed in `ADDITIONAL_BROWSER_CHECKS`: 5 need fixture,
-assertion and service-requirement review; `canvas_fps`, `image-electron` and
-`image-network` run separately for hardware, native-host and network/model
-acceptance. They appear as **not-run** in a core release report. They are not
-counted as passing, removed or claimed obsolete. A new top-level `.e2e.mjs`
-file without release registration or an explicit standalone classification
-fails `check:modules`, preventing silently orphaned tests.
+The current core release registers 114 browser suites. Nine standalone checks
+are explicitly classified in `ADDITIONAL_BROWSER_CHECKS`: three external CLI
+integrations, one local fixture, two native-host checks, hardware FPS, network
+image/model acceptance, and one unreviewed screenshot audit. They appear as
+**not-run** until separately executed. Registration is not execution. A new
+top-level `.e2e.mjs` file without core registration or explicit standalone
+classification fails `check:modules`, preventing silently orphaned tests.
 
 ## Practical commands
 

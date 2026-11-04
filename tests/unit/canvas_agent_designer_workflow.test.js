@@ -23,6 +23,11 @@ const CORE_TOOL_NAMES = [
   "new_document",
   "resize_document",
   "capture_canvas",
+  "create_comment",
+  "delete_comment",
+  "list_comments",
+  "reply_comment",
+  "resolve_comment",
 ];
 
 /** Prompt words that are protocol/status vocabulary rather than tool names. */

@@ -43,6 +43,10 @@ try {
   const page = await browser.newPage({ viewport: { width: 380, height: 800 } });
   const errors = [];
   page.on("pageerror", (error) => errors.push(String(error)));
+  await page.addInitScript(() => localStorage.setItem("voo_design_agent_sessions_v1", JSON.stringify([{
+    id: "integration-history", title: "Original title", createdAt: 1, updatedAt: 1,
+    messages: [], history: [],
+  }])));
   await page.goto(`${server.resolvedUrls.local[0]}__agent-suggestions`);
   const suggestions = page.getByTestId("agent-selection-suggestions");
   const input = page.locator("form.agent-composer textarea");
@@ -110,6 +114,34 @@ try {
   await page.getByTestId("agent-context-detach").click();
   await suggestions.waitFor({ state: "detached" });
   assert.equal(await input.inputValue(), draft);
+  // Picker and paste share the existing attachment state; neither sends a turn.
+  const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jJ1EAAAAASUVORK5CYII=", "base64");
+  const picker = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "添加参考图或工程文件", exact: true }).click();
+  await (await picker).setFiles({ name: "reference.png", mimeType: "image/png", buffer: image });
+  const attachments = page.getByRole("list", { name: "参考图与附件" });
+  await attachments.getByText("reference.png").waitFor();
+  assert.equal(await attachments.getByRole("listitem").count(), 1);
+  await input.evaluate((element, bytes) => {
+    const data = new DataTransfer();
+    data.items.add(new File([new Uint8Array(bytes)], "pasted.png", { type: "image/png" }));
+    element.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: data }));
+  }, [...image]);
+  await attachments.getByText("pasted.png").waitFor();
+  assert.equal(await attachments.getByRole("listitem").count(), 2);
+  await attachments.getByRole("button", { name: "移除附件" }).first().click();
+  assert.equal(await attachments.getByRole("listitem").count(), 1);
+  assert.equal(await input.inputValue(), draft);
+  assert.equal(await page.getByTestId("agent-cancel").count(), 0);
+
+  // Renaming remains reachable after the history component extraction.
+  await page.getByRole("button", { name: "对话记录", exact: true }).click();
+  await page.getByRole("button", { name: "重命名对话", exact: true }).click();
+  await page.getByRole("textbox", { name: "重命名对话", exact: true }).fill("Reviewed session");
+  await page.getByRole("button", { name: "保存名称", exact: true }).click();
+  await page.getByRole("button", { name: "Reviewed session", exact: true }).waitFor();
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("voo_design_agent_sessions_v1")));
+  assert.equal(stored[0].title, "Reviewed session");
   assert.deepEqual(errors, []);
   console.log(
     "Verified type-aware prompts, draft preservation, focus, narrow layout, and no automatic send",

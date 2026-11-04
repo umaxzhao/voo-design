@@ -3895,7 +3895,9 @@ public class MainContentView: NSView {
 
         let preferredRailWidth = toolRail.widthAnchor.constraint(
             equalToConstant: ToolRailView.preferredWidth)
-        preferredRailWidth.priority = .defaultHigh
+        // The viewport may compress; its 44pt tools scroll instead of widening the window.
+        toolRail.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        preferredRailWidth.priority = .defaultLow
         preferredRailWidth.isActive = true
         toolRailPlacement = NativeToolRailPlacement(rail: toolRail, shell: editorShell)
         updatePresentation()

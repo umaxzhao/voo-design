@@ -126,13 +126,11 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.equal(await page.locator('[data-testid="editor-canvas-frame-label"]').count(), 1);
   assert.equal(await page.locator('[data-testid="editor-canvas-frame-icon"]').count(), 1);
   checks.push("only the outermost root frame shows a name label and frame icon");
-  // Direct dragging carries an explicitly selected Frame, so the independent
-  // child flow enters the child with a plain click first. That click must not
-  // add a history entry of its own.
+  // Direct dragging now carries an explicitly selected Frame. A plain click
+  // enters its child first, preserving the existing independent-child flow.
   const childPoint = await docPoint({ x: 140, y: 120 });
   const beforeChildClickHistory = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
-  await page.mouse.click(childPoint.x, childPoint.y);
-  await settled();
+  await page.mouse.click(childPoint.x, childPoint.y); await settled();
   assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["frame-child"]);
   assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), beforeChildClickHistory);
   await drag(childPoint, { x: 30, y: 20 });
@@ -198,14 +196,10 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await camera(), beforeEdit);
   const stateBeforeWelcome = await page.evaluate(() => ({ nodes: window.__vooEditor.getDocument().nodes, selection: window.__vooEditor.getSelectedIds() }));
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
-  const typeGroup = page.getByRole("radiogroup");
-  await typeGroup.waitFor();
-  const radios = typeGroup.getByRole("radio");
-  assert.equal(await radios.count(), 8, "Welcome home must have 8 generation type radio options");
-  const mobileRadio = radios.nth(1);
-  await mobileRadio.focus();
-  await page.keyboard.press("Space");
-  assert.equal(await mobileRadio.getAttribute("aria-checked"), "true", "Selected radio option must become checked");
+  const settings = page.getByRole("button", { name: "Generation settings", exact: true });
+  await settings.focus(); await page.keyboard.press("Space");
+  await page.getByRole("dialog", { name: "Generation settings", exact: true }).waitFor();
+  await page.keyboard.press("Escape");
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(false));
   await page.getByTestId("editor-toolbar").waitFor(); await settled();
   assert.deepEqual(await camera(), beforeEdit);

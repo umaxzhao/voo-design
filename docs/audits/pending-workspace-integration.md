@@ -1,4 +1,33 @@
-# Pending workspace integration — 2026-10-28
+# Workspace integration
+
+## Branch and worktree consolidation — 2026-11-02
+
+All 18 originally divergent branch heads, 21 inventoried worktree heads and four
+preserved draft snapshots are ancestors of the accepted candidate. The original
+`efb387da` worktree patch had already been cherry-picked as `44dd5c7b`; both
+stable patch IDs match. An ancestry-only merge records that fact without
+reverting newer code. Later concurrent drafts and existing stashes remain intact.
+
+Reviewed conflict repairs retain the single advanced welcome entry, keyboard
+navigation with new icons, shared Agent attachment/session contracts, canonical
+share links, current-editor ownership, responsive Browser split and native
+continuation. The obsolete welcome-dialog module was unused and removed. Legacy
+2026-10-26 expected-failure audits now run as ordinary unit regressions.
+
+Clean source `012d6887a1d2a322ad24342dd0af312ee9e2aa71` passed the complete
+118-step command: 114 browser suites, 4,902 units passed/4 skipped, design and
+build. Local native production-source integrated tests passed 485/485 with
+`-Onone`; the native tree exactly matches `90577a75`. This is not an installer,
+physical-input, live-service or exhaustive native-parity acceptance.
+
+[Receipt](worktree-integration.json), [maintained progress](../quality-progress.md),
+[PR #88](https://github.com/umaxzhao/voo-design/pull/88). The receipt retains earlier
+failures and hashes of the complete local logs. No tag or Release is created;
+Beta2 remains unchanged. The Web preview is deployed through ssh la2; canonical
+HTML and every loaded JS/CSS asset match the verified build. Four production
+interaction groups pass with zero page errors. Main delivery uses ordinary PR #88.
+
+## Earlier integration record — 2026-10-28
 
 > Historical snapshot for source `59fc020`. The publication failure recorded below was resolved by [541a170](https://github.com/umaxzhao/voo-design/commit/541a170e1ec4d197ac46f4cf1bc786ab7ba9e2a7), which was pushed and deployed with a clean release verification. This snapshot and its JSON evidence describe their recorded revision, not the current Git/production state.
 

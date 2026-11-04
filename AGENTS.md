@@ -27,6 +27,14 @@ deployment fails, report the failure and its cause instead of claiming success.
 Other project conventions and verification commands are in `README.md` and
 `docs/agents.md`.
 
+## Desktop publication policy
+
+Do not create a version tag, draft Release or public GitHub Release without a
+new explicit user request to publish. Ordinary commits, PR merges and automatic
+Web preview deployment do not authorize desktop publication. Future user-facing
+download lists should contain installers only; retain required updater metadata,
+and keep CI/signing receipts in Actions evidence. Do not rewrite existing Beta2.
+
 ## Module ownership and acceptance
 
 Follow `docs/engineering-workflow.md`. Before changing a behavior, identify its

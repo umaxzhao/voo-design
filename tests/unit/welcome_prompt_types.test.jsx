@@ -14,6 +14,8 @@ describe("welcome prompt design types", () => {
     );
 
     expect(html.match(/role="radio"/g)).toHaveLength(8);
+    expect(html.match(/tabindex="0"/g)).toHaveLength(1);
+    expect(html.match(/tabindex="-1"/g)).toHaveLength(7);
     expect(html).toContain("welcome.pills.poster");
     expect(html).toContain("welcome.pills.storyboard");
 

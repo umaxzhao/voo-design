@@ -37,7 +37,7 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 | [audits/nested-objects-audit.md](audits/nested-objects-audit.md) | Nested Frame placement, masks, hit testing, deletion, clipboard and cold project reopening | Real-pointer, pixel and hierarchy coverage; use the exact release report for results |
 | [audits/image-editor-complete-audit.md](audits/image-editor-complete-audit.md) | Image tool, pixel, inspector, MCP, native storage and real-model acceptance matrix | Maintained coverage and explicit external/platform requirements; execution results belong to the exact revision report |
 | [audits/editor-closeout.md](audits/editor-closeout.md) | Mesh rendering, image consent, touch pages, stretch layout, local CLI discovery and source-bound live previews | Coverage contracts and remaining limits; use the exact release report for execution results |
-| [audits/pending-workspace-integration.md](audits/pending-workspace-integration.md) | Preserved pending drafts, signature systems, nested constraints and bucket/variable regressions | Workspace integration; [verified release evidence](audits/pending-integration-release.json) |
+| [audits/pending-workspace-integration.md](audits/pending-workspace-integration.md) | Preserved pending drafts, signature systems, nested constraints and bucket/variable regressions | Current [branch consolidation receipt](audits/worktree-integration.json); older [integration evidence](audits/pending-integration-release.json) remains historical |
 | [audits/remote-main-verification-2026-10-28.md](audits/remote-main-verification-2026-10-28.md) | Clean remote reproduction, custom-menu regressions, dedicated inspector/drawing/retouch evidence | Verification at the recorded revision |
 | [audits/layout-mask-verification.md](audits/layout-mask-verification.md) | Group/rotated alignment, Auto Layout, clipping and Boolean pixel/history checks | Snapshot (2026-10-27) |
 | [audits/agent-mutation-verification.md](audits/agent-mutation-verification.md) | Agent paint/text parity, UI tests, real MCP/pixel evidence and remaining limits | Snapshot (2026-10-27) |
@@ -50,4 +50,8 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 | [audits/benchmark-parity-audit.md](audits/benchmark-parity-audit.md), [audits/benchmark-parity-matrix.md](audits/benchmark-parity-matrix.md) | Benchmark parity | Historical |
 | [audits/qa3-round3.md](audits/qa3-round3.md) | QA round 3 | Historical |
 
+Historical 2026-10-26 effect reports imported from the retained audit branches: [constraints](audits/historical-effects-constraints.md), [panel](audits/historical-effects-panel.md), [tools](audits/historical-effects-tools.md). Their old defect labels are historical; converted regressions belong to the normal unit gate.
+
 Known bug write-ups: [bugs/](bugs/).
+
+Archived progress: [UI and audit history](quality-history-ui.md), [interaction and native history](quality-history-native.md). Current status remains [quality-progress.md](quality-progress.md).

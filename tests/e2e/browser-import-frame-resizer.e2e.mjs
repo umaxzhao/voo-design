@@ -58,9 +58,8 @@ await withEditorBrowser(async ({ page, errors }) => {
   const iframeBox = await iframe.boundingBox();
   assert.ok(iframeBox.width > 0, "iframe is loaded and has positive width");
 
-  // Open tools and trigger Full Page Import
-  await page.getByRole("button", { name: /Browser tools|浏览器工具/i }).click();
-  const importFullBtn = page.getByRole("menuitem", { name: /Import Page|导入整页/i });
+  // Full-page import has one home in the browser's top bar.
+  const importFullBtn = drawer.getByRole("button", { name: /Import Page|导入整页/i });
   await importFullBtn.waitFor();
   await importFullBtn.click();
 

@@ -108,18 +108,8 @@ await withEditorBrowser(async ({ page, origin }) => {
   await actions("AuditHome.voo");
   await page.getByRole("menuitem", { name: "Duplicate", exact: true }).click();
   await home.getByRole("button", { name: "AuditHomeCopy.voo", exact: true }).waitFor();
-  // Ensure sidebar is visible before clicking sidebar navigation items
-  const ensureSidebar = async () => {
-    const sidebar = page.getByTestId("welcome-sidebar");
-    if (!await sidebar.isVisible()) {
-      await page.getByTestId("welcome-sidebar-toggle").click();
-      await sidebar.waitFor({ state: "visible" });
-    }
-  };
-
   await actions("AuditHomeCopy.voo");
   await page.getByRole("menuitem", { name: "Move to Trash", exact: true }).click();
-  await ensureSidebar();
   await home.getByRole("button", { name: "Trash", exact: true }).click();
   await home.getByRole("button", { name: "AuditHomeCopy.voo", exact: true }).waitFor();
   await home.getByRole("button", { name: "Empty Trash", exact: true }).click();
@@ -128,16 +118,13 @@ await withEditorBrowser(async ({ page, origin }) => {
   assert.ok(await insideFocus(emptyTrash));
   await emptyTrash.getByRole("button", { name: "Confirm", exact: true }).click();
   await home.getByRole("button", { name: "AuditHomeCopy.voo", exact: true }).waitFor({ state: "detached" });
-  await ensureSidebar();
   await home.getByRole("button", { name: "Recents", exact: true }).click();
   checks.push("Duplicate uses whitespace-free filenames and trash/empty confirmation affects only the isolated browser workspace");
 
 
   await file("AuditHome.voo").getByTitle("Add to Starred", { exact: true }).click();
-  await ensureSidebar();
   await home.getByRole("button", { name: "Starred", exact: true }).click();
   await home.getByRole("button", { name: "AuditHome.voo", exact: true }).waitFor();
-  await ensureSidebar();
   await home.getByRole("button", { name: "Recents", exact: true }).click();
   const search = home.getByPlaceholder("Search files, drafts...", { exact: true });
   await search.fill("absent-file");
@@ -157,7 +144,6 @@ await withEditorBrowser(async ({ page, origin }) => {
   await home.getByRole("button", { name: "AuditHome.voo", exact: true }).waitFor();
   assert.equal(await file("AuditHome.voo").getByTitle("More actions", { exact: true }).count(), 1);
   await home.getByTitle("Grid view", { exact: true }).click();
-  await ensureSidebar();
   await home.getByRole("button", { name: "New folder", exact: true }).click();
   await home.getByRole("textbox", { name: "Folder name", exact: true }).fill("AuditFolder");
   await page.keyboard.press("Enter");
@@ -166,24 +152,37 @@ await withEditorBrowser(async ({ page, origin }) => {
   await page.getByRole("button", { name: "Move to", exact: true }).click();
   await page.getByRole("menuitem", { name: "AuditFolder", exact: true }).click();
   await home.getByRole("button", { name: "AuditHome.voo", exact: true }).waitFor({ state: "detached" });
-  await ensureSidebar();
   await home.getByTestId("sidebar-folder").filter({ hasText: "AuditFolder" }).getByRole("button").first().click();
   await home.getByRole("button", { name: "AuditHome.voo", exact: true }).waitFor();
   checks.push("starred, search, list/grid switch, browser project creation and nested Move to all mutate the actual workspace");
 
-  // Select mobile design type on home directly via radio button
-  await home.getByRole("radio", { name: /Mobile app|移动应用/i }).click();
-
-  // Advanced generation settings (Style, Design System, Candidates, Size) open through Settings trigger
-  const advancedTrigger = home.locator('button[aria-haspopup="dialog"]').first();
-  if (await advancedTrigger.count()) {
-    await advancedTrigger.click();
-    const advanced = page.getByRole("dialog").first();
-    await advanced.waitFor();
-    await page.keyboard.press("Escape");
+  // Advanced generation remains behind its existing trigger; nested Escape leaves it open.
+  await home.getByRole("button", { name: "Recents", exact: true }).click();
+  await home.getByRole("button", { name: "Generation settings", exact: true }).click();
+  const advanced = page.getByRole("dialog", { name: "Generation settings", exact: true });
+  await advanced.waitFor();
+  await advanced.getByRole("button", { name: "Style", exact: true }).click();
+  await page.getByRole("listbox", { name: "Style", exact: true }).waitFor();
+  await page.keyboard.press("Escape");
+  await page.getByRole("listbox", { name: "Style", exact: true }).waitFor({ state: "detached" });
+  assert.ok(await advanced.isVisible());
+  await page.keyboard.press("Escape");
+  await advanced.waitFor({ state: "detached" });
+  checks.push("advanced generation opens through one entry and nested selects own the first Escape");
+  await home.getByRole("button", { name: "Generation settings", exact: true }).click();
+  await advanced.waitFor();
+  const touch = await page.context().newCDPSession(page);
+  await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+  try {
+    await touch.send("Input.dispatchTouchEvent", { type: "touchStart",
+      touchPoints: [{ x: 1400, y: 970, radiusX: 1, radiusY: 1, force: 1 }] });
     await advanced.waitFor({ state: "detached" });
+  } finally {
+    await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await touch.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+    await touch.detach();
   }
-  checks.push("generation type is selected directly via radio and advanced settings opens in dialog");
+  checks.push("a real outside touch closes advanced settings on pointerdown before compatibility mouse events");
 
   const settingsOpener = page.getByRole("button", { name: "Settings", exact: true });
   await settingsOpener.click();

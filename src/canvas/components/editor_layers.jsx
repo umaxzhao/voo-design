@@ -7,6 +7,7 @@ import EditorLayersTree from "./editor_layers_tree.jsx";
 import EditorLayersFooter from "./editor_layers_footer.jsx";
 import EditorLayersPopovers from "./editor_layers_popovers.jsx";
 import EditorLayerContextMenu from "./editor_layer_context_menu.jsx";
+import EditorDesignIssues from "./editor_design_issues.jsx";
 import useEditorLayersController from "./use_editor_layers_controller.js";
 import { editorLayersPropTypes } from "./editor_layers_contract.js";
 import { LAYERS_PANEL_MAX_HEIGHT_CLASS } from "./editor_panel_clearance.js";
@@ -171,6 +172,7 @@ export default function EditorLayers({
       model={model}
     />
     <EditorLayersResize panelRef={panelRef} swapped={swapSide} t={t} />
+    {panelTab === "layers" ? <EditorDesignIssues objects={objects} engine={assetEngine} /> : null}
     {panelTab === "assets" ? <EditorLayersAssets
       model={model}
     /> : <>

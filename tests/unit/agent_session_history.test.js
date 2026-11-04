@@ -28,21 +28,14 @@ describe("agent session history", () => {
     expect(deleteSessionFromList(list, "a").map((s) => s.id)).toEqual(["b"]);
   });
 
-  it("renames a session without changing the conversation data", () => {
-    const session = {
-      ...createEmptySession("a"),
-      title: "Old title",
-      messages: [{ role: "user", content: "Prompt" }],
-      history: [{ role: "user", content: "Prompt" }],
-    };
-    const other = createEmptySession("b");
-    const renamed = renameSessionInList([session, other], "a", "  New title  ");
-    expect(renamed[0]).toMatchObject({
-      id: "a",
-      title: "New title",
-      messages: session.messages,
-      history: session.history,
-    });
-    expect(renamed[1]).toBe(other);
+  it("renames only the requested session without changing its transcript", () => {
+    const list = [
+      { ...createEmptySession("a"), messages: [{ role: "user", content: "hello" }] },
+      createEmptySession("b"),
+    ];
+    const renamed = renameSessionInList(list, "a", "  Campaign  ");
+    expect(renamed[0]).toMatchObject({ title: "Campaign", messages: list[0].messages });
+    expect(renamed[1]).toBe(list[1]);
+    expect(renameSessionInList(list, "a", " ")).toBe(list);
   });
 });

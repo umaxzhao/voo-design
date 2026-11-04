@@ -30,7 +30,7 @@ await withEditorBrowser(async ({ page }) => {
   assert.equal(await page.evaluate(() => window.testPrompts.at(-1)), 'Create a simple landing page');
   await page.getByTestId('agent-cancel').click();
   console.log('Passed: cancellation message, no error dump, resume, retry; screenshots:', shots);
-}, { preparePage: async page => {
+}, { openDocument: false, mcpLink: false, preparePage: async page => {
   await page.route('**/src/canvas/agent/agent_provider.js', route => route.fulfill({ contentType: 'application/javascript', body: `
     export const customModelGroups = () => [];
     export async function resolveAgentProvider() {
