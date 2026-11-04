@@ -166,14 +166,7 @@ export default function App() {
     <main
       data-embed={isEmbed ? "true" : undefined}
       className="app-root-frame relative flex h-full w-full select-none flex-col"
-      // The window behind the workspace frame repeats the mint edge on BOTH
-      // sides (4px page padding + the 2px frame border), so the frame reads the
-      // same width left and right. The title bar keeps its own brand gradient.
-      style={{
-        background: isEmbed
-          ? "#000"
-          : "linear-gradient(90deg, #b2ffd6 0 4px, #000 4px calc(100% - 4px), #b2ffd6 calc(100% - 4px) 100%)",
-      }}
+      style={{ background: "#000" }}
     >
       {!isEmbed && <CrashRecoveryPrompt />}
       {!isEmbed && <ImageSizeNotice />}

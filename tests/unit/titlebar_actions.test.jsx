@@ -8,6 +8,7 @@ vi.mock("react", async (original) => ({
   ...await original(),
   useState: (initial) => [initial, vi.fn()],
   useEffect: () => {},
+  useCallback: (callback) => callback,
   useRef: (current) => ({ current }),
   useId: () => "titlebar-popover-scope",
 }));

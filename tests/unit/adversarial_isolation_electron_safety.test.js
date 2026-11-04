@@ -157,6 +157,7 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
         this.sent = [];
       }
       on() {}
+      isDestroyed() { return false; }
       async executeJavaScript() { return false; }
       send(channel, ...args) {
         this.sent.push({ channel, args });
@@ -181,6 +182,9 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
       on() {}
       once() {}
       show() {}
+      setAutoHideMenuBar(value) { this.autoHideMenuBar = value; }
+      setMenuBarVisibility(value) { this.menuVisible = value; }
+      isMaximized() { return false; }
       isDestroyed() {
         return this.destroyed;
       }
@@ -262,6 +266,11 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
       expect(webPrefs.nodeIntegration).toBe(false);
       expect(path.isAbsolute(webPrefs.preload)).toBe(true);
       expect(fs.existsSync(webPrefs.preload)).toBe(true);
+      if (process.platform === "linux") {
+        expect(mainWindowInstance.options.frame).toBe(false);
+        expect(mainWindowInstance.autoHideMenuBar).toBe(false);
+        expect(mainWindowInstance.menuVisible).toBe(false);
+      }
 
       // 2. Require preload
       require(preloadScriptPath);

@@ -1374,3 +1374,24 @@ select {
     line-height: 1.5 !important;
   }
 }
+
+/*
+ * The desktop window keeps the hosted editor's frame exactly: the shell's 2px
+ * mint border is the only edge, at the window boundary rather than inset by the
+ * old 4px safe-area padding (that padding drew a second green rail beside the
+ * border). Only the top-left corner continues the title bar's mint gradient, so
+ * the rounded shell does not chip to black there.
+ */
+.app-root-frame:not([data-embed="true"]) {
+  padding: 0;
+}
+
+.app-root-frame:not([data-embed="true"]) > .relative.flex.min-h-0.flex-1 {
+  background:
+    radial-gradient(circle at 0 0, #b2ffd6 0 20px, transparent 20.5px) top left / 21px 21px no-repeat,
+    #000;
+}
+
+.app-root-frame[data-embed="true"] > .relative.flex.min-h-0.flex-1 {
+  background: #000;
+}
