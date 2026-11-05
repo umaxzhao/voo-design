@@ -149,7 +149,10 @@ export function walkElement(
   const radius = resolveRadius(style, resolved);
   const ownText = textOf(el);
 
-  const groupThis = (ctx.preserveHierarchy && layoutItem && tag !== "img") || shouldPreserveContainer(
+  // Opt-in root background: the root's own fill paints on its imported group.
+  const rootBackgroundHere = isRoot && ctx.rootBackgroundOnGroup && Boolean(fill);
+  const groupThis = rootBackgroundHere
+    || (ctx.preserveHierarchy && layoutItem && tag !== "img") || shouldPreserveContainer(
     el,
     tag,
     style,
@@ -167,6 +170,12 @@ export function walkElement(
         autoLayout: cssAutoLayout(style),
       })
     : null;
+  if (group && rootBackgroundHere) {
+    // Groups paint their fill only as frames, so the root becomes a frame
+    // carrying the background; its geometry and children stay unchanged.
+    group.isFrame = true;
+    group.fill = fill;
+  }
   if (group) {
     group.name =
       el.attrs?.["data-layer-name"] ??
@@ -356,13 +365,25 @@ export function walkElement(
  */
 export function htmlTreeToDocument(
   elements,
-  { width, height, background, metricsAdapter, preserveHierarchy = true } = {},
+  {
+    width,
+    height,
+    background,
+    metricsAdapter,
+    preserveHierarchy = true,
+    rootBackgroundOnGroup = false,
+  } = {},
 ) {
   const roots = Array.isArray(elements) ? elements : [elements];
   const W = width ?? 1080;
   const H = height ?? 1440;
   const warnings = [];
-  const ctx = { warnings, metricsAdapter, preserveHierarchy };
+  const ctx = {
+    warnings,
+    metricsAdapter,
+    preserveHierarchy,
+    rootBackgroundOnGroup: Boolean(rootBackgroundOnGroup),
+  };
   const pendingImages = [];
 
   const rootStyle = parseInlineStyle(roots[0]?.style ?? {});
@@ -393,7 +414,7 @@ export function htmlTreeToDocument(
 
   // A gradient page backdrop paints as a full-canvas rect (the document's
   // background colour cannot hold a gradient), sitting under everything.
-  if (rootGradient) {
+  if (rootGradient && !ctx.rootBackgroundOnGroup) {
     const backdrop = createRectNode({
       x: 0,
       y: 0,

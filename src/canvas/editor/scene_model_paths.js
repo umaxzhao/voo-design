@@ -3,6 +3,11 @@ import { NODE_KIND, newId } from "./scene_model_core.js";
 
 import { BASE_DEFAULTS } from "./scene_model_geometry.js";
 import { normalizePathHardness } from "./scene_model_node_builders.js";
+import {
+  fromNodeLocal,
+  toNodeLocal,
+  toNodeLocalDelta,
+} from "./scene_geometry_transform.js";
 
 export function createPathNode({ points, stroke, strokeWidth, hardness, arrow, arrowSize, arrowStart, arrowEnd, arrowCap, line, poly, polyKind, sides, spikes, innerRatio, closed, fill, strokeDash }) {
   const bounds = pathBounds(points, strokeWidth);
@@ -399,20 +404,63 @@ export function toggleClosePenPoints(points) {
 }
 
 /**
+ * A pen node's anchors in document space. Handles become world vectors: the
+ * node's linear transform (rotation, shear, flips) is applied to them, so the
+ * curve keeps its shape wherever the node is rotated.
+ */
+function penAnchorsInDocument(node) {
+  const sx = node.baseWidth ? node.width / node.baseWidth : 1;
+  const sy = node.baseHeight ? node.height / node.baseHeight : 1;
+  const worldVector = (at, handle) => {
+    if (!handle) return null;
+    const start = fromNodeLocal(node, at);
+    const end = fromNodeLocal(node, {
+      x: at.x + handle[0] * sx,
+      y: at.y + handle[1] * sy,
+    });
+    return [end.x - start.x, end.y - start.y];
+  };
+  return node.points.map((p) => {
+    const at = { x: p.x * sx, y: p.y * sy };
+    const anchor = fromNodeLocal(node, at);
+    return {
+      x: anchor.x,
+      y: anchor.y,
+      in: worldVector(at, p.in),
+      out: worldVector(at, p.out),
+      close: false,
+    };
+  });
+}
+
+/** A document-space anchor expressed in the box frame of `node` (inverse of penAnchorsInDocument). */
+function documentAnchorToLocal(node, anchor) {
+  const local = toNodeLocal(node, anchor);
+  const localVector = (vector) => {
+    if (!vector) return null;
+    const delta = toNodeLocalDelta(node, { x: vector[0], y: vector[1] });
+    return [delta.x, delta.y];
+  };
+  return {
+    x: local.x,
+    y: local.y,
+    in: localVector(anchor.in),
+    out: localVector(anchor.out),
+    close: anchor.close,
+  };
+}
+
+/**
  * Joins two open pen path nodes at their closest endpoints (Affinity "Join Curves").
+ *
+ * The join runs in document space, so it is correct for rotated, sheared and
+ * flipped nodes. The result keeps nodeA's transform (rotation, shear, flips)
+ * and is placed so every anchor and handle stays at its document position.
  */
 export function joinPenNodes(nodeA, nodeB) {
   if (!nodeA?.points?.length || !nodeB?.points?.length) return null;
-  const toWorld = (node, p) => ({
-    x: node.x + (p.x * (node.baseWidth ? node.width / node.baseWidth : 1)),
-    y: node.y + (p.y * (node.baseHeight ? node.height / node.baseHeight : 1)),
-    in: p.in ? [p.in[0] * (node.baseWidth ? node.width / node.baseWidth : 1), p.in[1] * (node.baseHeight ? node.height / node.baseHeight : 1)] : null,
-    out: p.out ? [p.out[0] * (node.baseWidth ? node.width / node.baseWidth : 1), p.out[1] * (node.baseHeight ? node.height / node.baseHeight : 1)] : null,
-    close: false,
-  });
-
-  const ptsA = nodeA.points.map((p) => toWorld(nodeA, p));
-  const ptsB = nodeB.points.map((p) => toWorld(nodeB, p));
+  const ptsA = penAnchorsInDocument(nodeA);
+  const ptsB = penAnchorsInDocument(nodeB);
 
   const startA = ptsA[0];
   const endA = ptsA[ptsA.length - 1];
@@ -462,19 +510,56 @@ export function joinPenNodes(nodeA, nodeB) {
     combined = [...chainA, ...chainB];
   }
 
-  const bounds = penAnchorsBounds(combined, nodeA.strokeWidth || 1);
-  const rebased = combined.map((p) => normalisePenAnchor(p, bounds.x, bounds.y));
+  const localChain = combined.map((p) => documentAnchorToLocal(nodeA, p));
+  const bounds = penAnchorsBounds(localChain, nodeA.strokeWidth || 1);
+  const rebased = localChain.map((p) => normalisePenAnchor(p, bounds.x, bounds.y));
 
-  return {
+  // Same rotation/shear/flips as nodeA, box fitted to the joined anchors.
+  // fromNodeLocal is a pure translation in node.x/node.y, so one anchor fixes
+  // the origin; the check below then verifies every anchor and handle.
+  const frame = {
     ...nodeA,
-    x: bounds.x,
-    y: bounds.y,
+    x: 0,
+    y: 0,
     width: bounds.width,
     height: bounds.height,
     baseWidth: bounds.width,
     baseHeight: bounds.height,
     points: rebased,
   };
+  const reference = fromNodeLocal(frame, rebased[0]);
+  const placed = {
+    ...frame,
+    x: combined[0].x - reference.x,
+    y: combined[0].y - reference.y,
+  };
+  assertPenPlacement(placed, rebased, combined);
+  return placed;
+}
+
+const PEN_PLACEMENT_TOLERANCE = 1e-6;
+
+/** Fails fast if a placed join node drifts from its document-space anchors. */
+function assertPenPlacement(node, localPoints, documentPoints) {
+  documentPoints.forEach((expected, index) => {
+    const local = localPoints[index];
+    const actual = fromNodeLocal(node, local);
+    const drift = Math.hypot(actual.x - expected.x, actual.y - expected.y);
+    if (drift > PEN_PLACEMENT_TOLERANCE) {
+      throw new Error(`joinPenNodes: anchor ${index} drifted by ${drift}`);
+    }
+    for (const key of ["in", "out"]) {
+      const handle = local[key];
+      if (!handle) continue;
+      const base = fromNodeLocal(node, local);
+      const end = fromNodeLocal(node, { x: local.x + handle[0], y: local.y + handle[1] });
+      const vector = expected[key];
+      const handleDrift = Math.hypot(end.x - base.x - vector[0], end.y - base.y - vector[1]);
+      if (handleDrift > PEN_PLACEMENT_TOLERANCE) {
+        throw new Error(`joinPenNodes: ${key} handle ${index} drifted by ${handleDrift}`);
+      }
+    }
+  });
 }
 
 /**

@@ -205,7 +205,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "pen-midpoint-insertion", "boolean-stroke-export", "boolean-resize", "destructive-boolean", "image-svg-parity", "figma-import-fidelity",
-      "html2nodes",
+      "html2nodes", "pen_join_rotation", "pen_join_cold_reopen", "browser-html-root-background", "browser-html-root-background-cold-reopen",
     ],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
@@ -330,7 +330,7 @@ export const EDITOR_MODULES = [
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "settings-i18n", "locale-lifecycle",
       "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu", "impeccable-polish", "mobile-control-targets", "command_palette",
-      "design_tokens",
+      "design_tokens", "export-preview-bounds",
     ],
     remaining: [
       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",
