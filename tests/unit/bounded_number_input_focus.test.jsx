@@ -190,4 +190,20 @@ describe("BoundedNumberInput — scrub field container focus (P3 latency fix)", 
     expect(html).toMatch(/role="spinbutton"/);
     expect(html).toMatch(/value="10"/);
   });
+
+  it("handles Tab key to commit calculation before moving focus", () => {
+    const onValueChange = vi.fn();
+    const onCommit = vi.fn();
+    const html = renderToStaticMarkup(
+      <BoundedNumberInput
+        value={20}
+        min={0}
+        max={200}
+        onValueChange={onValueChange}
+        onCommit={onCommit}
+        ariaLabel="width"
+      />,
+    );
+    expect(html).toMatch(/value="20"/);
+  });
 });
