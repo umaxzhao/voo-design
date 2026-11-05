@@ -6,7 +6,7 @@ const contains = (a, b) => b.x >= a.x && b.y >= a.y && b.x + b.width <= a.x + a.
 const intersects = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.x) && Math.min(a.y + a.height, b.y + b.height) > Math.max(a.y, b.y);
 const fill = n => { const f = n.fills?.find(f => f.visible !== false) ?? n.fill; return typeof f === 'string' ? f : f?.color; };
 const values = v => typeof v === 'number' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(values) : [];
-const weights = { overlap: 10, overflow: 10, misalignment: 4, offGrid: 4, typeScale: 7, contrast: 12, radii: 5, purpleGradient: 12, identicalCards: 10, centerStackedHero: 10, decorativeLines: 7, evenTemplateSpacing: 6, flatHierarchy: 10, noFocal: 8 };
+const weights = { overlap: 10, overflow: 10, misalignment: 4, offGrid: 4, typeScale: 7, contrast: 12, radii: 5, purpleGradient: 12, identicalCards: 10, centerStackedHero: 10, decorativeLines: 7, evenTemplateSpacing: 6, flatHierarchy: 10, noFocal: 8, flatContainer: 8 };
 
 function* candidateSiblingPairs(siblings) {
   const ordered = siblings.map((node, index) => ({ node, index })).sort((a, b) =>
@@ -66,6 +66,13 @@ export function lintDesign(doc, { rootId, kit } = {}) {
       if (!cards.has(key)) cards.set(key, []); cards.get(key).push(n);
     }
     for (const group of cards.values()) if (group.length >= 3) add('identicalCards', group, 'Three or more identical sibling cards create a template grid.', 'Emphasize one module with larger area and vary content structure.');
+    // A painted rounded rect acting as a card: its content is painted as siblings
+    // instead of nested children, so the layer tree does not mirror the DOM.
+    for (const card of siblings) {
+      if (kind(card) !== 'rect' || (card.cornerRadius ?? 0) < 6 || !fill(card) || area(card) < 4000 || children.has(card.id)) continue;
+      const inside = siblings.filter(n => n !== card && ['text','icon','rect','ellipse','path'].includes(kind(n)) && contains(card, n));
+      if (inside.length >= 2 && inside.some(n => kind(n) === 'text')) add('flatContainer', [card, ...inside], 'A rounded rect is used as a card with its content painted as siblings on top.', 'Make the card a Frame and nest its text and controls inside it.');
+    }
     const content = siblings.filter(n => kind(n) === 'text' || ['rect','frame','group'].includes(kind(n)));
     const texts = content.filter(n => kind(n) === 'text');
     if (texts.length >= 2 && content.length >= 3 && Math.max(...texts.map(n => n.fontSize || 16)) >= 30) {

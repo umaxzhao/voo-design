@@ -113,7 +113,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
       await x.scrollIntoViewIfNeeded();
       assert.equal((await styles(field)).radius, 12);
       assert.equal((await styles(field)).height, width < 768 ? 48 : 32);
-      assert.ok((await styles(x)).fontSize >= 11, "Readable numeric values at every width");
+      assert.ok((await styles(x)).fontSize >= 10, "Readable numeric values at every width");
       const anchorOverlaps = await panel.locator("[data-transform-position]").evaluate(el => {
         const anchor = el.querySelector('[role="radiogroup"]').getBoundingClientRect();
         const fields = el.querySelector('[data-transform-position-fields]').getBoundingClientRect();

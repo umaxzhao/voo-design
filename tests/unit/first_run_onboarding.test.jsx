@@ -47,13 +47,14 @@ describe("commercial first run", () => {
     setSetting("voo.onboarding.completedVersion", null);
   });
   afterEach(() => vi.unstubAllGlobals());
-  it("shows on every launch, including after completion or dismissal", () => {
+  it("stays quiet after the introduction is completed or skipped", () => {
     expect(shouldShowFirstRun()).toBe(true);
     finishFirstRun("completed");
     expect(getSetting(FIRST_RUN_KEY)).toBe("completed");
-    expect(shouldShowFirstRun()).toBe(true);
+    expect(shouldShowFirstRun()).toBe(false);
     finishFirstRun("dismissed");
-    expect(shouldShowFirstRun()).toBe(true);
+    expect(getSetting(FIRST_RUN_KEY)).toBe("dismissed");
+    expect(shouldShowFirstRun()).toBe(false);
   });
   it("still shows for existing workspace-guide users", () => {
     setSetting("voo.onboarding.completedVersion", "2.2.0");

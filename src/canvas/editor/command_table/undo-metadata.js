@@ -66,6 +66,11 @@ export const EDITOR_COMMAND_UNDO_METADATA = Object.freeze(
       historyLabel: "editor.history.entry.action",
     },
     {
+      id: "frame_selection",
+      summary: "Frame selected layers",
+      historyLabel: "editor.history.entry.action",
+    },
+    {
       id: "ungroup_selection",
       summary: "Ungroup selection",
       historyLabel: "editor.history.entry.action",

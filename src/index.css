@@ -359,6 +359,7 @@
 }
 
 .canvas-stage {
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background-color: #525252;
 }
 
@@ -384,19 +385,30 @@
 }
 
 /*
- * The app shell keeps the large corners without a decorative perimeter.
- * Page surfaces fill its box and clip to the inner radius.
+ * The app frame, matching VOO-Run's editor-shell: a solid 2px mint border on a
+ * 16px radius. Pages sit inside .editor-shell-inner, which fills the border box
+ * and clips to the inner radius.
  */
 .editor-shell {
   box-sizing: border-box;
-  border: 0;
+  border: 2px solid #b2ffd6;
   border-radius: 16px;
   overflow: hidden;
+  /* Mint behind the inner sheet so the rounded frame reads as one continuous
+     stroke at every corner instead of chipping to the window colour. */
+  background: #b2ffd6;
+  transition: border-color 0.25s ease;
+}
+
+.app-root-frame[data-embed="true"] {
+  /* A panel/webview embeds the page edge-to-edge: no window padding, no frame. */
+  padding: 0;
 }
 
 .app-root-frame[data-embed="true"] .editor-shell {
   border: none;
   border-radius: 0;
+  background: transparent;
 }
 
 .editor-shell-inner {
@@ -412,20 +424,82 @@
   border-radius: 0;
 }
 
-/* Prompt hierarchy comes from a filled well, without a rim or glow. */
+/*
+ * The AI prompt box: a 1px rim that runs mint, then purple, then fades out.
+ * It only shows at rest; while the user types the rim goes plain.
+ */
+/* Rim of the prompt composer: a rotating gradient ring drawn outside the box.
+   It is faint when idle, stronger while focused, and full once text is typed. */
+@property --prompt-rim-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Agent panel composer: deeper than the shared prompt box so it reads as a well. */
 .agent-composer {
-  background: #0a0a0a;
+  background: linear-gradient(#0a0a0a, #0a0a0a) padding-box;
 }
 
 .prompt-composer {
   position: relative;
   isolation: isolate;
-  border: 0;
-  background: #171717;
+  border: 1px solid transparent;
+  background: linear-gradient(rgb(23 23 23), rgb(23 23 23)) padding-box;
+  box-shadow:
+    0 0 18px rgb(178 255 214 / 0.16),
+    0 0 36px rgb(229 178 255 / 0.12);
+}
+
+.prompt-composer::before {
+  --prompt-rim-angle: 0deg;
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--prompt-rim-angle), #b2ffd6, #e5b2ff, transparent 35%, #b2ffd6);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+  animation: prompt-rim-spin 6s linear infinite;
+}
+
+.prompt-composer:focus-within::before {
+  opacity: 0.8;
+}
+
+.prompt-composer:has(textarea:not(:placeholder-shown))::before {
+  opacity: 1;
+}
+
+@keyframes prompt-rim-spin {
+  to {
+    --prompt-rim-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-composer::before {
+    animation: none;
+  }
 }
 
 .prompt-composer:focus-within * {
   outline: none;
+}
+
+.editor-shell.theme-video {
+  border-color: #e5b2ff;
+}
+
+/* The asset-library page: the same frame, in yellow instead of mint. */
+.editor-shell.theme-library {
+  border-color: #ffe066;
 }
 
 .app-title-bar {
@@ -556,14 +630,17 @@
 .node-card {
   position: relative;
   overflow: visible;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   background-color: #262626;
   box-shadow: none;
-  transition: box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .node-card:hover:not(.is-selected) {
+  border-color: rgba(255, 255, 255, 0.18);
   box-shadow: none;
 }
 
@@ -587,7 +664,7 @@
 }
 
 .node-card.is-selected {
-  border: 1px solid transparent;
+  border-color: transparent;
   /*
    * Selection lifts the card a little, nothing more. The animated accent ring
    * already says "selected" — a wide, dark shadow underneath only reads as a
@@ -632,7 +709,7 @@
 }
 
 .node-editor-card {
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -687,6 +764,10 @@
   }
 }
 
+.editor-action-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .editor-send,
 /* The primary action reads as a solid chip, not another ghost glyph. */
 .rail-add {
@@ -708,7 +789,7 @@
   background: rgba(0, 0, 0, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .viewport-tools {
@@ -718,7 +799,7 @@
 }
 
 .node-chip {
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 999px;
   padding: 3px 7px;
   font-size: 9px;
@@ -734,6 +815,27 @@
   background:
     linear-gradient(90deg, rgba(110, 231, 183, 0.07), transparent 60%),
     rgba(0, 0, 0, 0.18);
+}
+
+.context-orbit::before,
+.context-orbit::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(110, 231, 183, 0.16);
+  border-radius: 50%;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.context-orbit::before {
+  width: 74px;
+  height: 74px;
+}
+
+.context-orbit::after {
+  width: 116px;
+  height: 116px;
 }
 
 .context-orbit span {
@@ -976,22 +1078,23 @@
   box-shadow: none;
 }
 
-/* A filled checkbox keeps its state legible without platform chrome. */
+/* Flat checkbox to match: square, thin border, no platform chrome. */
 .flat-check {
   appearance: none;
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
   margin: 0;
-  border: 0;
+  border: 1px solid rgb(255 255 255 / 30%);
   border-radius: 3px;
-  background: #404040;
+  background: transparent;
   cursor: pointer;
   display: inline-grid;
   place-content: center;
 }
 
 .flat-check:checked {
+  border-color: #f5f5f5;
   background: #f5f5f5;
 }
 
@@ -1270,4 +1373,25 @@ select {
     font-size: 16px !important;
     line-height: 1.5 !important;
   }
+}
+
+/*
+ * The desktop window keeps the hosted editor's frame exactly: the shell's 2px
+ * mint border is the only edge, at the window boundary rather than inset by the
+ * old 4px safe-area padding (that padding drew a second green rail beside the
+ * border). Only the top-left corner continues the title bar's mint gradient, so
+ * the rounded shell does not chip to black there.
+ */
+.app-root-frame:not([data-embed="true"]) {
+  padding: 0;
+}
+
+.app-root-frame:not([data-embed="true"]) > .relative.flex.min-h-0.flex-1 {
+  background:
+    radial-gradient(circle at 0 0, #b2ffd6 0 20px, transparent 20.5px) top left / 21px 21px no-repeat,
+    #000;
+}
+
+.app-root-frame[data-embed="true"] > .relative.flex.min-h-0.flex-1 {
+  background: #000;
 }

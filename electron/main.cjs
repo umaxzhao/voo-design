@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, safeStorage, session } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { windowChromeOptions, attachWindowChrome, registerWindowControls } = require("./window-chrome.cjs");
@@ -91,6 +91,31 @@ function dispatchMenuAction(action) {
 ipcMain.handle("app:version", () => app.getVersion());
 registerWindowControls({ ipcMain, getWindow: () => mainWindow });
 
+// SafeStorage IPC Handlers for credential encryption
+ipcMain.handle("safeStorage:isAvailable", () => {
+  try {
+    return Boolean(safeStorage && safeStorage.isEncryptionAvailable());
+  } catch {
+    return false;
+  }
+});
+
+ipcMain.handle("safeStorage:encryptString", async (_, plainText) => {
+  if (!safeStorage || !safeStorage.isEncryptionAvailable()) {
+    throw new Error("safeStorage encryption is not available");
+  }
+  const buffer = safeStorage.encryptString(plainText);
+  return buffer.toString("base64");
+});
+
+ipcMain.handle("safeStorage:decryptString", async (_, encryptedBase64) => {
+  if (!safeStorage || !safeStorage.isEncryptionAvailable()) {
+    throw new Error("safeStorage encryption is not available");
+  }
+  const buffer = Buffer.from(encryptedBase64, "base64");
+  return safeStorage.decryptString(buffer);
+});
+
 // IPC Handlers
 ipcMain.handle("dialog:openFile", async (_, options = {}) => {
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -138,6 +163,30 @@ ipcMain.handle("fs:writeBinary", async (_, filePath, bytes) => {
 
 ipcMain.handle("fs:writeFile", async (_, filePath, content) => {
   await fs.promises.writeFile(filePath, content, "utf-8");
+  return true;
+});
+
+// Export dialog: native save dialog with a clean title (fixes #13 blob: URL title)
+ipcMain.handle("dialog:chooseExportPath", async (_, { name, format, title } = {}) => {
+  const ext = (format || "png").replace(/^jpeg$/i, "jpg");
+  const filterName = ext.toUpperCase() + " Image";
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: title || "Export",
+    defaultPath: name || `export.${ext}`,
+    filters: [
+      { name: filterName, extensions: [ext] },
+      { name: "All Files", extensions: ["*"] },
+    ],
+  });
+  if (result.canceled || !result.filePath) return null;
+  return result.filePath;
+});
+
+ipcMain.handle("fs:writeImageFile", async (_, filePath, dataUrl) => {
+  const match = /^data:[^;]*;base64,(.*)$/.exec(dataUrl);
+  if (!match) throw new Error("Invalid data URL");
+  const buffer = Buffer.from(match[1], "base64");
+  await fs.promises.writeFile(filePath, buffer);
   return true;
 });
 
@@ -230,6 +279,16 @@ app.on("before-quit", (event) => {
 });
 
 app.whenReady().then(() => {
+  // Fallback: if a Blob-URL download still reaches Chromium's built-in save
+  // dialog (e.g. from an older renderer codepath), override the dialog title
+  // so it never shows the raw blob:file:/// URL.
+  session?.defaultSession?.on?.("will-download", (_event, item) => {
+    item.setSaveDialogOptions?.({
+      title: "Export",
+      defaultPath: item.getFilename?.(),
+    });
+  });
+
   cliBridgeStartup = startDesktopCliBridge();
   createMainWindow();
   require("./updater.cjs").setupUpdater({ app, ipcMain, getWindow: () => mainWindow });

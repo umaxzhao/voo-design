@@ -131,14 +131,12 @@ await withEditorBrowser(
     });
     assert.equal(shareDialogIsTopmost, true, "the canvas must not cover the share dialog");
     await shareTrigger.click();
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
+    await palette.getByRole("combobox").fill("portable .zip snapshot");
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      bar
-        .getByRole("button", {
-          name: "Export project as a portable .zip snapshot",
-          exact: true,
-        })
-        .click(),
+      palette.getByRole("option").filter({ hasText: /portable \.zip snapshot/i }).click(),
     ]);
     assert.match(download.suggestedFilename(), /\.zip$/);
     const bytes = await readFile(await download.path());

@@ -70,11 +70,22 @@ it("builds the portable folder as an installable DeepSeek Harness bundle", async
   expect(manifest.type).toBe("module");
   expect(manifest.engines.node).toBe(">=18");
   expect(manifest.dependencies.ws).toMatch(/^\d+\.\d+\.\d+/);
-  expect(manifest.dsh).toEqual({ bundle: { patch: "./cordis.patch.yml" } });
+  expect(manifest.dsh).toMatchObject({
+    bundle: { patch: "./cordis.patch.yml" },
+    client: {
+      platform: "web",
+      immediately: true,
+      inject: ["@deepseek-ai/dsh-client-ui-sidebar-right"],
+    },
+  });
+  expect(manifest.exports["."]).toBe("./index.js");
+  expect(manifest.exports["./client"]).toBe("./client.js");
   expect(manifest.exports["./locale/*.json"]).toBe("./locale/*.json");
   expect(manifest.exports["./icon"]).toBe("./icon.png");
   expect(manifest.exports["./lib/model-bridge.js"]).toBe("./lib/model-bridge.js");
   for (const entry of [
+    "index.js",
+    "client.js",
     "cordis.patch.yml",
     "locale/*.json",
     "icon.png",
@@ -95,6 +106,10 @@ it("builds the portable folder as an installable DeepSeek Harness bundle", async
   expect(path.isAbsolute(serverEntry)).toBe(true);
   expect(patch.startsWith("- insert:\n")).toBe(true);
   for (const line of [
+    "    - id: voo-editor-panel",
+    "      name: './index.js'",
+    "        port: 4173",
+    "        bridge: true",
     "    - id: mcp-voo",
     "      name: '@deepseek-ai/dsh-mcp-client'",
     "        serverName: voo",
@@ -145,6 +160,10 @@ it("builds the portable folder as an installable DeepSeek Harness bundle", async
   expect(await readFile(path.join(destination, ".mcp.json"), "utf8")).toContain("voo");
   expect(await readFile(path.join(destination, "deepseek.cordis.yml"), "utf8")).toContain("VOO_MCP_ENTRY");
   await stat(path.join(destination, "scripts/mcp-server.mjs"));
+  await stat(path.join(destination, "index.js"));
+  await stat(path.join(destination, "client.js"));
+  // The App-less bundle carries its own canvas relay.
+  await stat(path.join(destination, "lib", "bridge-lite.js"));
   await stat(path.join(destination, "node_modules/ws/package.json"));
 });
 

@@ -36,6 +36,7 @@ const DOCUMENT_FIELDS = [
   "editorCamera", "editorArtboardLayouts", "editorPageCameras", "editorPageSession",
   "pendingArtboardFitId", "filePath", "fileHandle", "fileName", "figSource",
   "isDirty", "canvasBackgroundColor", "editingPresentationId",
+  "undoStack", "redoStack",
 ];
 let documentCounter = 0;
 function documentSnapshot(state) {
@@ -73,7 +74,8 @@ export const useDesignStore = create((set, get) => {
     const id = `document-${++documentCounter}`;
     set(state => ({ activeDocumentId: id, openDocuments: [...state.openDocuments, { id }],
       edges: [], images: {}, figSource: null, canvasBackgroundColor: WORKSPACE_BACKGROUND,
-      streamingPreview: null, streamingPreviewNodeId: null }));
+      pendingEditorCameraRestore: false,
+      streamingPreview: null, streamingPreviewNodeId: null, undoStack: [], redoStack: [] }));
   },
   switchDocument: (id) => {
     if (id === get().activeDocumentId) { set({ welcomeOpen: false }); return; }
@@ -81,18 +83,46 @@ export const useDesignStore = create((set, get) => {
     get().suspendDocument();
     const doc = get().openDocuments.find(doc => doc.id === id);
     set({ ...Object.fromEntries(DOCUMENT_FIELDS.map(key => [key, doc[key]])), activeDocumentId: id, welcomeOpen: false,
+      // The camera below belongs to the tab being opened. The canvas must
+      // apply it instead of running its first-open "fit all" pass, which used
+      // to overwrite every restored pan/zoom on the next tab switch.
+      pendingEditorCameraRestore: true,
       streamingPreview: null, streamingPreviewNodeId: null });
   },
   closeDocument: (id, confirmClose = () => true) => {
     const state = get();
     const doc = id === state.activeDocumentId ? state : state.openDocuments.find(doc => doc.id === id);
     if (!doc || (doc.isDirty && !confirmClose())) return false;
-    if (id === state.activeDocumentId) {
-      const next = state.openDocuments.filter(doc => doc.id !== id);
-      if (next.length) get().switchDocument(next[next.length - 1].id);
-      else set({ activeDocumentId: null, welcomeOpen: true, nodes: [], editingNodeId: null, editingNodeIds: [], fileName: null, filePath: null, fileHandle: null, isDirty: false });
+    const next = state.openDocuments.filter(doc => doc.id !== id);
+    if (next.length === 0) {
+      set({
+        activeDocumentId: null,
+        welcomeOpen: true,
+        openDocuments: [],
+        nodes: [],
+        edges: [],
+        images: {},
+        figSource: null,
+        canvasBackgroundColor: WORKSPACE_BACKGROUND,
+        streamingPreview: null,
+        streamingPreviewNodeId: null,
+        editingNodeId: null,
+        editingNodeIds: [],
+        editingGroupId: null,
+        fileName: null,
+        filePath: null,
+        fileHandle: null,
+        isDirty: false,
+        pendingEditorCameraRestore: false,
+        undoStack: [],
+        redoStack: [],
+      });
+      return true;
     }
-    set(state => ({ openDocuments: state.openDocuments.filter(doc => doc.id !== id) }));
+    if (id === state.activeDocumentId) {
+      get().switchDocument(next[next.length - 1].id);
+    }
+    set({ openDocuments: next });
     return true;
   },
   // Core state
@@ -102,7 +132,13 @@ export const useDesignStore = create((set, get) => {
   nodes: [createDefaultPage()],
   edges: [],
   images: {},
+  undoStack: [],
+  redoStack: [],
   editorCamera: { panX: 0, panY: 0, zoom: 1 },
+  // Set by a tab switch after the destination camera has been restored. The
+  // canvas consumes it before its first-open fit pass; never part of a tab
+  // snapshot.
+  pendingEditorCameraRestore: false,
   editorArtboardLayouts: {
     [DEFAULT_PAGE_ID]: { x: 0, y: 0, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
   },
@@ -135,7 +171,7 @@ export const useDesignStore = create((set, get) => {
   editorPageSession: 0,
 
   // Page / Artboard actions
-  focusEditorPage: (id, { rememberCamera = true, exclusive = false } = {}) => {
+  focusEditorPage: (id, { rememberCamera = true, exclusive = false, preserveCamera = false } = {}) => {
     const current = get();
     if (!id || !current.nodes.some((node) => node.id === id)) return;
     if (id === current.editingNodeId) {
@@ -146,9 +182,14 @@ export const useDesignStore = create((set, get) => {
     }
     cameraBatcher.flush();
     set((state) => ({
-      editorPageCameras: { ...state.editorPageCameras, ...(rememberCamera && state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
-      editorCamera: state.editorPageCameras[id] || state.editorCamera,
-      pendingArtboardFitId: state.editorPageCameras[id] ? null : id,
+      // A canvas click focuses what is already on screen. Restoring a page
+      // camera or fitting an unseen page there would move the artboard out
+      // from under the pointer between the press and the engine hit test.
+      editorPageCameras: preserveCamera
+        ? state.editorPageCameras
+        : { ...state.editorPageCameras, ...(rememberCamera && state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
+      editorCamera: preserveCamera ? state.editorCamera : (state.editorPageCameras[id] || state.editorCamera),
+      pendingArtboardFitId: preserveCamera ? null : (state.editorPageCameras[id] ? null : id),
       editingNodeId: id,
       // A page the canvas does not show yet replaces what is on it, so the switcher brings it in.
       editingNodeIds: exclusive ? [id] : state.editingNodeIds.includes(id) ? state.editingNodeIds : [id],
@@ -260,6 +301,244 @@ export const useDesignStore = create((set, get) => {
       [nodes[index], nodes[target]] = [nodes[target], nodes[index]];
       return { nodes, isDirty: true };
     });
+  },
+
+  createComponentPage: (hostId, options = {}) => {
+    const { previousDoc, doc, master, label } = options || {};
+    const state = get();
+    if (!hostId || !master) return null;
+    const hostNode = state.nodes.find((n) => n.id === hostId);
+    if (!hostNode) return null;
+
+    const masterId =
+      master.canvasId ||
+      master.id ||
+      `page-${Date.now().toString(36)}-${(++pageCounter).toString(36)}`;
+    master.canvasId = masterId;
+    master.isCanvasRoot = true;
+
+    const pageLabel = label || master.name || "Component";
+    const canvasType = master.canvasType || hostNode.data?.canvasType || CANVAS_TYPE.DESIGN;
+    const masterNode = {
+      id: masterId,
+      type: "imageEditor",
+      position: { x: 0, y: 0 },
+      data: {
+        label: pageLabel,
+        canvasType,
+        editorDoc: master,
+      },
+    };
+
+    const hostLayout = (state.editorArtboardLayouts instanceof Map
+      ? state.editorArtboardLayouts.get(hostId)
+      : state.editorArtboardLayouts?.[hostId]) || { x: 0, y: 0, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+    const hostWidth = hostLayout.width ?? DEFAULT_WIDTH;
+    const hostHeight = hostLayout.height ?? DEFAULT_HEIGHT;
+    const hostX = hostLayout.x ?? 0;
+    const hostY = hostLayout.y ?? 0;
+    const masterWidth = master.width ?? DEFAULT_WIDTH;
+    const masterHeight = master.height ?? DEFAULT_HEIGHT;
+
+    const FREE_GUTTER = 64;
+    let targetX = hostX + hostWidth + FREE_GUTTER;
+    const targetY = hostY;
+    const existingLayouts = state.editorArtboardLayouts instanceof Map
+      ? Array.from(state.editorArtboardLayouts.values())
+      : Object.values(state.editorArtboardLayouts || {});
+    for (let pass = 0; pass <= existingLayouts.length; pass++) {
+      const collision = existingLayouts.find((l) =>
+        l &&
+        targetX < (l.x ?? 0) + (l.width ?? 0) + FREE_GUTTER &&
+        targetX + masterWidth + FREE_GUTTER > (l.x ?? 0) &&
+        targetY < (l.y ?? 0) + (l.height ?? 0) &&
+        targetY + masterHeight > (l.y ?? 0)
+      );
+      if (!collision) break;
+      targetX = (collision.x ?? 0) + (collision.width ?? 0) + FREE_GUTTER;
+    }
+    const masterLayout = {
+      x: targetX,
+      y: targetY,
+      width: masterWidth,
+      height: masterHeight,
+    };
+
+    const layoutsObj = state.editorArtboardLayouts instanceof Map
+      ? Object.fromEntries(state.editorArtboardLayouts)
+      : { ...(state.editorArtboardLayouts || {}) };
+    const nextLayouts = {
+      ...layoutsObj,
+      [masterId]: masterLayout,
+    };
+
+    const nextNodes = state.nodes.map((node) => {
+      if (node.id === hostId && doc) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            editorDoc: doc,
+          },
+        };
+      }
+      return node;
+    });
+    nextNodes.push(masterNode);
+
+    const nextEditingNodeIds = state.editingNodeIds.includes(masterId)
+      ? state.editingNodeIds
+      : [...state.editingNodeIds, masterId];
+
+    const undoEntry = {
+      actionId: "workflow.editor.createComponent",
+      timestamp: Date.now() + 5000,
+      hostId,
+      masterId,
+      label: pageLabel,
+      previousDoc: previousDoc ?? hostNode.data?.editorDoc ?? hostNode.data?.sceneDoc ?? null,
+      doc,
+      masterNode,
+      masterLayout,
+      previousEditingNodeIds: state.editingNodeIds,
+      nextEditingNodeIds,
+      previousLayouts: layoutsObj,
+    };
+
+    set({
+      nodes: nextNodes,
+      editingNodeIds: nextEditingNodeIds,
+      editingNodeId: hostId,
+      editorArtboardLayouts: nextLayouts,
+      undoStack: [...(state.undoStack || []), undoEntry],
+      redoStack: [],
+      isDirty: true,
+    });
+
+    return masterId;
+  },
+
+  canUndo: () => Boolean(get().undoStack?.length),
+  canRedo: () => Boolean(get().redoStack?.length),
+
+  undo: () => {
+    const state = get();
+    const stack = state.undoStack || [];
+    if (!stack.length) return false;
+    const entry = stack[stack.length - 1];
+    const nextUndoStack = stack.slice(0, -1);
+
+    if (entry.actionId === "workflow.editor.createComponent") {
+      const nextNodes = state.nodes
+        .filter((node) => node.id !== entry.masterId)
+        .map((node) => {
+          if (node.id === entry.hostId && entry.previousDoc) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                editorDoc: entry.previousDoc,
+              },
+            };
+          }
+          return node;
+        });
+
+      const { [entry.masterId]: removedLayout, ...nextLayouts } = (state.editorArtboardLayouts || {});
+
+      const engine = globalThis.window?.__vooEditors?.[entry.hostId] || (globalThis.window?.__vooEditor?.sourceWorkflowNodeId === entry.hostId ? globalThis.window.__vooEditor : globalThis.window?.__vooEditor);
+      if (engine) {
+        if (typeof engine.canUndo === "function" && engine.canUndo()) {
+          engine.undo();
+        } else if (typeof engine.setDoc === "function" && entry.previousDoc) {
+          engine.setDoc(entry.previousDoc, { commit: false });
+        }
+      }
+
+      set({
+        nodes: nextNodes,
+        editingNodeIds: entry.previousEditingNodeIds || state.editingNodeIds.filter((id) => id !== entry.masterId),
+        editingNodeId: entry.hostId,
+        editorArtboardLayouts: entry.previousLayouts || nextLayouts,
+        undoStack: nextUndoStack,
+        redoStack: [...(state.redoStack || []), entry],
+        isDirty: true,
+      });
+      return true;
+    }
+
+    if (typeof entry.undo === "function") {
+      entry.undo();
+      set({
+        undoStack: nextUndoStack,
+        redoStack: [...(state.redoStack || []), entry],
+        isDirty: true,
+      });
+      return true;
+    }
+    return false;
+  },
+
+  redo: () => {
+    const state = get();
+    const stack = state.redoStack || [];
+    if (!stack.length) return false;
+    const entry = stack[stack.length - 1];
+    const nextRedoStack = stack.slice(0, -1);
+
+    if (entry.actionId === "workflow.editor.createComponent") {
+      const nextNodes = state.nodes.map((node) => {
+        if (node.id === entry.hostId && entry.doc) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              editorDoc: entry.doc,
+            },
+          };
+        }
+        return node;
+      });
+      if (!nextNodes.some((n) => n.id === entry.masterId) && entry.masterNode) {
+        nextNodes.push(entry.masterNode);
+      }
+
+      const nextLayouts = {
+        ...(state.editorArtboardLayouts || {}),
+        [entry.masterId]: entry.masterLayout,
+      };
+
+      const engine = globalThis.window?.__vooEditors?.[entry.hostId] || (globalThis.window?.__vooEditor?.sourceWorkflowNodeId === entry.hostId ? globalThis.window.__vooEditor : globalThis.window?.__vooEditor);
+      if (engine) {
+        if (typeof engine.canRedo === "function" && engine.canRedo()) {
+          engine.redo();
+        } else if (typeof engine.setDoc === "function" && entry.doc) {
+          engine.setDoc(entry.doc, { commit: false });
+        }
+      }
+
+      set({
+        nodes: nextNodes,
+        editingNodeIds: entry.nextEditingNodeIds || (state.editingNodeIds.includes(entry.masterId) ? state.editingNodeIds : [...state.editingNodeIds, entry.masterId]),
+        editingNodeId: entry.hostId,
+        editorArtboardLayouts: nextLayouts,
+        undoStack: [...(state.undoStack || []), entry],
+        redoStack: nextRedoStack,
+        isDirty: true,
+      });
+      return true;
+    }
+
+    if (typeof entry.redo === "function") {
+      entry.redo();
+      set({
+        undoStack: [...(state.undoStack || []), entry],
+        redoStack: nextRedoStack,
+        isDirty: true,
+      });
+      return true;
+    }
+    return false;
   },
 
   updateNodeData: (id, partialData) => {
@@ -378,8 +657,34 @@ export const useDesignStore = create((set, get) => {
   },
 
   // Structure-only crash draft (no image bytes) for unexpected-exit recovery.
-  saveEditorDrafts: async () => {
+  saveEditorDrafts: async (entries = null) => {
     const state = get();
+    if (Array.isArray(entries) && entries.length > 0) {
+      const nextNodes = [...(state.nodes || [])];
+      let nodesChanged = false;
+      for (const entry of entries) {
+        const nodeId = entry.nodeId;
+        const doc = entry.editorDoc;
+        if (!nodeId || !doc) continue;
+        const nodeIndex = nextNodes.findIndex((n) => n.id === nodeId);
+        const node = nodeIndex >= 0 ? nextNodes[nodeIndex] : null;
+        if (node && node.data?.editorDoc !== doc) {
+          nextNodes[nodeIndex] = {
+            ...node,
+            data: { ...node.data, editorDoc: doc },
+          };
+          nodesChanged = true;
+        }
+        const { images: _images, ...safeDoc } = doc;
+        await saveCrashDraft(nodeId, safeDoc, {
+          label: state.fileName || node?.data?.label || "",
+        });
+      }
+      if (nodesChanged) {
+        set({ nodes: nextNodes });
+      }
+      return;
+    }
     const focused = state.editingNodeId;
     const node = (state.nodes || []).find((n) => n.id === focused);
     const doc = node?.data?.editorDoc;
@@ -393,9 +698,21 @@ export const useDesignStore = create((set, get) => {
   loadVooProject: ({ vooData, filePath = null, fileName = "Untitled.voo", fileHandle = null, figSource = null }) => {
     const doc = vooData?.document;
     if (!doc) return;
+    const incomingImages = {
+      ...get().images,
+      ...(vooData?.images || {}),
+      ...(vooData?.assets || {}),
+    };
     get().beginDocument();
     cameraBatcher.flush();
-    set({ figSource, canvasBackgroundColor: doc.canvasBackgroundColor ?? WORKSPACE_BACKGROUND, editorPageCameras: {}, pendingArtboardFitId: null, editorPageSession: get().editorPageSession + 1 });
+    set({
+      figSource,
+      images: incomingImages,
+      canvasBackgroundColor: doc.canvasBackgroundColor ?? WORKSPACE_BACKGROUND,
+      editorPageCameras: {},
+      pendingArtboardFitId: null,
+      editorPageSession: get().editorPageSession + 1,
+    });
 
     if (Array.isArray(doc.pages) && doc.pages.length > 0) {
       const nextNodes = doc.pages.map((page, idx) => ({

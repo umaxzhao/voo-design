@@ -1,0 +1,23 @@
+{
+  "label": "After",
+  "timestamp": "2026-11-05T01:22:05.970Z",
+  "scene": {
+    "totalLayers": 520,
+    "frameCount": 4,
+    "bitmapSize": "1000x1000 px RGBA"
+  },
+  "metrics": {
+    "startupTimeMs": 6630,
+    "tabSwitchLatencyMs": 40,
+    "panFps": 46.1,
+    "panP95Ms": 33.4,
+    "zoomFps": 47.6,
+    "zoomP95Ms": 33.4,
+    "dragFps": 30.2,
+    "dragP95Ms": 50,
+    "marqueeFps": 29.5,
+    "marqueeP95Ms": 33.4,
+    "idleJsHeapUsedMB": 114.2,
+    "idleJsHeapTotalMB": 157.8
+  }
+}

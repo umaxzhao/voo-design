@@ -78,16 +78,25 @@ export function hexToHsv(hex) {
     }
     h /= 6;
   }
+  // Keep the exact HSV. Rounding here made every swatch preset drift on the
+  // next HSV→HEX conversion (for example #10B981 became #11BA82 and
+  // #EF4444 became #F04343), which read as a red cast on gradient stops.
   return {
-    h: Math.round(h * 360),
-    s: Math.round(s * 100),
-    v: Math.round(v * 100),
+    h: (h * 360) % 360,
+    s: s * 100,
+    v: v * 100,
   };
 }
 
 export function hsvToHex(h, s, v) {
-  s /= 100;
-  v /= 100;
+  // 360° and 0° are the same hue; normalise so a full-circle drag cannot fall
+  // through the red branch of the switch below with unnormalised input.
+  const hue = ((Number(h) || 0) % 360 + 360) % 360;
+  const saturation = Math.max(0, Math.min(100, Number(s) || 0));
+  const value = Math.max(0, Math.min(100, Number(v) || 0));
+  h = hue;
+  s = saturation / 100;
+  v = value / 100;
   const i = Math.floor((h / 60) % 6);
   const f = h / 60 - i;
   const p = v * (1 - s);

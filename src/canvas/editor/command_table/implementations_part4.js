@@ -5,6 +5,10 @@ import { resolveTracePoints, sampleBezierPath } from "./helpers.js";
  * Command implementations part 4 (zone split).
  */
 export const IMPLEMENTATIONS_PART4 = {
+  frame_selection({ engine }) {
+    const layerId = engine?.frameSelection?.();
+    return { ok: Boolean(layerId), layerId };
+  },
   async select_ellipse_region({ engine }, args) {
     const { nodeId, x, y, width, height, mode = "replace" } = args;
     if (

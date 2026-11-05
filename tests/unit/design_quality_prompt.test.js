@@ -151,6 +151,9 @@ describe("buildDesignQualityPrompt", () => {
     expect(prompt).toContain("colours and fonts directly from the style kit tokens");
     expect(prompt).toContain("Avoid hand-drawn path illustrations");
     expect(prompt).toContain("capture_canvas once");
+    // Containers must be Frames with nested children, not rounded rects with
+    // sibling content painted on top.
+    expect(prompt).toContain("CONTAINERS ARE FRAMES, NEVER ROUNDED RECTS");
   });
 
   it("picks the dashboard recipe from the request within the active kit", () => {

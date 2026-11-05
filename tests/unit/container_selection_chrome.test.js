@@ -73,6 +73,7 @@ describe('selection size label placement', () => {
    canvas: { width: 400, height: 300 },
    getTransform: () => ({ a: 2 }),
    save() {}, restore() {}, strokeRect() {}, fillRect() {}, beginPath() {},
+   moveTo() {}, lineTo() {}, stroke() {}, arc() {},
    roundRect(...rect) { labels.push(rect); }, fill() {},
    measureText: () => ({ width: 100 }), fillText() {},
   };
@@ -98,6 +99,7 @@ describe('selection size label viewport policy', () => {
    canvas: { width: 400 * dpr, height: 300 * dpr },
    getTransform: () => ({ a: dpr }),
    save() {}, restore() {}, strokeRect() {}, fillRect() {}, beginPath() {},
+   moveTo() {}, lineTo() {}, stroke() {}, arc() {},
    roundRect(...rect) { labels.push(rect); }, fill() {},
    measureText: () => ({ width: 40 }), fillText(value) { text.push(value); },
   };

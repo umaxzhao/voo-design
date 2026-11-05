@@ -136,6 +136,7 @@ const EditorHistoryPanel = lazy(() => import("./editor_history_panel.jsx"));
  * synchronously, so a toggle here changes the very next drag.
  */
 const SNAP_TO_GRID_SETTING = "voo.editor.snapToGrid";
+const GRID_SIZE_SETTING = "voo.editor.gridSize";
 
 /**
  * Full-screen editor for one or more image assets.
@@ -226,12 +227,26 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     snapshotsRef,
   });
   const focusEditorPage = useCallback(
-    (targetId) => {
+    (targetId, options) => {
       if (focusedId && targetId !== focusedId) {
         const prevEngine = enginesRef.current.get(focusedId)?.engine;
+        // The toolbar is one global tool, like Figma's: a page focused by a
+        // canvas press must answer the next pointer with that same tool, not
+        // its own stale Select mode.
+        const activeTool = prevEngine?.getTool?.();
+        const nextEngine = targetId
+          ? enginesRef.current.get(targetId)?.engine
+          : null;
         prevEngine?.pause?.();
+        if (
+          nextEngine &&
+          activeTool &&
+          nextEngine.getTool?.() !== activeTool
+        ) {
+          nextEngine.setTool(activeTool);
+        }
       }
-      rawFocusEditorPage?.(targetId);
+      rawFocusEditorPage?.(targetId, options);
     },
     [focusedId, rawFocusEditorPage, enginesRef],
   );
@@ -249,7 +264,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   // Grid presentation is shared across the workspace; annotations belong to the focused page.
   const [snapToGrid, setSnapToGrid] = useState(() => getSetting(SNAP_TO_GRID_SETTING) === true);
-  const lastGridSizeRef = useRef(32);
+  const lastGridSizeRef = useRef(Number(getSetting(GRID_SIZE_SETTING)) || 8);
   const [adjustingInstance, setAdjustingInstance] = useState(null);
   const [swapPanels, setSwapPanels] = useState(
     () => loadEditorPanelLayout().swapped,
@@ -405,9 +420,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       const next = !previous;
       void setSetting(SNAP_TO_GRID_SETTING, next);
       if (next) {
+        const configuredSize = Number(getSetting(GRID_SIZE_SETTING)) || lastGridSizeRef.current || 8;
         const nextGrid = grid
-          ? { ...grid, enabled: true }
-          : { enabled: true, size: 32 };
+          ? { ...grid, enabled: true, size: grid.size || configuredSize }
+          : { enabled: true, size: configuredSize };
         if (multi) {
           for (const entry of enginesRef.current.values()) {
             entry.engine?.setGrid?.(nextGrid);
@@ -846,6 +862,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     newVooDocument,
     handleSaveAndExit,
     exportImage,
+    exportProjectFormat,
     cancelExport,
     dirtyIds,
   } = useEditorApply({
@@ -870,6 +887,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       setSavedNotice,
       setExitPrompt,
       setExportOpen,
+      setExportFormat,
       setHistoryOpen: switchHistory,
       resolveCanvas,
       onExportWarnings: (warnings) => setExportNotice(warnings || true),
@@ -886,15 +904,23 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    */
   const runTool = useCallback(
     (next) => {
-      if (!engine) return;
-      if (next === TOOL.SELECT_REGION && engine.getPixelSelection?.()?.bounds) {
-        if (engine.beginSelectionTransform?.()) {
+      let targetEngine = engine;
+      if (!focusedId && nodeIds?.length > 0) {
+        const primaryId = nodeIds[0];
+        focusEditorPage(primaryId);
+        targetEngine = enginesRef.current.get(primaryId)?.engine ?? null;
+      } else if (focusedId && !targetEngine) {
+        targetEngine = enginesRef.current.get(focusedId)?.engine ?? null;
+      }
+      if (!targetEngine) return;
+      if (next === TOOL.SELECT_REGION && targetEngine.getPixelSelection?.()?.bounds) {
+        if (targetEngine.beginSelectionTransform?.()) {
           return;
         }
       }
-      engine.setTool(next);
+      targetEngine.setTool(next);
     },
-    [engine],
+    [engine, enginesRef, focusEditorPage, focusedId, nodeIds],
   );
 
   /**
@@ -1113,7 +1139,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   } = useEditorCanvasGestures({
     multi, visible, freeStageRef, spaceRef, panGestureRef, enginesRef,
     layoutById, cameraZoom, tool, focusedId, focusEditorPage,
-    handleFocusCanvas, setCanvasBackgroundSelected,
+    handleFocusCanvas, setCanvasBackgroundSelected, nodeIds,
   });
   // Ref populated by ToolPropertiesSection so the X shortcut can swap colours.
   const swapColorsRef = useRef(null);
@@ -1159,6 +1185,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     onToggleSnapToGrid: toggleSnapToGrid,
     onToggleComments: toggleCommentsPanel,
     onToggleCommentMode: toggleCommentMode,
+    onToggleAgent: () => window.dispatchEvent(new CustomEvent("voo:toggle-agent-panel")),
     onToggleCommandPalette: toggleCommandPalette,
     onOpenFindReplace: openFindReplace,
     selectedGuideId,
@@ -1405,6 +1432,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                     mode="free"
                     rect={rect}
                     sharedZoom={cameraZoom}
+                    sharedTool={tool}
                     workspaceRendererReady={workspaceRendererStatus === "ready"}
                     snapshot={snapshotsRef.current.get(nodeId) ?? null}
                     onFocus={focusEditorPage}
@@ -1590,6 +1618,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 active={activeIds.has(nodeId)}
                 mode="full"
                 getFitInsets={getFitInsets}
+                sharedTool={tool}
                 snapshot={snapshotsRef.current.get(nodeId) ?? null}
                 onFocus={focusEditorPage}
                 resolveCanvas={resolveCanvas}
@@ -1906,7 +1935,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           <Suspense fallback={null}>
             <EditorExportDialog
               doc={exportDocument}
-              exportName={exportTargetName(pageTitle(), exportRange, exportDocument?.nodes, selectedIds)}
+              exportName={exportTargetName(pageTitle(), exportFormat === "fig" ? "frame" : exportRange, exportDocument?.nodes, selectedIds)}
               format={exportFormat}
               quality={exportQuality}
               scale={exportScale}
@@ -1920,12 +1949,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }
               selectionBounds={exportSelectionBounds}
               exportRange={exportRange}
-              onExportRange={setExportRange}
+              onExportRange={exportFormat === "fig" ? null : setExportRange}
               busy={busy}
               onFormat={setExportFormat}
               onQuality={setExportQuality}
               onScale={setExportScale}
-              onExport={(options) => void exportImage(options)}
+              onExport={(options) => {
+                if (exportFormat === "fig") void exportProjectFormat("fig");
+                else void exportImage(options);
+              }}
               onClose={cancelExport}
             />
           </Suspense>
@@ -2284,7 +2316,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 void selectSubject();
               },
               onInvertSelection: () => {
-                if (selected?.id) void engine?.invertMask?.(selected.id);
+                void engine?.invertPixelSelection?.();
               },
               onClearSelection: () => {
                 engine?.clearPixelSelection?.();
@@ -2747,8 +2779,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 !layers[index].lockImagePixels,
               )
             }
-            onReorder={(id, targetIndex) =>
-              engine?.reorderNodeTo(id, targetIndex)
+            onReorder={(id, targetIndex, primaryId) =>
+              engine?.reorderNodeTo(id, targetIndex, primaryId)
             }
             onReorderGroup={(id, targetIndex) =>
               engine?.reorderGroupTo(id, targetIndex)
@@ -2990,6 +3022,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onToggleSnapToGrid={toggleSnapToGrid}
               onSetGridSize={(size) => {
                 lastGridSizeRef.current = size;
+                if (typeof setSetting === "function") void setSetting(GRID_SIZE_SETTING, size);
                 const next = { enabled: grid ? grid.enabled !== false : true, size };
                 if (multi) {
                   for (const entry of enginesRef.current.values()) {

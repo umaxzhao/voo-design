@@ -82,9 +82,13 @@ export function createBitmapCache({
 
   function evict() {
     while (bitmaps.size > maxEntries || totalBytes > maxBytes) {
-      const key = [...bitmaps.keys()].find(
-        (candidate) => !pinnedKeys.has(candidate),
-      );
+      let key = null;
+      for (const candidate of bitmaps.keys()) {
+        if (!pinnedKeys.has(candidate)) {
+          key = candidate;
+          break;
+        }
+      }
       if (!key) return;
       const image = bitmaps.get(key);
       bitmaps.delete(key);

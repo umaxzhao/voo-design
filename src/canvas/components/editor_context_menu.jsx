@@ -80,15 +80,18 @@ export default function EditorContextMenu({
     };
     const onKeyDown = (event) => {
       if (event.defaultPrevented) return;
+      if (codeDialogOpen) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+        return;
+      }
       if (event.key === "Tab") {
         onClose();
         return;
       }
       if (event.target.closest?.("[role=menu]") !== ref.current) return;
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
       if (
         event.key === "ArrowDown" ||
         event.key === "ArrowUp" ||

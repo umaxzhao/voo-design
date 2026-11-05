@@ -67,6 +67,7 @@ export function useEditorApply({
   setSavedNotice,
   setExitPrompt,
   setExportOpen,
+  setExportFormat,
   setHistoryOpen,
   resolveCanvas,
   onExportWarnings,
@@ -280,7 +281,7 @@ export function useEditorApply({
    * Saves this editor document as a self-contained `.voo` file on computer (Photoshop-like).
    */
   const saveVooDocument = useCallback(
-    async ({ saveAs = false } = {}) => {
+    async ({ saveAs = false, formatOverride = null } = {}) => {
       try {
         setBusy(true);
         setApplyError(false);
@@ -289,6 +290,7 @@ export function useEditorApply({
           enginesRef,
           snapshotsRef,
           saveAs,
+          formatOverride,
           pageTitle,
         });
         if (res?.success) {
@@ -307,6 +309,12 @@ export function useEditorApply({
     [enginesRef, snapshotsRef, pageTitle, setBusy, setApplyError, setSavedNotice],
   );
 
+  const exportProjectFormat = useCallback(async (format) => {
+    const result = await saveVooDocument({ saveAs: true, formatOverride: format });
+    if (result === "ok") setExportOpen(false);
+    return result;
+  }, [saveVooDocument, setExportOpen]);
+
   const openVooDocument = useCallback(
     async (fileOrPath = null) => {
       try {
@@ -315,6 +323,13 @@ export function useEditorApply({
         const res = await openVooProject({
           store: useDesignStore.getState(),
           fileOrPath,
+          // Import is also the bitmap entry point: a picked PNG/JPG lands on
+          // the active page as a normal image layer instead of being parsed as
+          // a project document.
+          onImageSource: async ({ bytes, name }) => {
+            if (!engine?.insertImage) throw new Error("editor-not-ready");
+            await engine.insertImage(new File([bytes], name));
+          },
         });
         if (res?.success) {
           setSavedNotice(`✓ ${res.fileName}`);
@@ -329,7 +344,7 @@ export function useEditorApply({
         setBusy(false);
       }
     },
-    [setBusy, setApplyError, setSavedNotice],
+    [engine, setBusy, setApplyError, setSavedNotice],
   );
 
   const newVooDocument = useCallback(() => {
@@ -381,7 +396,11 @@ export function useEditorApply({
     const onTriggerOpen = (e) => void openVooDocument(e?.detail?.file);
     const onTriggerNew = () => newVooDocument();
     const onTriggerHistory = () => setHistoryOpen((open) => !open);
-    const onTriggerExport = () => setExportOpen(true);
+    const onTriggerExport = (event) => {
+      const format = event?.detail?.format;
+      if (typeof format === "string" && format) setExportFormat?.(format);
+      setExportOpen(true);
+    };
     const onTriggerSnapshot = () => {
       void exportSnapshotPackage({
         store: useDesignStore.getState(),
@@ -438,6 +457,7 @@ export function useEditorApply({
     openVooDocument,
     newVooDocument,
     setExportOpen,
+    setExportFormat,
     setHistoryOpen,
     dirtyIds,
     autosave,
@@ -454,6 +474,7 @@ export function useEditorApply({
     openVooDocument,
     newVooDocument,
     exportImage,
+    exportProjectFormat,
     cancelExport,
     requestExit,
     dirtyIds,

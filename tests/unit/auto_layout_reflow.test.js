@@ -1132,4 +1132,82 @@ describe("auto layout — safety and purity", () => {
     const twice = reflowAutoLayout(once);
     expect(twice.nodes).toEqual(once.nodes);
   });
+
+  it("reserves a rotated child's axis-aligned bounds in a hugging frame", () => {
+    const doc = docOf(
+      makeGroup({
+        id: "root",
+        x: 40,
+        y: 30,
+        width: 0,
+        height: 0,
+        autoLayout: {
+          direction: "horizontal",
+          gap: 10,
+          padding: 10,
+          alignItems: "center",
+          justifyContent: "start",
+          widthMode: "hug",
+          heightMode: "hug",
+        },
+      }),
+      makeNode({ id: "a", parentId: "root", width: 100, height: 50 }),
+      makeNode({
+        id: "b",
+        parentId: "root",
+        width: 100,
+        height: 50,
+        rotation: 90,
+      }),
+    );
+    const once = reflow(doc);
+    // 10 + 100 + 10 + 50 (rotated AABB width) + 10.
+    expectBox(once, "root", { x: 40, y: 30, width: 180, height: 120 });
+    expectBox(once, "a", { x: 50, y: 65, width: 100, height: 50 });
+    // The stored box is still 100×50; its visual AABB is 50×100.
+    const rotated = nodeOf(once, "b");
+    expectBox(once, "b", { x: 135, y: 65, width: 100, height: 50 });
+    near(rotated.x + 25, 160);
+    near(rotated.y - 25, 40);
+  });
+
+  it("wraps on rotated visual widths instead of stored widths", () => {
+    const doc = docOf(
+      makeGroup({
+        id: "root",
+        x: 0,
+        y: 0,
+        width: 200,
+        autoLayout: {
+          direction: "horizontal",
+          wrap: true,
+          gap: 10,
+          crossGap: 10,
+          padding: 0,
+          alignItems: "start",
+          justifyContent: "start",
+          alignContent: "start",
+          widthMode: "fixed",
+          heightMode: "hug",
+        },
+      }),
+      makeNode({ id: "a", parentId: "root", width: 100, height: 50 }),
+      makeNode({
+        id: "b",
+        parentId: "root",
+        width: 100,
+        height: 50,
+        rotation: 90,
+      }),
+      makeNode({ id: "c", parentId: "root", width: 100, height: 50 }),
+    );
+    const once = reflow(doc);
+    // a (100) + gap (10) + b's visual width (50) fits; c wraps to line two.
+    expectBox(once, "root", { width: 200, height: 160 });
+    expectBox(once, "a", { x: 0, y: 0 });
+    const b = nodeOf(once, "b");
+    near(b.x + 25, 110);
+    near(b.y - 25, 0);
+    expectBox(once, "c", { x: 0, y: 110 });
+  });
 });

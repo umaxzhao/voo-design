@@ -189,27 +189,46 @@ export function StaticSection({
   hideHeader = false,
   bodyClassName = sectionBodyClass,
   emptyState = false,
+  defaultOpen = true,
 }) {
-  // Core property groups are always open: the panel is a scannable list like
-  // Figma's, not a set of drawers. Empty groups show an explicit action row
-  // instead of hiding their body behind a chevron.
-  void storageKey;
-  return (
-    <div
-      data-inspector-section
-      className={emptyState ? emptySectionRhythmClass : sectionRhythmClass}
-      data-testid={testId}
-    >
-      {hideHeader ? null : (
-        <div className={emptyState ? emptySectionHeaderClass : sectionHeaderClass}>
+  if (hideHeader) {
+    return (
+      <div
+        data-inspector-section
+        className={emptyState ? emptySectionRhythmClass : sectionRhythmClass}
+        data-testid={testId}
+      >
+        <div className={bodyClassName}>{children}</div>
+      </div>
+    );
+  }
+  if (emptyState) {
+    return (
+      <div
+        data-inspector-section
+        className={emptySectionRhythmClass}
+        data-testid={testId}
+      >
+        <div className={emptySectionHeaderClass}>
           <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
             <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
           </div>
           {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
         </div>
-      )}
+        <div className={bodyClassName}>{children}</div>
+      </div>
+    );
+  }
+  return (
+    <CollapsibleSection
+      title={title}
+      defaultOpen={defaultOpen}
+      extra={extra}
+      storageKey={storageKey}
+      testId={testId}
+    >
       <div className={bodyClassName}>{children}</div>
-    </div>
+    </CollapsibleSection>
   );
 }
 

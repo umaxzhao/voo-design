@@ -3,12 +3,16 @@ export default {
   // Keep essential properties-panel section labels available before the
   // deferred full dictionary chunk has finished loading.
   "editor.props.transform": "变换",
+  "editor.props.position": "位置",
+  "editor.props.frame": "画框",
   "editor.props.layout": "布局",
   "editor.props.appearance": "外观",
+  "editor.props.layer": "图层",
   "editor.props.clipContent": "裁剪内容",
   "editor.props.fillLabel": "填充",
   "editor.props.strokeLabel": "描边",
   "editor.props.effects": "效果",
+  "editor.props.export": "导出",
   "firstRun.keep": "保留当前文档",
   "firstRun.replaceConfirm": "这将替换当前画布",
   "firstRun.start.reopenedDescription": "保留当前文档，或选择新的起点。",

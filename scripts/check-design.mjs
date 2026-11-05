@@ -163,7 +163,7 @@ async function main() {
 
   for (const f of files) {
     if (f.css) {
-      for (const m of scanCss(f.code, f.path)) {
+      for (const m of scanCss(f.code)) {
         findings.push({ file: f.path, line: m.line, col: 1, label: m.label, text: m.message });
       }
       continue;

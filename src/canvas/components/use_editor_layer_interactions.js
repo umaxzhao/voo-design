@@ -8,6 +8,7 @@ import {
   isRowSelected,
 } from "../editor/layer_selection.js";
 import useLayerDrag from "./use_layer_drag.js";
+import { restoreLayerListFocus } from "./editor_layer_focus.js";
 import { isContainerNode, isGroupNode, isBooleanNode } from "../editor/scene_model.js";
 export default function useEditorLayerInteractions(model) {
   const {
@@ -99,18 +100,21 @@ export default function useEditorLayerInteractions(model) {
   } = useLayerDrag({
     listRef,
     nodes: dragUnits,
-    onDrop: (id, target, clipIntoId, scope) => {
+    objects,
+    selectedIds,
+    selectedGroupId,
+    onDrop: (id, target, clipIntoId, scope, ids = [id]) => {
       const dragged = objects.find(object => object.id === id);
       if (clipIntoId) {
         // Dropped on a row: a folder takes the layer in as a member, any
         // other layer clips it (Photoshop's two drag gestures, told apart by
         // the drop target). Re-dropping a member onto its own folder is a
         // no-op so the tree is never broken.
-        if (dragged?.parentId && dragged.parentId === clipIntoId) return;
         const targetNode = objects.find(object => object.id === clipIntoId);
         if (targetNode && isContainerNode(targetNode)) {
-          onMoveIntoGroup?.(id, clipIntoId);
+          onMoveIntoGroup?.(ids.length > 1 ? ids : id, clipIntoId);
         } else {
+          if (dragged?.parentId === clipIntoId) return;
           onClipInto?.(id, clipIntoId);
         }
         return;
@@ -119,20 +123,33 @@ export default function useEditorLayerInteractions(model) {
       // passes the root-plane index straight through.
       if (dragged?.parentId && scope === "siblings") {
         const siblings = objects.filter(object => object.parentId === dragged.parentId);
-        const siblingsWithoutDragged = siblings.filter(object => object.id !== id);
-        const withoutDragged = objects.filter(object => object.id !== id);
-        const siblingTarget = siblingsWithoutDragged[target];
-        const targetIndex = siblingTarget ? withoutDragged.findIndex(object => object.id === siblingTarget.id) : withoutDragged.findIndex(object => object.id === siblingsWithoutDragged.at(-1)?.id) + 1;
-        if (targetIndex >= 0) onReorder?.(id, targetIndex);
+        const movingIds = ids.filter(candidateId => objects.find(o => o.id === candidateId)?.parentId === dragged.parentId);
+        const activeIds = movingIds.length > 0 && movingIds.includes(id) ? movingIds : [id];
+        const movingSet = new Set(activeIds);
+        const siblingsWithoutMoving = siblings.filter(object => !movingSet.has(object.id));
+        const siblingTarget = siblingsWithoutMoving[target];
+        const targetNode = siblingTarget ?? siblingsWithoutMoving.at(-1);
+        if (targetNode) {
+          const docTarget = docIndexOf.get(targetNode.id);
+          if (docTarget !== undefined && docTarget >= 0) {
+            onReorder?.(activeIds.length > 1 ? activeIds : id, docTarget, id);
+          }
+        }
         return;
       }
       if (dragged?.parentId) {
-        onMoveNodeToRoot?.(id, target);
+        onMoveNodeToRoot?.(ids.length > 1 ? ids : id, target);
         return;
       }
       const unit = dragUnits[target];
       const docTarget = unit ? docIndexOf.get(unit.id) : 0;
-      if (isGroupNode(dragged) || isBooleanNode(dragged)) onReorderGroup?.(id, docTarget);else onReorder?.(id, docTarget);
+      if (ids.length > 1) {
+        onReorder?.(ids, docTarget, id);
+      } else if (isGroupNode(dragged) || isBooleanNode(dragged)) {
+        onReorderGroup?.(id, docTarget);
+      } else {
+        onReorder?.(id, docTarget, id);
+      }
     }
   });
 
@@ -146,7 +163,9 @@ export default function useEditorLayerInteractions(model) {
     const trimmed = raw.trim().slice(0, 128);
     onRename?.(index, trimmed || null);
     requestAnimationFrame(() => {
-      listRef.current?.focus?.();
+      // The user may have clicked another field while the rename committed.
+      // Do not pull focus back from it.
+      restoreLayerListFocus(listRef);
     });
   };
   const toggleCollapsed = (id, canvasId = effectiveActiveCanvasId) => {

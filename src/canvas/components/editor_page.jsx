@@ -25,6 +25,7 @@ export default function EditorPage({
   mode,
   rect = null,
   sharedZoom = 1,
+  sharedTool = null,
   workspaceRendererReady = true,
   snapshot = null,
   onFocus,
@@ -84,7 +85,7 @@ export default function EditorPage({
   const refs = useEditorPageRefs(free);
   const props = {
     readOnly, nodeId, title, focused, active,
-    mode, rect, sharedZoom, workspaceRendererReady, snapshot,
+    mode, rect, sharedZoom, sharedTool, workspaceRendererReady, snapshot,
     onFocus, onEngine, onBeforeDispose, onChange, onGeneratedOutput,
     onVisibility, onRegionCutout, onAddPoint, onRepaint, onRepaintNode,
     onRepaintSelection, onOutpaintSubmit, onAddCanvas, onDeleteCanvas, isLast,

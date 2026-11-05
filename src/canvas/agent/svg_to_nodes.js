@@ -51,22 +51,12 @@ const COMMAND_LETTER = /^[MmLlHhVvCcSsQqTtAaZz]$/;
 
 /** Tags we never render. Subtrees are skipped: their content is not canvas. */
 const SKIP_SUBTREE_TAGS = new Set([
-  "defs",
-  "lineargradient",
-  "radialgradient",
-  "stop",
-  "use",
-  "text",
-  "tspan",
-  "textpath",
   "image",
   "script",
   "style",
   "title",
   "desc",
   "metadata",
-  "clippath",
-  "mask",
   "pattern",
   "filter",
   "symbol",
@@ -199,6 +189,36 @@ function hasRotationOrSkew(matrix) {
 }
 
 /**
+ * Expresses a turned `<rect>` with the scene model's rotation/shear box
+ * transform instead of flattening it to four corners. Preserving the rect kind
+ * keeps the layer a Rectangle with its corner radius, matching the editor's
+ * own rectangle rotation. Null means the matrix is degenerate (fall back).
+ */
+function decomposeRotatedRect(matrix, x, y, width, height) {
+  const [a, b, c, d] = matrix;
+  const scaleX = Math.hypot(a, b);
+  const det = a * d - b * c;
+  const scaleY = scaleX > EPSILON ? det / scaleX : 0;
+  if (!(scaleX > EPSILON) || Math.abs(scaleY) <= EPSILON) return null;
+  const cos = a / scaleX;
+  const sin = b / scaleX;
+  const upperRight = cos * c + sin * d;
+  const center = applyMatrix(matrix, x + width / 2, y + height / 2);
+  const nodeWidth = width * scaleX;
+  const nodeHeight = height * Math.abs(scaleY);
+  return {
+    x: round(center.x - nodeWidth / 2),
+    y: round(center.y - nodeHeight / 2),
+    width: round(nodeWidth),
+    height: round(nodeHeight),
+    rotation: round((Math.atan2(b, a) * 180) / Math.PI),
+    shear: round((Math.atan2(upperRight, scaleY) * 180) / Math.PI),
+    flipV: scaleY < 0,
+    radiusScale: Math.min(scaleX, Math.abs(scaleY)),
+  };
+}
+
+/**
  * Scale factor applied to stroke widths so they stay proportional to the
  * geometry after the viewBox/transform mapping. sqrt(|det|) is exact for
  * similarity transforms and the geometric mean for non-uniform ones.
@@ -276,7 +296,23 @@ function parseMarkup(text) {
   let index = 0;
   while (index < text.length) {
     const lt = text.indexOf("<", index);
-    if (lt < 0) break;
+    if (lt < 0) {
+      if (index < text.length && stack.length > 0) {
+        const textChunk = text.slice(index).trim();
+        if (textChunk) {
+          const current = stack[stack.length - 1];
+          current.text = current.text ? `${current.text} ${textChunk}` : textChunk;
+        }
+      }
+      break;
+    }
+    if (lt > index && stack.length > 0) {
+      const textChunk = text.slice(index, lt).trim();
+      if (textChunk) {
+        const current = stack[stack.length - 1];
+        current.text = current.text ? `${current.text} ${textChunk}` : textChunk;
+      }
+    }
     if (text.startsWith("<!--", lt)) {
       const end = text.indexOf("-->", lt + 4);
       index = end < 0 ? text.length : end + 3;
@@ -284,6 +320,13 @@ function parseMarkup(text) {
     }
     if (text.startsWith("<![CDATA[", lt)) {
       const end = text.indexOf("]]>", lt + 9);
+      if (end >= 0 && stack.length > 0) {
+        const cdataText = text.slice(lt + 9, end).trim();
+        if (cdataText) {
+          const current = stack[stack.length - 1];
+          current.text = current.text ? `${current.text} ${cdataText}` : cdataText;
+        }
+      }
       index = end < 0 ? text.length : end + 3;
       continue;
     }
@@ -360,8 +403,136 @@ function parseStyle(value) {
   return style;
 }
 
+const NAMED_COLORS = {
+  black: "#000000",
+  white: "#ffffff",
+  red: "#ff0000",
+  green: "#008000",
+  blue: "#0000ff",
+  yellow: "#ffff00",
+  cyan: "#00ffff",
+  magenta: "#ff00ff",
+  gray: "#808080",
+  grey: "#808080",
+  silver: "#c0c0c0",
+  maroon: "#800000",
+  olive: "#808000",
+  navy: "#000080",
+  purple: "#800080",
+  teal: "#008080",
+  orange: "#ffa500",
+  pink: "#ffc0cb",
+  gold: "#ffd700",
+};
+
+function normalizeColor(raw) {
+  if (!raw || typeof raw !== "string") return "#000000";
+  const s = raw.trim().toLowerCase();
+  if (NAMED_COLORS[s]) return NAMED_COLORS[s];
+  return raw.trim();
+}
+
+function parseCoordPercent(val, defaultVal = 0) {
+  if (val === undefined || val === null) return defaultVal;
+  const s = String(val).trim();
+  if (s.endsWith("%")) {
+    const num = parseFloat(s);
+    return Number.isFinite(num) ? num / 100 : defaultVal;
+  }
+  const num = parseFloat(s);
+  return Number.isFinite(num) ? num : defaultVal;
+}
+
+function resolveGradient(def, defsMap) {
+  if (!def) return null;
+  const tag = def.tag;
+  if (tag !== "lineargradient" && tag !== "radialgradient") return null;
+
+  let stops = [];
+  let current = def;
+  const visited = new Set();
+  while (current && !visited.has(current)) {
+    visited.add(current);
+    const stopElements = (current.children || []).filter((c) => c.tag === "stop");
+    if (stopElements.length > 0 && stops.length === 0) stops = stopElements;
+    const href = current.attrs.href || current.attrs["xlink:href"];
+    if (href && href.startsWith("#")) current = defsMap?.get(href.slice(1));
+    else break;
+  }
+  if (stops.length === 0) return null;
+
+  const parsedStops = stops.map((stop, index) => {
+    const style = parseStyle(stop.attrs.style);
+    const rawColor = stop.attrs["stop-color"] || style["stop-color"] || "#000000";
+    const rawOpacity = stop.attrs["stop-opacity"] || style["stop-opacity"];
+    let color = normalizeColor(rawColor);
+    const opacity = rawOpacity !== undefined ? Math.max(0, Math.min(1, parseFloat(rawOpacity))) : 1;
+    if (opacity < 1 && color.startsWith("#") && (color.length === 7 || color.length === 4)) {
+      if (color.length === 4) {
+        color = `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
+      }
+      const alphaHex = Math.round(opacity * 255).toString(16).padStart(2, "0");
+      color = `${color}${alphaHex}`.toUpperCase();
+    }
+    let offset = stop.attrs.offset;
+    let pos = 0;
+    if (offset !== undefined) {
+      const offsetStr = String(offset).trim();
+      if (offsetStr.endsWith("%")) pos = parseFloat(offsetStr) || 0;
+      else {
+        const num = parseFloat(offsetStr);
+        pos = Number.isFinite(num) ? (num <= 1 && num >= 0 ? num * 100 : num) : 0;
+      }
+    } else {
+      pos = stops.length > 1 ? (index / (stops.length - 1)) * 100 : 0;
+    }
+    return { color, position: Math.max(0, Math.min(100, pos)) };
+  });
+
+  const stopStrings = parsedStops
+    .sort((a, b) => a.position - b.position)
+    .map((s) => `${s.color} ${Math.round(s.position)}%`);
+
+  if (tag === "radialgradient") {
+    const cx = Math.round(parseCoordPercent(def.attrs.cx ?? def.attrs.fx, 0.5) * 100);
+    const cy = Math.round(parseCoordPercent(def.attrs.cy ?? def.attrs.fy, 0.5) * 100);
+    if (cx !== 50 || cy !== 50) {
+      return `radial-gradient(circle at ${cx}% ${cy}%, ${stopStrings.join(", ")})`;
+    }
+    return `radial-gradient(circle, ${stopStrings.join(", ")})`;
+  }
+
+  const x1 = parseCoordPercent(def.attrs.x1, 0);
+  const y1 = parseCoordPercent(def.attrs.y1, 0);
+  const x2 = parseCoordPercent(def.attrs.x2, 1);
+  const y2 = parseCoordPercent(def.attrs.y2, 0);
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  let angle = 90;
+  if (dx !== 0 || dy !== 0) {
+    angle = Math.round(((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360);
+  }
+  return `linear-gradient(${angle}deg, ${stopStrings.join(", ")})`;
+}
+
+function buildDefsMap(tree) {
+  const map = new Map();
+  function scan(node) {
+    if (node.attrs && node.attrs.id) {
+      map.set(String(node.attrs.id).trim(), node);
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        scan(child);
+      }
+    }
+  }
+  scan(tree);
+  return map;
+}
+
 /** Normalizes a paint value; degrades unsupported paint servers instead of throwing. */
-function resolvePaintColor(value, fallback, role, ctx) {
+function resolvePaintColor(value, fallback, role, ctx, defsMap = null) {
   if (value == null) return fallback;
   const raw = String(value).trim();
   if (!raw) return fallback;
@@ -373,6 +544,14 @@ function resolvePaintColor(value, fallback, role, ctx) {
     return DEFAULT_FILL;
   }
   if (lower.startsWith("url(")) {
+    const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(raw);
+    if (match && defsMap) {
+      const def = defsMap.get(match[1]);
+      if (def && (def.tag === "lineargradient" || def.tag === "radialgradient")) {
+        const gradient = resolveGradient(def, defsMap);
+        if (gradient) return gradient;
+      }
+    }
     ctx.warnOnce(
       `paint:${role}:url`,
       `${role}="${raw}" references a paint server (gradient/pattern), which is unsupported; using ${fallback ?? "none"}`,
@@ -387,6 +566,9 @@ function resolvePaintColor(value, fallback, role, ctx) {
 function withAlpha(color, alpha, role, ctx) {
   if (color == null || color === "none") return color;
   if (!(alpha < 1)) return color;
+  if (color.startsWith("linear-gradient") || color.startsWith("radial-gradient")) {
+    return color;
+  }
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
   if (hex) {
     const digits = hex[1];
@@ -414,12 +596,12 @@ function withAlpha(color, alpha, role, ctx) {
   return color;
 }
 
-function resolvePaint(attrs, inherited, ctx, parsedStyle = parseStyle(attrs.style)) {
+function resolvePaint(attrs, inherited, ctx, parsedStyle = parseStyle(attrs.style), defsMap = null) {
   const lookup = (key) => parsedStyle[key] ?? attrs[key];
   const rawFill = lookup("fill");
-  const fill = rawFill === undefined ? inherited.fill : resolvePaintColor(rawFill, inherited.fill, "fill", ctx);
+  const fill = rawFill === undefined ? inherited.fill : resolvePaintColor(rawFill, inherited.fill, "fill", ctx, defsMap);
   const rawStroke = lookup("stroke");
-  const stroke = rawStroke === undefined ? inherited.stroke : resolvePaintColor(rawStroke, null, "stroke", ctx);
+  const stroke = rawStroke === undefined ? inherited.stroke : resolvePaintColor(rawStroke, null, "stroke", ctx, defsMap);
   const rawWidth = lookup("stroke-width");
   const parsedWidth = rawWidth === undefined ? null : parseNumber(rawWidth);
   const strokeWidth = stroke === null ? null : (parsedWidth ?? inherited.strokeWidth ?? 1);
@@ -843,6 +1025,27 @@ function buildRectElement(attrs, paint, matrix, ctx) {
   }
   const rawRadius = parseNumber(attrs.rx) ?? parseNumber(attrs.ry) ?? 0;
   const radius = Math.max(0, Math.min(rawRadius, width / 2, height / 2));
+  if (hasRotationOrSkew(matrix)) {
+    const turned = decomposeRotatedRect(matrix, x, y, width, height);
+    if (turned) {
+      return {
+        kind: "rect",
+        x: turned.x,
+        y: turned.y,
+        width: turned.width,
+        height: turned.height,
+        rx: round(radius * turned.radiusScale),
+        rotation: turned.rotation,
+        shear: turned.shear,
+        ...(turned.flipV ? { flipV: true } : {}),
+        fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+        stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+        strokeWidth:
+          paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+        opacity: round(paint.opacity),
+      };
+    }
+  }
   if (!hasRotationOrSkew(matrix)) {
     const [a, b, c, d, e, f] = matrix;
     const cornerOneX = a * x + c * y + e;
@@ -865,7 +1068,7 @@ function buildRectElement(attrs, paint, matrix, ctx) {
   }
   ctx.warnOnce(
     "rect:rotated",
-    "rotated/skewed <rect> emitted as a 4-corner path (corner radius ignored)",
+    "rotated/skewed <rect> with a degenerate transform emitted as a 4-corner path",
   );
   const corners = pointsToPathData(
     [
@@ -927,6 +1130,154 @@ function buildPointsElement(close) {
   };
 }
 
+function collectElementText(element) {
+  let result = element.text || "";
+  if (element.children && element.children.length > 0) {
+    for (const child of element.children) {
+      if (child.tag === "tspan" || child.tag === "text") {
+        const childText = collectElementText(child);
+        if (childText) {
+          result = result ? `${result} ${childText}` : childText;
+        }
+      }
+    }
+  }
+  return result.trim();
+}
+
+function estimateSvgTextWidth(text, fontSize = 16, letterSpacing = 0) {
+  const size = fontSize > 0 ? fontSize : 16;
+  const lSpacing = Number(letterSpacing) || 0;
+  const rawLines = String(text ?? "").split("\n");
+  let maxWidth = 0;
+  for (const line of rawLines) {
+    let width = 0;
+    for (const ch of line) {
+      const isWide = /[ᄀ-ᅟ⺀-꓏ꫀ-힣豈-﫿︰-﹏＀-￯぀-ヿ一-鿿]/.test(ch);
+      width += (isWide ? 1.0 : 0.55) * size + lSpacing;
+    }
+    if (width > maxWidth) maxWidth = width;
+  }
+  return maxWidth;
+}
+
+function calculateSvgTextAnchorOffset(textAnchor, textWidth) {
+  const anchor = String(textAnchor ?? "").toLowerCase().trim();
+  if (anchor === "middle") return -textWidth / 2;
+  if (anchor === "end") return -textWidth;
+  return 0;
+}
+
+function normalizeSvgFontWeight(rawWeight) {
+  if (rawWeight == null) return undefined;
+  const str = String(rawWeight).trim().toLowerCase();
+  if (!str) return undefined;
+  if (str === "bold") return 700;
+  if (str === "normal") return 400;
+  if (str === "bolder") return 800;
+  if (str === "lighter") return 300;
+  const num = parseInt(str, 10);
+  return Number.isFinite(num) ? num : 400;
+}
+
+function buildTextElement(attrs, paint, matrix, ctx, element) {
+  const positionedTspans = (element?.children || []).filter(
+    (c) => c.tag === "tspan" && (c.attrs.x !== undefined || c.attrs.y !== undefined),
+  );
+  if (positionedTspans.length > 0) {
+    const nodes = [];
+    for (const tspan of element.children.filter((c) => c.tag === "tspan")) {
+      const tContent = (tspan.text || "").trim();
+      if (!tContent) continue;
+      const tAttrs = { ...attrs, ...tspan.attrs };
+      const tStyle = parseStyle(tAttrs.style);
+      const tx = parseNumber(tAttrs.x) ?? (parseNumber(attrs.x) ?? 0);
+      const ty = parseNumber(tAttrs.y) ?? (parseNumber(attrs.y) ?? 0);
+      const tFontSize = parseNumber(tAttrs["font-size"] ?? tStyle["font-size"] ?? tAttrs.fontSize ?? tStyle.fontSize) ?? 16;
+      const fontFamily = tAttrs["font-family"] ?? tStyle["font-family"] ?? tAttrs.fontFamily ?? tStyle.fontFamily;
+      const fontWeight = normalizeSvgFontWeight(tAttrs["font-weight"] ?? tStyle["font-weight"] ?? tAttrs.fontWeight ?? tStyle.fontWeight);
+      const fontStyle = tAttrs["font-style"] ?? tStyle["font-style"] ?? tAttrs.fontStyle ?? tStyle.fontStyle;
+      const letterSpacing = parseNumber(tAttrs["letter-spacing"] ?? tStyle["letter-spacing"] ?? tAttrs.letterSpacing ?? tStyle.letterSpacing) ?? 0;
+      const textAnchor =
+        tAttrs["text-anchor"] ??
+        tAttrs.textAnchor ??
+        tAttrs.textanchor ??
+        tStyle["text-anchor"] ??
+        tStyle.textAnchor ??
+        tStyle.textanchor;
+
+      const textWidth = estimateSvgTextWidth(tContent, tFontSize, letterSpacing);
+      const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
+      const tpt = applyMatrix(matrix, tx + anchorOffsetX, ty - tFontSize);
+      nodes.push({
+        kind: "text",
+        x: round(tpt.x),
+        y: round(tpt.y),
+        width: Math.ceil(Math.round(textWidth * 1000) / 1000),
+        height: Math.ceil(tFontSize * 1.25),
+        text: tContent,
+        fontSize: round(tFontSize),
+        fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+        stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+        strokeWidth:
+          paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+        opacity: round(paint.opacity),
+        ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
+        ...(fontWeight != null ? { fontWeight } : {}),
+        ...(fontStyle ? { fontStyle } : {}),
+        ...(fontStyle === "italic" ? { italic: true } : {}),
+        ...(letterSpacing ? { letterSpacing } : {}),
+        ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
+      });
+    }
+    return nodes.length > 0 ? nodes : null;
+  }
+
+  const style = parseStyle(attrs.style);
+  const content = (element ? collectElementText(element) : "") || attrs["aria-label"] || "";
+  if (!content.trim()) return null;
+  const x = parseNumber(attrs.x) ?? 0;
+  const y = parseNumber(attrs.y) ?? 0;
+  const fontSize = parseNumber(attrs["font-size"] ?? style["font-size"] ?? attrs.fontSize ?? style.fontSize) ?? 16;
+  const fontFamily = attrs["font-family"] ?? style["font-family"] ?? attrs.fontFamily ?? style.fontFamily;
+  const fontWeight = normalizeSvgFontWeight(attrs["font-weight"] ?? style["font-weight"] ?? attrs.fontWeight ?? style.fontWeight);
+  const fontStyle = attrs["font-style"] ?? style["font-style"] ?? attrs.fontStyle ?? style.fontStyle;
+  const letterSpacing = parseNumber(attrs["letter-spacing"] ?? style["letter-spacing"] ?? attrs.letterSpacing ?? style.letterSpacing) ?? 0;
+  const textAnchor =
+    attrs["text-anchor"] ??
+    attrs.textAnchor ??
+    attrs.textanchor ??
+    style["text-anchor"] ??
+    style.textAnchor ??
+    style.textanchor;
+
+  const textWidth = estimateSvgTextWidth(content, fontSize, letterSpacing);
+  const anchorOffsetX = calculateSvgTextAnchorOffset(textAnchor, textWidth);
+
+  const pt = applyMatrix(matrix, x + anchorOffsetX, y - fontSize);
+  return {
+    kind: "text",
+    x: round(pt.x),
+    y: round(pt.y),
+    width: Math.ceil(Math.round(textWidth * 1000) / 1000),
+    height: Math.ceil(fontSize * 1.25),
+    text: content,
+    fontSize: round(fontSize),
+    fill: withAlpha(paint.fill, paint.fillOpacity, "fill", ctx),
+    stroke: withAlpha(paint.stroke, paint.strokeOpacity, "stroke", ctx),
+    strokeWidth:
+      paint.strokeWidth == null ? null : round(paint.strokeWidth * strokeScaleFor(matrix)),
+    opacity: round(paint.opacity),
+    ...(fontFamily ? { fontFamily: fontFamily.replace(/['"]/g, "").trim() } : {}),
+    ...(fontWeight != null ? { fontWeight } : {}),
+    ...(fontStyle ? { fontStyle } : {}),
+    ...(fontStyle === "italic" ? { italic: true } : {}),
+    ...(letterSpacing ? { letterSpacing } : {}),
+    ...(textAnchor === "middle" ? { align: "center" } : textAnchor === "end" ? { align: "right" } : {}),
+  };
+}
+
 const SHAPE_BUILDERS = {
   path: buildPathElement,
   rect: buildRectElement,
@@ -935,6 +1286,7 @@ const SHAPE_BUILDERS = {
   line: buildLineElement,
   polyline: buildPointsElement(false),
   polygon: buildPointsElement(true),
+  text: buildTextElement,
 };
 
 // ---------------------------------------------------------------------------
@@ -1014,6 +1366,7 @@ export function parseSvgToNodes(svgText, options = {}) {
     const outerMatrix = parseTransformMatrix(svg.attrs.transform, ctx);
     const rootMatrix = multiplyMatrix(outerMatrix, viewBoxMatrix);
 
+    const defsMap = buildDefsMap(svg);
     const limit = Number.isFinite(maxNodes)
       ? Math.max(0, Math.floor(maxNodes))
       : DEFAULT_MAX_NODES;
@@ -1034,8 +1387,84 @@ export function parseSvgToNodes(svgText, options = {}) {
       return true;
     };
 
-    const walk = (element, inheritedPaint, inheritedMatrix) => {
+    function resolveMaskOrClip(refAttr, elemMatrix, parentClipId = null) {
+      if (!refAttr || !defsMap) return null;
+      const match = /^url\(["']?#([^"')]+)["']?\)/i.exec(String(refAttr).trim());
+      if (!match) return null;
+      const def = defsMap.get(match[1]);
+      if (!def || !def.children || def.children.length === 0) return null;
+
+      const currentTransform = parseTransformMatrix(def.attrs?.transform, ctx);
+      const defMatrix = elemMatrix && currentTransform ? multiplyMatrix(elemMatrix, currentTransform) : currentTransform || elemMatrix;
+
+      const shapes = [];
+      for (const child of def.children) {
+        const childTransform = parseTransformMatrix(child.attrs?.transform, ctx);
+        const childMatrix = defMatrix && childTransform ? multiplyMatrix(defMatrix, childTransform) : childTransform || defMatrix;
+        const childPaint = resolvePaint(child.attrs || {}, BASE_PAINT, ctx, parseStyle(child.attrs?.style), defsMap);
+        const b = SHAPE_BUILDERS[child.tag];
+        if (b) {
+          const shapeNode = b(child.attrs || {}, childPaint, childMatrix, ctx, child);
+          if (shapeNode) {
+            const arr = Array.isArray(shapeNode) ? shapeNode : [shapeNode];
+            for (const s of arr) shapes.push({ tag: child.tag, attrs: child.attrs || {}, node: s });
+          }
+        }
+      }
+      if (shapes.length === 0) return null;
+
+      if (def.tag === "clippath") {
+        if (shapes.length === 1) {
+          const { tag, attrs, node: base } = shapes[0];
+          base.maskBase = true;
+          base.fill = "#ffffff";
+          if (parentClipId) base.clipTo = parentClipId;
+          addNode(tag, attrs, base);
+          return base.name;
+        }
+        const booleanClip = {
+          kind: "boolean",
+          op: "union",
+          operation: "union",
+          name: typeof def.attrs?.id === "string" ? def.attrs.id.trim() : `clip-${nodes.length + 1}`,
+          maskBase: true,
+          fill: "#ffffff",
+          children: shapes.map((s) => s.node),
+          ...(parentClipId ? { clipTo: parentClipId } : {}),
+        };
+        addNode("boolean", def.attrs || {}, booleanClip);
+        return booleanClip.name;
+      }
+
+      if (def.tag === "mask") {
+        const { tag, attrs, node: base } = shapes[0];
+        base.maskBase = true;
+        base.maskType = def.attrs?.["mask-type"] || "luminance";
+        if (!base.fill || base.fill === "transparent" || base.fill === "none") {
+          base.fill = "#ffffff";
+        }
+        if (parentClipId) {
+          const parentNode = ctx.nodes?.find((n) => n.name === parentClipId || n.id === parentClipId);
+          if (parentNode && base.kind === "rect") {
+            base.x = parentNode.x;
+            base.y = parentNode.y;
+            base.width = parentNode.width;
+            base.height = parentNode.height;
+            base.cornerRadius = parentNode.cornerRadius;
+          }
+        }
+        if (parentClipId) base.clipTo = parentClipId;
+        addNode(tag, attrs, base);
+        return base.name;
+      }
+      return null;
+    }
+
+    const walk = (element, inheritedPaint, inheritedMatrix, currentClipId = null) => {
       const tag = element.tag;
+      if (["defs", "lineargradient", "radialgradient", "stop", "clippath", "mask"].includes(tag)) {
+        return true;
+      }
       if (SKIP_SUBTREE_TAGS.has(tag)) {
         ctx.warnOnce(`tag:${tag}`, `unsupported element <${tag}> ignored`);
         return true;
@@ -1051,14 +1480,37 @@ export function parseSvgToNodes(svgText, options = {}) {
         ctx.warnOnce(`hidden:${tag}`, `hidden element <${tag}> skipped (display:none / visibility:hidden)`);
         return true;
       }
-      const paint = resolvePaint(element.attrs, inheritedPaint, ctx, parsedStyle);
+      const paint = resolvePaint(element.attrs, inheritedPaint, ctx, parsedStyle, defsMap);
       const matrix = multiplyMatrix(
         inheritedMatrix,
         parseTransformMatrix(element.attrs.transform, ctx),
       );
+      const clipAttr = element.attrs["clip-path"] || parsedStyle["clip-path"];
+      const maskAttr = element.attrs.mask || parsedStyle.mask;
+      const elemClipId = resolveMaskOrClip(clipAttr, matrix, currentClipId);
+      const elemMaskId = resolveMaskOrClip(maskAttr, matrix, elemClipId || currentClipId);
+      const effectiveClipId = elemMaskId || elemClipId || currentClipId;
+
+      if (tag === "use") {
+        const href = element.attrs.href || element.attrs["xlink:href"];
+        if (href && href.startsWith("#") && defsMap) {
+          const target = defsMap.get(href.slice(1));
+          if (target) {
+            const useX = parseNumber(element.attrs.x) ?? 0;
+            const useY = parseNumber(element.attrs.y) ?? 0;
+            let useMatrix = matrix;
+            if (useX !== 0 || useY !== 0) {
+              useMatrix = multiplyMatrix(useMatrix, [1, 0, 0, 1, useX, useY]);
+            }
+            return walk(target, paint, useMatrix, effectiveClipId);
+          }
+        }
+        return true;
+      }
+
       if (CONTAINER_TAGS.has(tag)) {
         for (const child of element.children) {
-          if (!walk(child, paint, matrix)) return false;
+          if (!walk(child, paint, matrix, effectiveClipId)) return false;
         }
         return true;
       }
@@ -1066,18 +1518,26 @@ export function parseSvgToNodes(svgText, options = {}) {
       if (!builder) {
         ctx.warnOnce(`tag:${tag}`, `unsupported element <${tag}> ignored`);
         for (const child of element.children) {
-          if (!walk(child, paint, matrix)) return false;
+          if (!walk(child, paint, matrix, effectiveClipId)) return false;
         }
         return true;
       }
-      const node = builder(element.attrs, paint, matrix, ctx);
+      const node = builder(element.attrs, paint, matrix, ctx, element);
       if (!node) return true;
+      if (Array.isArray(node)) {
+        for (const n of node) {
+          if (effectiveClipId) n.clipTo = effectiveClipId;
+          if (!addNode(tag, element.attrs, n)) return false;
+        }
+        return true;
+      }
+      if (effectiveClipId) node.clipTo = effectiveClipId;
       return addNode(tag, element.attrs, node);
     };
 
-    const rootPaint = resolvePaint(svg.attrs, BASE_PAINT, ctx);
+    const rootPaint = resolvePaint(svg.attrs, BASE_PAINT, ctx, parseStyle(svg.attrs.style), defsMap);
     for (const child of svg.children) {
-      if (!walk(child, rootPaint, rootMatrix)) break;
+      if (!walk(child, rootPaint, rootMatrix, null)) break;
     }
 
     return {

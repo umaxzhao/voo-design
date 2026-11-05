@@ -9,16 +9,50 @@ import { createContainerOpacityPlan, containerPaintNode } from "./container-opac
 import { drawContainerOpacity } from "./render-container-opacity.js";
 import { drawIsolatedAdjustment } from "./render-isolated-adjustment.js";
 
+const artworkPlanCache = new WeakMap();
+
+function getCachedArtworkPlan(nodes) {
+  let cached = artworkPlanCache.get(nodes);
+  if (!cached) {
+    cached = {
+      clips: createFrameClipContext(nodes),
+      opacityPlan: createContainerOpacityPlan(nodes),
+      allowedNodeIds: new Set(nodes.map((node) => node.id)),
+    };
+    artworkPlanCache.set(nodes, cached);
+  }
+  return cached;
+}
+
 /** Opaque scenes stay flat; isolated subtrees preserve their member paint order. */
-export function drawArtworkNodes(ctx, { doc, paintNodeIds, hiddenNodeId, visibleSet,
-  culledIds, visibleRect, docVersion, fullResolution, bitmapOf, maskOf, gpu,
-  bypassAdjustments, selectionTransformBox, videoFrameOf, stageCache,
-  paintNodes = doc.nodes, isolatedContainers = new Set(), opacityPlan = createContainerOpacityPlan(doc.nodes) }) {
+export function drawArtworkNodes(ctx, options) {
+  const {
+    doc,
+    paintNodeIds,
+    hiddenNodeId,
+    visibleSet,
+    culledIds,
+    visibleRect,
+    docVersion,
+    fullResolution,
+    bitmapOf,
+    maskOf,
+    gpu,
+    bypassAdjustments,
+    selectionTransformBox,
+    videoFrameOf,
+    stageCache,
+    paintNodes = doc.nodes,
+    isolatedContainers = new Set(),
+  } = options;
+  const isFullDocNodes = paintNodes === doc.nodes && isolatedContainers.size === 0;
+  const cached = isFullDocNodes ? getCachedArtworkPlan(doc.nodes) : null;
   const canvas = ctx.canvas;
-  const clips = createFrameClipContext(doc.nodes);
+  const clips = cached ? cached.clips : createFrameClipContext(doc.nodes);
+  const opacityPlan = cached ? cached.opacityPlan : (options.opacityPlan ?? createContainerOpacityPlan(doc.nodes));
   const entries = opacityPlan.entries(paintNodes, isolatedContainers);
-  const allowedNodeIds = new Set(paintNodes.map(node => node.id));
-  const paintScopeKey = paintNodes === doc.nodes ? "all" : JSON.stringify(paintNodes.map(node => node.id));
+  const allowedNodeIds = cached ? cached.allowedNodeIds : new Set(paintNodes.map((node) => node.id));
+  const paintScopeKey = isFullDocNodes ? "all" : (paintNodes.length < 50 ? JSON.stringify(paintNodes.map((node) => node.id)) : "subset");
   const clipRun = createFrameClipRun(ctx);
   try {
     for (let position = 0; position < entries.length; position += 1) {

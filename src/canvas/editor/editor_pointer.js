@@ -210,6 +210,7 @@ export function attachPointerHandlers({
     isSpaceDown: () => spaceDown,
   });
   api.refreshBrushCursor = hover.refreshBrushCursor;
+  if (api) api.hasHandleUnder = hitTest.hasHandleUnder;
 
   // ---------------------------------------------------------- dispatchers
   const { dispatchDown } = createPointerDownDispatcher({
@@ -385,12 +386,10 @@ export function attachPointerHandlers({
   };
 
   const onAuxClick = (event) => {
-    if (event.button === 1) {
-      event.preventDefault();
-    }
+    if (event.button === 1) event.preventDefault();
   };
 
-  return bindPointerEvents({ stage, shared, api, hover, pan, keyboard,
+  return bindPointerEvents({ stage, shared, api, hover, pan, keyboard, hitTest,
     handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerLeave, onAuxClick, onDoubleClick },
   });
 }

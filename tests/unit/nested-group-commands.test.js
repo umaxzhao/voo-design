@@ -20,6 +20,36 @@ const fixture = (nodes, ids) => {
 };
 
 describe("group commands inside Frames", () => {
+  it("wraps a single layer in a transparent Frame without changing its artwork", () => {
+    const child = { ...rect("a", "outer"), rotation: 30 };
+    const f = fixture([frame("outer"), child], ["a"]);
+    const id = f.api.frameSelection();
+    expect(f.doc().nodes.find(node => node.id === id)).toMatchObject({
+      kind: "group", isFrame: true, frame: true, parentId: "outer", fill: "transparent", clipContent: false,
+    });
+    expect(f.doc().nodes.find(node => node.id === "a")).toEqual({ ...child, parentId: id });
+    expect(f.select).toHaveBeenCalledWith(id);
+    expect(f.setDoc).toHaveBeenCalledTimes(1);
+  });
+  it("refuses frame wrapping for empty or inherited-locked selections", () => {
+    const empty = fixture([], []);
+    expect(empty.api.frameSelection()).toBeUndefined();
+    expect(empty.setDoc).not.toHaveBeenCalled();
+    const locked = fixture([{ ...frame("outer"), locked: true }, rect("a", "outer")], ["a"]);
+    locked.api.frameSelection();
+    expect(locked.setDoc).not.toHaveBeenCalled();
+  });
+  it("keeps selected descendants attached to their selected Frame when wrapping", () => {
+    const inner = { ...frame("inner", "outer"), x: 60, y: 60, width: 100, height: 100 };
+    const child = rect("child", "inner");
+    const f = fixture([frame("outer"), inner, child], ["inner", "child"]);
+    const id = f.api.frameSelection();
+    expect(f.doc().nodes.find(node => node.id === "inner")).toEqual({ ...inner, parentId: id });
+    expect(f.doc().nodes.find(node => node.id === "child")).toEqual(child);
+    const restored = deserialiseDocument(serialiseDocument(f.doc()));
+    expect(restored.nodes.find(node => node.id === id)).toMatchObject({ isFrame: true, parentId: "outer" });
+    expect(restored.nodes.find(node => node.id === "child").parentId).toBe("inner");
+  });
   it("keeps a new sibling group inside the shared parent Frame", () => {
     const doc = { width: 600, height: 500, nodes: [frame("frame"), rect("a", "frame"), rect("b", "frame")] };
     const next = insertGroup(doc, { id: "group", kind: "group", parentId: null, x: 50, y: 50, width: 40, height: 30 }, ["a", "b"]);

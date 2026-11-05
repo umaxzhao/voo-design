@@ -11,46 +11,95 @@
 import { NODE_KIND, createPathNode, pathBounds } from "./scene_model.js";
 
 /**
- * The vertices of a regular polygon inscribed in `box`, in document space.
+ * Scales and translates a set of 2D points so that their outer bounds
+ * (minX, maxX, minY, maxY) match the target `box` exactly.
+ * Snaps extreme coordinates precisely to box boundaries to avoid floating-point
+ * drift.
+ */
+export function fitPointsToBox(points, box) {
+  if (!Array.isArray(points) || points.length === 0) return [];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [px, py] of points) {
+    if (px < minX) minX = px;
+    if (px > maxX) maxX = px;
+    if (py < minY) minY = py;
+    if (py > maxY) maxY = py;
+  }
+  const spanX = maxX - minX;
+  const spanY = maxY - minY;
+  const targetX = box?.x ?? 0;
+  const targetY = box?.y ?? 0;
+  const targetW = box?.width ?? 0;
+  const targetH = box?.height ?? 0;
+  const scaleX = spanX > 1e-9 ? targetW / spanX : 0;
+  const scaleY = spanY > 1e-9 ? targetH / spanY : 0;
+
+  return points.map(([px, py]) => {
+    let nx;
+    if (spanX <= 1e-9) {
+      nx = targetX;
+    } else if (Math.abs(px - minX) < 1e-12) {
+      nx = targetX;
+    } else if (Math.abs(px - maxX) < 1e-12) {
+      nx = targetX + targetW;
+    } else {
+      nx = targetX + (px - minX) * scaleX;
+    }
+
+    let ny;
+    if (spanY <= 1e-9) {
+      ny = targetY;
+    } else if (Math.abs(py - minY) < 1e-12) {
+      ny = targetY;
+    } else if (Math.abs(py - maxY) < 1e-12) {
+      ny = targetY + targetH;
+    } else {
+      ny = targetY + (py - minY) * scaleY;
+    }
+
+    return [nx, ny];
+  });
+}
+
+/**
+ * The vertices of a regular polygon inscribed and fitted in `box`, in document space.
+ * The vertices' bounding box matches `box` exactly so the outer bounds never shrink
+ * inside the drawing frame.
  * The first vertex sits at the top centre and the rest follow clockwise
  * (screen coordinates, so increasing angle runs clockwise).
  */
 export function regularPolygonPoints(box, sides = 6) {
   const count = Math.max(3, Math.round(sides));
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height / 2;
-  const rx = box.width / 2;
-  const ry = box.height / 2;
   const points = [];
   for (let i = 0; i < count; i += 1) {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / count;
-    points.push([cx + rx * Math.cos(angle), cy + ry * Math.sin(angle)]);
+    points.push([Math.cos(angle), Math.sin(angle)]);
   }
-  return points;
+  return fitPointsToBox(points, box);
 }
 
 /**
- * The vertices of a `spikes`-pointed star inscribed in `box`: outer and inner
+ * The vertices of a `spikes`-pointed star inscribed and fitted in `box`:
+ * the vertices' bounding box matches `box` exactly. Outer and inner
  * vertices alternating, outer first at the top centre, clockwise. `innerRatio`
  * is the inner radius as a fraction of the outer one.
  */
 export function starPoints(box, spikes = 5, innerRatio = 0.382) {
   const count = Math.max(2, Math.round(spikes));
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height / 2;
-  const rx = box.width / 2;
-  const ry = box.height / 2;
   const points = [];
   for (let i = 0; i < count * 2; i += 1) {
     const outer = i % 2 === 0;
     const scale = outer ? 1 : innerRatio;
     const angle = -Math.PI / 2 + (i * Math.PI) / count;
     points.push([
-      cx + rx * scale * Math.cos(angle),
-      cy + ry * scale * Math.sin(angle),
+      scale * Math.cos(angle),
+      scale * Math.sin(angle),
     ]);
   }
-  return points;
+  return fitPointsToBox(points, box);
 }
 
 /**
@@ -134,32 +183,14 @@ export function withPolyParams(node, params = {}) {
     width: Math.max(1, node.width - strokeWidth),
     height: Math.max(1, node.height - strokeWidth),
   };
-  // The vertices are generated in a unit box and then remapped so their
-  // bounds land exactly on the node's box: an n-gon's own vertex bounds are
-  // smaller than its circumscribed box for most counts, so inscribing
-  // directly would shrink the shape a step on every edit — scrubbing the
-  // count would spiral the polygon away. Figma's rule instead: the frame is
-  // the contract, the outline fills it.
-  const raw =
+  // The vertices are generated and fitted so their bounds land exactly on
+  // the node's box: an n-gon's or star's own vertex bounds fill the box
+  // without shrinking a step on every edit. Figma's rule: the frame is the
+  // contract, the outline fills it.
+  const points =
     polyKind === "star"
-      ? starPoints({ x: 0, y: 0, width: 1, height: 1 }, spikes, innerRatio)
-      : regularPolygonPoints({ x: 0, y: 0, width: 1, height: 1 }, sides);
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const [px, py] of raw) {
-    if (px < minX) minX = px;
-    if (px > maxX) maxX = px;
-    if (py < minY) minY = py;
-    if (py > maxY) maxY = py;
-  }
-  const scaleX = box.width / Math.max(1e-9, maxX - minX);
-  const scaleY = box.height / Math.max(1e-9, maxY - minY);
-  const points = raw.map(([px, py]) => [
-    box.x + (px - minX) * scaleX,
-    box.y + (py - minY) * scaleY,
-  ]);
+      ? starPoints(box, spikes, innerRatio)
+      : regularPolygonPoints(box, sides);
   const bounds = pathBounds(points, strokeWidth);
   return {
     x: bounds.x,

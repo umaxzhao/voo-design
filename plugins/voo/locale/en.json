@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "VOO",
-    "description": "Connect the open VOO canvas to DeepSeek Harness through MCP tools."
+    "description": "Everything VOO in one Harness plugin: the editor runs in the right sidebar, the canvas MCP tools drive it (or the open VOO app), and the editor's own agent can use the Harness model."
   }
 }

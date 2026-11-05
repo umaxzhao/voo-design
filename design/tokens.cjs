@@ -112,6 +112,8 @@ const ALLOWED_HUES = new Set([
 const ACCENTS = {
   "#a7ffd4":
     "mint — system & flow (wires, selection, connection state, focus ring)",
+  "#0d7647":
+    "mint, light theme text variant — high-contrast text on light surfaces (>= 4.5:1)",
   "#E5B2FF":
     "purple — AI & editor (AI actions, masks, layer highlight, generation)",
   "#eed0ff": "purple, text variant — for text sitting on a purple wash",
@@ -180,11 +182,12 @@ const SKEUOMORPHIC = {
 };
 
 /**
- * Interface surfaces are borderless. These spellings remain meaningful only
- * for real artwork and manipulation guides; border-policy.cjs guards the UI.
+ * Borders are a last resort, not a default. Hierarchy comes from lightness:
+ * an overlay is one step brighter than the canvas, a control one step brighter
+ * than the overlay. Solid-tone borders are the historical wrong answer.
  */
 const BORDER_ALLOWED = [
-  "border-white/", // functional geometry, never a decorative surface edge
+  "border-white/", // the sanctioned translucent hairline
   "border-transparent",
   "border-current",
   "border-none",

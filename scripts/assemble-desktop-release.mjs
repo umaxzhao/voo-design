@@ -39,7 +39,8 @@ export async function assembleDesktopRelease({ inputDir, outputDir, version, rev
     assert.equal(report.packaged, true); assert.equal(report.checks?.length, 3);
     assert.deepEqual(report.errors, []);
     evidence.push(report);
-    assets.set(`checks-${name}`, Buffer.from(JSON.stringify(report, null, 2)));
+    // Keep smoke/signing receipts in Actions evidence per AGENTS.md desktop policy;
+    // user-facing download lists contain installers, updater metadata and checksums only.
     if (target.platform === 'mac' && (requireMacSigning || report.signing)) {
       const signingName = `signing-mac-${target.arch}.json`;
       const signedFiles = files.filter(file => path.basename(file) === signingName);
@@ -50,7 +51,6 @@ export async function assembleDesktopRelease({ inputDir, outputDir, version, rev
         assert.equal(signed[key], true, `macOS signing receipt failed: ${key}`);
         assert.equal(report.signing?.[key], true, `Native receipt lacks macOS trust evidence: ${key}`);
       }
-      assets.set(signingName, Buffer.from(JSON.stringify(signed, null, 2)));
     }
   }
   for (const file of files) {

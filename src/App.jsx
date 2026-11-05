@@ -12,18 +12,20 @@ const BrowserDrawer = lazy(() => import("./canvas/components/browser_drawer/brow
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
 import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
+import { isEmbedPage, isHarnessPage } from "./shared/embed_mode.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
-import { WORKSPACE_BACKGROUND } from "./canvas/editor/render_canvas_base.js";
+import { closeActiveDocumentTab } from "./canvas/store/document_tab_close.js";
 import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
 } from "../electron/voo_format.js";
+import { exportFormatForMenuAction } from "./shared/editor_menu_actions.js";
 
-const isEmbed = typeof window !== "undefined" && Boolean(
-  new URLSearchParams(window.location.search).get("embed") ||
-  new URLSearchParams(window.location.search).get("minimal")
-);
+const isEmbed = isEmbedPage();
+// The harness panel keeps the product chrome (title bar + mint frame) and only
+// wants the side effects of an embedded session.
+const isHarnessPanel = isHarnessPage();
 
 export default function App() {
   const activeDocumentId = useDesignStore(s => s.activeDocumentId);
@@ -48,9 +50,10 @@ export default function App() {
     if (needsEditor) setEditorActivated(true);
   }, [needsEditor]);
 
-  // When embedded in an IDE webview or iframe, auto-open an untitled project if none exists
+  // When embedded in an IDE webview/iframe or the harness side panel, auto-open
+  // an untitled project if none exists.
   useEffect(() => {
-    if (isEmbed) {
+    if (isEmbed || isHarnessPanel) {
       const store = useDesignStore.getState();
       if (store.welcomeOpen && !store.activeDocumentId) {
         store.newVooProject({ label: "Untitled" });
@@ -80,6 +83,7 @@ export default function App() {
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
     const handleOpenAgent = () => setAgentOpen(true);
+    const handleToggleAgent = () => setAgentOpen(!useDesignStore.getState().agentPanelOpen);
     const handleOpenFirstRun = () => {
       if (firstRunOpen) return;
       setFirstRunReopened(true); setFirstRunOpen(true);
@@ -88,6 +92,7 @@ export default function App() {
     const handleOpenOnboarding = () => setOnboardingOpen(true);
     const handleOpenBrowser = () => setBrowserDrawerOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
+    window.addEventListener("voo:toggle-agent-panel", handleToggleAgent);
     window.addEventListener("voo:agent-prompt", handleOpenAgent);
     window.addEventListener("voo:open-browser", handleOpenBrowser);
     window.addEventListener("voo:open-onboarding", handleOpenOnboarding);
@@ -114,6 +119,12 @@ export default function App() {
           case "file:saveAs":
             window.dispatchEvent(new CustomEvent("voo:file-save-as"));
             break;
+          case "file:closeTab":
+            closeActiveDocumentTab(
+              useDesignStore,
+              () => window.confirm(t("editor.exit.confirmBody")),
+            );
+            break;
           case "edit:undo":
             window.__vooEditor?.undo?.();
             break;
@@ -126,8 +137,17 @@ export default function App() {
           case "view:actualSize":
             window.__vooEditor?.getViewport?.()?.zoomToHundred?.();
             break;
-          default:
+          default: {
+            // File > Export PNG/SVG/PSD opens the same export dialog as the
+            // title-bar action, preselecting the requested format.
+            const format = exportFormatForMenuAction(action);
+            if (format) {
+              window.dispatchEvent(
+                new CustomEvent("voo:editor-export", { detail: { format } }),
+              );
+            }
             break;
+          }
         }
       });
     }
@@ -135,6 +155,7 @@ export default function App() {
     return () => {
       window.removeEventListener("voo:open-first-run", handleOpenFirstRun);
       window.removeEventListener("voo:open-agent-panel", handleOpenAgent);
+      window.removeEventListener("voo:toggle-agent-panel", handleToggleAgent);
       window.removeEventListener("voo:agent-prompt", handleOpenAgent);
       window.removeEventListener("voo:open-onboarding", handleOpenOnboarding);
       window.removeEventListener("voo:open-browser", handleOpenBrowser);
@@ -145,8 +166,8 @@ export default function App() {
   return (
     <main
       data-embed={isEmbed ? "true" : undefined}
-      className={`app-root-frame relative flex h-full w-full select-none flex-col ${welcomeOpen && !isEmbed ? "bg-black" : ""}`}
-      style={isEmbed ? { backgroundColor: "#000" } : welcomeOpen ? undefined : { backgroundColor: canvasBackgroundColor }}
+      className="app-root-frame relative flex h-full w-full select-none flex-col"
+      style={{ background: "#000" }}
     >
       {!isEmbed && <CrashRecoveryPrompt />}
       {!isEmbed && <ImageSizeNotice />}

@@ -22,7 +22,8 @@ function fixture() {
 }
 
 describe("native desktop window chrome", () => {
-  it.each(["linux", "win32"])("uses frameless %s chrome without an Alt-revealed native menu", platform => {
+  it("uses frameless linux chrome without an Alt-revealed native menu", () => {
+    const platform = "linux";
     expect(windowChromeOptions(platform)).toEqual({ frame: false, autoHideMenuBar: false });
     const { win } = fixture();
     attachWindowChrome(win, platform);

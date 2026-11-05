@@ -33,4 +33,36 @@ describe("export dialog transparency default", () => {
     const checkbox = html.match(/<input[^>]*type="checkbox"[^>]*>/)[0];
     expect(checkbox.includes('checked=""')).toBe(transparent);
   });
+
+  it("does not dim the editor to a blank window behind the export panel", () => {
+    vi.stubGlobal("document", { body: {} });
+    const html = renderToStaticMarkup(
+      <EditorExportDialog
+        doc={{ nodes: [] }} format="png" quality={1} scale={1}
+        documentWidth={100} documentHeight={100}
+        onFormat={() => {}} onQuality={() => {}} onScale={() => {}}
+        onExport={() => {}} onClose={() => {}}
+      />,
+    );
+    const overlay = html.match(/<div[^>]*data-testid="design-export-overlay"[^>]*>/)?.[0];
+    expect(overlay).toBeTruthy();
+    expect(overlay).not.toContain("bg-black");
+    expect(html).toContain('data-testid="design-export-dialog"');
+  });
+
+  it("offers native Figma export without raster-only range and scale controls", () => {
+    vi.stubGlobal("document", { body: {} });
+    const html = renderToStaticMarkup(
+      <EditorExportDialog
+        doc={{ nodes: [] }} format="fig" exportName="Design.voo" quality={1} scale={1}
+        documentWidth={100} documentHeight={100}
+        onExportRange={() => {}} onFormat={() => {}} onQuality={() => {}}
+        onScale={() => {}} onExport={() => {}} onClose={() => {}}
+      />,
+    );
+    expect(html).toContain("editor.exportFigma");
+    expect(html).not.toContain('aria-label="editor.exportScale"');
+    expect(html).not.toContain('aria-label="editor.exportRange"');
+    expect(html).toContain("Design.fig");
+  });
 });

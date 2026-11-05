@@ -30,6 +30,12 @@ const workspaceApi = {
   onChanged: (handler) => subscribe("workspace:changed", handler),
 };
 
+const safeStorageApi = {
+  isAvailable: () => ipcRenderer.invoke("safeStorage:isAvailable"),
+  encryptString: (plainText) => ipcRenderer.invoke("safeStorage:encryptString", plainText),
+  decryptString: (encryptedBase64) => ipcRenderer.invoke("safeStorage:decryptString", encryptedBase64),
+};
+
 contextBridge.exposeInMainWorld("vooDesktop", {
   version: () => ipcRenderer.invoke("app:version"),
   updates: {
@@ -39,13 +45,14 @@ contextBridge.exposeInMainWorld("vooDesktop", {
   },
   platform: process.platform,
   windowControls: {
-    supported: process.platform === "linux" || process.platform === "win32",
+    supported: process.platform === "linux",
     minimize: () => ipcRenderer.invoke("window:minimize"),
     toggleMaximize: () => ipcRenderer.invoke("window:toggleMaximize"),
     isMaximized: () => ipcRenderer.invoke("window:isMaximized"),
     close: () => ipcRenderer.invoke("window:close"),
     onMaximizedChange: (handler) => subscribe("window:maximized", handler),
   },
+  safeStorage: safeStorageApi,
   webImageGenerate: (args) => ipcRenderer.invoke("webImage:generate", args),
   webImageCancel: (jobId) => ipcRenderer.invoke("webImage:cancel", jobId),
   onWebImageProgress: (handler) => subscribe("webImage:progress", handler),
@@ -63,6 +70,13 @@ contextBridge.exposeInMainWorld("vooDesktop", {
   workspace: workspaceApi,
 });
 
+contextBridge.exposeInMainWorld("vooElectron", {
+  chooseExportPath: ({ name, format, title }) =>
+    ipcRenderer.invoke("dialog:chooseExportPath", { name, format, title }),
+  writeImageFile: (filePath, dataUrl) =>
+    ipcRenderer.invoke("fs:writeImageFile", filePath, dataUrl),
+});
+
 contextBridge.exposeInMainWorld("electronAPI", {
   isElectron: true,
   platform: process.platform,
@@ -78,5 +92,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("menu:action", handler);
     return () => ipcRenderer.removeListener("menu:action", handler);
   },
+  safeStorage: safeStorageApi,
   workspace: workspaceApi,
 });

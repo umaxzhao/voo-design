@@ -29,9 +29,11 @@ describe("Milestone 2: Settings Workspace Integration", () => {
     setSetting("voo.workspace.type", "electron");
     setSetting("voo.workspace.name", "VOO Projects");
     setSetting("voo.workspace.lastScannedAt", 1700000000000);
+    globalThis.vooDesktop = { platform: "darwin" };
   });
 
   afterEach(() => {
+    delete globalThis.vooDesktop;
     vi.restoreAllMocks();
   });
 
@@ -49,6 +51,26 @@ describe("Milestone 2: Settings Workspace Integration", () => {
       expect(html).toContain('data-testid="workspace-change-dir-btn"');
       expect(html).toContain('data-testid="workspace-rescan-btn"');
       expect(html).toContain('data-testid="workspace-reveal-btn"');
+    });
+
+    it("renders Linux native badge when workspace type is electron on Linux", () => {
+      globalThis.vooDesktop = { platform: "linux" };
+      const html = renderToStaticMarkup(
+        React.createElement(WorkspaceSettingsSection)
+      );
+
+      expect(html).toContain('data-testid="workspace-platform-badge"');
+      expect(html).toContain("[Linux 原生]");
+    });
+
+    it("renders Windows native badge when workspace type is electron on Windows", () => {
+      globalThis.vooDesktop = { platform: "win32" };
+      const html = renderToStaticMarkup(
+        React.createElement(WorkspaceSettingsSection)
+      );
+
+      expect(html).toContain('data-testid="workspace-platform-badge"');
+      expect(html).toContain("[Windows 原生]");
     });
 
     it("renders browser mount badge when workspace type is web-fsa", () => {

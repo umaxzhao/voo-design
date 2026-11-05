@@ -4,13 +4,29 @@ import { TOOL } from "../../editor/editor_constants.js";
 import { dragArtboardPosition } from "../../editor/editor_artboard_positions.js";
 import { sendCollabCursor } from "../../collab/use_collab.js";
 import { shouldDragArtboardBody } from "../artboard-body-gesture.js";
+import {
+  resolveFreeDrawingStart,
+  calculateFreeDrawingBox,
+} from "../../editor/shape_snapping.js";
 
 /** Shared-stage pan/selection and artboard title/body pointer ownership. */
+const DRAWING_TOOLS = new Set([
+  TOOL.FRAME, TOOL.RECT, TOOL.ELLIPSE, TOOL.LINE, TOOL.ARROW,
+  TOOL.POLYGON, TOOL.STAR, TOOL.PEN, TOOL.CURVATURE_PEN, TOOL.FREE_PEN, TOOL.TEXT,
+]);
+
+export function isDrawingTool(tool) {
+  return DRAWING_TOOLS.has(tool);
+}
+
 export function useEditorCanvasGestures({
   multi, visible, freeStageRef, spaceRef, panGestureRef, enginesRef,
   layoutById, cameraZoom, tool, focusedId, focusEditorPage,
-  handleFocusCanvas, setCanvasBackgroundSelected,
+  handleFocusCanvas, setCanvasBackgroundSelected, nodeIds: propNodeIds,
 }) {
+  const storeNodeIds = useDesignStore((state) => state.editingNodeIds);
+  const nodeIds = propNodeIds ?? storeNodeIds ?? [];
+  const drawingGestureRef = useRef(null);
   const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
   const panEditorCamera = useDesignStore((state) => state.panEditorCamera);
   const setEditorArtboardLayout = useDesignStore((state) => state.setEditorArtboardLayout);
@@ -19,27 +35,17 @@ export function useEditorCanvasGestures({
   // Space arms the hand tool over the free canvas.
   useEffect(() => {
     if (!multi || !visible || welcomeOpen) return undefined;
-    const isTypingTarget = (target) =>
-      target instanceof HTMLElement &&
-      (target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable);
+    const isTyping = (t) => t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
     const setHand = (active) => {
       spaceRef.current = active;
-      const stage = freeStageRef.current;
-      if (stage) stage.style.cursor = active ? "grab" : "default";
+      if (freeStageRef.current) freeStageRef.current.style.cursor = active ? "grab" : "default";
     };
-    const onKeyDown = (event) => {
-      if (event.code !== "Space") return;
-      if (event.target.closest?.("[data-presentation-overlay]")) return;
-      if (isTypingTarget(event.target)) return;
-      event.preventDefault();
+    const onKeyDown = (e) => {
+      if (e.code !== "Space" || e.target.closest?.("[data-presentation-overlay]") || isTyping(e.target)) return;
+      e.preventDefault();
       setHand(true);
     };
-    const onKeyUp = (event) => {
-      if (event.code !== "Space") return;
-      setHand(false);
-    };
+    const onKeyUp = (e) => { if (e.code === "Space") setHand(false); };
     const onBlur = () => setHand(false);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -76,37 +82,52 @@ export function useEditorCanvasGestures({
       return;
     }
 
-    if (document.activeElement?.hasAttribute?.("data-canvas-text-overlay")) {
+    if (typeof document !== "undefined" && document.activeElement?.hasAttribute?.("data-canvas-text-overlay")) {
       document.activeElement.blur();
+    }
+
+    const targetId = focusedId || (nodeIds.length > 0 ? nodeIds[0] : null);
+    const targetEngine = targetId ? enginesRef.current?.get(targetId)?.engine : null;
+    if (!isPanTrigger && targetEngine?.hasHandleUnder?.({ clientX: event.clientX, clientY: event.clientY })) {
+      return;
+    }
+
+    // Drawing tools on the free canvas (outside artboards) draw on the primary/focused engine
+    if (!isPanTrigger && isDrawingTool(tool)) {
+      if (targetId && !focusedId) focusEditorPage(targetId);
+      if (targetEngine) {
+        event.preventDefault();
+        try { freeStageRef.current?.setPointerCapture?.(event.pointerId); } catch {}
+        const { point, rawPoint } = resolveFreeDrawingStart({ targetEngine, event });
+        const node = tool === TOOL.FRAME ? targetEngine.addFrameAt(point, { intoFrame: true })
+          : tool === TOOL.RECT ? targetEngine.addRectAt(point, { intoFrame: true })
+          : tool === TOOL.ELLIPSE ? targetEngine.addEllipseAt(point, { intoFrame: true })
+          : tool === TOOL.TEXT ? targetEngine.addTextAt(point, "", { intoFrame: true }) : null;
+        if (node) {
+          targetEngine.select(node.id);
+          drawingGestureRef.current = {
+            kind: tool, id: node.id, start: point, rawStart: rawPoint,
+            engine: targetEngine, pointerId: event.pointerId,
+          };
+        }
+      }
+      return;
     }
 
     // Middle-button drag, space+drag, or drag on empty canvas: start panning camera
     event.preventDefault();
-    if (isPanTrigger) {
-      event.stopPropagation();
-    }
+    if (isPanTrigger) event.stopPropagation();
 
-    try {
-      freeStageRef.current?.setPointerCapture?.(event.pointerId);
-    } catch {
-      // Synthetic pointers and already-released ids cannot be captured;
-      // the move/up handlers below still work without capture.
-    }
-
+    try { freeStageRef.current?.setPointerCapture?.(event.pointerId); } catch {}
     const stage = freeStageRef.current;
     if (stage) stage.style.cursor = "grabbing";
 
     panGestureRef.current = {
-      pointerId: event.pointerId,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      startX: event.clientX,
-      startY: event.clientY,
-      moved: false,
-      button: event.button,
-      panTrigger: isPanTrigger,
+      pointerId: event.pointerId, lastX: event.clientX, lastY: event.clientY,
+      startX: event.clientX, startY: event.clientY, moved: false,
+      button: event.button, panTrigger: isPanTrigger,
     };
-  }, [freeStageRef, panGestureRef, spaceRef, tool]);
+  }, [enginesRef, focusedId, focusEditorPage, freeStageRef, nodeIds, panGestureRef, spaceRef, tool]);
   const lastCollabCursorSentRef = useRef(0);
   const handleCollabCursorMove = useCallback((event) => {
     const now = performance.now();
@@ -124,6 +145,13 @@ export function useEditorCanvasGestures({
   const onFreePointerMove = useCallback(
     (event) => {
       handleCollabCursorMove(event);
+      const drawing = drawingGestureRef.current;
+      if (drawing && drawing.pointerId === event.pointerId) {
+        const box = calculateFreeDrawingBox({ engine: drawing.engine, event, drawing });
+        drawing.engine.updateNode(drawing.id, box, { commit: false });
+        return;
+      }
+
       const gesture = panGestureRef.current;
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       const dx = event.clientX - gesture.lastX;
@@ -148,27 +176,47 @@ export function useEditorCanvasGestures({
   );
   const onFreePointerUp = useCallback(
     (event) => {
+      const drawing = drawingGestureRef.current;
+      if (drawing && drawing.pointerId === event.pointerId) {
+        drawingGestureRef.current = null;
+        try { freeStageRef.current?.releasePointerCapture?.(event.pointerId); } catch {}
+        const stage = freeStageRef.current;
+        if (stage) stage.style.cursor = spaceRef.current ? "grab" : "default";
+        const node = drawing.engine.getDocument()?.nodes?.find?.((n) => n.id === drawing.id);
+        const tooSmall = !node || node.width < 4 || node.height < 4;
+        if (tooSmall) {
+          drawing.engine.removeNode(drawing.id);
+          drawing.engine.select(null);
+        } else {
+          drawing.engine.select(drawing.id);
+          drawing.engine.commit?.("editor.pointer.draw");
+        }
+        return;
+      }
+
       const gesture = panGestureRef.current;
       if (gesture?.pointerId !== event.pointerId) return;
       panGestureRef.current = null;
 
-      try {
-        freeStageRef.current?.releasePointerCapture?.(event.pointerId);
-      } catch {
-        // The pointer may already be gone; nothing left to release.
-      }
+      try { freeStageRef.current?.releasePointerCapture?.(event.pointerId); } catch {}
       const stage = freeStageRef.current;
       if (stage) stage.style.cursor = spaceRef.current ? "grab" : "default";
 
       // A bare left-click on empty canvas (never dragged) deselects the focused
-      // page and its selection, like Figma.
+      // page and its selection when there are multiple pages.
+      // When there is only one page, clicking empty canvas must not deselect/unfocus
+      // the active page, or ensure focusedId falls back to the current artboard.
       if (!gesture.moved && gesture.button === 0 && !gesture.panTrigger && !spaceRef.current) {
         setCanvasBackgroundSelected(true);
         enginesRef.current.get(focusedId)?.engine?.select?.(null);
-        focusEditorPage(null);
+        if (multi && nodeIds.length > 1) {
+          focusEditorPage(null);
+        } else if (nodeIds.length > 0 && !focusedId) {
+          focusEditorPage(nodeIds[0]);
+        }
       }
     },
-    [enginesRef, focusedId, focusEditorPage, freeStageRef, panGestureRef, setCanvasBackgroundSelected, spaceRef],
+    [enginesRef, focusedId, focusEditorPage, freeStageRef, multi, nodeIds, panGestureRef, setCanvasBackgroundSelected, spaceRef],
   );
 
   // Space-drag on a title keeps the camera pan gesture available.
@@ -213,6 +261,16 @@ export function useEditorCanvasGestures({
         )
       )
         return;
+      // The title is Select/Hand chrome. A drawing tool must never turn its
+      // press into an artboard move: that move lives in the layout store, not
+      // document history, so Undo would skip the Frame the user dragged.
+      const liveTool =
+        enginesRef.current.get(nodeId)?.engine?.getTool?.() ?? tool;
+      if (liveTool === TOOL.HAND) {
+        onTitlePanDown(event);
+        return;
+      }
+      if (liveTool !== TOOL.SELECT) return;
       const layout = layoutById.get(nodeId);
       if (!layout) return;
       event.preventDefault();
@@ -232,7 +290,7 @@ export function useEditorCanvasGestures({
         moved: false,
       };
     },
-    [layoutById, onTitlePanDown, spaceRef],
+    [enginesRef, layoutById, onTitlePanDown, spaceRef, tool],
   );
 
   const onTitlePointerMove = useCallback(
@@ -319,8 +377,10 @@ export function useEditorCanvasGestures({
         )
       )
         return;
-      if (tool !== TOOL.SELECT) return;
       const targetEngine = enginesRef.current.get(nodeId)?.engine;
+      // Read the live engine tool, not only the render-time prop: a page
+      // focused by this same press may still show Select until React commits.
+      if ((targetEngine?.getTool?.() ?? tool) !== TOOL.SELECT) return;
       if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY)) return;
       const board = event.currentTarget;
       onTitlePointerDown(nodeId, event);

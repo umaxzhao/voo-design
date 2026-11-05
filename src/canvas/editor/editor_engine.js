@@ -127,11 +127,22 @@ export function createEditor({
   // one history entry instead of letting the default commit-per-update model
   // flood undo with one entry per tick.
   let toolCommitTimer = null;
+  let lastCoalescedId = null;
+
+  function flushPendingToolCommit() {
+    if (!toolCommitTimer || !ctrl?.historyApi) return false;
+    clearTimeout(toolCommitTimer);
+    toolCommitTimer = null;
+    lastCoalescedId = null;
+    ctrl.historyApi.commit?.("editor.tool.update");
+    return true;
+  }
   const renderListeners = new Set();
 
   const history = createHistory();
   const selection = createSelection({
     onChange: (ids) => {
+      flushPendingToolCommit();
       history.updateCurrentSelection(ids);
     },
   });
@@ -269,6 +280,7 @@ export function createEditor({
       }
     }
     if (commit) {
+      flushPendingToolCommit();
       commitEditorAction("editor.document.set", () =>
         history.push(
           historyState.snapshotState(),
@@ -552,12 +564,20 @@ export function createEditor({
     ...ctrl.documentController,
     ...ctrl.selectionController,
     ...ctrl.nodesController,
-    updateNodes: (updates, options) =>
-      ctrl.nodesController.updateNodes(updates, options),
-    updateNode: (id, patch, options) =>
-      ctrl.nodesController.updateNodes([{ id, ...patch }], options),
+    updateNodes: (updates, options) => {
+      flushPendingToolCommit();
+      return ctrl.nodesController.updateNodes(updates, options);
+    },
+    updateNode: (id, patch, options) => {
+      flushPendingToolCommit();
+      return ctrl.nodesController.updateNodes([{ id, ...patch }], options);
+    },
     /** Update a node without committing; commit once after the burst ends. */
     updateNodeCoalesced: (id, patch, options = {}) => {
+      if (lastCoalescedId !== null && lastCoalescedId !== id) {
+        flushPendingToolCommit();
+      }
+      lastCoalescedId = id;
       ctrl.nodesController.updateNodes([{ id, ...patch }], {
         ...options,
         commit: false,
@@ -565,6 +585,7 @@ export function createEditor({
       if (toolCommitTimer) clearTimeout(toolCommitTimer);
       toolCommitTimer = setTimeout(() => {
         toolCommitTimer = null;
+        lastCoalescedId = null;
         ctrl.historyApi.commit?.("editor.tool.update");
       }, 250);
     },
@@ -579,8 +600,14 @@ export function createEditor({
     getSelectedId: () =>
       ctrl.nodesController.getSelectedId?.() ??
       ctrl.selectionController.getSelectedId?.(),
-    commitEditorDocument: (options) =>
-      ctrl.documentController.commitEditorDocument?.(options),
+    commitEditorDocument: (options) => {
+      flushPendingToolCommit();
+      return ctrl.documentController.commitEditorDocument?.(options);
+    },
+    commit: (name) => {
+      flushPendingToolCommit();
+      return ctrl.historyApi.commit?.(name);
+    },
     zoomToFit: () => viewportTools.zoomToFit?.(),
     zoomToHundred: () => viewportTools.zoomToHundred?.(),
     zoomIn: () => viewportTools.zoomIn?.(),
@@ -601,6 +628,30 @@ export function createEditor({
     ...ctrl.toolsController,
     ...ctrl.brushController,
     ...ctrl.historyApi,
+    undo: async () => {
+      flushPendingToolCommit();
+      return ctrl.historyApi.undo?.();
+    },
+    redo: async () => {
+      flushPendingToolCommit();
+      return ctrl.historyApi.redo?.();
+    },
+    canUndo: () => Boolean(toolCommitTimer) || Boolean(ctrl.historyApi.canUndo?.()),
+    canRedo: () => !toolCommitTimer && Boolean(ctrl.historyApi.canRedo?.()),
+    isDirty: () => Boolean(toolCommitTimer) || Boolean(ctrl.historyApi.isDirty?.()),
+    jumpToHistory: async (index) => {
+      flushPendingToolCommit();
+      return ctrl.historyApi.jumpToHistory?.(index);
+    },
+    captureDocumentSession: () => {
+      flushPendingToolCommit();
+      return ctrl.historyApi.captureDocumentSession?.();
+    },
+    markApplied: () => {
+      flushPendingToolCommit();
+      return ctrl.historyApi.markApplied?.();
+    },
+    flushPendingToolCommit: () => flushPendingToolCommit(),
     ...ctrl.transformApi,
     ...ctrl.repairController,
     ...ctrl.styleController,
@@ -917,7 +968,11 @@ export function createEditor({
 
     if (frame) cancelAnimationFrame(frame);
     if (notifyFrame) cancelAnimationFrame(notifyFrame);
-    if (toolCommitTimer) clearTimeout(toolCommitTimer);
+    if (toolCommitTimer) {
+      clearTimeout(toolCommitTimer);
+      toolCommitTimer = null;
+      lastCoalescedId = null;
+    }
     ctrl.selectionController.dispose();
     observer.disconnect();
     detachPointer();

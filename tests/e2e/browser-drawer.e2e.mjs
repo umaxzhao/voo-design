@@ -73,6 +73,9 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.equal(await toolsMenu.getByRole("menuitem", { name: /Import Page|导入整页/i }).count(), 0);
   await page.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i }).waitFor();
   await page.screenshot({ path: editorArtifactPath("voo-browser-split-mobile.png") });
+  // First Escape closes the open tools menu; second Escape closes the drawer.
+  await page.keyboard.press("Escape");
+  await toolsMenu.waitFor({ state: "detached" });
   await page.keyboard.press("Escape");
   await drawer.waitFor({ state: "detached" });
   assert.equal(await trigger.getAttribute("aria-pressed"), "false");

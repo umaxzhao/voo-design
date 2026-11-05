@@ -121,6 +121,7 @@ function computeMultiContourBounds(anchors, strokeWidth = 0) {
     let i = contourStart;
     const sub = [];
     while (i < anchors.length) {
+      if (i > contourStart && anchors[i].moveTo) break;
       sub.push(anchors[i]);
       if (anchors[i].close) {
         i += 1;

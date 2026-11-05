@@ -4,6 +4,7 @@ import EditorCanvasPresets from "./editor_canvas_presets.jsx";
 import EditorPageTitle, { FRAME_TITLE_HIT_AREA } from "./editor_page_title.jsx";
 import EditorContextualTaskBarSlot from "./editor_contextual_taskbar_slot.jsx";
 import { EDITOR_PAGE_HEADER_INSET, EDITOR_PAGE_TOOLBAR_GAP } from "./editor_panel_layout.js";
+import { TOOL } from "../editor/editor_constants.js";
 import { IconAdd, IconFrame } from "../icons.jsx";
 
 /** Shared-camera artboard DOM; artwork remains owned by the workspace renderer. */
@@ -18,7 +19,13 @@ export default function EditorFreePage({ page }) {
     iconTone, renaming, setRenaming, title,
     onRenamePage, componentUses, ready, engine,
     contextualTaskBarProps, onAddCanvas, isLast,
+    sharedTool, tool,
   } = page;
+  // Page chrome follows the one toolbar tool, even before this page's own
+  // engine has heard about a tool chosen on another page.
+  const chromeTool = sharedTool ?? engine?.getTool?.() ?? tool ?? TOOL.SELECT;
+  const titleInteractive =
+    chromeTool === TOOL.SELECT || chromeTool === TOOL.HAND;
     // An artboard on the shared free canvas. The outer div carries the camera
     // transform and the (thin, focused-only) frame; the inner stage owns the
     // canvas and the engine's pointer surface. The name label floats above the
@@ -30,7 +37,9 @@ export default function EditorFreePage({ page }) {
         data-testid="editor-page"
         data-node-id={nodeId}
         onPointerDownCapture={(event) => {
-          onFocus(nodeId);
+          // A canvas press focuses what is already visible: it must not restore
+          // a page camera or fit the page before the engine hit-tests the point.
+          onFocus(nodeId, { preserveCamera: true });
           onBodyPointerDown?.(event);
         }}
         // isolate: the frame's own z-index ladder (header, tool row, add
@@ -91,7 +100,14 @@ export default function EditorFreePage({ page }) {
           data-testid="editor-page-title"
           data-editor-artboard-title
           hidden={doc?.isCanvasRoot}
-          style={{ top: -EDITOR_PAGE_HEADER_INSET, display: doc?.isCanvasRoot ? "none" : undefined }}
+          style={{
+            top: -EDITOR_PAGE_HEADER_INSET,
+            display: doc?.isCanvasRoot ? "none" : undefined,
+            // Drawing tools own the canvas, including the band above the
+            // Frame that the title occupies. Only Select (and Hand) keep the
+            // title as a pointer target.
+            pointerEvents: titleInteractive ? undefined : "none",
+          }}
           // A full-width bar over the frame: name at the left, the canvas-type
           // switch at the right. The focused frame's bar is tinted with its
           // type colour; the others show just the name.

@@ -40,7 +40,10 @@ const upscaleImage = async (scaleOrOptions = 2) => {
     setUpscaleProgress(null);
     const abortController = new AbortController();
     inFlightAbortRef.current = abortController;
+    const isCancelled = () => abortController.signal.aborted || !isCurrent();
+
     try {
+      if (isCancelled()) return false;
       const sourceSnapshot = engine.serialise?.();
       let image = engine.exportNodePng?.(target.id);
       if (!image && target.dataUrl) image = target.dataUrl;
@@ -51,34 +54,50 @@ const upscaleImage = async (scaleOrOptions = 2) => {
       }
       if (!image) throw new Error("bitmapMissing");
 
+      if (isCancelled()) return false;
       const bitmap =
-        image instanceof HTMLImageElement ||
-        image instanceof HTMLCanvasElement ||
+        (typeof HTMLImageElement !== "undefined" && image instanceof HTMLImageElement) ||
+        (typeof HTMLCanvasElement !== "undefined" && image instanceof HTMLCanvasElement) ||
         (typeof ImageBitmap !== "undefined" && image instanceof ImageBitmap)
           ? image
           : await decodeImageSource(image);
+      if (isCancelled()) return false;
       if (!bitmap) throw new Error("bitmapDecodeFailed");
 
       const { runLocalUpscale } = await import("../../editor/local_upscale.js");
-      if (!isCurrent()) return false;
+      if (isCancelled()) return false;
       let usedInterpolation = false;
       const blob = await runLocalUpscale(bitmap, {
         scale,
         modelId,
         onProgress: (progress) => {
+          if (isCancelled()) return;
           if (progress.phase === "fallback") usedInterpolation = true;
           setUpscaleProgress(progress);
         },
-        shouldStop: () => abortController.signal.aborted,
+        shouldStop: () => isCancelled(),
       });
 
+      if (isCancelled()) return false;
       if (!blob) throw new Error("upscaleFailed");
       if (usedInterpolation) engine.setRegionHint?.("editor.upscale.interpolationFallback");
-      const dataUrl = await new Promise((resolve) => {
+      const dataUrl = await new Promise((resolve, reject) => {
+        if (isCancelled()) {
+          reject(new Error("stopped"));
+          return;
+        }
         const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
+        reader.onloadend = () => {
+          if (isCancelled()) {
+            reject(new Error("stopped"));
+          } else {
+            resolve(reader.result);
+          }
+        };
+        reader.onerror = () => reject(reader.error || new Error("readFailed"));
         reader.readAsDataURL(blob);
       });
+      if (isCancelled()) return false;
       return await emitGeneratedOutput(
         {
           dataUrl,
@@ -91,9 +110,19 @@ const upscaleImage = async (scaleOrOptions = 2) => {
         onMaterializeGeneratedOutput,
       );
     } catch (err) {
+      const stopped =
+        isCancelled() ||
+        err?.message === "stopped" ||
+        err?.name === "AbortError";
+      if (stopped) {
+        setUpscaleProgress(null);
+        setUpscaleBusy(false);
+        return false;
+      }
       if (!isCurrent()) return false;
       console.error("upscaleImage error:", err);
       setMaskError(repaintFailureCode(err));
+      return false;
     } finally {
       if (inFlightAbortRef.current === abortController) {
         inFlightAbortRef.current = null;

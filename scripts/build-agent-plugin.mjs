@@ -12,6 +12,9 @@ export const DSH_MCP_SERVER_NAME = "voo";
 export const DSH_MODEL_BRIDGE_ROW_ID = "voo-model-bridge";
 export const DSH_MODEL_BRIDGE_ENTRY = "lib/model-bridge.js";
 export const DSH_MODEL_BRIDGE_PORT = 4399;
+export const DSH_EDITOR_PANEL_ROW_ID = "voo-editor-panel";
+export const DSH_EDITOR_PANEL_ENTRY = "index.js";
+export const DSH_EDITOR_PANEL_PORT = 4173;
 export const ICON_MAX_BYTES = 256 * 1024;
 
 const defaultRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -48,12 +51,16 @@ export function createConnectorManifest({ wsVersion }) {
     // Display metadata is read without activating the bundle: Settings and the
     // Plugin Manager resolve ./locale/*.json and ./icon from these exports.
     exports: {
+      ".": "./index.js",
+      "./client": "./client.js",
       "./locale/*.json": "./locale/*.json",
       "./icon": "./icon.png",
       "./lib/model-bridge.js": "./lib/model-bridge.js",
       "./package.json": "./package.json",
     },
     files: [
+      "index.js",
+      "client.js",
       "cordis.patch.yml",
       "locale/*.json",
       "icon.png",
@@ -68,21 +75,39 @@ export function createConnectorManifest({ wsVersion }) {
       "README.md",
       "LICENSE",
     ],
-    dsh: { bundle: { patch: "./cordis.patch.yml" } },
+    dsh: {
+      bundle: { patch: "./cordis.patch.yml" },
+      // One install also renders the editor panel in the Harness right sidebar;
+      // this injection only orders activation after the Sidebar's tab registry.
+      client: {
+        platform: "web",
+        immediately: true,
+        inject: ["@deepseek-ai/dsh-client-ui-sidebar-right"],
+      },
+    },
   };
 }
 
 // The portable copy is installed as a link: directory, so every runtime path is
 // baked in at build time; rebuild after moving the folder.
 //
-// The second row names a module relative to this patch file: the Loader anchors
-// inserted relative row names beside their patch, so `./lib/model-bridge.js`
-// resolves inside the installed connector without a package subpath export.
-// (`exports` still carries the subpath for Node-resolver consumers.)
+// The model bridge row names a module relative to this patch file: the Loader
+// anchors inserted relative row names beside their patch, so
+// `./lib/model-bridge.js` resolves inside the installed connector without a
+// package subpath export. (`exports` still carries the subpath for
+// Node-resolver consumers.) The panel row uses the same anchoring for its Host
+// half; the MCP row bakes the destination because the client spawns `node` with
+// an absolute script path.
 export function renderDshPatch({ destination }) {
   const serverEntry = path.join(destination, "scripts/mcp-server.mjs");
   return [
     "- insert:",
+    `    - id: ${DSH_EDITOR_PANEL_ROW_ID}`,
+    `      name: './${DSH_EDITOR_PANEL_ENTRY}'`,
+    "      config:",
+    `        port: ${DSH_EDITOR_PANEL_PORT}`,
+    "        editorDir: ''",
+    "        bridge: true",
     `    - id: ${DSH_MCP_ROW_ID}`,
     "      name: '@deepseek-ai/dsh-mcp-client'",
     "      config:",

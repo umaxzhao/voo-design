@@ -64,6 +64,7 @@ export function localPathGeometry(node) {
     while (index < points.length) {
       const from = points[index - 1];
       const to = points[index];
+      if (to.moveTo) break;
       commands.push(
         from.out || to.in
           ? `C${at(from, from.out)} ${at(to, to.in)} ${at(to)}`

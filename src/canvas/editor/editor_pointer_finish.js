@@ -12,6 +12,20 @@ import { rollbackDrawingGesture } from "./drawing-gesture-transaction.js";
 import { finishTextPlacement } from "./text-placement-transaction.js";
 
 export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
+  /**
+   * Preview transforms skip the normal document settle, so a rotated/resized
+   * Auto Layout child would keep its pre-rotation slot until the next edit.
+   * Re-apply the previewed document through the real setter (without history)
+   * so layout reflows against the final box before the commit snapshot.
+   */
+  function settleAutoLayout() {
+    const doc = api.getDocument?.();
+    if (!doc?.nodes?.some((node) => node.kind === "group" && node.autoLayout)) {
+      return;
+    }
+    api.setDoc?.(doc, { commit: false });
+  }
+
   function finishGesture(event, finished) {
     if (!finished) return;
     if (event?.type === "pointercancel" && rollbackDrawingGesture(api, finished)) return;
@@ -229,6 +243,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       finished.kind === "gradientLine"
     ) {
       if (finished.moved) {
+        settleAutoLayout();
         commitEditorAction("editor.pointer.transform", () => api.commit());
       }
       return;
@@ -416,6 +431,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       finished.kind !== "pan" &&
       (!(finished.kind === "move" && !finished.moved) || finished.duplicated);
     if (changed) {
+      settleAutoLayout();
       commitEditorAction("editor.pointer.transform", () => api.commit());
     }
   }

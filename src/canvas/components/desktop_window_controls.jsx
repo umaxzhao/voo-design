@@ -10,18 +10,38 @@ export default function DesktopWindowControls({ controls }) {
   const MaximizeIcon = controls.maximized ? Copy : Square;
   const maximizeLabel = t(controls.maximized ? "windowControls.restore" : "windowControls.maximize");
   return (
-    <div className={styles.controls} role="group" aria-label={t("windowControls.label")}
-      data-testid="desktop-window-controls">
-      <button type="button" className={styles.button} onClick={controls.minimize}
-        title={t("windowControls.minimize")} aria-label={t("windowControls.minimize")}>
+    <div
+      className={styles.controls}
+      role="group"
+      aria-label={t("windowControls.label")}
+      data-testid="desktop-window-controls"
+    >
+      <button
+        type="button"
+        className={styles.button}
+        onClick={controls.minimize}
+        title={t("windowControls.minimize")}
+        aria-label={t("windowControls.minimize")}
+      >
         <Minus size={14} strokeWidth={1.5} aria-hidden="true" />
       </button>
-      <button type="button" className={styles.button} onClick={controls.toggleMaximize}
-        title={maximizeLabel} aria-label={maximizeLabel} aria-pressed={controls.maximized}>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={controls.toggleMaximize}
+        title={maximizeLabel}
+        aria-label={maximizeLabel}
+        aria-pressed={controls.maximized}
+      >
         <MaximizeIcon size={13} strokeWidth={1.5} aria-hidden="true" />
       </button>
-      <button type="button" className={styles.button} onClick={controls.close}
-        title={t("windowControls.close")} aria-label={t("windowControls.close")}>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={controls.close}
+        title={t("windowControls.close")}
+        aria-label={t("windowControls.close")}
+      >
         <X size={15} strokeWidth={1.5} aria-hidden="true" />
       </button>
     </div>

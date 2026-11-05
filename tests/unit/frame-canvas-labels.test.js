@@ -20,6 +20,24 @@ describe("visible canvas frame labels", () => {
     ]);
   });
 
+  it("treats every supported Frame marker as a nesting boundary", () => {
+    const doc = {
+      isCanvasRoot: true,
+      nodes: [
+        { id: "legacy-outer", frame: true, isFrame: false },
+        { id: "nested-is-frame", isFrame: true, parentId: "legacy-outer" },
+        { id: "nested-kind-frame", kind: "frame", parentId: "nested-is-frame" },
+        { id: "nested-container-frame", containerType: "frame", parentId: "nested-kind-frame" },
+        { id: "separate-frame", isFrame: true },
+      ],
+    };
+
+    expect(visibleCanvasFrameLabels(doc).map((node) => node.id)).toEqual([
+      "legacy-outer",
+      "separate-frame",
+    ]);
+  });
+
   it("does not add frame labels to ordinary page documents", () => {
     expect(
       visibleCanvasFrameLabels({

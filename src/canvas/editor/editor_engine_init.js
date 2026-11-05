@@ -8,6 +8,7 @@
 import { decodeImageSource } from "./bitmap_cache.js";
 import { workPreviewSize } from "./workspace_cap.js";
 import { ensureFontLoaded } from "./font_loader.js";
+import { clearTextLayoutCache } from "./text_metrics.js";
 import {
   createDocument,
   createImageNode,
@@ -43,6 +44,7 @@ export function createEngineInitController({
   cameraMode,
 }) {
   const textMeasureSignatures = new Map();
+  const persistedTextSignatures = new Map();
 
   function textMeasureSignature(node) {
     return [
@@ -54,6 +56,7 @@ export function createEngineInitController({
       node.italic,
       node.lineHeight,
       node.letterSpacing,
+      node.textCase,
       node.width,
       node.boxWidth,
       node.direction,
@@ -74,6 +77,13 @@ export function createEngineInitController({
       const nodes = current.nodes.map((node) => {
         if (node.kind !== NODE_KIND.TEXT) return node;
         const signature = textMeasureSignature(node);
+        const persisted = persistedTextSignatures.get(node.id);
+        if (persisted && persisted === signature) {
+          return node;
+        }
+        if (persisted && persisted !== signature) {
+          persistedTextSignatures.delete(node.id);
+        }
         if (!force && textMeasureSignatures.get(node.id) === signature) {
           return node;
         }
@@ -92,7 +102,11 @@ export function createEngineInitController({
       current = reflowAutoLayout(changed ? { ...current, nodes } : current);
       if (!hasLayout) break;
       // Stable geometry and text need no second whole-document layout pass.
-      if (!changed && (pass > 0 || sameAutoLayoutGeometry(previous.nodes, current.nodes))) break;
+      if (
+        !changed &&
+        (pass > 0 || sameAutoLayoutGeometry(previous.nodes, current.nodes))
+      )
+        break;
       force = false;
     }
     return current;
@@ -112,6 +126,7 @@ export function createEngineInitController({
       fontLoadRequests.add(node.fontFamily);
       void wait.then((loaded) => {
         if (!loaded || isDisposed()) return;
+        clearTextLayoutCache();
         const wasClean = getAppliedSnapshot() === snapshotDoc();
         const measured = measureTextNodes(getDoc(), { force: true });
         setDoc(measured, { commit: false });
@@ -137,6 +152,8 @@ export function createEngineInitController({
     },
     { fitView = true } = {},
   ) {
+    textMeasureSignatures.clear();
+    persistedTextSignatures.clear();
     let doc;
     let parsedSavedDoc = savedDoc;
     if (typeof parsedSavedDoc === "string") {
@@ -146,7 +163,9 @@ export function createEngineInitController({
         parsedSavedDoc = null;
       }
     }
-    const restored = ops.attachRegionsToHosts(deserialiseDocument(parsedSavedDoc));
+    const restored = ops.attachRegionsToHosts(
+      deserialiseDocument(parsedSavedDoc),
+    );
     if (restored) {
       doc = restored;
       const restoredGuides = Array.isArray(restored.guides)
@@ -164,6 +183,19 @@ export function createEngineInitController({
             node.src = src;
           }
         });
+      }
+      for (const node of doc.nodes) {
+        if (
+          node.kind === NODE_KIND.TEXT &&
+          Number.isFinite(node.width) &&
+          node.width > 0 &&
+          Number.isFinite(node.height) &&
+          node.height > 0
+        ) {
+          const sig = textMeasureSignature(node);
+          textMeasureSignatures.set(node.id, sig);
+          persistedTextSignatures.set(node.id, sig);
+        }
       }
     } else {
       const blankWidth = fallbackSize?.width ?? 1024;

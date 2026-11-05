@@ -4,7 +4,7 @@ export const DESKTOP_RELEASE_TARGETS = Object.freeze([
   { platform: "linux", arch: "x64", runner: "ubuntu-24.04", host: "linux" },
   { platform: "win", arch: "x64", runner: "windows-2025", host: "win32" },
   { platform: "mac", arch: "x64", runner: "macos-15-intel", host: "darwin" },
-  { platform: "mac", arch: "arm64", runner: "macos-15", host: "darwin" },
+  { platform: "mac", arch: "arm64", runner: "macos-14", host: "darwin" },
 ]);
 
 export function desktopReleasePlan(platform, arch, root = process.cwd()) {

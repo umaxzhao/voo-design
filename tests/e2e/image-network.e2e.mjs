@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
 
 // Opt-in: this suite uses the public stock service and downloads actual model weights.
@@ -276,7 +277,7 @@ await withEditorBrowser(async ({
       await page.context().setOffline(false);
     }
   });
-  await writeFile(`${process.env.VOO_IMAGE_AUDIT_DIR ?? "/private/tmp/voo-image-complete"}/network-diagnostics.json`, JSON.stringify(await page.locator("body").innerText(), null, 2));
+  await writeFile(`${process.env.VOO_IMAGE_AUDIT_DIR ?? editorArtifactPath("voo-image-complete")}/network-diagnostics.json`, JSON.stringify(await page.locator("body").innerText(), null, 2));
   assert.ok(audit.results.length > 0, "At least one network scenario must execute");
   if (!requested?.length) assert.equal(audit.results.length, 8);
   audit.finish();

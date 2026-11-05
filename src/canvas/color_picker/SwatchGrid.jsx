@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useI18n } from "../use_i18n.js";
 
-const DEFAULT_SWATCHES = [
+export const DEFAULT_SWATCHES = [
   "#000000",
   "#FFFFFF",
   "#F3F4F6",

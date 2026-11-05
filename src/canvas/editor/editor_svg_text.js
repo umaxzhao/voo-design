@@ -6,6 +6,95 @@ import { textLines } from "./scene_model.js";
 import { layoutTextLines, textLineHeight } from "./text_metrics.js";
 import { escapeXml, number, svgNodeTransform } from "./editor_svg_xml.js";
 import { textOnPathToSvg } from "./text_on_path.js";
+import { estimateTextSize } from "./text_fidelity.js";
+
+let cachedMeasureCtx = null;
+
+function getMeasurementContext() {
+  if (cachedMeasureCtx) return cachedMeasureCtx;
+  if (typeof document !== "undefined" && typeof document.createElement === "function") {
+    try {
+      const canvas = document.createElement("canvas");
+      cachedMeasureCtx = canvas.getContext("2d");
+      if (cachedMeasureCtx) return cachedMeasureCtx;
+    } catch {
+      // Fall through to OffscreenCanvas or estimate
+    }
+  }
+  if (typeof OffscreenCanvas !== "undefined") {
+    try {
+      const canvas = new OffscreenCanvas(1, 1);
+      cachedMeasureCtx = canvas.getContext("2d");
+      if (cachedMeasureCtx) return cachedMeasureCtx;
+    } catch {
+      // Fall through to estimate
+    }
+  }
+  return null;
+}
+
+/**
+ * Measures text width for SVG text importing.
+ * In browser/Electron environments with Canvas2D, uses ctx.measureText.
+ * In headless Node environments without DOM, falls back to estimateTextSize.
+ */
+export function measureSvgTextWidth(
+  text,
+  fontSize = 16,
+  fontFamily = "sans-serif",
+  fontWeight = "normal",
+  letterSpacing = 0,
+) {
+  const fSize = Number(fontSize) > 0 ? Number(fontSize) : 16;
+  const fFam = fontFamily ? String(fontFamily).replace(/['"]/g, "").trim() : "sans-serif";
+  const fWeight = fontWeight ? String(fontWeight).trim() : "normal";
+  const lSpacing = Number(letterSpacing) || 0;
+
+  const ctx = getMeasurementContext();
+  if (ctx && typeof ctx.measureText === "function") {
+    try {
+      ctx.save();
+      ctx.font = `${fWeight} ${fSize}px ${fFam}`;
+      if ("letterSpacing" in ctx && lSpacing) {
+        ctx.letterSpacing = `${lSpacing}px`;
+      }
+      const rawLines = String(text ?? "").split("\n");
+      let maxWidth = 0;
+      for (const line of rawLines) {
+        let w = ctx.measureText(line || " ").width;
+        if (lSpacing && (!("letterSpacing" in ctx) || ctx.letterSpacing !== `${lSpacing}px`)) {
+          w += lSpacing * line.length;
+        }
+        if (w > maxWidth) maxWidth = w;
+      }
+      ctx.restore();
+      if (Number.isFinite(maxWidth) && maxWidth > 0) {
+        return maxWidth;
+      }
+    } catch {
+      // Fall back to heuristic below
+    }
+  }
+
+  const estimated = estimateTextSize(text, fSize, 0, { letterSpacing: lSpacing });
+  return estimated.width;
+}
+
+/**
+ * Calculates the horizontal offset to add to the anchor coordinate
+ * based on SVG text-anchor ('middle', 'end', or 'start'/default).
+ */
+export function calculateSvgTextAnchorOffset(textAnchor, textWidth) {
+  const anchor = String(textAnchor ?? "").toLowerCase().trim();
+  if (anchor === "middle") {
+    return -textWidth / 2;
+  }
+  if (anchor === "end") {
+    return -textWidth;
+  }
+  return 0;
+}
+
 import { importedTextCache } from "./imported-text-cache.js";
 
 /** The lines a text node exports: wrap when a metric source is available. */

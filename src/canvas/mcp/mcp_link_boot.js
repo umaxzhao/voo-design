@@ -1,4 +1,5 @@
 import { NATIVE_AGENT_CLI_IDS } from "../../shared/cli_bridge_protocol.js";
+import { isEmbedQuery, isHarnessQuery } from "../../shared/embed_mode.js";
 
 /** localStorage switch: "on" always links the page, "off" never does. */
 export const MCP_LINK_STORAGE_KEY = "voo.mcpLink";
@@ -53,10 +54,7 @@ export function isMcpLinkWanted({ desktop = Boolean(window.vooDesktop) } = {}) {
   if (switchValue === "off") return false;
   if (desktop || switchValue === "on") return true;
   if (typeof window !== "undefined" && window.location) {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has("embed") || params.has("minimal")) return true;
-    } catch {}
+    if (isEmbedQuery(window.location.search) || isHarnessQuery(window.location.search)) return true;
   }
   return hasBridgeAgentSelected();
 }

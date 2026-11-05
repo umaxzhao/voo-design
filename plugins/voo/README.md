@@ -1,4 +1,59 @@
-# VOO agent connector
+# VOO for DeepSeek Harness
+
+This one bundle is everything VOO needs in DeepSeek Harness:
+
+| Row | What it gives you |
+| --- | --- |
+| `voo-editor-panel` (this package) | The VOO Design editor in the right sidebar, served on `http://127.0.0.1:4173`, plus the local CLI bridge on 4179 when no VOO app or bridge is already running. |
+| `mcp-voo` | The `mcp__voo__*` canvas tools that drive whichever editor page is linked to the bridge — the sidebar panel, or the open VOO desktop app. |
+| `voo-model-bridge` | `http://127.0.0.1:4399/v1`, the Harness model in OpenAI format for the editor's own agent. |
+
+Install it once:
+
+```sh
+dsh plugin --profile desktop add "link:/absolute/path/to/plugins/voo"
+```
+
+Restart Harness when the bundle does not activate through HMR, then open a
+session: the right sidebar's guide page offers **VOO 设计编辑器**, and the
+`mcp__voo__*` tools are available in the conversation. Build the editor first
+(`npm run build` in this repository) — the panel discovers `<repo>/dist`, or
+uses `editorDir` from the row config. Keep `port: 4173`: the VOO CLI bridge
+only accepts a fixed origin allowlist that includes it.
+
+The panel's iframe URL is `http://127.0.0.1:4173/?harness=1`; the harness flag keeps the full product chrome (title bar + mint frame) while auto-opening a project and linking the canvas. The minimal webview mode remains `?embed` / `?embed=1` / `?minimal`, and the panel Host upgrades an old `?embed` navigation to `?harness=1`. The embed flag hides the
+title bar and onboarding, opens an untitled project and opts the page into the
+canvas MCP link, so the conversation agent and the visible editor share one
+canvas.
+
+## Standalone mode (no VOO app, no checkout)
+
+The bundle is self-sufficient: it needs neither the VOO desktop app nor a
+repository checkout.
+
+- **Editor source**: `editorSource` decides where the panel's editor comes
+  from. `hosted` (default) always serves the web version at `editorUrl`
+  (`https://voo.run/editor/`), proxied through the loopback origin so the page
+  can still link to the bridge — the panel is always the latest build.
+  `local` requires a build (`editorDir`, `VOO_EDITOR_PANEL_DIR`, or a `dist/`
+  above the package) for previewing local changes; `auto` prefers the local
+  build and falls back to the web version. Set `editorUrl: 'off'` to disable the
+  web version entirely.
+- **Canvas bridge**: an already-running bridge (VOO app or `npm run bridge`) is
+  reused; otherwise the repository bridge starts when a checkout is available,
+  and the bundled `lib/bridge-lite.js` starts when it is not. The lite bridge
+  carries the MCP canvas relay only (no local CLI-agent channels), which is
+  everything the DeepSeek Harness tools need.
+- The portable connector (`node scripts/build-agent-plugin.mjs <folder>`)
+  carries the same Host/Client halves plus the lite bridge and the MCP runtime,
+  so it runs on a machine that only has DeepSeek Harness and network access.
+
+```sh
+node scripts/build-agent-plugin.mjs /absolute/new/voo-connector
+dsh plugin --profile desktop add "link:/absolute/new/voo-connector"
+```
+
+## Portable connector
 
 Build the portable plugin from the repository:
 

@@ -44,7 +44,7 @@ export function useEditorCanvasNavigation({ focusedId, nodeIds, nodes, multi,
       setCanvasBackgroundSelected(false);
       if (canvasId !== focusedId) {
         pendingCanvasSelectionRef.current.clear();
-        focusEditorPage(canvasId);
+        focusEditorPage(canvasId, { preserveCamera: true });
         const targetEntry = enginesRef.current.get(canvasId);
         if (targetEntry?.ready && targetEntry.engine) {
           targetEntry.engine.selectBackground?.();

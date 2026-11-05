@@ -5,6 +5,50 @@ const key = name => `${process.platform === "darwin" ? "Meta" : "Control"}+${nam
 
 await withEditorBrowser(async ({ page }) => {
   const f = nestedObjectsFixture(page, "container-boundaries");
+  await f.record("frame-selection-shortcut-preserves-artwork-and-history", async () => {
+    for (const modifier of ["Meta", "Control"]) {
+      await f.seed([frame("outer-wrap", 40, 40, 620, 440),
+        shape("wrap-a", "outer-wrap", 100, 100),
+        shape("wrap-b", "outer-wrap", 220, 180, { fill: "#0000ff" })], ["wrap-a", "wrap-b"]);
+      const before = await f.snapshot(); await f.focus();
+      await page.keyboard.press(`${modifier}+Alt+g`); await f.settle();
+      const after = await f.snapshot();
+      const wrapper = after.nodes.find(node => !before.nodes.some(old => old.id === node.id));
+      assert.ok(wrapper?.isFrame, "Alt+Cmd/Ctrl+G wraps the selection in a Frame");
+      assert.equal(wrapper.parentId, "outer-wrap");
+      assert.deepEqual([wrapper.x, wrapper.y, wrapper.width, wrapper.height], [100, 100, 190, 130]);
+      for (const id of ["wrap-a", "wrap-b"]) {
+        assert.deepEqual(await f.node(id), { ...before.nodes.find(node => node.id === id), parentId: wrapper.id });
+      }
+      assert.equal(await f.pixel({ x: 130, y: 120 }), "#ff0000");
+      assert.equal(await f.pixel({ x: 250, y: 200 }), "#0000ff");
+      await f.hierarchy(); await f.history(before);
+    }
+    return { frameSelection: true, geometry: true, pixels: true, undoRedo: true };
+  });
+  await f.record("frame-selection-menu-wraps-one-object-and-command-uses-shared-operation", async () => {
+    await f.seed([shape("single-wrap", null, 160, 160)], ["single-wrap"]);
+    let before = await f.snapshot();
+    const point = await f.client({ x: 190, y: 180 });
+    await page.mouse.click(point.x, point.y, { button: "right" });
+    await page.getByTestId("editor-menu-frame-selection").click(); await f.settle();
+    let wrapper = (await f.snapshot()).nodes.find(node => node.id !== "single-wrap");
+    assert.equal(wrapper.isFrame, true);
+    assert.equal((await f.node("single-wrap")).parentId, wrapper.id);
+    await f.history(before);
+    await f.seed([shape("command-wrap", null, 160, 160)], ["command-wrap"]);
+    before = await f.snapshot();
+    const receipt = await page.evaluate(async () => {
+      const { executeEditorCommand } = await import("/src/canvas/editor/command_table.js");
+      return executeEditorCommand("frame_selection", window.__vooEditor, {});
+    });
+    assert.equal(receipt.ok, true);
+    wrapper = (await f.snapshot()).nodes.find(node => node.id !== "command-wrap");
+    assert.equal(wrapper.isFrame, true);
+    assert.equal((await f.node("command-wrap")).parentId, wrapper.id);
+    await f.history(before);
+    return { menu: true, sharedCommand: true, singleObject: true, undoRedo: true };
+  });
   await f.record("ungroup-selected-nested-containers-without-orphans", async () => {
     await f.seed([frame("outer", 40, 40, 600, 450),
       shape("a", "outer", 100, 100, { kind: "group", width: 300, height: 200, fill: "transparent" }),

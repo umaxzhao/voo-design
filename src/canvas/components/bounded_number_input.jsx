@@ -4,6 +4,25 @@ import { createEditorGestureTransaction } from "../../shared/editor-gesture-tran
 
 const NUMBER_INPUT_GESTURE_KEY = "bounded-number-input";
 
+export function evaluateMathExpression(str) {
+  if (typeof str !== "string") return NaN;
+  const trimmed = str.trim();
+  if (!trimmed) return NaN;
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(trimmed)) {
+    return Number(trimmed);
+  }
+  if (!/^[0-9+\-*/().\s]+$/.test(trimmed)) {
+    return NaN;
+  }
+  try {
+    const fn = new Function(`"use strict"; return (${trimmed});`);
+    const val = fn();
+    return typeof val === "number" && Number.isFinite(val) ? val : NaN;
+  } catch {
+    return NaN;
+  }
+}
+
 /** Number input that validates on commit without blocking multi-digit typing. */
 export default function BoundedNumberInput({
   value,
@@ -13,12 +32,22 @@ export default function BoundedNumberInput({
   onValueChange,
   onCommit = undefined,
   className = undefined,
+  placeholder = undefined,
   ariaLabel,
   inputRef = undefined,
   disabled = false,
   precision = 0,
 }) {
   const [draft, setDraft] = useState(String(value));
+  const localInputRef = useRef(null);
+  const setInputRef = (node) => {
+    localInputRef.current = node;
+    if (typeof inputRef === "function") {
+      inputRef(node);
+    } else if (inputRef && typeof inputRef === "object") {
+      inputRef.current = node;
+    }
+  };
   const draftRef = useRef(String(value));
   const focusedRef = useRef(false);
   const committedValueRef = useRef(value);
@@ -56,7 +85,7 @@ export default function BoundedNumberInput({
   };
 
   const normalize = (rawValue) => {
-    const parsed = Number(rawValue);
+    const parsed = evaluateMathExpression(String(rawValue));
     const safeValue = Number.isFinite(parsed) ? parsed : value;
     return Math.min(max, Math.max(min, roundToPrecision(safeValue)));
   };
@@ -86,26 +115,30 @@ export default function BoundedNumberInput({
 
   return (
     <input
-      type="number"
-      min={min}
-      max={max}
-      step={step}
+      type="text"
+      role="spinbutton"
+      inputMode="decimal"
       value={draft}
-      ref={inputRef}
+      placeholder={placeholder}
+      ref={setInputRef}
       aria-label={ariaLabel}
       title={ariaLabel}
       disabled={disabled}
       className={className}
-      onFocus={() => {
+      onFocus={(event) => {
         focusedRef.current = true;
         transactionRef.current.begin(NUMBER_INPUT_GESTURE_KEY);
+        // Select all text on focus so that typing replaces the existing value
+        // rather than appending to it (e.g. clicking a field showing "0" then
+        // typing "12" must produce "12", not "012" or "120").
+        event.currentTarget.select();
       }}
       onChange={(event) => {
         transactionRef.current.begin(NUMBER_INPUT_GESTURE_KEY);
         const nextDraft = event.target.value;
         draftRef.current = nextDraft;
         setDraft(nextDraft);
-        const parsed = Number(nextDraft);
+        const parsed = evaluateMathExpression(nextDraft);
         if (
           nextDraft !== "" &&
           Number.isFinite(parsed) &&
@@ -122,6 +155,11 @@ export default function BoundedNumberInput({
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") {
+          // Commit the value then blur. Set focusedRef first so the subsequent
+          // onBlur does not commit a second time (commit is idempotent but
+          // setting the flag here keeps the logic explicit and cheaper).
+          focusedRef.current = false;
+          commit();
           event.currentTarget.blur();
           return;
         }
@@ -133,22 +171,22 @@ export default function BoundedNumberInput({
           const previousDraft = String(previousValue);
           draftRef.current = previousDraft;
           setDraft(previousDraft);
+          if (localInputRef.current) localInputRef.current.value = previousDraft;
+          event.currentTarget.value = previousDraft;
           emitValue(previousValue);
           transactionRef.current.cancel(NUMBER_INPUT_GESTURE_KEY);
+          focusedRef.current = false;
           event.currentTarget.blur();
           return;
         }
-        // Plain arrows are the native number-input behaviour; Shift coarsens
-        // to ±10×step, mirroring the scrub modifier.
-        if (
-          event.shiftKey &&
-          (event.key === "ArrowUp" || event.key === "ArrowDown")
-        ) {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
           event.preventDefault();
+          const stepMultiplier = event.shiftKey ? 10 : 1;
           const direction = event.key === "ArrowUp" ? 1 : -1;
+          const currentVal = normalize(draftRef.current);
           const nextValue = Math.min(
             max,
-            Math.max(min, roundToPrecision(normalize(draftRef.current) + direction * 10 * step)),
+            Math.max(min, roundToPrecision(currentVal + direction * stepMultiplier * step)),
           );
           const nextDraft = String(nextValue);
           draftRef.current = nextDraft;
@@ -159,11 +197,6 @@ export default function BoundedNumberInput({
       }}
       onKeyUp={(event) => {
         event.stopPropagation();
-        // Plain arrow keys drive the native number input; commit when the
-        // keypress lands so keyboard edits snap history too.
-        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-          commit();
-        }
       }}
     />
   );

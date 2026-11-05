@@ -5,12 +5,13 @@ import {
   isContainerNode,
   isGroupNode,
   isRegionNode,
+  isLockedByGroup,
   NODE_KIND,
 } from "./scene_model.js";
 import { groupBlockInsertIndex, withNodes } from "./doc_ops_nodes.js";
 import { moveAffectedIds } from "./doc_ops_move.js";
 import { extremeOrder, moveNodeToExtreme } from "./doc_ops_groups_helpers.js";
-import { reorderLayerBatch } from "./reorder-layer-batch.js";
+import { reorderLayerBatch, reorderLayerBatchTo } from "./reorder-layer-batch.js";
 import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
 import { groupingRoots, sharedGroupParent } from "./group-structure.js";
 
@@ -63,29 +64,9 @@ export function reorderNodes(doc, ids, direction) {
  * range, and a no-op returns the document unchanged so the caller can skip
  * the history entry.
  */
-export function reorderNodeTo(doc, id, targetIndex) {
-  const index = doc.nodes.findIndex((node) => node.id === id);
-  if (index < 0) return doc;
-  const node = doc.nodes[index];
-  if (node.locked) return doc;
-  if (!Number.isFinite(targetIndex)) return doc;
-  const target = Math.max(
-    0,
-    Math.min(doc.nodes.length - 1, Math.round(targetIndex)),
-  );
-  if (target === index) return doc;
-  if (isRegionNode(node) !== isRegionNode(doc.nodes[target])) return doc;
-
-  const lo = Math.min(index, target);
-  const hi = Math.max(index, target);
-  for (let i = lo; i <= hi; i += 1) {
-    if (i !== index && doc.nodes[i].locked) return doc;
-  }
-
-  const nodes = [...doc.nodes];
-  nodes.splice(index, 1);
-  nodes.splice(target, 0, node);
-  return withNodes(doc, sanitizeInvertedClipping(nodes));
+export function reorderNodeTo(doc, idOrIds, targetIndex, primaryId) {
+  const nodes = reorderLayerBatchTo(doc, idOrIds, targetIndex, primaryId);
+  return nodes ? withNodes(doc, sanitizeInvertedClipping(nodes)) : doc;
 }
 
 /**
@@ -94,8 +75,21 @@ export function reorderNodeTo(doc, id, targetIndex) {
  * — joins the group's block, so its stacking position sits inside the group
  * instead of jumping to the top of the document. Refuses when the target is
  * the node's own descendant, either side is locked, or the node is a region.
+ * An array of IDs moves selected roots as one document transaction.
  */
 export function moveIntoGroup(doc, id, groupId) {
+  if (Array.isArray(id)) {
+    const roots = groupingRoots(doc, id);
+    const target = doc.nodes.find(candidate => candidate.id === groupId);
+    // Validate the complete transaction before moving anything. Selected
+    // descendants travel with their root instead of being flattened.
+    if (
+      !isContainerNode(target) || target.locked || isLockedByGroup(doc, target) ||
+      roots.some(node => node.locked || isLockedByGroup(doc, node) || isRegionNode(node)) ||
+      moveAffectedIds(doc, roots.map(node => node.id)).includes(groupId)
+    ) return doc;
+    return roots.reduce((next, node) => moveIntoGroup(next, node.id, groupId), doc);
+  }
   const node = doc.nodes.find((candidate) => candidate.id === id);
   const group = doc.nodes.find((candidate) => candidate.id === groupId);
   if (
@@ -103,6 +97,8 @@ export function moveIntoGroup(doc, id, groupId) {
     !isContainerNode(group) ||
     group.locked ||
     node.locked ||
+    isLockedByGroup(doc, group) ||
+    isLockedByGroup(doc, node) ||
     node.parentId === groupId ||
     isRegionNode(node)
   ) {
@@ -322,35 +318,35 @@ export function reorderGroupTo(doc, groupId, targetIndex) {
  * can skip the history entry.
  */
 export function moveNodeToRoot(doc, id, targetRootIndex) {
-  const node = doc.nodes.find((candidate) => candidate.id === id);
-  if (!node || node.locked || isRegionNode(node)) return doc;
-  const blockIds = moveAffectedIds(doc, [id]);
-  const block = doc.nodes.filter((candidate) =>
-    blockIds.includes(candidate.id),
-  );
-  const rest = doc.nodes.filter(
-    (candidate) => !blockIds.includes(candidate.id),
-  );
-  // The root slots are the TRUE top-level rows that remain after the lift. A
-  // clip follower is parentless but renders indented beneath its base, so it is
-  // not a placement target — counting it here would shift every root index by
-  // the number of clip followers and break "drop above the group" (the panel
-  // excludes clip followers from its drag rows too).
-  const roots = rest.filter(
+  const ids = Array.isArray(id) ? id : [id];
+  const roots = Array.isArray(id)
+    ? groupingRoots(doc, ids)
+    : doc.nodes.filter((candidate) => candidate.id === id);
+  if (
+    !roots.length ||
+    roots.some((n) => n.locked || isLockedByGroup(doc, n) || isRegionNode(n))
+  ) {
+    return doc;
+  }
+  const rootIds = new Set(roots.map((candidate) => candidate.id));
+  const blockIds = new Set(moveAffectedIds(doc, Array.from(rootIds)));
+  const block = doc.nodes.filter((candidate) => blockIds.has(candidate.id));
+  const rest = doc.nodes.filter((candidate) => !blockIds.has(candidate.id));
+  const rootTargets = rest.filter(
     (candidate) => !candidate.parentId && !candidate.clipTo,
   );
-  let at = Math.max(0, Math.min(roots.length, Math.round(targetRootIndex)));
-  // A locked node keeps its slot: the lifted unit may not be placed on or
-  // below the first locked node above the target (the base image).
-  const firstLocked = roots.findIndex((candidate) => candidate.locked);
+  const target = Number.isFinite(targetRootIndex)
+    ? targetRootIndex
+    : rootTargets.length;
+  let at = Math.max(0, Math.min(rootTargets.length, Math.round(target)));
+  const firstLocked = rootTargets.findIndex((candidate) => candidate.locked);
   if (firstLocked >= 0) at = Math.max(at, firstLocked + 1);
   const flatIndex =
-    at >= roots.length
+    at >= rootTargets.length
       ? rest.length
-      : rest.findIndex((candidate) => candidate.id === roots[at].id);
-  // Detach the unit's root from its parent; descendants stay under the unit.
+      : rest.findIndex((candidate) => candidate.id === rootTargets[at].id);
   const detached = block.map((candidate) =>
-    candidate.id === id ? { ...candidate, parentId: null } : candidate,
+    rootIds.has(candidate.id) ? { ...candidate, parentId: null } : candidate,
   );
   return withNodes(
     doc,

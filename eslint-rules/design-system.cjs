@@ -124,7 +124,7 @@ module.exports = {
       shadowCard:
         "`shadow-card` is the node card's own shadow — canvas content, not an overlay. It is valid only on the element carrying the `node-card` class; an overlay wants shadow-pop / shadow-menu / shadow-panel (Design.md §1).",
       border:
-        "`{{token}}` is a solid-tone border. UI hierarchy comes from background lightness and spacing, not outlines. Interface panels and controls are borderless; only actual artwork/manipulation guides and keyboard focus may retain a functional edge (Design.md: 无描边界面).",
+        "`{{token}}` is a solid-tone border. Hierarchy comes from background lightness, not outlines: make the overlay one step brighter than the canvas. If a hairline is truly needed, it is `border-white/10`, and only on an overlay's outermost edge (Design.md §0.1).",
       emoji:
         "Emoji `{{glyph}}` in the interface. VOO uses no emoji as icons or decoration — use a Lucide icon inheriting the parent text colour, or plain text (Design.md §1, §2).",
     },

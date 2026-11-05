@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.0.0-beta.8
+
+- Canvas performance optimization: cached artwork paint plans and clipping contexts, virtualized layer tree rows, inspector memoization, optimized bitmap eviction, and faster snapshot deduplication.
+- Figma design panel parity: aligned section ordering (Frame/Layout/Auto layout/Position/Layer/Fill/Stroke/Effects/Export), collapsible section folding with persistence, enhanced numeric input with mathematical expression evaluation, drag scrubbing, direction key adjustments (Shift x 10), and unified Mixed multi-selection indicator.
+- Compact floating toolbar: reduced tool button spacing and width to match Figma toolbar density while maintaining minimum touch target accessibility (> 28px) and distinct tool group dividers.
+
+## 1.0.0-beta.6
+
+- Export save dialog uses native system file picker with "Export" title, format filters, and clean default filename, eliminating blob: URL titles in Linux GTK (#13).
+- Suppress single-character canvas tool shortcuts and number opacity keys during sidebar panel, inspector, and layer rename interactions, preventing key stealing and race conditions (#1).
+- Automatically select number input text on focus and transfer focus to ScrubField on pointer down, resolving corner radius and rotation value corruption and improving input responsiveness (#3, #4).
+
+## 1.0.0-beta.5
+
+- Frame tool drag creates a new Frame, cross-Frame selection focuses target without unexpected camera movement, and pen tool first press on Frame chrome drops an anchor node.
+- Gradient preset stop colours remain exact without hue drift, document tab switching restores camera viewport per tab, and first-run guide respects dismissed state.
+- Linux desktop window matches dark theme mint green gradient frame, hiding native system title bar and menu bar.
+
+## 1.0.0-beta.4
+
+- Keep inline layer-rename focus on the field the user clicks next, and make `Ctrl+W` close the active document tab instead of quitting the app.
+- Open PNG/JPG bitmaps as editable image layers from the editor and welcome screen, route File menu Export PNG/SVG/PSD to the existing export dialog, keep base64 data URLs out of save-dialog titles, and remove the full-window export overlay tint.
+- Reserve rotated child bounds during Auto Layout reflow, show Frame-relative X/Y in the inspector, and keep rotated or skewed rectangles as rounded rectangles instead of converting them to vectors.
+
+## 1.0.0-beta.3
+
+- Embedded panel and web editor framing enhancements, harness mode support, and Linux desktop release verification.
+
 ## 1.0.0-beta.2
 
 - Preserve Apple trust-command diagnostics and bound transient ticket-delivery retries; invalid tickets, rejected submissions and failed Gatekeeper assessments still block release.

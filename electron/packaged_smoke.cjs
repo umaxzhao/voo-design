@@ -21,10 +21,15 @@ module.exports = function attachSmoke(app, win) {
       if (typeof require('electron-updater').autoUpdater.checkForUpdates !== 'function') throw new Error('Updater unavailable');
       if (typeof require('ws').WebSocketServer !== 'function') throw new Error('WebSocket server unavailable');
       // Exercise the editor view through its existing UI (no project file operations).
-      await wc.executeJavaScript(`document.querySelector('[data-testid="onboarding-close-btn"]')?.click();`);
       let rendered = false;
       for (let attempt = 0; attempt < 40; attempt++) {
-        rendered = await wc.executeJavaScript(`Boolean([...document.querySelectorAll('canvas')].some(c => c.width > 0 && c.height > 0 && c.getBoundingClientRect().width > 0 && c.getBoundingClientRect().height > 0))`);
+        rendered = await wc.executeJavaScript(`(() => {
+          document.querySelector('[data-testid="first-run-onboarding"]')?.closest('dialog')?.dispatchEvent(new Event('cancel', { bubbles: true, cancelable: true }));
+          document.querySelector('[data-testid="onboarding-close-btn"]')?.click();
+          const newBtn = document.querySelector('[data-testid="titlebar-export"]') || document.querySelector('.app-title-bar button[title="新建"], .app-title-bar button[title="New"]');
+          if (newBtn && !window.__vooEditor) newBtn.click();
+          return Boolean([...document.querySelectorAll('canvas')].some(c => c.width > 0 && c.height > 0 && c.getBoundingClientRect().width > 0 && c.getBoundingClientRect().height > 0));
+        })()`);
         if (rendered) break;
         await new Promise(resolve => setTimeout(resolve, 500));
       }
@@ -32,7 +37,7 @@ module.exports = function attachSmoke(app, win) {
       await new Promise(resolve => setTimeout(resolve, 3000));
       await wc.executeJavaScript(`document.querySelector('[data-testid="first-run-onboarding"]')?.closest('dialog')?.dispatchEvent(new Event('cancel', { bubbles: true, cancelable: true })); document.querySelector('[data-testid="onboarding-close-btn"]')?.click(); document.querySelector('.app-title-bar button[title="返回画布"], .app-title-bar button[title="Back to canvas"]')?.click();`);
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const visible = await wc.executeJavaScript(`Boolean([...document.querySelectorAll('canvas')].some(c => { const r = c.getBoundingClientRect(); return r.width > 0 && r.height > 0 && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === c; }))`);
+      const visible = await wc.executeJavaScript(`Boolean([...document.querySelectorAll('canvas')].some(c => { const r = c.getBoundingClientRect(); const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return r.width > 0 && r.height > 0 && !c.hidden && (hit === c || (hit && c.parentElement && c.parentElement.contains(hit))); }))`);
       if (!visible) throw new Error('Editor canvas is covered or invisible');
       await wc.executeJavaScript(`window.dispatchEvent(new CustomEvent('voo:open-about'))`);
       let legalLoaded = false;

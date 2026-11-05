@@ -2,9 +2,9 @@ import { useLayoutEffect, useMemo, useReducer, useRef } from "react";
 import PropTypes from "prop-types";
 import EditorLayerRow from "./editor_layer_row.jsx";
 import { layerPanelModelType, layerRowType } from "./editor_layers_contract.js";
-const WINDOW_THRESHOLD = 200;
+const WINDOW_THRESHOLD = 40;
 const ESTIMATED_ROW_HEIGHT = 34;
-const OVERSCAN = 8;
+const OVERSCAN = 12;
 function viewportReducer(state, action) {
   if (action.type === "measure") return {
     ...state,

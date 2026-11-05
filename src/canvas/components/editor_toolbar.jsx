@@ -23,7 +23,7 @@ import EditorTooltip from "./editor_tooltip.jsx";
 
 /** Shared by every mode's top toolbar so the active tool reads the same. */
 export const toolButtonClass = (active) =>
-  `flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
+  `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
     active
       ? "bg-white text-black font-medium"
       : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
@@ -90,7 +90,7 @@ export default function EditorToolbar({
       aria-label={t("editor.toolbar.label")}
       className="absolute top-[14px] left-1/2 z-30 -translate-x-1/2 max-w-[calc(100%-16px)]"
     >
-      <div className="flex items-center gap-1 rounded-full bg-black/90 p-1.5 shadow-pop backdrop-blur-md font-mono max-w-full overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-0.5 rounded-2xl bg-black/90 p-1 shadow-pop backdrop-blur-md font-mono max-w-full overflow-x-auto no-scrollbar">
         {/* 1. 选择工具（select）：统一入口 —— 光标选择 + 透视 / 扭曲 / 操控变形（下拉菜单） */}
         <div className="relative flex items-center">
           <EditorSelectMenu tool={tool} onTool={onTool} />
@@ -102,6 +102,8 @@ export default function EditorToolbar({
           icon: <IconHand size={16} />,
           label: t("editor.tool.hand"),
         })}
+
+        <div className="mx-0.5 h-4 w-px bg-white/10 shrink-0" aria-hidden="true" />
 
         {!motionVariant ? (
           <>
@@ -162,6 +164,7 @@ export default function EditorToolbar({
               })
             )}
 
+            <div className="mx-0.5 h-4 w-px bg-white/10 shrink-0" aria-hidden="true" />
           </>
         ) : null}
 
@@ -171,6 +174,8 @@ export default function EditorToolbar({
           icon: <IconText size={16} />,
           label: t("editor.tool.text"),
         })}
+
+        <div className="mx-0.5 h-4 w-px bg-white/10 shrink-0" aria-hidden="true" />
 
         {/* 7. 钢笔 & 形状工具组 (shown in every variant) */}
         <div
@@ -186,6 +191,8 @@ export default function EditorToolbar({
 
         {!motionVariant ? (
           <>
+            <div className="mx-0.5 h-4 w-px bg-white/10 shrink-0" aria-hidden="true" />
+
             {/* 8. 填充 & 渐变工具组 (Fill & Gradient) */}
             <div
               className="relative flex items-center"

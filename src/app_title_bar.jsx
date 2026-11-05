@@ -52,7 +52,7 @@ export default function AppTitleBar() {
 
   const handleNewOrExport = () => {
     if (welcomeOpen) requestWelcomeNew();
-    else window.dispatchEvent(new CustomEvent("voo:file-export-snapshot"));
+    else window.dispatchEvent(new CustomEvent("voo:editor-export"));
   };
 
   useEffect(() => {
@@ -166,20 +166,21 @@ export default function AppTitleBar() {
           >
             <span className="app-title-action-label">{t("titlebar.open")}</span>
           </button>
-          {/* Documents autosave; the primary action exports a portable snapshot. */}
+          {/* Documents autosave; export opens the supported design-file formats. */}
           <button
             className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
+            data-testid="titlebar-export"
             onClick={handleNewOrExport}
             title={
               welcomeOpen
                 ? t("welcome.header.new")
-                : t("titlebar.snapshotTitle")
+                : t("editor.export")
             }
             aria-label={
               welcomeOpen
                 ? t("welcome.header.new")
-                : t("titlebar.snapshotTitle")
+                : t("editor.export")
             }
           >
             <span className="app-title-action-label">
@@ -229,6 +230,7 @@ export default function AppTitleBar() {
               >
                 <button
                   type="button"
+                  data-testid="titlebar-export-mobile"
                   role="menuitem"
                   disabled={welcomeActionsPending}
                   onClick={() => {
@@ -243,7 +245,6 @@ export default function AppTitleBar() {
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
                     handleNewOrExport();

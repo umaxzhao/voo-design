@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 
 await withEditorBrowser(async ({ page, tool }) => {
   const panel = page.getByTestId("editor-layers-panel");
@@ -30,7 +31,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.ok(Math.abs(resized.width - start.width - 140) <= 2);
   assert.ok(Math.abs(resized.x - start.x) <= 1, "right-edge resize keeps the left edge fixed");
   assert.ok(await name.evaluate(element => element.clientWidth) > initialNameWidth + 100);
-  await page.screenshot({ path: "/private/tmp/voo-layers-width-long-name.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-layers-width-long-name.png") });
   await handle.focus();
   await page.keyboard.press("ArrowRight");
   assert.ok((await panel.boundingBox()).width > resized.width);
@@ -66,7 +67,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   await panel.locator(".editor-panel-side-swap").click();
   await handle.press("Home");
   await drag(savedWidth - Number(await handle.getAttribute("aria-valuemin")));
-  await page.screenshot({ path: "/private/tmp/voo-layers-width-desktop.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-layers-width-desktop.png") });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-testid="editor-layers-resize"]')).display === "none");
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);

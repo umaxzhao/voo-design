@@ -128,6 +128,20 @@ describe("bottom bar: clear-guides lives in the More menu", () => {
     action.run();
     expect(clear).toHaveBeenCalledOnce();
   });
+
+  it("keeps project snapshot export available from the command palette", () => {
+    const dispatchEvent = vi.fn();
+    vi.stubGlobal("window", { dispatchEvent });
+    try {
+      const action = paletteActionsFor({}).find(item => item.id === "export-snapshot");
+      expect(action.labelKey).toBe("titlebar.snapshotTitle");
+      action.run();
+      expect(dispatchEvent).toHaveBeenCalledOnce();
+      expect(dispatchEvent.mock.calls[0][0].type).toBe("voo:file-export-snapshot");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe("bottom bar: ruler toggle lives in the More menu", () => {

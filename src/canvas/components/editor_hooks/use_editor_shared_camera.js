@@ -3,6 +3,7 @@ import { useDesignStore } from "../../../store/design_store.js";
 import { ZOOM_STEP, wheelPanDelta, wheelZoomFactor } from "../../editor/editor_constants.js";
 import { zoomCameraAt } from "../image_editor_helpers.js";
 import { editorPanelLayout, fitEditorPageCamera, shouldReserveBothPanelInsets } from "../editor_panel_layout.js";
+import { cameraFitDecision } from "./editor_camera_restore.js";
 
 /** Shared workspace camera: fit/zoom, wheel input, DOM sync and remembered views. */
 export function useEditorSharedCamera({
@@ -15,6 +16,7 @@ export function useEditorSharedCamera({
   const panEditorCamera = useDesignStore((state) => state.panEditorCamera);
   const setEditorArtboardLayouts = useDesignStore((state) => state.setEditorArtboardLayouts);
   const setEditorViewport = useDesignStore((state) => state.setEditorViewport);
+  const pendingEditorCameraRestore = useDesignStore((state) => state.pendingEditorCameraRestore);
   /** The free stage's centre in stage coordinates, for cursor-anchored zoom. */
   const stageCentre = useCallback(() => {
     const stage = freeStageRef.current;
@@ -187,7 +189,19 @@ export function useEditorSharedCamera({
     const signature = (presentationId ? nodeIds : [...nodeIds].sort()).join(
       "|",
     );
-    if (fittedRef.current === signature) return;
+    const decision = cameraFitDecision({
+      pendingRestore: pendingEditorCameraRestore,
+      fittedSignature: fittedRef.current,
+      signature,
+    });
+    if (decision === "restore") {
+      // The tab switch put this document's camera into the store; keep it and
+      // mark the page set as fitted so a later re-render cannot fit over it.
+      fittedRef.current = signature;
+      useDesignStore.setState({ pendingEditorCameraRestore: false });
+      return;
+    }
+    if (decision === "skip") return;
     const firstFit = fittedRef.current === null;
     fittedRef.current = signature;
     // A remembered group reopens exactly where its user left it; a hand
@@ -217,6 +231,7 @@ export function useEditorSharedCamera({
     getGroupCamera,
     presentationId,
     focusedId,
+    pendingEditorCameraRestore,
   ]);
 
   // Focus an unseen artboard after the initial row fit, using its world position.

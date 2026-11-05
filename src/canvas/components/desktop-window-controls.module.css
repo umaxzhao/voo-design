@@ -3,13 +3,13 @@
   align-self: stretch;
   flex: 0 0 auto;
   margin-left: 8px;
-
+  border-left: 1px solid rgb(255 255 255 / 10%);
   -webkit-app-region: no-drag;
 }
 
 .button {
   display: flex;
-  width: 48px;
+  width: 44px;
   height: 40px;
   align-items: center;
   justify-content: center;

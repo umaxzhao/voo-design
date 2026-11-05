@@ -101,6 +101,15 @@ export function createVectorNodes(editor, nodes, origin) {
       const patch = {
         width: Math.max(1, spec.width),
         height: Math.max(1, spec.height),
+        ...(Number.isFinite(spec.rotation) && spec.rotation ? {
+          rotation: spec.rotation
+        } : {}),
+        ...(Number.isFinite(spec.shear) && spec.shear ? {
+          shear: spec.shear
+        } : {}),
+        ...(spec.flipV ? {
+          flipV: true
+        } : {}),
         ...(spec.rx ? {
           cornerRadius: spec.rx
         } : {}),

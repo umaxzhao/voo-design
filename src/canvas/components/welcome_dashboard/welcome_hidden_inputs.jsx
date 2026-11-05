@@ -15,7 +15,7 @@ export function WelcomeHiddenInputs({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"
+        accept=".voo,.zip,.psd,.fig,.pen,.svg,.png,.jpg,.jpeg,.webp,.gif,.bmp,.avif,.ico,application/json"
         className="hidden"
         onChange={async (e) => {
           const file = e.target.files?.[0];

@@ -9,7 +9,7 @@ import { frameOfNode, isFrameNode } from "../../editor/prototype_model.js";
  * background, tool properties, mask editing, pen editing, or node properties.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, memo } from "react";
 import BackgroundSection from "./background_section.jsx";
 import PenEditSection from "./pen_edit_section.jsx";
 import EditorPenSubbar from "../editor_pen_subbar.jsx";
@@ -33,7 +33,7 @@ export {
   editorPropertiesPropTypes,
 };
 
-export default function EditorProperties({
+function EditorProperties({
    object = null,
    isMainComponent = false,
    parentLayout = null,
@@ -389,4 +389,6 @@ export default function EditorProperties({
   );
 }
 
-EditorProperties.propTypes = editorPropertiesPropTypes;
+const EditorPropertiesMemo = memo(EditorProperties);
+EditorPropertiesMemo.propTypes = editorPropertiesPropTypes;
+export default EditorPropertiesMemo;
