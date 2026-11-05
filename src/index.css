@@ -1386,6 +1386,19 @@ select {
   padding: 0;
 }
 
+/* Phones (narrow or touch-first, incl. landscape): keep the frame clear of the
+   notch and home indicator. Mouse-driven desktop windows stay at padding 0
+   above, so the green frame is unchanged there. */
+@media (max-width: 768px), (pointer: coarse) {
+  .app-root-frame:not([data-embed="true"]) {
+    padding:
+      calc(4px + env(safe-area-inset-top, 0px))
+      calc(4px + max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))
+      calc(4px + env(safe-area-inset-bottom, 0px))
+      calc(4px + max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
+  }
+}
+
 .app-root-frame:not([data-embed="true"]) > .relative.flex.min-h-0.flex-1 {
   background:
     radial-gradient(circle at 0 0, #b2ffd6 0 20px, transparent 20.5px) top left / 21px 21px no-repeat,
