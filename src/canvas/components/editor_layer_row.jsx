@@ -153,11 +153,17 @@ export default function EditorLayerRow({
           title={t(object.visible ? "editor.hide" : "editor.show")}
           className="-mx-1.5 -my-1 flex h-7 w-7 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-neutral-100 disabled:cursor-default disabled:opacity-35"
         >
-          {object.visible ? <IconEye
-            size={13}
-          /> : <IconEyeOff
-            size={13}
-          />}
+          {object.visible ? (
+            <IconEye
+              size={13}
+              className="opacity-0 transition-opacity group-hover/layer:opacity-100"
+            />
+          ) : (
+            <IconEyeOff
+              size={13}
+              className="text-neutral-500 opacity-80 group-hover/layer:opacity-100"
+            />
+          )}
         </button>
         <EditorLayerThumbnail
           model={model}
