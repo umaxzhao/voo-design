@@ -142,7 +142,11 @@ await withEditorBrowser(async ({ page }) => {
     });
     [image] = await f.pick({ name: "Creation.png", mimeType: "image/png", buffer: Buffer.from(bytes, "base64") }, { x: 520, y: 370 });
     assert.equal(image.parentId, frame.id);
-    for (const [name, value] of [["W", 120], ["H", 80], ["X", 460], ["Y", 330]]) await edit(name, value);
+    // Design: the inspector keeps width/height ratio locked by default for non-frames
+    // (transform_section.jsx) and shows X/Y relative to the parent (beta.4), so type W only
+    // (H follows) and convert the absolute target (460,330) to parent-relative values.
+    const parent = await f.node(image.parentId);
+    for (const [name, value] of [["W", 120], ["X", 460 - parent.x], ["Y", 330 - parent.y]]) await edit(name, value);
     assert.equal(await f.pixel({ x: 470, y: 340 }), "#0000ff");
     await context({ x: 520, y: 370 }, "editor-menu-create-clip-mask");
     assert.equal((await f.node(image.id)).clipTo, mask.id);

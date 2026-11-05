@@ -12,6 +12,9 @@ export async function checkLayerOrderContracts(page, checks) {
   const select = async ids => {
     await row(ids[0]).click();
     for (const id of ids.slice(1)) await row(id).click({ modifiers: [modifier] });
+    // Single-key canvas shortcuts are paused while a panel owns focus (editor-shortcut-target.js);
+    // hand focus back to the canvas, keeping the selection, before pressing them.
+    await f.focus();
     assert.deepEqual(new Set(await page.evaluate(() => window.__vooEditor.getSelectedIds())), new Set(ids));
   };
   try {

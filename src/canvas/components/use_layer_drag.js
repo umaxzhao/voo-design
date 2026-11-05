@@ -181,8 +181,14 @@ export default function useLayerDrag({
         const siblingBottom = lastSibling
           ? lastSibling.top + lastSibling.height
           : -Infinity;
+        // The sibling plane needs a real slot range; a dragged row that is not
+        // among its siblings (or is locked) has none, so it stays on the root plane.
+        const siblingRange = session.isChild
+          ? allowedSlotRange(session.siblingNodes, session.id)
+          : null;
         const insideSiblingPlane =
           session.isChild &&
+          siblingRange &&
           siblingRects.length > 0 &&
           session.pointerY >= siblingTop - 4 &&
           session.pointerY <= siblingBottom + 4;
@@ -190,9 +196,7 @@ export default function useLayerDrag({
         const rects = insideSiblingPlane
           ? siblingRects
           : allRects.filter((row) => row.parentId === null);
-        const activeRange = insideSiblingPlane
-          ? allowedSlotRange(session.siblingNodes, session.id)
-          : session.range;
+        const activeRange = insideSiblingPlane ? siblingRange : session.range;
         const raw = insertionSlotAt(rects, session.pointerY);
         // The slot range is resolved per-row into `session.range`. Pass it
         // explicitly (never a closed-over `opts.range`, which is undefined for
