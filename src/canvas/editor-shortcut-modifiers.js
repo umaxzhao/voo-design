@@ -1,6 +1,7 @@
 import { TOOL } from './editor/editor_constants.js';
 import { getNodeWarpTool } from './editor/perspective_geometry.js';
 import { executeEditorCommand } from './editor/command_table.js';
+import { alignNodes } from './editor/align_ops.js';
 /** Return true when this ordered shortcut stage owns the event. */
 export function handleModifierShortcut(event, context) {
   const { engine, toolRef, targetNodeIdRef, onSaveAs, onSave, onApply, onOpen, onDuplicateCanvas, onZoomToHundred, onTool, onNew, onZoomStep, onZoomToFit, onToggleAgent } = context;
@@ -230,6 +231,26 @@ export function handleModifierShortcut(event, context) {
     }
   }
 
+  if (event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+    const alignmentTypes = {
+      KeyA: "left",
+      KeyD: "right",
+      KeyW: "top",
+      KeyS: "bottom",
+      KeyH: "hcenter",
+      KeyV: "vcenter",
+    };
+    const type = alignmentTypes[event.code];
+    if (type && typeof engine.layoutSelection === "function") {
+      const selectedNodes = engine.getSelectedNodes?.() ?? [];
+      const single = selectedNodes[0] ?? engine.getSelected?.();
+      if (selectedNodes.length > 1 || single?.parentId) {
+        event.preventDefault();
+        engine.layoutSelection(alignNodes, type);
+        return true;
+      }
+    }
+  }
 
   return false;
 }
