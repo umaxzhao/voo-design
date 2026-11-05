@@ -7,7 +7,7 @@ const EDIT_MESSAGES = new Set([MSG.DOC, MSG.STROKE]);
 
 export function createMessageHandler({ roomSecret: getRoomSecret, verifiedPeers, whoIs, peerCaps,
   peerReadOnly, requestedDocs, presence, sendHello, dispatch, sink: getSink, joinedViaLink: isJoinedViaLink,
-  getAccess, setAccess, transportTypes, announce, setReceivedDocument }) {
+  getAccess, setAccess, transportTypes, announce, setReceivedDocument, verifyOwner, hasOwnerKey, ownerPeers, onChallenge }) {
   const roomSecret = () => getRoomSecret();
   const sink = () => getSink();
   const joinedViaLink = () => isJoinedViaLink();
@@ -57,6 +57,8 @@ export function createMessageHandler({ roomSecret: getRoomSecret, verifiedPeers,
     // Attribute the connection to a person the first time it says who it is.
     if (message.type === MSG.HELLO) {
       if (roomSecret() && !(await verifyHello(roomSecret(), message))) return;
+      onChallenge(fromPeerId, message.challenge);
+      if (joinedViaLink() && hasOwnerKey() && await verifyOwner(fromPeerId, message)) ownerPeers.add(fromPeerId);
       verifiedPeers.add(fromPeerId);
       whoIs.set(fromPeerId, message.peerId);
       peerReadOnly.set(fromPeerId, message.readOnly === true);
@@ -69,7 +71,8 @@ export function createMessageHandler({ roomSecret: getRoomSecret, verifiedPeers,
     // Read-only peers (guests that joined a view link) cannot edit the shared
     // document, even when their client is modified to publish anyway. Peers on
     // older builds announce no flag and stay writable for link compatibility.
-    if (EDIT_MESSAGES.has(message.type) && peerReadOnly.get(fromPeerId)) {
+    if (EDIT_MESSAGES.has(message.type) &&
+        (peerReadOnly.get(fromPeerId) || (access() === "view" && (!joinedViaLink() || !ownerPeers.has(fromPeerId))))) {
       console.warn("collab: dropped write from a read-only peer", message.type);
       return;
     }
@@ -81,7 +84,7 @@ export function createMessageHandler({ roomSecret: getRoomSecret, verifiedPeers,
         // hello. A guest adopts it (a deep-link viewer has no query to read);
         // the host keeps whatever it chose. Adopting also re-greets peers so
         // the change propagates.
-        if (message.access && joinedViaLink()) {
+        if (message.access && joinedViaLink() && ownerPeers.has(fromPeerId)) {
           const next = message.access === "view" ? "view" : "edit";
           if (access() !== next) {
             setAccess(next);

@@ -9,6 +9,7 @@ import { createRoomId, createRoomSecret, roomUrl } from "./room.js";
 import { isEditWire, isProtectedWire, proofFor } from "./room-security.js";
 import { createPeerRoster } from "./peer-roster.js";
 import { createMessageHandler } from "./message-handler.js";
+import { createOwnerIdentity, verifyOwnerIdentity } from "./owner-identity.js";
 
 export const STATUS = {
   OFF: "off",
@@ -34,6 +35,9 @@ export function createCollabSession({
 }) {
   let currentConnectionId = connectionId;
   let roomSecret = null;
+  let ownerIdentity = null, ownerPublicKey = null;
+  const ownerPeers = new Set();
+  const challenges = new Map(), peerChallenges = new Map();
   /** roomId -> secret, so a re-shared link keeps the same #k proof. */
   const roomSecrets = new Map();
   const presence = createPresence(userId, now);
@@ -67,15 +71,24 @@ export function createCollabSession({
     else transport.broadcast(wire);
   }
 
-  async function helloWire({ reply = true } = {}) {
+  async function helloWire(peerId, { reply = true } = {}) {
+    if (!challenges.has(peerId)) challenges.set(peerId, crypto.randomUUID());
+    const peerChallenge = peerChallenges.get(peerId);
     return encode(MSG.HELLO, {
       peerId: userId, name: displayName, colour: colourFor(userId), avatarSeed,
       workflowId, caps: [CAP_BINARY_BLOBS], access, readOnly: readOnly(), reply,
       ...(roomSecret ? { proof: await proofFor(roomSecret, userId) } : {}),
+      challenge: challenges.get(peerId),
+      ...(ownerIdentity && !joinedViaLink && peerChallenge ? { ownerChallenge: peerChallenge,
+        ownerProof: await ownerIdentity.sign(roomId, currentConnectionId, userId, access, peerChallenge) } : {}),
     });
   }
 
   async function sendHello(peerId, options) {
+    if (!peerId && ownerIdentity) {
+      await Promise.all([...whoIs.keys()].map(id => sendHello(id, options)));
+      return;
+    }
     if (!roomSecret) {
       dispatch(peerId, encode(MSG.HELLO, {
         peerId: userId, name: displayName, colour: colourFor(userId), avatarSeed,
@@ -84,7 +97,7 @@ export function createCollabSession({
       }));
       return;
     }
-    dispatch(peerId, await helloWire(options));
+    dispatch(peerId, await helloWire(peerId, options));
   }
 
   let heartbeat = 0;
@@ -128,7 +141,7 @@ export function createCollabSession({
     status,
     roomId,
     workflowId,
-    link: roomId ? roomUrl(roomId, undefined, access, roomSecret ?? undefined) : null,
+    link: roomId ? roomUrl(roomId, undefined, access, roomSecret ?? undefined, ownerPublicKey) : null,
     selfId: userId,
     peers: presence.list(),
     joinedAt,
@@ -162,6 +175,13 @@ export function createCollabSession({
     roomSecret: () => roomSecret, verifiedPeers, whoIs, peerCaps, peerReadOnly, requestedDocs, presence,
     sendHello, dispatch, sink: () => sink, joinedViaLink: () => joinedViaLink,
     getAccess: () => access, setAccess: (next) => { access = next; }, transportTypes,
+    ownerPeers, hasOwnerKey: () => Boolean(ownerPublicKey), onChallenge: (connection, value) => {
+      if (typeof value !== "string" || value.length > 128 || peerChallenges.get(connection) === value) return;
+      peerChallenges.set(connection, value);
+      if (ownerIdentity && !joinedViaLink) void sendHello(connection, { reply: false });
+    },
+    verifyOwner: (connection, message) => message.ownerChallenge === challenges.get(connection) &&
+      verifyOwnerIdentity(ownerPublicKey, message.ownerProof, roomId, connection, message.peerId, message.access, message.ownerChallenge),
     announce, setReceivedDocument: (next) => { receivedDocument = next; },
   });
 
@@ -173,6 +193,7 @@ export function createCollabSession({
 
   return {
     getSnapshot: snapshot,
+    async prepareAuthority() { ownerIdentity = await createOwnerIdentity(); ownerPublicKey = ownerIdentity.publicKey; },
 
     isPeerKnown(peerId) {
       return Boolean(peerId && whoIs.has(peerId));
@@ -205,7 +226,7 @@ export function createCollabSession({
 
     start(
       existingRoomId,
-      { viaLink = Boolean(existingRoomId), timeoutMs = connectTimeoutMs, secret } = {},
+      { viaLink = Boolean(existingRoomId), timeoutMs = connectTimeoutMs, secret, ownerKey } = {},
     ) {
       const joinRoom = existingRoomId ?? createRoomId();
       if (transport) {
@@ -221,6 +242,7 @@ export function createCollabSession({
       if (roomSecret) roomSecrets.set(joinRoom, roomSecret);
       joinedAt = Date.now();
       joinedViaLink = Boolean(existingRoomId && viaLink);
+      if (joinedViaLink) ownerPublicKey = ownerKey ?? null;
       receivedDocument = false;
       if (!existingRoomId) access = "edit";
       error = null;
@@ -238,6 +260,8 @@ export function createCollabSession({
           announce();
         },
         onPeerGone: (peerId) => {
+          ownerPeers.delete(peerId);
+          challenges.delete(peerId); peerChallenges.delete(peerId);
           const gone = whoIs.get(peerId);
           whoIs.delete(peerId);
           verifiedPeers.delete(peerId);
@@ -287,6 +311,8 @@ export function createCollabSession({
       peerCaps.clear();
       peerReadOnly.clear();
       verifiedPeers.clear();
+      ownerPeers.clear();
+      challenges.clear(); peerChallenges.clear();
       requestedDocs.clear();
       whoIs.clear();
       roomId = null;

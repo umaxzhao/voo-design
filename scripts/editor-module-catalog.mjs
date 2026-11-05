@@ -377,6 +377,7 @@ export const EDITOR_MODULES = [
       "native_studio/INTERACTION_PARITY.md", "src/shared/embed_mode.js", "tests/unit/embed_mode.test.js",
       "tests/unit/voo_editor_panel.test.js", "tests/unit/voo_bridge_lite.test.js", "tests/unit/portable-agent-plugin.test.js",
       "tests/unit/dsh_connector_plugin.test.js", "scripts/smoke-packaged.mjs", ".gitignore", "package.json",
+      "tests/unit/lan-loopback-signaling.test.js", "tests/unit/lan-loopback-session.test.js", "tests/unit/lan-loopback-ipc.test.js", "tests/unit/collab-owner-identity.test.js",
       "src/shared/editor_menu_actions.js", "tests/unit/editor_menu_actions.test.js",
       "src/index.css", "src/shared/i18n/welcome-*.js", "src/canvas/components/desktop_window_controls.jsx",
       "src/canvas/components/desktop-window-controls.module.css", "tests/e2e/mint-frame.e2e.mjs",

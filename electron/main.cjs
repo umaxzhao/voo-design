@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const { windowChromeOptions, attachWindowChrome, registerWindowControls } = require("./window-chrome.cjs");
 
 let mainWindow = null;
+const loopbackCollab = require("./lan-loopback-ipc.cjs").registerLoopbackIpc(ipcMain, app, () => mainWindow);
 const closeGuard = require("./close-guard.cjs").createCloseGuard({ app, dialog, getWindow: () => mainWindow });
 
 function createMainWindow() {
@@ -267,6 +268,7 @@ app.on("before-quit", (event) => {
       cliBridgeRetry = null;
       await cliBridgeStartup;
       if (cliBridge) await cliBridge.close();
+      await loopbackCollab.stop();
       cliBridge = null;
       cliBridgeQuitComplete = true;
       app.quit();

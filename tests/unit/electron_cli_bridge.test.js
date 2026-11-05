@@ -35,6 +35,7 @@ function boot(startCliBridgeServer, env = {}, dirty = false) {
       if (id === "node:path") return path;
       if (id === "node:fs") return fs;
       if (id === "./packaged_smoke.cjs") return () => {};
+      if (id === "./lan-loopback-ipc.cjs") return { registerLoopbackIpc: () => ({ stop: async () => {} }) };
       if (["./native-menu.cjs", "./close-guard.cjs", "./window-chrome.cjs"].includes(id)) return nativeRequire(`../../electron/${id.slice(2)}`);
       if (id === "./client-models.cjs") return nativeRequire("../../electron/client-models.cjs");
       return { registerWorkspaceIpc() {}, setupUpdater() {} };
