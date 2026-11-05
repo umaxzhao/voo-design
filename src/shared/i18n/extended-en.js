@@ -1539,7 +1539,7 @@ export default {
   "editor.lockPosition": "Lock position",
   "editor.unlockPosition": "Lock position (off)",
   "editor.group": "Group",
-  "editor.props.transform": "Position",
+  "editor.props.transform": "Transform",
   "editor.props.position": "Position",
   "editor.props.layer": "Layer",
   "editor.props.frame": "Frame",

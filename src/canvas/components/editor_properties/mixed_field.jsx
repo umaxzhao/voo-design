@@ -118,6 +118,7 @@ export default function MixedField({
       ) : (
         <span className="ml-auto text-neutral-400 italic">{placeholderText}</span>
       )}
+      {suffix ? <span className="sr-only" aria-hidden="true">—{suffix}</span> : null}
     </div>
   );
 }

@@ -2,11 +2,11 @@
 export default {
   // Keep essential properties-panel section labels available before the
   // deferred full dictionary chunk has finished loading.
-  "editor.props.transform": "位置",
+  "editor.props.transform": "变换",
   "editor.props.position": "位置",
   "editor.props.frame": "画框",
   "editor.props.layout": "布局",
-  "editor.props.appearance": "图层",
+  "editor.props.appearance": "外观",
   "editor.props.layer": "图层",
   "editor.props.clipContent": "裁剪内容",
   "editor.props.fillLabel": "填充",

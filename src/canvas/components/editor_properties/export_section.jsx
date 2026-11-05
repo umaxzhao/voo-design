@@ -72,6 +72,7 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
     <StaticSection
       title={t("editor.props.exportTitle")}
       storageKey="export"
+      emptyState={presets.length === 0}
       extra={
         presets.length < MAX_PRESETS ? (
           <SectionAddButton

@@ -1517,7 +1517,7 @@ export default {
   "editor.lockPosition": "锁定位置",
   "editor.unlockPosition": "锁定位置（关）",
   "editor.group": "编组",
-  "editor.props.transform": "位置",
+  "editor.props.transform": "变换",
   "editor.props.position": "位置",
   "editor.props.layer": "图层",
   "editor.props.frame": "画框",

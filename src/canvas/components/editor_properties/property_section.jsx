@@ -202,6 +202,23 @@ export function StaticSection({
       </div>
     );
   }
+  if (emptyState) {
+    return (
+      <div
+        data-inspector-section
+        className={emptySectionRhythmClass}
+        data-testid={testId}
+      >
+        <div className={emptySectionHeaderClass}>
+          <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+          </div>
+          {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
+        </div>
+        <div className={bodyClassName}>{children}</div>
+      </div>
+    );
+  }
   return (
     <CollapsibleSection
       title={title}

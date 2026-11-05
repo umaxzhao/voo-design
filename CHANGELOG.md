@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.8
+
+- Canvas performance optimization: cached artwork paint plans and clipping contexts, virtualized layer tree rows, inspector memoization, optimized bitmap eviction, and faster snapshot deduplication.
+- Figma design panel parity: aligned section ordering (Frame/Layout/Auto layout/Position/Layer/Fill/Stroke/Effects/Export), collapsible section folding with persistence, enhanced numeric input with mathematical expression evaluation, drag scrubbing, direction key adjustments (Shift x 10), and unified Mixed multi-selection indicator.
+- Compact floating toolbar: reduced tool button spacing and width to match Figma toolbar density while maintaining minimum touch target accessibility (> 28px) and distinct tool group dividers.
+
 ## 1.0.0-beta.6
 
 - Export save dialog uses native system file picker with "Export" title, format filters, and clean default filename, eliminating blob: URL titles in Linux GTK (#13).

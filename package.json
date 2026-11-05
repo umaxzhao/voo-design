@@ -1,7 +1,7 @@
 {
   "name": "voo-design",
   "productName": "VOO Design",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.8",
   "license": "MIT",
   "description": "Professional Vector, Motion & 3D Design Editor",
   "main": "electron/main.cjs",
