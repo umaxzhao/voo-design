@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-beta.9
+
+- Fix: toolbar combine mode no longer moves an existing pixel selection; pen paths that are rotated or transformed now join in document space; HTML import keeps the root background on the imported frame (also after cold reopen); the export dialog preview matches the real selection bounds; inspector numeric fields synchronize on history boundaries and ignore stale property syncs.
+- Regression coverage added for each of the above, including real-browser cold-reopen round trips.
+
 ## 1.0.0-beta.8
 
 - Canvas performance optimization: cached artwork paint plans and clipping contexts, virtualized layer tree rows, inspector memoization, optimized bitmap eviction, and faster snapshot deduplication.
