@@ -311,6 +311,7 @@ export function createEditor({
     },
     requestRender: () => requestRender(),
     notify: () => notify(),
+    flushNotify: () => flushNotify(),
     selection,
     history,
     cache,
@@ -472,6 +473,16 @@ export function createEditor({
     });
   }
 
+  function flushNotify() {
+    if (disposed) return;
+    if (notifyFrame) {
+      cancelAnimationFrame(notifyFrame);
+      notifyFrame = 0;
+    }
+    renderVersion += 1;
+    onChange?.();
+  }
+
   const api = {
     getWasmEngineStatus: () => wasmIndex ? "ready" : "inactive",
     get sourceWorkflowNodeId() {
@@ -606,7 +617,9 @@ export function createEditor({
     },
     commit: (name) => {
       flushPendingToolCommit();
-      return ctrl.historyApi.commit?.(name);
+      const result = ctrl.historyApi.commit?.(name);
+      flushNotify();
+      return result;
     },
     zoomToFit: () => viewportTools.zoomToFit?.(),
     zoomToHundred: () => viewportTools.zoomToHundred?.(),
