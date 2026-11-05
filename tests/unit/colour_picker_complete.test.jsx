@@ -22,6 +22,8 @@ import {
   opacityPatch,
   parseOpacityInput,
 } from "../../src/canvas/color_picker/opacity_patch.js";
+import { ColorSliderSurfaces } from "../../src/canvas/color_picker/ColorSliderSurfaces.jsx";
+import { hexToHsv, hsvToHex } from "../../src/canvas/color_picker/color_math.js";
 import extendedEnglish from "../../src/shared/i18n/extended-en.js";
 import extendedChinese from "../../src/shared/i18n/extended-zh.js";
 import { FillSection } from "../../src/canvas/components/editor_properties/colour_fill_section.jsx";
@@ -219,5 +221,23 @@ describe("picker strings", () => {
       expect(extendedChinese[key], key).toBeTruthy();
     }
     expect(extendedEnglish["editor.colorPicker.blendNormal"]).toBe("Normal");
+  });
+});
+
+describe("ColorSliderSurfaces gradient overlays and handle", () => {
+  it("renders 2D SV box with pointer-events-none overlays and cursor handle", () => {
+    const html = renderToStaticMarkup(
+      <ColorSliderSurfaces
+        hsv={{ h: 0, s: 100, v: 100 }}
+        setHsv={noop}
+        activeColorHex="#FF0000"
+        activeOpacity={100}
+        showOpacity={true}
+        onApplyColor={noop}
+        onApplyOpacity={noop}
+      />
+    );
+    expect(html).toContain('pointer-events-none absolute inset-0');
+    expect(html).toContain('data-ui-guide="color-handle"');
   });
 });

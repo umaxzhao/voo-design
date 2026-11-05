@@ -97,8 +97,9 @@ export function useFillPicker({
   const currentSolidHex = primaryType === "gradient" ? gradientStops[activeStop]?.color ?? "#FFFFFF" : HEX.test(color) ? color.slice(0, 7) : drafts.current.solid;
   const currentSolidOpacity = gradientStops[activeStop]?.opacity ?? 100;
   useEffect(() => {
+    if (lastEmission.current === currentSolidHex) return;
     dispatch({
-      hsv: hexToHsv(currentSolidHex)
+      hsv: hexToHsv(currentSolidHex),
     });
   }, [currentSolidHex]);
   useEffect(() => {
@@ -270,9 +271,10 @@ export function useFillPicker({
     currentSolidHex,
     currentSolidOpacity,
     hsv,
-    setHsv: hsv => dispatch({
-      hsv
-    }),
+    setHsv: (nextHsv) =>
+      dispatch({
+        hsv: typeof nextHsv === "function" ? nextHsv(hsv) : nextHsv,
+      }),
     eyeDropperAvailable,
     eyeDropperError,
     handleApplySolidColor,
