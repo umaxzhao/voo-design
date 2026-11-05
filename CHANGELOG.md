@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.10
+
+- Fix: at 390px the canvas context menu no longer opens over the inspector when a numeric field is tapped (it covered the next field); phone-width and touch-first viewports keep the frame clear of the notch and home indicator, while the mouse-driven desktop frame is unchanged.
+
 ## 1.0.0-beta.9
 
 - Fix: toolbar combine mode no longer moves an existing pixel selection; pen paths that are rotated or transformed now join in document space; HTML import keeps the root background on the imported frame (also after cold reopen); the export dialog preview matches the real selection bounds; inspector numeric fields synchronize on history boundaries and ignore stale property syncs.
