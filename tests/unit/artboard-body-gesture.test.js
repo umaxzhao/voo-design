@@ -73,9 +73,13 @@ describe("artboard body gesture routing", () => {
     expect(engine.hasHandleUnder).toHaveBeenCalledWith({ clientX: 500, clientY: 400 });
   });
 
-  it("drags the frame area when the frame is focused and child artwork is not selected", () => {
-    const engine = makeEngine({ selectedIds: [] });
-    engine.isSelected = vi.fn(() => false);
+  it("drags the frame area when the frame is focused and frame surface is hit", () => {
+    const frameNode = { id: "frame1", isFrame: true, x: 0, y: 0, width: 400, height: 400 };
+    const engine = {
+      toDocPoint: (x, y) => ({ x, y }),
+      nodeAtPoint: vi.fn(() => frameNode),
+      getSelectedIds: () => [],
+    };
     expect(shouldDragArtboardBody(engine, 150, 100, true)).toBe(true);
   });
 });

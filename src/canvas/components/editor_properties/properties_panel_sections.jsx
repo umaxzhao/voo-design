@@ -131,7 +131,7 @@ export default function PropertiesPanelSections({
   };
   const slotEligible = !isWarpTool && (object.isFrame || object.kind === "frame" || object.kind === "group");
   const hasSlots = Array.isArray(object.slot) ? object.slot.length > 0 : Boolean(object.slot);
-  const showSlot = slotEligible && (hasSlots || isMainComponent || revealed("slot"));
+  const showSlot = slotEligible && (hasSlots || revealed("slot"));
   const addItems = buildPanelAddItems({
     slotEligible, showSlot, eligible, show, showRepeatArray, reveal, t, object, engine,
   });

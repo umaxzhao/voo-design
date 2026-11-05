@@ -271,8 +271,7 @@ export function useEditorCanvasGestures({
         return;
       }
       if (liveTool !== TOOL.SELECT) return;
-      const layout = layoutById.get(nodeId);
-      if (!layout) return;
+      const layout = layoutById.get(nodeId) ?? { x: 0, y: 0 };
       event.preventDefault();
       event.stopPropagation();
       try {
@@ -389,7 +388,8 @@ export function useEditorCanvasGestures({
       // Read the live engine tool, not only the render-time prop: a page
       // focused by this same press may still show Select until React commits.
       if ((targetEngine?.getTool?.() ?? tool) !== TOOL.SELECT) return;
-      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY, nodeId === focusedId)) return;
+      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY)) return;
+      focusEditorPage(nodeId, { preserveCamera: true });
       const board = event.currentTarget;
       onTitlePointerDown(nodeId, event);
       if (!artboardDragRef.current) return;
