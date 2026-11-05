@@ -67,6 +67,9 @@ await withEditorBrowser(async ({ page }) => {
   await rename.click();
   await settle();
   assert.deepEqual(await active(), { tag: "INPUT", label: "Rename layer", value: "Renamed" });
+  // The click lands where the pointer is (mid-field when the field is narrow); the
+  // contract is that focus stays in the field, so move the caret to the end explicitly.
+  await page.keyboard.press("End");
   await page.keyboard.type("!");
   assert.equal(await rename.inputValue(), "Renamed!", "typing continues inside the rename field");
   await rename.press("Escape");

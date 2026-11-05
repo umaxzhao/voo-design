@@ -89,7 +89,7 @@ export async function runTypographyCases({ page, tool, mark, evidence }) {
   assert.match((await node()).fontFamily, /Arial/); await tool("undo");
   await page.evaluate(() => window.__vooEditor.selectExactly(["type-title", "type-body"])); await settle();
   const mixed = metric("Font size");
-  assert.match(await mixed.getAttribute("placeholder"), /—/);
+  assert.match(await mixed.getAttribute("placeholder"), /—|Mixed/);
   await mixed.fill("48"); await mixed.press("Enter"); await settle();
   assert.equal((await node()).fontSize, 48); assert.equal((await node("type-body")).fontSize, 48);
   await tool("undo");

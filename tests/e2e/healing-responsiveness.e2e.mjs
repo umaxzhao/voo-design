@@ -86,7 +86,9 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   assert.equal(closedCount, 1, "cancel must terminate expensive inference immediately");
 
   await stroke();
-  await dialog.waitFor();
+  const cancelBtn = dialog.getByRole("button", { name: "Cancel", exact: true });
+  await cancelBtn.waitFor();
+  await cancelBtn.focus();
   await page.keyboard.press("Escape");
   await dialog.waitFor({ state: "detached" });
   await page.waitForTimeout(1100);
@@ -94,7 +96,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   assert.equal(closedCount, 2, "Escape must cancel without a delayed bitmap write");
 
   await stroke();
-  await dialog.waitFor();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).waitFor();
   await page.evaluate(id => window.__vooEditor.removeNode(id), nodeId);
   await dialog.waitFor({ state: "detached" });
   await page.waitForTimeout(1100);

@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { evaluateMathExpression } from "../bounded_number_input.jsx";
 import { useScrubDrag } from "../use_scrub_drag.js";
@@ -25,6 +25,7 @@ export default function MixedField({
 }) {
   const { t } = useI18n();
   const [draft, setDraft] = useState("");
+  const focusedRef = useRef(false);
   const editable = typeof onValueChange === "function";
 
   const scrub = useScrubDrag({
@@ -78,22 +79,32 @@ export default function MixedField({
       {editable ? (
         <input
           type="text"
+          role="spinbutton"
           inputMode="decimal"
           value={draft}
           placeholder={placeholderText}
           aria-label={ariaLabel || (typeof label === "string" ? label : "Mixed")}
           title={t("editor.props.mixedValuesEditable")}
-          onFocus={(event) => event.target.select?.()}
+          onFocus={(event) => {
+            focusedRef.current = true;
+            event.target.select?.();
+          }}
           onChange={(event) => setDraft(event.target.value)}
-          onBlur={commit}
+          onBlur={() => {
+            if (!focusedRef.current) return;
+            focusedRef.current = false;
+            commit();
+          }}
           onKeyDown={(event) => {
             event.stopPropagation();
             if (event.key === "Enter") {
+              focusedRef.current = false;
               commit();
               event.currentTarget.blur();
               return;
             }
             if (event.key === "Escape") {
+              focusedRef.current = false;
               setDraft("");
               event.currentTarget.blur();
               return;

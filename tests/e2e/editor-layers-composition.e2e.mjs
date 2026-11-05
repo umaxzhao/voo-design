@@ -81,6 +81,15 @@ await withEditorBrowser(async ({ page, tool }) => {
   checks.push("a real row pointer drag reorders root layers without accidental clipping and undoes once");
 
   await row("top").getByText("Top rectangle", { exact: true }).click();
+  // Design (editor-shortcut-target.js, beta.6): single-key canvas shortcuts,
+  // brackets included, are paused while focus is inside the layers/properties
+  // panels so they cannot steal keys from the panel. Prove that first...
+  await page.keyboard.press("]");
+  await settle();
+  assert.deepEqual(await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id)), originalOrder,
+    "bracket shortcuts stay paused while the layers panel owns focus");
+  // ...then hand focus back to the canvas (selection is unchanged) and use them.
+  await page.evaluate(() => document.activeElement?.blur?.());
   await page.keyboard.press("]");
   await settle();
   const afterForward = await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id));
