@@ -1322,6 +1322,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       onClickCapture={onMobilePanelClickCapture}
       onDropCapture={handleMediaDrop}
       onContextMenu={(event) => {
+        // Touch focus on a numeric/text field makes the browser dispatch a
+        // contextmenu event on it; that must not open the canvas menu over the
+        // inspector (it covered the next field at 390px).
+        if (event.target instanceof Element && event.target.closest("input, textarea, [contenteditable]")) return;
         event.preventDefault();
         const point = engine?.toDocPoint(event.clientX, event.clientY);
         if (point) {
