@@ -1,5 +1,24 @@
 # 项目检查总进度
 
+## 1.0.0-beta.11 桌面与 Web 正式发布：全平台门禁与四端原生构建全绿（已发布 Pre-release）：2026-11-05
+
+- **结论**：**已正式发布 Pre-release [v1.0.0-beta.11](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.11)**。
+- **发布产物与 CI 证据（提交 `d2315394`，Release Run [42011875394](https://github.com/umaxzhao/voo-design/actions/runs/42011875394)）**：
+  - Linux x64 (`VOO-Design-1.0.0-beta.11-linux-x86_64.AppImage`)：打包、原生冒烟、收据校验全部通过。
+  - macOS arm64 (`VOO-Design-1.0.0-beta.11-mac-arm64.dmg` / `.zip`)：原生运行与打包校验通过。
+  - macOS x64 (`VOO-Design-1.0.0-beta.11-mac-x64.dmg` / `.zip`)：原生运行与打包校验通过。
+  - Windows x64 (`VOO-Design-1.0.0-beta.11-win-x64-setup.exe` / `portable.exe`)：打包与便携版验证通过。
+  - Web 发布门禁 `checks`：133 项浏览器端到端测试与全量单测全部通过（执行耗时 31m 10s，0 失败）。
+- **已解决的核心缺陷与收敛点**：
+  1. **多画板绘图工具穿透**（`workspace-free-artwork.js`）：多画板场景下创建工具透明平面排除相邻画板区域，使点击能正确聚焦并继承工具（解决 `frame-pen-first-press`）。
+  2. **图层拖拽空槽位保护**（`use_layer_drag.js`）：非兄弟节点拖拽行缺少 range 时降级保持在根层级，修复 `continuous-creation` 崩溃。
+  3. **检视器 `MixedField` 语义与重复提交**（`mixed_field.jsx`）：赋予 `role="spinbutton"` 语义，并通过 `focusedRef` 阻断 Enter 后的重复 blur 提交，单次输入精准生成 1 次历史快照。
+  4. **检视器折叠标题无障碍区分**（`property_section.jsx`）：标题增加 `aria-label="${title} section"`，避免与底部 Export 动作按钮冲突。
+  5. **数值输入框对齐与撤销重做状态同步**（`bounded_number_input.jsx`）：未聚焦状态恢复与 prop 严格对齐，支持连续快速撤销恢复。
+  6. **窄屏极端尺寸（320×568, 390×844, 768×1024, 844×390）**：live resize 保持圆角面板分离与任务栏可达，触摸与键盘焦点链路无回归。
+- **在线 Web 部署**：
+  - 通过 `scripts/deploy-editor.sh` 部署至 `https://voo.run/editor/`，生产入口 `index-D2NdkCzn.js`（HTTP 200，含 `1.0.0-beta.11` 标头验证）。
+
 ## 1.0.0-beta.5 桌面发布：四平台产物就绪，Web 门禁受阻（未发布）：2026-11-05
 
 - **结论**：**未发布任何 Release，也未保留版本标签**（`v1.0.0-beta.5` 曾指向失败提交，已删除）。四平台原生构建全部成功，但 Web 发布门禁失败，按规则不得发布。
