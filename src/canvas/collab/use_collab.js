@@ -4,6 +4,7 @@ import {
   accessFromLink,
   accessFromLocation,
   parseRoomId,
+  ownerKeyFromLink,
   roomIdFromLocation,
   roomSecretFromLink,
   roomSecretFromLocation,
@@ -11,6 +12,7 @@ import {
 import { loadIdentity, saveIdentity } from "./identity.js";
 import { MSG } from "./protocol.js";
 import { loadCollabConfig } from "./collab_config.js";
+import { getLoopbackSession, getLoopbackState, joinLoopbackCollab, setLoopbackAccess, stopLoopbackCollab, subscribeLoopback } from "./use_loopback_collab.js";
 import {
   beginCollabOperation,
   registerCollabStop,
@@ -85,10 +87,12 @@ export function getCollabSession() {
 
 export function setCollabIdentity(identity) {
   saveIdentity(identity);
+  getLoopbackSession()?.setIdentity(identity);
   getCollabSession().setIdentity(identity);
 }
 
 export function setCollabAccess(access) {
+  setLoopbackAccess(access);
   getCollabSession().setAccess(access);
 }
 
@@ -143,6 +147,8 @@ async function attachBridge(isCurrent) {
 }
 
 export function sendCollabCursor(cursor) {
+  const local = getLoopbackSession();
+  if (local?.getSnapshot().status !== STATUS.OFF) local?.broadcast(MSG.CURSOR, { peerId: local.getSnapshot().selfId, cursor });
   const live = getCollabSession();
   const state = live.getSnapshot();
   if (state.status === STATUS.OFF) return false;
@@ -158,6 +164,8 @@ export async function startCollab(
   await loadCollabConfig();
   if (!isLatest() || !isCurrent()) return null;
   const live = getCollabSession();
+  if (live.getSnapshot().status === STATUS.OFF) await live.prepareAuthority();
+  if (!isLatest() || !isCurrent()) return null;
   const joined = live.start(
     roomId ?? live.getSnapshot().roomId ?? roomIdFromLocation() ?? undefined,
     { viaLink: false },
@@ -176,12 +184,13 @@ export async function joinCollabByLink(text) {
   const live = getCollabSession();
   const access = accessFromLink(text);
   if (access) live.setAccess(access);
-  live.start(roomId, { secret: roomSecretFromLink(text) });
+  live.start(roomId, { secret: roomSecretFromLink(text), ownerKey: ownerKeyFromLink(text) });
   reportIfBroken(attachBridge(isCurrent));
   return roomId;
 }
 
 export async function autoJoinFromLocation() {
+  if (new URLSearchParams(globalThis.location?.search ?? "").get("local") === "1") return joinLoopbackCollab(globalThis.location);
   const roomId = roomIdFromLocation();
   if (!roomId) return null;
   const isCurrent = beginCollabOperation();
@@ -190,7 +199,7 @@ export async function autoJoinFromLocation() {
   const live = getCollabSession();
   const access = accessFromLocation();
   if (access) live.setAccess(access);
-  live.start(roomId, { secret: roomSecretFromLocation() });
+  live.start(roomId, { secret: roomSecretFromLocation(), ownerKey: ownerKeyFromLink(globalThis.location.href) });
   reportIfBroken(attachBridge(isCurrent));
   return roomId;
 }
@@ -203,10 +212,12 @@ registerCollabStop(() => {
 });
 
 export function stopCollab() {
+  if (getLoopbackState().guest) void stopLoopbackCollab();
   stopCollabSession();
 }
 
 export function requestCollabOriginal(ids) {
+  if (ids?.length) getLoopbackSession()?.broadcast(MSG.BLOB_WANT_ORIGINAL, { ids });
   if (ids?.length && session)
     session.broadcast(MSG.BLOB_WANT_ORIGINAL, { ids });
 }
@@ -219,9 +230,10 @@ export function useCollabState() {
   return useSyncExternalStore(
     (listener) => {
       listeners.add(listener);
-      return () => listeners.delete(listener);
+      const unsubscribe = subscribeLoopback(listener);
+      return () => { listeners.delete(listener); unsubscribe(); };
     },
-    () => snapshot,
+    () => getLoopbackState().guest ? getLoopbackState().session ?? snapshot : snapshot,
     () => snapshot,
   );
 }
