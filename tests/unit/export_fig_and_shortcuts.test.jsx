@@ -374,4 +374,25 @@ describe("Agent shortcut conflict resolution", () => {
     expect(onToggleAgent).toHaveBeenCalledOnce();
     expect(engine.duplicateSelected).not.toHaveBeenCalled();
   });
+
+  it("routes Alt+A / Alt+D / Alt+W / Alt+S to layoutSelection for Figma alignment parity", () => {
+    const layoutSelection = vi.fn();
+    const engine = {
+      layoutSelection,
+      getSelectedNodes: () => [{ id: "node-1" }, { id: "node-2" }],
+      getSelected: () => ({ id: "node-1" }),
+    };
+    const event = createKeyEvent({
+      code: "KeyA",
+      altKey: true,
+      metaKey: false,
+      ctrlKey: false,
+      shiftKey: false,
+    });
+
+    const handled = handleModifierShortcut(event, { engine });
+    expect(handled).toBe(true);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(layoutSelection).toHaveBeenCalledWith(expect.any(Function), "left");
+  });
 });

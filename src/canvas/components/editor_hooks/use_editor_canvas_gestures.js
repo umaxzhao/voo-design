@@ -311,7 +311,11 @@ export function useEditorCanvasGestures({
       if (!next) return;
       gesture.moved = true;
       gesture.next = next;
-      const board = event.currentTarget.closest("[data-editor-artboard]");
+      const board =
+        event.currentTarget?.closest?.("[data-editor-artboard]") ??
+        document.querySelector(
+          `[data-editor-artboard][data-node-id="${gesture.nodeId}"]`,
+        );
       if (board) {
         board.style.left = `${next.x * cameraZoom}px`;
         board.style.top = `${next.y * cameraZoom}px`;
@@ -343,7 +347,11 @@ export function useEditorCanvasGestures({
         return;
       }
       if (cancelled) {
-        const board = event.currentTarget.closest("[data-editor-artboard]");
+        const board =
+          event.currentTarget?.closest?.("[data-editor-artboard]") ??
+          document.querySelector(
+            `[data-editor-artboard][data-node-id="${gesture.nodeId}"]`,
+          );
         if (board) {
           board.style.left = `${gesture.start.x * cameraZoom}px`;
           board.style.top = `${gesture.start.y * cameraZoom}px`;
@@ -381,20 +389,20 @@ export function useEditorCanvasGestures({
       // Read the live engine tool, not only the render-time prop: a page
       // focused by this same press may still show Select until React commits.
       if ((targetEngine?.getTool?.() ?? tool) !== TOOL.SELECT) return;
-      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY)) return;
+      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY, nodeId === focusedId)) return;
       const board = event.currentTarget;
       onTitlePointerDown(nodeId, event);
       if (!artboardDragRef.current) return;
       const move = (e) => onTitlePointerMove(e);
       const up = (e) => {
         onTitlePointerUp(e);
-        board.removeEventListener("pointermove", move);
-        board.removeEventListener("pointerup", up);
-        board.removeEventListener("pointercancel", up);
+        window.removeEventListener("pointermove", move, true);
+        window.removeEventListener("pointerup", up, true);
+        window.removeEventListener("pointercancel", up, true);
       };
-      board.addEventListener("pointermove", move);
-      board.addEventListener("pointerup", up);
-      board.addEventListener("pointercancel", up);
+      window.addEventListener("pointermove", move, true);
+      window.addEventListener("pointerup", up, true);
+      window.addEventListener("pointercancel", up, true);
     },
     [enginesRef, tool, onTitlePointerDown, onTitlePointerMove, onTitlePointerUp, spaceRef],
   );

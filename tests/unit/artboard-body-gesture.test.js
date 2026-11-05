@@ -72,4 +72,10 @@ describe("artboard body gesture routing", () => {
     expect(shouldDragArtboardBody(engine, 500, 400)).toBe(true);
     expect(engine.hasHandleUnder).toHaveBeenCalledWith({ clientX: 500, clientY: 400 });
   });
+
+  it("drags the frame area when the frame is focused and child artwork is not selected", () => {
+    const engine = makeEngine({ selectedIds: [] });
+    engine.isSelected = vi.fn(() => false);
+    expect(shouldDragArtboardBody(engine, 150, 100, true)).toBe(true);
+  });
 });
