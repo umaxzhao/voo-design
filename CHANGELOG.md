@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.11
+
+- Fix: narrow-screen and responsive layout regressions across 320px, 390px, 768px, and 844px viewports; multi-page drawing tool hit overlay excludes neighbouring pages so clicks focus them and carry the shared tool; inspector MixedField spinbutton semantics and deduplicated Enter/blur commits; bounded number input reconciliation; differentiated section header accessibility; restored borderless prompt composer without animated perimeter.
+
 ## 1.0.0-beta.10
 
 - Fix: at 390px the canvas context menu no longer opens over the inspector when a numeric field is tapped (it covered the next field); phone-width and touch-first viewports keep the frame clear of the notch and home indicator, while the mouse-driven desktop frame is unchanged.
