@@ -57,7 +57,7 @@ export default function MixedField({
     commitNow?.();
   };
 
-  const placeholderText = suffix ? `—${suffix}` : "—";
+  const placeholderText = suffix ? `Mixed ${suffix}` : "Mixed";
 
   return (
     <div
