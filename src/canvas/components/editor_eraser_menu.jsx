@@ -46,7 +46,7 @@ export default function EditorEraserMenu({
           onClick={() => onTool(TOOL.ERASER)}
           aria-label={label}
           aria-pressed={isActive}
-          className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
+          className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
             isActive
               ? "bg-white text-black font-medium"
               : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"

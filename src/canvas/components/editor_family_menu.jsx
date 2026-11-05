@@ -169,7 +169,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   return (
     <div
       ref={rootRef}
-      className="editor-toolbar-family relative flex h-11 w-11 shrink-0 items-center justify-center"
+      className="editor-toolbar-family relative flex h-8 w-8 shrink-0 items-center justify-center"
       data-testid={`editor-${menuId}-menu`}
       onPointerDownCapture={onPointerDownCapture}
       onPointerMoveCapture={onPointerMoveCapture}

@@ -17,7 +17,7 @@ import { moveEditorMenuFocus } from "./editor_menu_navigation.js";
 import { useHoverMenu } from "./use_hover_menu.js";
 
 const toolButtonClass = (active) =>
-  `flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
+  `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
     active
       ? "bg-white text-black font-medium"
       : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
@@ -220,7 +220,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
   return (
     <div
       ref={rootRef}
-      className="editor-toolbar-family relative flex h-11 w-11 shrink-0 items-center justify-center"
+      className="editor-toolbar-family relative flex h-8 w-8 shrink-0 items-center justify-center"
       data-testid="editor-select-menu"
       onPointerDownCapture={onPointerDownCapture}
       onPointerMoveCapture={onPointerMoveCapture}
