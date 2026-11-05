@@ -52,7 +52,11 @@ export function createHistory({
       if (!Array.isArray(aIds) || !Array.isArray(bIds) || aIds.length !== bIds.length) {
         return false;
       }
-      for (let i = 0; i < aIds.length; i += 1) {
+      const len = aIds.length;
+      if (len > 0 && (aIds[0] !== bIds[0] || aIds[len - 1] !== bIds[len - 1])) {
+        return false;
+      }
+      for (let i = 1; i < len - 1; i += 1) {
         if (aIds[i] !== bIds[i]) return false;
       }
     }
