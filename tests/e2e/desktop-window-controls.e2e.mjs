@@ -16,7 +16,7 @@ await withEditorBrowser(async ({ page, errors }) => {
     assert.ok(bounds.x + bounds.width <= width && bounds.y >= 0);
     for (const button of [min, max, close]) {
       const box = await button.boundingBox();
-      assert.ok(box.width >= 48 && box.height >= 36);
+      assert.ok(box.width >= 44 && box.height >= 36); // d953c7f0: desktop controls are 44x40
       assert.equal(await button.evaluate(el => getComputedStyle(el).getPropertyValue("-webkit-app-region")), "no-drag");
     }
   }
