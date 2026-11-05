@@ -83,13 +83,17 @@ await withEditorBrowser(async ({ page }) => {
     const style = getComputedStyle(document.querySelector(".app-root-frame"));
     return [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft].map(parseFloat);
   });
-  assert.deepEqual(await padding(), [16, 14, 12, 14], "balanced safe-area protection does not depend on a coarse pointer");
+  // Design (d953c7f0, src/index.css): a mouse-driven desktop window keeps the mint
+  // frame exactly on the window boundary — the shell's 2px #b2ffd6 border is the
+  // only edge, with no 4px safe-area padding (that drew a second green rail).
+  // Phone-width / touch-first viewports still honour insets (ui-responsive-editor).
+  assert.deepEqual(await padding(), [0, 0, 0, 0], "fine-pointer desktop keeps the frame on the window boundary even with safe-area insets");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await settle(page);
-  assert.deepEqual(await padding(), [4, 4, 4, 4]);
+  assert.deepEqual(await padding(), [0, 0, 0, 0]);
   assert.equal(await page.getByTestId("editor-select-menu-trigger").getAttribute("aria-hidden"), null);
   await session.detach();
-  checks.push("fine-pointer sessions retain nonzero safe-area padding while ordinary desktops keep the 4px fallback");
+  checks.push("fine-pointer desktops keep the mint frame on the window boundary (padding 0) with or without safe-area insets");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });
 
