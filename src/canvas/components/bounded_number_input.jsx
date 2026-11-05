@@ -4,18 +4,24 @@ import { createEditorGestureTransaction } from "../../shared/editor-gesture-tran
 
 const NUMBER_INPUT_GESTURE_KEY = "bounded-number-input";
 
-export function evaluateMathExpression(str) {
+export function evaluateMathExpression(str, baseValue = NaN) {
   if (typeof str !== "string") return NaN;
   const trimmed = str.trim();
   if (!trimmed) return NaN;
-  if (/^[+-]?\d+(?:\.\d+)?$/.test(trimmed)) {
+
+  // Leading operators (+, -, *, /) are evaluated relative to baseValue when provided.
+  let expr = trimmed;
+  if (Number.isFinite(baseValue) && /^[+\-*/]/.test(trimmed)) {
+    expr = `${baseValue} ${trimmed}`;
+  } else if (/^[+-]?\d+(?:\.\d+)?$/.test(trimmed)) {
     return Number(trimmed);
   }
-  if (!/^[0-9+\-*/().\s]+$/.test(trimmed)) {
+
+  if (!/^[0-9+\-*/().\s]+$/.test(expr)) {
     return NaN;
   }
   try {
-    const fn = new Function(`"use strict"; return (${trimmed});`);
+    const fn = new Function(`"use strict"; return (${expr});`);
     const val = fn();
     return typeof val === "number" && Number.isFinite(val) ? val : NaN;
   } catch {
@@ -88,7 +94,7 @@ export default function BoundedNumberInput({
   };
 
   const normalize = (rawValue) => {
-    const parsed = evaluateMathExpression(String(rawValue));
+    const parsed = evaluateMathExpression(String(rawValue), committedValueRef.current);
     const safeValue = Number.isFinite(parsed) ? parsed : value;
     return Math.min(max, Math.max(min, roundToPrecision(safeValue)));
   };
