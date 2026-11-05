@@ -2,13 +2,17 @@
 export default {
   // Keep essential properties-panel section labels available before the
   // deferred full dictionary chunk has finished loading.
-  "editor.props.transform": "Transform",
+  "editor.props.transform": "Position",
+  "editor.props.position": "Position",
+  "editor.props.frame": "Frame",
   "editor.props.layout": "Layout",
-  "editor.props.appearance": "Appearance",
+  "editor.props.appearance": "Layer",
+  "editor.props.layer": "Layer",
   "editor.props.clipContent": "Clip content",
   "editor.props.fillLabel": "Fill",
   "editor.props.strokeLabel": "Stroke",
   "editor.props.effects": "Effects",
+  "editor.props.export": "Export",
   "firstRun.keep": "Keep current document",
   "firstRun.replaceConfirm": "This replaces your current canvas",
   "firstRun.start.reopenedDescription": "Keep your current document, or explicitly choose a new starting point.",
