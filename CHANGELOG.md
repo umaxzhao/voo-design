@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.12
+
+- Figma parity enhancements in inspector: support relative mathematical expressions (`* 2`, `/ 2`, `+ 20`, `- 15`) in numeric inputs evaluated against the current committed value; interactive Selection Colors color replacement across all matching selected layers as a single atomic undo transaction; differentiated collapsible section headers for assistive technology; bounded numeric input reconciliation after coalesced model undo.
+
 ## 1.0.0-beta.11
 
 - Fix: narrow-screen and responsive layout regressions across 320px, 390px, 768px, and 844px viewports; multi-page drawing tool hit overlay excludes neighbouring pages so clicks focus them and carry the shared tool; inspector MixedField spinbutton semantics and deduplicated Enter/blur commits; bounded number input reconciliation; differentiated section header accessibility; restored borderless prompt composer without animated perimeter.
