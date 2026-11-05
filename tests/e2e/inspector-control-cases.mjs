@@ -61,12 +61,13 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), original.stroke);
   mark("presets, fill/stroke chips, gradient stops and mesh points are circles; gradient/mesh edits undo individually and Escape restores focus");
 
-  await x.fill(String(original.x + 20)); await x.press("Enter"); await settle();
+  const parent = await page.evaluate(() => window.__vooEditor.getNode("audit-frame"));
+  await x.fill(String(original.x + 20 - parent.x)); await x.press("Enter"); await settle();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").x), original.x + 20);
   await tool("undo"); await settle();
-  assert.equal(await x.inputValue(), String(original.x));
-  await x.fill(String(original.x + 50)); await x.press("Escape"); await settle();
-  assert.equal(await x.inputValue(), String(original.x));
+  assert.equal(await x.inputValue(), String(original.x - parent.x));
+  await x.fill(String(original.x + 50 - parent.x)); await x.press("Escape"); await settle();
+  assert.equal(await x.inputValue(), String(original.x - parent.x));
   const dropdown = panel.getByRole("button", { name: "Blend mode", exact: true });
   const dropdownStyle = await styles(dropdown);
   assert.equal(dropdownStyle.height, 32);

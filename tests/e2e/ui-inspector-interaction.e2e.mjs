@@ -93,16 +93,17 @@ await withEditorBrowser(async ({ page, tool }) => {
     assert.equal(await exportAction.count(), 0, "redo removing export hides it again");
     mark("export is opt-in for shapes, Frames, text and images; add/remove persist per layer and undo/redo immediately follow document state");
 
+    const parent = await node("audit-frame");
     const x = panel.getByRole("spinbutton", { name: "X", exact: true });
-    await x.fill("150"); await x.press("Enter");
+    await x.fill(String(150 - parent.x)); await x.press("Enter");
     assert.equal((await node()).x, 150);
     await x.fill("222"); await x.press("Escape");
     assert.equal((await node()).x, 150, "Escape must revert the live geometry preview");
-    assert.equal(await x.inputValue(), "150");
+    assert.equal(await x.inputValue(), String(150 - parent.x));
     await tool("undo");
     assert.equal((await node()).x, 100, "one undo must skip the cancelled draft");
     const y = panel.getByRole("spinbutton", { name: "Y", exact: true });
-    await y.fill("140"); await y.blur();
+    await y.fill(String(140 - parent.y)); await y.blur();
     assert.equal((await node()).y, 140);
     await tool("undo"); assert.equal((await node()).y, 100);
     mark("numeric Enter/blur commit one actual geometry edit; Escape restores the preview and preserves one-step undo");

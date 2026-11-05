@@ -64,18 +64,15 @@ export default function BoundedNumberInput({
   }
 
   useEffect(() => {
-    const propChanged = lastPropValueRef.current !== value;
     lastPropValueRef.current = value;
 
     if (!focusedRef.current) {
-      if (propChanged || draftRef.current !== String(committedValueRef.current)) {
-        const nextDraft = String(value);
-        committedValueRef.current = value;
-        emittedValueRef.current = value;
-        if (draftRef.current !== nextDraft) {
-          draftRef.current = nextDraft;
-          setDraft(nextDraft);
-        }
+      const nextDraft = String(value);
+      committedValueRef.current = value;
+      emittedValueRef.current = value;
+      if (draftRef.current !== nextDraft) {
+        draftRef.current = nextDraft;
+        setDraft(nextDraft);
       }
     }
     // Commit and immediate undo can publish the same value as the last render.
