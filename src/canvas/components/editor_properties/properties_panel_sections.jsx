@@ -147,6 +147,7 @@ export default function PropertiesPanelSections({
           onToggleFixed={onTogglePuppetPinFixed}
         />
       ) : null}
+      {/* 1. Alignment (multi-selection) */}
       {!isWarpTool && (selectionCount ?? 1) >= 2 && (onLayout || engine?.layoutSelection) && object.kind !== "adjustment" ? (
         <AlignSection
           count={selectionCount}
@@ -155,6 +156,29 @@ export default function PropertiesPanelSections({
           showQuickActions={false}
         />
       ) : null}
+
+      {/* 2. Frame / Layout / Auto layout (Figma order: Frame -> Layout -> Auto layout) */}
+      {!isWarpTool && object.isFrame ? (
+        <VariantsSection engine={engine} isMainComponent={isMainComponent} />
+      ) : null}
+      {showSlot ? (
+        <FrameSlotSection object={object} editAndCommit={editAndCommit} />
+      ) : null}
+      {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
+      {!isWarpTool && (
+        <TypeSpecificSections
+          object={object}
+          sections={allowed}
+          positionAction={positionAction}
+          showDimensions={hasLayoutGroup}
+          engine={engine}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+        />
+      )}
+
+      {/* 3. Position (XYWH, Rotation, Radius) */}
       {isWarpTool ? (
         <WarpSection
           tool={tool}
@@ -197,30 +221,13 @@ export default function PropertiesPanelSections({
           onRotate90={onRotate90}
         />
       ) : null}
-      {/* The constraints row appears once set or when the add menu reveals it.
-          One-shot crop and replace actions live in the bottom quickbar. */}
+
+      {/* Constraints */}
       {!isWarpTool && eligible.constraints && !object.isFrame ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
-      {!isWarpTool && object.isFrame ? (
-        <VariantsSection engine={engine} isMainComponent={isMainComponent} />
-      ) : null}
-      {showSlot ? (
-        <FrameSlotSection object={object} editAndCommit={editAndCommit} />
-      ) : null}
-      {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
-      {!isWarpTool && (
-        <TypeSpecificSections
-          object={object}
-          sections={allowed}
-          positionAction={positionAction}
-          showDimensions={hasLayoutGroup}
-          engine={engine}
-          edit={edit}
-          editAndCommit={editAndCommit}
-          commitNow={commitNow}
-        />
-      )}
+
+      {/* Specific object shapes / text */}
       {!isWarpTool && object.kind === "boolean" ? (
         <CombineSection
           currentOperation={object.operation}
@@ -240,9 +247,6 @@ export default function PropertiesPanelSections({
           t={t}
         />
       ) : null}
-
-      {/* Polygon/star parameters and the line/arrow head menu. Single
-          selection only: the patches carry absolute geometry. */}
       {!isWarpTool &&
       object.kind === "path" &&
       (object.poly === true || object.arrow === true || object.line === true) &&
@@ -282,10 +286,9 @@ export default function PropertiesPanelSections({
           bitmap={getBitmap?.(object) ?? null}
         />
       ) : null}
-      {/* Text keeps opacity/blend after Fill: the type → paint → appearance
-          order matches Figma, and the Fill row sits next to the text block
-          instead of behind a section the user rarely touches. */}
-      {!isWarpTool && object.kind !== "text" && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
+
+      {/* 4. Layer (混合, 不透明度) - Figma: Layer comes right before Fill/Stroke */}
+      {!isWarpTool && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
         <AppearanceSection
           object={object}
           selectedNodes={selectedNodes}
@@ -294,6 +297,8 @@ export default function PropertiesPanelSections({
           commitNow={commitNow}
         />
       ) : null}
+
+      {/* 5. Fill & 6. Stroke */}
       {!isWarpTool && (has("fill") || has("stroke")) && supportsColour(object) ? (
         // The picker's "Document colours" row reads the document's colour variables.
         <DocumentColoursContext.Provider value={colorVariableActions?.variables ?? NO_DOCUMENT_COLOURS}>
@@ -311,15 +316,6 @@ export default function PropertiesPanelSections({
             bindings={bindings}
           />
         </DocumentColoursContext.Provider>
-      ) : null}
-      {!isWarpTool && object.kind === "text" ? (
-        <AppearanceSection
-          object={object}
-          selectedNodes={selectedNodes}
-          edit={edit}
-          editAndCommit={editAndCommit}
-          commitNow={commitNow}
-        />
       ) : null}
       {/* Image tools sit before Fill/Stroke so the histogram and image actions stay on the first screen. */}
       {show("variables") ? (

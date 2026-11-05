@@ -27,6 +27,7 @@ export default function ScrubField({
   onScrubEnd = undefined,
   ariaLabel,
   scrubHint = undefined,
+  placeholder = undefined,
   bare = false,
   disabled = false,
   showRange = false,
@@ -82,6 +83,7 @@ export default function ScrubField({
         step={step}
         precision={precision}
         value={value}
+        placeholder={placeholder}
         onValueChange={onValueChange}
         onCommit={onCommit}
         ariaLabel={ariaLabel}

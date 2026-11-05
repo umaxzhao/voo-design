@@ -4,7 +4,7 @@ import { createEditorGestureTransaction } from "../../shared/editor-gesture-tran
 
 const NUMBER_INPUT_GESTURE_KEY = "bounded-number-input";
 
-function evaluateMathExpression(str) {
+export function evaluateMathExpression(str) {
   if (typeof str !== "string") return NaN;
   const trimmed = str.trim();
   if (!trimmed) return NaN;
@@ -32,6 +32,7 @@ export default function BoundedNumberInput({
   onValueChange,
   onCommit = undefined,
   className = undefined,
+  placeholder = undefined,
   ariaLabel,
   inputRef = undefined,
   disabled = false,
@@ -118,6 +119,7 @@ export default function BoundedNumberInput({
       role="spinbutton"
       inputMode="decimal"
       value={draft}
+      placeholder={placeholder}
       ref={setInputRef}
       aria-label={ariaLabel}
       title={ariaLabel}
