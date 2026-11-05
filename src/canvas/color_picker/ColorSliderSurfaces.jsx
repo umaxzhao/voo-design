@@ -62,12 +62,11 @@ export function ColorSliderSurfaces({
         const newV = Math.round(
           (1 - clamp01((clientY - rect.top) / rect.height)) * 100,
         );
-        setHsv((prev) => {
-          const next = { ...prev, s: newS, v: newV };
-          hsvRef.current = next;
-          onApplyColor(hsvToHex(next.h, next.s, next.v));
-          return next;
-        });
+        const cur = hsvRef.current;
+        const next = { ...cur, s: newS, v: newV };
+        hsvRef.current = next;
+        setHsv(next);
+        onApplyColor(hsvToHex(next.h, next.s, next.v));
       },
       e,
       true,
@@ -83,12 +82,11 @@ export function ColorSliderSurfaces({
         const newH = Math.round(
           clamp01((clientX - rect.left) / rect.width) * 360,
         );
-        setHsv((prev) => {
-          const next = { ...prev, h: newH };
-          hsvRef.current = next;
-          onApplyColor(hsvToHex(next.h, next.s, next.v));
-          return next;
-        });
+        const cur = hsvRef.current;
+        const next = { ...cur, h: newH };
+        hsvRef.current = next;
+        setHsv(next);
+        onApplyColor(hsvToHex(next.h, next.s, next.v));
       },
       e,
       true,
@@ -128,13 +126,13 @@ export function ColorSliderSurfaces({
         className="relative h-32 w-full cursor-crosshair overflow-hidden rounded-lg select-none touch-none"
       >
         <div
-          className="absolute inset-0"
+          className="pointer-events-none absolute inset-0"
           style={{
             background: "linear-gradient(to right, #ffffff, transparent)",
           }}
         />
         <div
-          className="absolute inset-0"
+          className="pointer-events-none absolute inset-0"
           style={{
             background: "linear-gradient(to top, #000000, transparent)",
           }}
