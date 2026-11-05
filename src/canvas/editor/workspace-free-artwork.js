@@ -2,6 +2,30 @@ import { artworkHitPath } from "./free-artwork-hit-regions.js";
 import { createArtworkPicture } from "./workspace-artwork-picture.js";
 import { TOOL } from "./editor_constants.js";
 
+/**
+ * Creation tools own the whole workspace, but a press on another page must
+ * still reach that page so it can take focus and the shared tool. The hit
+ * region is therefore the workspace minus the other pages' rectangles.
+ */
+function creationHitPath(hits, workspace) {
+  const own = hits.closest("[data-editor-artboard]");
+  const box = hits.getBoundingClientRect();
+  if (!(box.width > 0 && box.height > 0)) return "none";
+  const holes = [];
+  for (const page of workspace.querySelectorAll("[data-editor-artboard]")) {
+    if (page === own) continue;
+    const r = page.getBoundingClientRect();
+    const left = Math.max(r.left - box.left, 0), top = Math.max(r.top - box.top, 0);
+    const right = Math.min(r.right - box.left, box.width), bottom = Math.min(r.bottom - box.top, box.height);
+    if (right > left && bottom > top) {
+      const f = n => Math.round(n * 100) / 100;
+      holes.push(`M${f(left)} ${f(top)}H${f(right)}V${f(bottom)}H${f(left)}Z`);
+    }
+  }
+  if (!holes.length) return "none";
+  return `path(evenodd, "M0 0H${box.width}V${box.height}H0Z ${holes.join(" ")}")`;
+}
+
 /** A free document keeps world coordinates; only its raster window follows the camera. */
 export function freeCanvasSurface(page, workspace, zoom) {
   const left = Math.floor(workspace.left - page.left);
@@ -58,12 +82,14 @@ export function attachFreeCanvasArtwork({
     Object.assign(hits.style, style);
     const doc = engine.getDocument();
     const tool = engine.getTool?.() ?? TOOL.SELECT;
-    const pathKey = JSON.stringify([surface, tool]);
+    const creation = tool !== TOOL.SELECT && tool !== TOOL.HAND;
+    const creationPath = creation ? creationHitPath(hits, workspace) : null;
+    const pathKey = JSON.stringify([surface, tool, creationPath]);
     if (previousDoc !== doc || previousPathKey !== pathKey) {
-      // Creation tools need the whole workspace, including an empty canvas.
-      // Select/Hand keep artwork hit regions so background panning is preserved.
-      hits.style.clipPath = tool !== TOOL.SELECT && tool !== TOOL.HAND
-        ? "none" : artworkHitPath(doc, surface);
+      // Creation tools need the whole workspace, including an empty canvas,
+      // except where another page sits. Select/Hand keep artwork hit regions
+      // so background panning is preserved.
+      hits.style.clipPath = creation ? creationPath : artworkHitPath(doc, surface);
       previousDoc = doc;
       previousPathKey = pathKey;
     }
