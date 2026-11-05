@@ -1,0 +1,23 @@
+{
+  "label": "QA",
+  "timestamp": "2026-11-05T01:37:13.996Z",
+  "scene": {
+    "totalLayers": 520,
+    "frameCount": 4,
+    "bitmapSize": "1000x1000 px RGBA"
+  },
+  "metrics": {
+    "startupTimeMs": 6631,
+    "tabSwitchLatencyMs": 41,
+    "panFps": 46.2,
+    "panP95Ms": 33.4,
+    "zoomFps": 48.2,
+    "zoomP95Ms": 33.4,
+    "dragFps": 30.7,
+    "dragP95Ms": 50,
+    "marqueeFps": 29.5,
+    "marqueeP95Ms": 33.4,
+    "idleJsHeapUsedMB": 75.2,
+    "idleJsHeapTotalMB": 150.8
+  }
+}
