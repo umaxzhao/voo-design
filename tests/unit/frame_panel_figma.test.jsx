@@ -31,7 +31,7 @@ const renderFrame = (patch = {}) =>
   renderToStaticMarkup(
     <PropertiesPanelSections
       object={frame(patch)}
-      sections={["clip", "layoutGrid", "autoLayout", "fill", "stroke"]}
+      sections={["transform", "clip", "layoutGrid", "autoLayout", "fill", "stroke"]}
       edit={vi.fn()}
       editAndCommit={vi.fn()}
       t={(key) => key}
@@ -46,7 +46,7 @@ describe("Figma-style frame panel", () => {
     expect(html).toContain('stroke-width="1.5"');
   });
 
-  it("shows one editable W/H pair under Layout after the mode strip", () => {
+  it("shows one editable W/H pair with Transform before Layout", () => {
     const html = renderToStaticMarkup(
       <PropertiesPanelSections
         object={frame()}
@@ -60,7 +60,7 @@ describe("Figma-style frame panel", () => {
     expect(html.match(/aria-label="H"/g)).toHaveLength(1);
     expect(html).toContain('value="200"');
     expect(html).toContain('value="120"');
-    expect(html.indexOf('data-layout-mode-icon="none"')).toBeLessThan(html.indexOf('aria-label="W"'));
+    expect(html.indexOf('aria-label="W"')).toBeLessThan(html.indexOf('data-layout-mode-icon="none"'));
   });
 
   it("renders Clip content as a checked checkbox", () => {
