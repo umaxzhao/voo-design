@@ -257,15 +257,6 @@ export function drawSelection(
       }
     }
 
-    // The size chip belongs to the transform box, so it rides the same frame:
-    // it appears exactly when the handles that resize the node do.
-    paintSizeLabel(
-      ctx,
-      docToScreenRect(rect, viewport),
-      sizeLabelText(node, rect),
-      strokeColor,
-    );
-
     // Render Figma-style inner corner radius dot handles for RECT nodes when hovered
     if (node && node.kind === NODE_KIND.RECT && showCornerRadius) {
       const radiusHandles = rectCornerRadiusHandles(node).map((point) =>
@@ -283,6 +274,16 @@ export function drawSelection(
         ctx.stroke();
       }
     }
+  }
+
+  // The size chip reports live dimensions (W × H) during creation and transform
+  if (withHandles || (node && (node.width > 2 || node.height > 2))) {
+    paintSizeLabel(
+      ctx,
+      docToScreenRect(rect, viewport),
+      sizeLabelText(node, rect),
+      strokeColor,
+    );
   }
 
   // Perspective corners render only while the perspective tool is armed:
