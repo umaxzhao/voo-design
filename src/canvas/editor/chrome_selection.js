@@ -232,8 +232,8 @@ export function drawSelection(
   if (withHandles) {
     screenHandles.forEach((point) => paintHandle(ctx, point, strokeColor));
 
-    // Render rotation handle stem and grip knob matching rotationHandleGeometry
-    if (node) {
+    // Render rotation handle stem and grip knob matching rotationHandleGeometry (never on a Frame)
+    if (node && !node.isFrame && !node.frame && node.kind !== "frame") {
       const geom = rotationHandleGeometry(node, viewport.zoom);
       if (geom?.base && geom?.grip) {
         const baseScreen = docToScreenPoint(geom.base, viewport);

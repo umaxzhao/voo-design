@@ -127,6 +127,15 @@ export const ROTATE_HANDLE_OFFSET = 20;
  */
 export function rotationHandleGeometry(node, zoom) {
   if (
+    !node ||
+    node.isFrame ||
+    node.frame ||
+    node.containerType === "frame" ||
+    node.kind === "frame"
+  ) {
+    return null;
+  }
+  if (
     (Array.isArray(node.perspectiveQuad) &&
       node.perspectiveQuad.length === 4) ||
     (Array.isArray(node.perspectiveCorners) &&

@@ -148,19 +148,22 @@ export function createPointerHitTester({
    */
   const rotateHandleUnder = (node, event) => {
     if (!node || node.locked || node.kind === NODE_KIND.REGION) return false;
+    const isFrame = Boolean(node.isFrame || node.frame || node.containerType === "frame" || node.kind === "frame");
     const targetNode = api.getEffectiveNode ? api.getEffectiveNode(node) : node;
     const viewport = api.getViewport();
     const cursorPt = screenPoint(event);
 
-    // 1. Top rotation grip
-    const geom = rotationHandleGeometry(targetNode, viewport.zoom);
-    if (geom?.grip) {
-      const screenGrip = docToScreenPoint(geom.grip, viewport);
-      if (
-        Math.hypot(cursorPt.x - screenGrip.x, cursorPt.y - screenGrip.y) <=
-        HANDLE_GRAB_RADIUS + 8
-      ) {
-        return true;
+    // 1. Top rotation grip (never on a Frame)
+    if (!isFrame) {
+      const geom = rotationHandleGeometry(targetNode, viewport.zoom);
+      if (geom?.grip) {
+        const screenGrip = docToScreenPoint(geom.grip, viewport);
+        if (
+          Math.hypot(cursorPt.x - screenGrip.x, cursorPt.y - screenGrip.y) <=
+          HANDLE_GRAB_RADIUS + 8
+        ) {
+          return true;
+        }
       }
     }
 
