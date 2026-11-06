@@ -8,6 +8,7 @@ import PropertiesPanelSections from "../../src/canvas/components/editor_properti
 import { WelcomeFileCollection } from "../../src/canvas/components/welcome_dashboard/welcome_file_collection.jsx";
 import { CustomFontPicker } from "../../src/canvas/components/font_picker.jsx";
 import { createPointerHitTester, hasHandleUnder } from "../../src/canvas/editor/editor_pointer_hit_test.js";
+import { rotationHandleGeometry } from "../../src/canvas/editor/scene_geometry_anchors.js";
 import { attachPointerHandlers } from "../../src/canvas/editor/editor_pointer.js";
 
 if (typeof globalThis.window === "undefined") {
@@ -206,6 +207,28 @@ describe("Mac QA interaction defect regression tests", () => {
 
       // 5. Standalone exported hasHandleUnder works as well
       expect(hasHandleUnder({ clientX: 200, clientY: 73 }, hitTester)).toBe(true);
+    });
+
+    it("never shows or detects top rotation grip for Frame nodes", () => {
+      const frameNode = { id: "frame-1", isFrame: true, kind: "group", x: 100, y: 100, width: 200, height: 100, locked: false };
+      const doc = { nodes: [frameNode] };
+      const api = {
+        getDocument: () => doc,
+        getSelected: () => frameNode,
+        getSelectedNodes: () => [frameNode],
+        getSelectedIds: () => ["frame-1"],
+        getViewport: () => ({ panX: 0, panY: 0, zoom: 1 }),
+        toDocPoint: (x, y) => ({ x, y }),
+        nodeAtPoint: () => null,
+        getTool: () => "select",
+      };
+      const screenPoint = (e) => ({ x: e.clientX, y: e.clientY });
+      const hitTester = createPointerHitTester({ api, stage: null, screenPoint });
+
+      // Top grip position should not be hit on a frame
+      const topGripHit = hitTester.hasHandleUnder({ clientX: 200, clientY: 73 });
+      expect(topGripHit).toBe(false);
+      expect(rotationHandleGeometry(frameNode, 1)).toBeNull();
     });
 
     it("detects multi-selection multiHandle and corner rotation proximity", () => {
