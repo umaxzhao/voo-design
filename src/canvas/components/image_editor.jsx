@@ -2199,6 +2199,18 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 engine?.setColor(next);
               },
               onPickColor: () => engine?.setTool(TOOL.DROPPER),
+              onAddFramePreset: (preset) => {
+                if (!engine) return;
+                const point = engine.toDocPoint?.(window.innerWidth / 2, window.innerHeight / 2) ?? { x: 100, y: 100 };
+                const node = engine.addFrameAt?.(
+                  { x: Math.round(point.x - preset.w / 2), y: Math.round(point.y - preset.h / 2) },
+                  { width: preset.w, height: preset.h, name: preset.name || "Frame" },
+                );
+                if (node?.id) {
+                  engine.selectExactly?.([node.id]);
+                  engine.setTool?.(TOOL.SELECT);
+                }
+              },
               backgroundColor: engine?.getToolBackgroundColor?.() ?? "#000000",
               onBackgroundColor: (next) => engine?.setToolBackgroundColor?.(next),
               swapColorsRef,

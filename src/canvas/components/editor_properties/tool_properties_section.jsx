@@ -23,6 +23,7 @@ import ShapeProperties from "./shape_properties.jsx";
 import CropProperties from "./crop_properties.jsx";
 import TextToolProperties from "./text_tool_properties.jsx";
 import GradientProperties from "./gradient_properties.jsx";
+import FrameToolProperties from "./frame_tool_properties.jsx";
 import { StaticSection } from "./property_section.jsx";
 import { useI18n } from "../../use_i18n.js";
 
@@ -217,6 +218,7 @@ export default function ToolPropertiesSection({
   fillSampleAll,
   onFillSampleAll,
   onReverseGradient,
+  onAddFramePreset,
 }) {
   const { t } = useI18n();
   const [brushDetailOpen, setBrushDetailOpen] = useState(false);
@@ -264,10 +266,10 @@ export default function ToolPropertiesSection({
   const showBrushPresets =
     tool === TOOL.BRUSH || (tool === TOOL.ERASER && brushModeHasPresets("eraser"));
 
-  // Frame/Hand/AI select/Retouch take over the inspector but have no controls;
-  // an explicit hint is better than a 62px blank header.
+  // Frame has frame presets; Hand/AI select/Retouch take over the inspector but have no controls
   const hasToolContent =
     Boolean(hasColor) ||
+    tool === TOOL.FRAME ||
     isShape ||
     isPen ||
     isArrow ||
@@ -604,6 +606,11 @@ export default function ToolPropertiesSection({
           onFillSampleAll={onFillSampleAll}
           onReverseGradient={onReverseGradient}
         />
+      )}
+
+      {/* 9. Frame Presets */}
+      {tool === TOOL.FRAME && (
+        <FrameToolProperties onAddFramePreset={onAddFramePreset} />
       )}
 
       {!hasToolContent ? (

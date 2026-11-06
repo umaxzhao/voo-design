@@ -306,6 +306,7 @@ export function createShapesPointerGestures({
     } else {
       api.select(finished.id);
       commitEditorAction("editor.pointer.draw", () => api.commit());
+      api.setTool?.(TOOL.SELECT);
     }
   }
 

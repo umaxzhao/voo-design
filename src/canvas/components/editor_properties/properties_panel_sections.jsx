@@ -157,28 +157,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {/* 2. Frame / Layout / Auto layout (Figma order: Frame -> Layout -> Auto layout) */}
-      {!isWarpTool && object.isFrame ? (
-        <VariantsSection engine={engine} isMainComponent={isMainComponent} />
-      ) : null}
-      {showSlot ? (
-        <FrameSlotSection object={object} editAndCommit={editAndCommit} />
-      ) : null}
-      {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
-      {!isWarpTool && (
-        <TypeSpecificSections
-          object={object}
-          sections={allowed}
-          positionAction={positionAction}
-          showDimensions={hasLayoutGroup}
-          engine={engine}
-          edit={edit}
-          editAndCommit={editAndCommit}
-          commitNow={commitNow}
-        />
-      )}
-
-      {/* 3. Position (XYWH, Rotation, Radius) */}
+      {/* 2. Position (XYWH, Rotation, Radius) - Transform before Layout */}
       {isWarpTool ? (
         <WarpSection
           tool={tool}
@@ -206,7 +185,7 @@ export default function PropertiesPanelSections({
           object={object}
           engine={engine}
           showRadius={has("radius")}
-          showDimensions={!hasLayoutGroup}
+          showDimensions={true}
           docSize={docSize}
           isRegion={isRegionNode(object)}
           edit={edit}
@@ -217,10 +196,31 @@ export default function PropertiesPanelSections({
           parentLayout={parentLayout}
           parentNode={parentNode}
           parentIsFrame={parentIsFrame}
-          positionAction={!hasLayoutGroup ? positionAction : null}
+          positionAction={positionAction}
           onRotate90={onRotate90}
         />
       ) : null}
+
+      {/* 3. Frame / Layout / Auto layout (below Transform) */}
+      {!isWarpTool && object.isFrame ? (
+        <VariantsSection engine={engine} isMainComponent={isMainComponent} />
+      ) : null}
+      {showSlot ? (
+        <FrameSlotSection object={object} editAndCommit={editAndCommit} />
+      ) : null}
+      {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
+      {!isWarpTool && (
+        <TypeSpecificSections
+          object={object}
+          sections={allowed}
+          positionAction={null}
+          showDimensions={false}
+          engine={engine}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+        />
+      )}
 
       {/* Constraints */}
       {!isWarpTool && eligible.constraints && !object.isFrame ? (

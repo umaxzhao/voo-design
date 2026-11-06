@@ -90,7 +90,7 @@ export function drawArtworkNodes(ctx, options) {
       // A child inside a boolean group is painted composited by the boolean group itself.
       // Free-canvas root frames own their paint just like nested frames.
       // Fixed-page artboard containers are represented by their child document.
-      const paintedFrame = Boolean(node.isFrame && (node.parentId || doc.isCanvasRoot));
+      const paintedFrame = Boolean(node.isFrame || node.frame || node.containerType === "frame" || node.kind === "frame");
       if (
         (isGroupNode(node) && !paintedFrame) ||
         isHiddenByGroup(doc, node) ||
