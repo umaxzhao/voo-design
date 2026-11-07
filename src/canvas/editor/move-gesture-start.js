@@ -25,11 +25,21 @@ export function startNodeMoveGesture({ api, event, point, setGesture }) {
     ? api.nodesAtPoint?.(point) ?? []
     : [];
   const selectedStackIndex = hitStack.findIndex(node => api.isSelected(node.id));
-  const actualHit = forcedId
+  let actualHit = forcedId
     ? api.getDocument().nodes.find(node => node.id === forcedId)
     : hitStack.length > 1
       ? hitStack[(selectedStackIndex + 1 + hitStack.length) % hitStack.length]
       : api.nodeAtPoint(point);
+
+  if (!actualHit && !forcedId) {
+    const selectedNodes = api.getSelectedNodes?.() ?? [];
+    actualHit = selectedNodes.find((node) => {
+      if (node.locked || node.lockPosition || isLockedByGroup(api.getDocument(), node)) return false;
+      const local = toNodeLocal(node, point);
+      return local.x >= 0 && local.x <= node.width && local.y >= 0 && local.y <= node.height;
+    }) ?? null;
+  }
+
   if (!actualHit) return Boolean(forcedId);
   const doc = api.getDocument();
   if (forcedId && (!isFrameSelectionBoundary(actualHit) || actualHit.visible === false ||

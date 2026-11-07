@@ -3,12 +3,39 @@ const path = require("node:path");
 const fs = require("node:fs");
 const { windowChromeOptions, attachWindowChrome, registerWindowControls } = require("./window-chrome.cjs");
 
+// Ensure desktop identity on Linux so window manager and dock associate the icon
+if (process.platform === "linux") {
+  if (typeof app?.setName === "function") {
+    app.setName("VOO Design");
+  }
+  if (typeof app?.setDesktopName === "function") {
+    app.setDesktopName("voo-design.desktop");
+  }
+}
+
+function getAppIconPath() {
+  const candidates = [
+    path.join(__dirname, "icon.png"),
+    path.join(__dirname, "../build/icon.png"),
+    ...(process.resourcesPath ? [
+      path.join(process.resourcesPath, "build/icon.png"),
+      path.join(process.resourcesPath, "icon.png"),
+    ] : []),
+    path.join(__dirname, "../build/icons/512x512.png"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return path.join(__dirname, "icon.png");
+}
+
 let mainWindow = null;
 const loopbackCollab = require("./lan-loopback-ipc.cjs").registerLoopbackIpc(ipcMain, app, () => mainWindow);
 const closeGuard = require("./close-guard.cjs").createCloseGuard({ app, dialog, getWindow: () => mainWindow });
 
 function createMainWindow() {
   const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+  const iconPath = getAppIconPath();
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -16,6 +43,7 @@ function createMainWindow() {
     minHeight: 700,
     backgroundColor: "#000000",
     show: isDev,
+    icon: iconPath,
     ...windowChromeOptions(process.platform),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),

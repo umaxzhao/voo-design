@@ -11,6 +11,7 @@ import {
 } from "./scene_geometry.js";
 import { unrotatePointAroundCenterRad } from "./box_transform_math.js";
 import { rotationCursorForPoint } from "./editor-cursors.js";
+import { computeAltDistanceGuides } from "./alt_distance_guides.js";
 import { HANDLE_GRAB_RADIUS } from "./scene_renderer.js";
 import { isCssGradient } from "../color_picker/gradient_fill.js";
 import { gradientControlGrab } from "./editor_pointer_gradient.js";
@@ -268,7 +269,24 @@ export function createHoverCursorController({
     }
     if (tool === TOOL.SELECT) {
       const point = api.toDocPoint(event.clientX, event.clientY);
-      api.setHoveredNode(api.nodeAtPoint(point)?.id ?? null);
+      const hovered = api.nodeAtPoint(point);
+      api.setHoveredNode(hovered?.id ?? null);
+      if (event.altKey && selected) {
+        const targetMeasureNode =
+          (hovered && hovered.id !== selected.id)
+            ? hovered
+            : selected.parentId
+              ? api.getDocument()?.nodes?.find((n) => n.id === selected.parentId)
+              : null;
+        if (targetMeasureNode) {
+          const altGuides = computeAltDistanceGuides(selected, targetMeasureNode);
+          api.setGuides?.(altGuides);
+        } else {
+          api.setGuides?.([]);
+        }
+      } else if (!event.altKey && api.getGuides?.()?.some((g) => g.type === "gap_h" || g.type === "gap_v")) {
+        api.setGuides?.([]);
+      }
     } else if (selected && selected.kind === NODE_KIND.RECT) {
       const isOver =
         nodeRectContains(selected, event) ||
@@ -341,6 +359,10 @@ export function createHoverCursorController({
 
   function clearLastPointerEvent() {
     lastPointerEvent = null;
+    api.setHoveredNode?.(null);
+    if (api.getGuides?.()?.some((g) => g.type === "gap_h" || g.type === "gap_v")) {
+      api.setGuides?.([]);
+    }
   }
 
   return {
