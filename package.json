@@ -108,7 +108,9 @@
       "plugins/voo/**/*",
       "scripts/build-agent-plugin.mjs",
       "scripts/mcp-server.mjs",
-      "build/icon.png"
+      "build/icon.png",
+      "build/icons/**/*",
+      "electron/icon.png"
     ],
     "extraResources": [
       {
@@ -183,6 +185,9 @@
         "deb"
       ],
       "executableName": "voo-design",
+      "desktop": {
+        "StartupWMClass": "VOO Design"
+      },
       "syncDesktopName": true
     },
     "afterSign": "scripts/notarize.cjs",

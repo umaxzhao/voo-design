@@ -108,6 +108,7 @@ export const EDITOR_MODULES = [
       "tests/unit/editor-module-audit-regressions.test.js", "src/canvas/components/editor_family_menu.jsx", "src/shared/dom_targets.js", "tests/unit/dropdown-shortcut-ownership.test.js",
       "src/canvas/components/editor_select_menu.jsx", "src/canvas/components/editor_eraser_menu.jsx", "src/canvas/components/use_hover_menu.js",
       "tests/unit/toolbar_hover_menu.test.js", "tests/unit/move-gesture-start.test.js", "src/canvas/editor/chrome_design_issues.js",
+      "src/canvas/editor/alt_distance_guides.js", "tests/unit/alt_distance_guides.test.js",
       "tests/unit/node_at_point_spatial.test.js", "scripts/editor-module-catalog.mjs", "tests/unit/editor-check-plans.test.js",
     ],
     related: [
@@ -381,6 +382,7 @@ export const EDITOR_MODULES = [
       "src/shared/editor_menu_actions.js", "tests/unit/editor_menu_actions.test.js",
       "src/index.css", "src/shared/i18n/welcome-*.js", "src/canvas/components/desktop_window_controls.jsx",
       "src/canvas/components/desktop-window-controls.module.css", "tests/e2e/mint-frame.e2e.mjs",
+      "build/icons/*", "build/icons/**/*", "electron/icon.png",
       "tests/e2e/linux-window-chrome.e2e.mjs", "tests/unit/mint_frame_parity.test.js",
       "tests/unit/window_chrome.test.js", "tests/unit/linux_menu_accelerators.test.js",
       "tests/unit/adversarial_isolation_electron_safety.test.js",

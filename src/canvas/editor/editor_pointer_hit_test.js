@@ -78,10 +78,7 @@ export function createPointerHitTester({
       return pt.x >= aabb.x && pt.x <= aabb.x + aabb.width && pt.y >= aabb.y && pt.y <= aabb.y + aabb.height;
     }
     const local = toNodeLocal(targetNode, pt);
-    const minX = targetNode.effectiveLocal?.x ?? 0, minY = targetNode.effectiveLocal?.y ?? 0;
-    const maxX = targetNode.effectiveLocal ? minX + targetNode.effectiveLocal.width : targetNode.width;
-    const maxY = targetNode.effectiveLocal ? minY + targetNode.effectiveLocal.height : targetNode.height;
-    return local.x >= minX && local.x <= maxX && local.y >= minY && local.y <= maxY;
+    return local.x >= 0 && local.x <= targetNode.width && local.y >= 0 && local.y <= targetNode.height;
   };
 
   /** The handle under the pointer for a rect in document space, or null. */
@@ -170,10 +167,7 @@ export function createPointerHitTester({
     // Inside bounds is drag/select, not corner rotation
     const docPt = api.toDocPoint(event.clientX, event.clientY);
     const local = toNodeLocal(targetNode, docPt);
-    const minLocalX = targetNode.effectiveLocal?.x ?? 0, minLocalY = targetNode.effectiveLocal?.y ?? 0;
-    const maxLocalX = targetNode.effectiveLocal ? minLocalX + targetNode.effectiveLocal.width : targetNode.width;
-    const maxLocalY = targetNode.effectiveLocal ? minLocalY + targetNode.effectiveLocal.height : targetNode.height;
-    if (local.x >= minLocalX && local.x <= maxLocalX && local.y >= minLocalY && local.y <= maxLocalY) {
+    if (local.x >= 0 && local.x <= targetNode.width && local.y >= 0 && local.y <= targetNode.height) {
       return false;
     }
 
