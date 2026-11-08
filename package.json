@@ -185,9 +185,6 @@
         "deb"
       ],
       "executableName": "voo-design",
-      "desktop": {
-        "StartupWMClass": "VOO Design"
-      },
       "syncDesktopName": true
     },
     "afterSign": "scripts/notarize.cjs",
